@@ -32,6 +32,12 @@ const DB_PATH = path.join(DATA_DIR, "db.json");
 
 const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+const LIMIT_DURATION_DAYS = {
+  week1: 7,
+  week2: 14,
+  month1: 30,
+  semester: 120
+};
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -364,7 +370,26 @@ function writeDb(db) {
 function publicUser(user) {
   if (!user) return null;
   const { passwordHash, ...rest } = user;
-  return rest;
+  return {
+    ...rest,
+    approvalStatus: effectiveApprovalStatus(user)
+  };
+}
+
+function effectiveApprovalStatus(user) {
+  if (!user || user.approvalStatus !== "blocked") return user?.approvalStatus;
+  if (!user.blockedUntil) return "blocked";
+  return new Date(user.blockedUntil).getTime() > Date.now() ? "blocked" : "approved";
+}
+
+function blockUntilForDuration(duration) {
+  const days = LIMIT_DURATION_DAYS[duration] || LIMIT_DURATION_DAYS.week1;
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function blockEndLabel(value) {
+  if (!value) return "";
+  return value.slice(0, 10);
 }
 
 function cleanSessions(db) {
@@ -396,8 +421,11 @@ function requireAdmin(req, db) {
 
 function requireApprovedStudent(req, db) {
   const user = requireUser(req, db);
-  if (user.role !== "admin" && user.approvalStatus !== "approved") {
-    throw Object.assign(new Error("관리자 승인 후 예약할 수 있습니다."), { status: 403 });
+  if (user.role !== "admin" && effectiveApprovalStatus(user) !== "approved") {
+    const message = user.approvalStatus === "blocked"
+      ? `이용 제한 중입니다.${user.blockedUntil ? ` 제한 종료: ${blockEndLabel(user.blockedUntil)}` : ""}`
+      : "관리자 승인 후 예약할 수 있습니다.";
+    throw Object.assign(new Error(message), { status: 403 });
   }
   return user;
 }
@@ -911,8 +939,17 @@ async function handleApi(req, res, pathname) {
       const user = db.users.find((item) => item.id === userApprovalMatch[1]);
       if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
       user.approvalStatus = body.approvalStatus || "approved";
+      if (user.approvalStatus === "blocked") {
+        user.blockDuration = body.limitDuration || "week1";
+        user.blockedAt = nowIso();
+        user.blockedUntil = blockUntilForDuration(user.blockDuration);
+      } else {
+        user.blockDuration = "";
+        user.blockedAt = "";
+        user.blockedUntil = "";
+      }
       user.updatedAt = nowIso();
-      audit(db, admin, "user.approval_changed", user.id, { approvalStatus: user.approvalStatus });
+      audit(db, admin, "user.approval_changed", user.id, { approvalStatus: user.approvalStatus, blockDuration: user.blockDuration || "" });
       writeDb(db);
       sendOk(res, publicUser(user));
       return;

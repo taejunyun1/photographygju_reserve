@@ -1150,6 +1150,20 @@ th {
   background: var(--surface-low);
 }
 
+.table-sort {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.table-sort.active {
+  color: var(--primary);
+}
+
 tr:last-child td {
   border-bottom: 0;
 }
@@ -1164,6 +1178,31 @@ tr:last-child td {
   min-height: 32px;
   padding: 6px 8px;
   font-size: 12px;
+}
+
+.limit-actions {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.compact-select {
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.status-cell {
+  display: grid;
+  gap: 5px;
+}
+
+.status-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 800;
 }
 
 .selection-sheet {

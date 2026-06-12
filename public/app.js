@@ -20,6 +20,10 @@ const state = {
   adminReservationTab: "equipment",
   adminEquipmentTab: "department",
   adminEquipmentCategoryTab: "all",
+  adminUserSort: {
+    field: "approvalStatus",
+    direction: "asc"
+  },
   csvPreviewRows: [],
   myReservations: [],
   adminUsers: [],
@@ -93,6 +97,13 @@ const weekdayIndex = {
   saturday: 6
 };
 
+const userLimitOptions = {
+  week1: "1주일",
+  week2: "2주일",
+  month1: "1달",
+  semester: "1학기"
+};
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -104,6 +115,44 @@ function escapeHtml(value) {
 
 function tag(value, color = "") {
   return `<span class="tag ${color || statusColor[value] || "gray"}">${escapeHtml(statusLabel[value] || value)}</span>`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function userStatusCell(user) {
+  const blockedUntil = user.approvalStatus === "blocked" && user.blockedUntil ? `<small class="status-note">제한 종료 ${escapeHtml(formatDateTime(user.blockedUntil))}</small>` : "";
+  return `<div class="status-cell">${tag(user.approvalStatus)}${blockedUntil}</div>`;
+}
+
+function userSortValue(user, field) {
+  if (field === "name") return user.name || "";
+  if (field === "studentId") return user.studentId || "";
+  if (field === "studentStatus") return user.studentStatus || "";
+  if (field === "approvalStatus") return statusLabel[user.approvalStatus] || user.approvalStatus || "";
+  return user[field] || "";
+}
+
+function sortedAdminUsers() {
+  const { field, direction } = state.adminUserSort;
+  const multiplier = direction === "desc" ? -1 : 1;
+  return state.adminUsers
+    .filter((user) => user.role !== "admin")
+    .sort((a, b) => {
+      const aValue = String(userSortValue(a, field)).toLocaleLowerCase();
+      const bValue = String(userSortValue(b, field)).toLocaleLowerCase();
+      return aValue.localeCompare(bValue, "ko") * multiplier;
+    });
+}
+
+function userSortButton(field, label) {
+  const active = state.adminUserSort.field === field;
+  const direction = active ? state.adminUserSort.direction : "";
+  return `<button class="table-sort ${active ? "active" : ""}" data-user-sort="${field}">${label}${active ? (direction === "asc" ? " ↑" : " ↓") : ""}</button>`;
 }
 
 function toast(message) {
@@ -860,23 +909,30 @@ function adminDashboardView() {
 function adminUsersView() {
   return `
     <section class="grid">
-      ${adminGuide("학생 승인 사용 가이드", "가입 신청 학생의 이름, 학번, 연락처를 확인한 뒤 바로 승인/반려/제한을 누릅니다. 승인된 학생만 예약할 수 있습니다.")}
+      ${adminGuide("학생 승인 사용 가이드", "가입 신청 학생의 이름, 학번, 연락처를 확인한 뒤 바로 승인/반려/제한을 누릅니다. 제한은 1주일, 2주일, 1달, 1학기 중 선택할 수 있고 제한 기간 동안 학생은 예약할 수 없습니다.")}
       <div class="table-wrap">
         <table>
-          <thead><tr><th>이름</th><th>학번</th><th>신분</th><th>연락처</th><th>상태</th><th>작업</th></tr></thead>
+          <thead><tr><th>${userSortButton("name", "이름")}</th><th>${userSortButton("studentId", "학번")}</th><th>${userSortButton("studentStatus", "신분")}</th><th>연락처</th><th>${userSortButton("approvalStatus", "상태")}</th><th>작업</th></tr></thead>
           <tbody>
-            ${state.adminUsers.filter((user) => user.role !== "admin").map((user) => `
+            ${sortedAdminUsers().map((user) => `
               <tr>
                 <td><strong>${escapeHtml(user.name)}</strong><br><span class="muted">${escapeHtml(user.email || "")}</span></td>
                 <td>${escapeHtml(user.studentId || "-")}</td>
                 <td>${escapeHtml(user.studentStatus)}</td>
                 <td>${escapeHtml(user.phone)}</td>
-                <td>${tag(user.approvalStatus)}</td>
-                <td><div class="row-actions">
-                  <button class="button primary" data-user-approval="${user.id}" data-status="approved">승인</button>
-                  <button class="button danger" data-user-approval="${user.id}" data-status="rejected">반려</button>
-                  <button class="button" data-user-approval="${user.id}" data-status="blocked">제한</button>
-                </div></td>
+                <td>${userStatusCell(user)}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="button primary" data-user-approval="${user.id}" data-status="approved">승인</button>
+                    <button class="button danger" data-user-approval="${user.id}" data-status="rejected">반려</button>
+                  </div>
+                  <div class="limit-actions">
+                    <select class="select compact-select" data-user-limit-duration="${user.id}">
+                      ${Object.entries(userLimitOptions).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}
+                    </select>
+                    <button class="button" data-user-approval="${user.id}" data-status="blocked">제한</button>
+                  </div>
+                </td>
               </tr>`).join("")}
           </tbody>
         </table>
@@ -1407,8 +1463,21 @@ document.addEventListener("click", async (event) => {
       await loadBootstrap();
       toast("차단 일정을 삭제했습니다.");
     }
+    if (target.dataset.userSort) {
+      const field = target.dataset.userSort;
+      state.adminUserSort = {
+        field,
+        direction: state.adminUserSort.field === field && state.adminUserSort.direction === "asc" ? "desc" : "asc"
+      };
+      render();
+      return;
+    }
     if (target.dataset.userApproval) {
-      await api(`/api/admin/users/${target.dataset.userApproval}/approval`, { method: "PATCH", body: { approvalStatus: target.dataset.status } });
+      const body = { approvalStatus: target.dataset.status };
+      if (target.dataset.status === "blocked") {
+        body.limitDuration = document.querySelector(`[data-user-limit-duration="${target.dataset.userApproval}"]`)?.value || "week1";
+      }
+      await api(`/api/admin/users/${target.dataset.userApproval}/approval`, { method: "PATCH", body });
       await loadAdminData();
       toast("사용자 상태를 변경했습니다.");
     }
