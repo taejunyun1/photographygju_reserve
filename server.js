@@ -800,6 +800,24 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
+    if (routeKey(method, pathname) === "PATCH /api/me/password") {
+      const user = requireUser(req, db);
+      const body = await parseBody(req);
+      assertRequired(body, ["currentPassword", "newPassword"]);
+      if (!verifyPassword(body.currentPassword, user.passwordHash)) {
+        throw Object.assign(new Error("현재 비밀번호가 올바르지 않습니다."), { status: 401 });
+      }
+      if (String(body.newPassword).length < 4) {
+        throw Object.assign(new Error("새 비밀번호는 4자 이상 입력하세요."), { status: 400 });
+      }
+      user.passwordHash = hashPassword(body.newPassword);
+      user.updatedAt = nowIso();
+      audit(db, user, "user.password_changed", user.id);
+      writeDb(db);
+      sendOk(res, { user: publicUser(user) });
+      return;
+    }
+
     if (routeKey(method, pathname) === "POST /api/auth/signup") {
       const body = await parseBody(req);
       assertRequired(body, ["name", "studentStatus", "phone", "email", "password"]);

@@ -819,6 +819,23 @@ export class GjuReserveDb extends DurableObject {
         return ok({ user: publicUser(user) });
       }
 
+      if (routeKey(method, pathname) === "PATCH /api/me/password") {
+        const user = requireUser(request, db);
+        const body = await parseBody(request);
+        assertRequired(body, ["currentPassword", "newPassword"]);
+        if (!(await verifyPassword(body.currentPassword, user.passwordHash))) {
+          throw Object.assign(new Error("현재 비밀번호가 올바르지 않습니다."), { status: 401 });
+        }
+        if (String(body.newPassword).length < 4) {
+          throw Object.assign(new Error("새 비밀번호는 4자 이상 입력하세요."), { status: 400 });
+        }
+        user.passwordHash = await hashPassword(body.newPassword);
+        user.updatedAt = nowIso();
+        audit(db, user, "user.password_changed", user.id);
+        await this.saveDb();
+        return ok({ user: publicUser(user) });
+      }
+
       if (routeKey(method, pathname) === "POST /api/auth/signup") {
         const body = await parseBody(request);
         assertRequired(body, ["name", "studentStatus", "phone", "email", "password"]);

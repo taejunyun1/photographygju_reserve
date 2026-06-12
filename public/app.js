@@ -14,6 +14,7 @@ const state = {
     darkroom: "",
     print: ""
   },
+  activeNoticeId: "",
   activeReportReservationId: "",
   selectedEquipmentItemIds: [],
   equipmentCategoryFilter: "Body",
@@ -225,6 +226,19 @@ function adminGuide(title, body) {
   `;
 }
 
+function sortedNotices(notices = []) {
+  return [...notices].sort((a, b) => {
+    if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  });
+}
+
+function noticePreview(body = "") {
+  const compact = String(body).replace(/\s+/g, " ").trim();
+  if (compact.length <= 74) return compact;
+  return `${compact.slice(0, 74)}...`;
+}
+
 function arrayIncludesAny(values, candidates) {
   const source = new Set(Array.isArray(values) ? values : []);
   return candidates.some((item) => source.has(item));
@@ -433,6 +447,7 @@ async function logout() {
   state.user = null;
   state.myReservations = [];
   state.lectures = [];
+  state.activeNoticeId = "";
   localStorage.removeItem("gju_token");
   render();
 }
@@ -528,6 +543,7 @@ function studentShell() {
     ["notices", "공지"],
     ["my", "마이"]
   ];
+  const userStatus = statusLabel[state.user.approvalStatus] || state.user.approvalStatus || "-";
   return `
     <main class="student-shell">
       <header class="top-appbar">
@@ -541,13 +557,18 @@ function studentShell() {
         <nav class="desktop-nav">
           ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
         </nav>
-        <button class="button ghost compact" data-action="logout">나가기</button>
+        <div class="student-appbar-actions">
+          <div class="student-status-chip" title="${escapeHtml(`${state.user.name} · ${state.user.studentStatus} · ${userStatus}`)}">
+            <strong>${escapeHtml(state.user.name)}</strong>
+            <span>${escapeHtml(state.user.studentStatus)} · ${escapeHtml(userStatus)}</span>
+          </div>
+          <button class="button ghost compact" data-action="logout">나가기</button>
+        </div>
       </header>
       <section class="mobile-top">
         <div>
           <p class="eyebrow">Centralized Booking</p>
           <h1>${title}</h1>
-          <p class="muted">${escapeHtml(state.user.name)} · ${escapeHtml(state.user.studentStatus)} · ${tag(state.user.approvalStatus)}</p>
         </div>
       </section>
       ${studentContent()}
@@ -618,18 +639,37 @@ function homeLecturesCard(lectures) {
   `;
 }
 
+function homeNoticeList(notices) {
+  if (!notices.length) return "";
+  return `
+    <section class="card notice notice-top-card">
+      <div class="form-head">
+        <div>
+          <h2 class="card-title">공지사항</h2>
+          <p class="muted">중요 공지를 먼저 확인하세요.</p>
+        </div>
+        <button class="button compact" data-student-view="notices">전체 보기</button>
+      </div>
+      <div class="notice-top-list">
+        ${notices.map((notice) => noticeCard(notice, { compact: true })).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function homeView() {
   const pending = state.user.approvalStatus !== "approved";
   const next = state.myReservations
     .filter((item) => !["cancelled", "admin_cancelled", "rejected"].includes(item.status))
     .sort((a, b) => String(a.fields.reservedDate).localeCompare(String(b.fields.reservedDate)))[0];
-  const pinned = (state.bootstrap.notices || []).filter((item) => item.pinned).slice(0, 2);
+  const homeNotices = sortedNotices(state.bootstrap.notices || []).slice(0, 3);
   const recruitingLectures = (state.lectures || [])
     .filter((lecture) => lecture.status === "모집중")
     .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")))
     .slice(0, 3);
   return `
     <section class="grid">
+      ${homeNoticeList(homeNotices)}
       ${pending ? `<div class="card notice"><h2 class="card-title">승인 대기</h2><p class="muted">학과 관리자 승인 후 예약할 수 있습니다. 반려 시 학과 관리자에게 연락하세요.</p></div>` : ""}
       <div class="facility-grid">
         ${facilityCard("equipment", "기자재", "카메라, 렌즈, 조명, 음향 장비", "EQ", "APPROVAL", "yellow")}
@@ -642,7 +682,6 @@ function homeView() {
         ${next ? reservationCard(next) : `<p class="empty">예정된 예약이 없습니다.</p>`}
       </div>
       ${homeLecturesCard(recruitingLectures)}
-      ${pinned.map((notice) => noticeCard(notice)).join("")}
     </section>
   `;
 }
@@ -966,19 +1005,29 @@ function lectureCard(lecture) {
   `;
 }
 
-function noticeCard(notice) {
+function noticeCard(notice, options = {}) {
+  const preview = options.compact ? noticePreview(notice.body) : noticePreview(notice.body);
   return `
-    <article class="card notice">
+    <button class="${options.compact ? "notice-strip-row" : "card notice notice-card-button"}" type="button" data-notice-open="${notice.id}">
       <div class="chips"><span class="tag blue">${escapeHtml(notice.category)}</span>${notice.pinned ? `<span class="tag yellow">고정</span>` : ""}</div>
       <h3 class="card-title card-title-spaced">${escapeHtml(notice.title)}</h3>
-      <p class="muted">${escapeHtml(notice.body)}</p>
-      ${notice.link ? `<a class="button" href="${escapeHtml(notice.link)}" target="_blank" rel="noreferrer">신청 링크</a>` : ""}
-    </article>
+      <p class="muted notice-preview">${escapeHtml(preview)}</p>
+      <span class="notice-more">자세히 보기</span>
+    </button>
   `;
 }
 
 function noticesView() {
-  return `<section class="grid">${state.bootstrap.notices.map(noticeCard).join("")}</section>`;
+  const notices = sortedNotices(state.bootstrap.notices || []);
+  return `
+    <section class="grid">
+      <div class="card">
+        <h2 class="card-title">공지사항</h2>
+        <p class="muted">공지를 누르면 전체 내용을 확인할 수 있습니다.</p>
+      </div>
+      ${notices.map((notice) => noticeCard(notice)).join("")}
+    </section>
+  `;
 }
 
 function myPageView() {
@@ -992,11 +1041,50 @@ function myPageView() {
           <div class="prop"><span class="key">학년</span><span>${escapeHtml(state.user.grade || "-")}</span></div>
           <div class="prop"><span class="key">신분</span><span>${escapeHtml(state.user.studentStatus)}</span></div>
           <div class="prop"><span class="key">연락처</span><span>${escapeHtml(state.user.phone)}</span></div>
-          <div class="prop"><span class="key">이메일</span><span>${escapeHtml(state.user.email)}</span></div>
         </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">비밀번호 변경</h2>
+        <form class="report-form" data-form="password-change">
+          <div class="field"><label>현재 비밀번호</label><input class="input" name="currentPassword" type="password" autocomplete="current-password" required /></div>
+          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <button class="button primary full" type="submit">비밀번호 변경</button>
+        </form>
       </div>
       <button class="button danger full" data-action="logout">로그아웃</button>
     </section>
+  `;
+}
+
+function activeNotice() {
+  if (!state.activeNoticeId) return null;
+  const notices = [
+    ...(state.bootstrap?.notices || []),
+    ...(state.adminNotices || [])
+  ];
+  return notices.find((notice) => notice.id === state.activeNoticeId) || null;
+}
+
+function noticeBottomSheet() {
+  const notice = activeNotice();
+  if (!notice) return "";
+  return `
+    <div class="bottom-sheet-layer" role="presentation">
+      <button class="sheet-backdrop" type="button" data-notice-close aria-label="공지 닫기"></button>
+      <section class="bottom-sheet" role="dialog" aria-modal="true" aria-label="공지사항 상세">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="chips"><span class="tag blue">${escapeHtml(notice.category)}</span>${notice.pinned ? `<span class="tag yellow">고정</span>` : ""}</div>
+            <h2 class="card-title card-title-spaced">${escapeHtml(notice.title)}</h2>
+          </div>
+          <button class="button ghost compact" type="button" data-notice-close>닫기</button>
+        </div>
+        <p class="notice-body">${escapeHtml(notice.body)}</p>
+        ${notice.link ? `<a class="button primary full" href="${escapeHtml(notice.link)}" target="_blank" rel="noreferrer">신청 링크 열기</a>` : ""}
+      </section>
+    </div>
   `;
 }
 
@@ -1515,7 +1603,7 @@ function render() {
     return;
   }
   const body = !state.user ? authView() : state.user.role === "admin" ? adminShell() : studentShell();
-  $app.innerHTML = `<div class="app">${body}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
+  $app.innerHTML = `<div class="app">${body}${noticeBottomSheet()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
 }
 
 function parseCsv(text) {
@@ -1642,6 +1730,22 @@ async function openReport(reservationId) {
   render();
 }
 
+async function changePassword(form) {
+  const data = formData(form);
+  if (data.newPassword !== data.confirmPassword) {
+    throw new Error("새 비밀번호 확인이 일치하지 않습니다.");
+  }
+  await api("/api/me/password", {
+    method: "PATCH",
+    body: {
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    }
+  });
+  form.reset();
+  toast("비밀번호가 변경되었습니다.");
+}
+
 document.addEventListener("click", async (event) => {
   const target = event.target.closest("button, a");
   if (!target) return;
@@ -1649,6 +1753,16 @@ document.addEventListener("click", async (event) => {
     if (target.dataset.authMode) {
       state.authMode = target.dataset.authMode;
       render();
+    }
+    if (target.dataset.noticeOpen) {
+      state.activeNoticeId = target.dataset.noticeOpen;
+      render();
+      return;
+    }
+    if (target.dataset.noticeClose !== undefined) {
+      state.activeNoticeId = "";
+      render();
+      return;
     }
     if (target.dataset.calendarMonth) {
       state.calendarMonth = target.dataset.calendarMonth;
@@ -1817,6 +1931,10 @@ document.addEventListener("submit", async (event) => {
   try {
     if (form.dataset.form === "login") await login(form);
     if (form.dataset.form === "signup") await signup(form);
+    if (form.dataset.form === "password-change") {
+      await changePassword(form);
+      return;
+    }
     if (form.dataset.form === "reservation") await submitReservation(form);
     if (form.dataset.form === "equipment-add") {
       const data = formData(form);
