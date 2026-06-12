@@ -21,7 +21,7 @@ ID: admin
 PW: admin
 ```
 
-Local development uses `server.js` and a file DB. Production uses the Cloudflare Worker in `worker.mjs`.
+Local development uses `server.mjs` and a file DB; production uses the Cloudflare Worker in `worker.mjs`. Both are thin adapters over the shared application core in `core.mjs` (routes, validation, data model), so dev and production behave identically.
 
 ## Current Features
 

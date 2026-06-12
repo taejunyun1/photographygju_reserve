@@ -505,7 +505,7 @@ function authView() {
                 </select></div>
                 <div class="field"><label>연락처</label><input class="input" name="phone" inputmode="tel" required /></div>
                 <div class="field"><label>이메일</label><input class="input" name="email" type="email" required /></div>
-                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" minlength="4" required /></div>
+                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" minlength="8" required /></div>
                 <button class="button primary full" type="submit">가입 신청</button>
                 <p class="muted">승인 전에도 공지는 볼 수 있지만 예약은 불가합니다.</p>
               </form>`
@@ -1046,8 +1046,8 @@ function myPageView() {
         <h2 class="card-title">비밀번호 변경</h2>
         <form class="report-form" data-form="password-change">
           <div class="field"><label>현재 비밀번호</label><input class="input" name="currentPassword" type="password" autocomplete="current-password" required /></div>
-          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
-          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="8" required /></div>
+          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></div>
           <button class="button primary full" type="submit">비밀번호 변경</button>
         </form>
       </div>
@@ -1176,8 +1176,8 @@ function adminAccountView() {
         <h2 class="card-title">비밀번호 변경</h2>
         <form class="report-form" data-form="password-change">
           <div class="field"><label>현재 비밀번호</label><input class="input" name="currentPassword" type="password" autocomplete="current-password" required /></div>
-          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
-          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="8" required /></div>
+          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></div>
           <button class="button primary full" type="submit">비밀번호 변경</button>
         </form>
       </div>

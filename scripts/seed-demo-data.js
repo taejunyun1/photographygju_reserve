@@ -9,9 +9,10 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+// Must match core.mjs hashPassword (PBKDF2-SHA256, 100000 iters, pbkdf2: prefix).
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
-  const hash = crypto.pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
-  return `${salt}:${hash}`;
+  const hash = crypto.pbkdf2Sync(password, salt, 100000, 32, "sha256").toString("hex");
+  return `pbkdf2:${salt}:${hash}`;
 }
 
 function upsertUser(db, user, password) {

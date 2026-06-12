@@ -4,11 +4,11 @@
   "private": true,
   "description": "GJU-reserve mobile-first reservation product prototype",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
     "build": "node scripts/build-static.js",
     "seed:demo": "node scripts/seed-demo-data.js",
-    "check": "node --check server.js && node --check worker.mjs",
+    "check": "node --check core.mjs && node --check server.mjs && node --check worker.mjs",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev",
     "upload:dothome": "bash scripts/upload-dothome.sh"

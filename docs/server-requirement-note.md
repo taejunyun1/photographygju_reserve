@@ -65,7 +65,7 @@ only as a static shell while API calls go to a Cloudflare Worker subdomain.
 
 ## Current Local Dev Server
 
-The current `server.js` is a development backend:
+The current `server.mjs` is a development backend (a thin adapter over `core.mjs`):
 
 - serves `public/`
 - stores data in `data/db.json`
