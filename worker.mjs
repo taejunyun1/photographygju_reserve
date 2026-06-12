@@ -2,6 +2,10 @@ import { DurableObject } from "cloudflare:workers";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 const PASSWORD_ITERATIONS = 100000;
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LOCK_MS = 5 * 60 * 1000;
+const loginAttempts = new Map();
 const LIMIT_DURATION_DAYS = {
   week1: 7,
   week2: 14,
@@ -772,6 +776,37 @@ function audit(db, actor, action, targetId, detail = {}) {
   db.auditLogs.push({ id: id("audit"), actorId: actor ? actor.id : null, action, targetId, detail, createdAt: nowIso() });
 }
 
+function loginThrottleKey(loginId) {
+  return String(loginId || "").toLowerCase().slice(0, 120);
+}
+
+function assertLoginAllowed(loginId) {
+  const rec = loginAttempts.get(loginThrottleKey(loginId));
+  if (rec && rec.lockedUntil > Date.now()) {
+    const seconds = Math.ceil((rec.lockedUntil - Date.now()) / 1000);
+    throw Object.assign(new Error(`로그인 시도가 너무 많습니다. ${seconds}초 후 다시 시도하세요.`), { status: 429 });
+  }
+}
+
+function registerLoginFailure(loginId) {
+  if (loginAttempts.size > 10000) loginAttempts.clear();
+  const key = loginThrottleKey(loginId);
+  const now = Date.now();
+  const rec = loginAttempts.get(key) || { count: 0, first: now, lockedUntil: 0 };
+  if (now - rec.first > LOGIN_WINDOW_MS) {
+    rec.count = 0;
+    rec.first = now;
+    rec.lockedUntil = 0;
+  }
+  rec.count += 1;
+  if (rec.count >= LOGIN_MAX_ATTEMPTS) rec.lockedUntil = now + LOGIN_LOCK_MS;
+  loginAttempts.set(key, rec);
+}
+
+function clearLoginFailures(loginId) {
+  loginAttempts.delete(loginThrottleKey(loginId));
+}
+
 function routeKey(method, pathname) {
   return `${method} ${pathname}`;
 }
@@ -906,11 +941,16 @@ export class GjuReserveDb extends DurableObject {
       if (routeKey(method, pathname) === "POST /api/auth/login") {
         const body = await parseBody(request);
         assertRequired(body, ["loginId", "password"]);
+        assertLoginAllowed(body.loginId);
         const user = db.users.find((item) => {
           if (body.loginId === "admin" && item.username === "admin") return true;
           return item.email === body.loginId || item.studentId === body.loginId || item.username === body.loginId;
         });
-        if (!user || !(await verifyPassword(body.password, user.passwordHash))) throw Object.assign(new Error("아이디 또는 비밀번호가 올바르지 않습니다."), { status: 401 });
+        if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+          registerLoginFailure(body.loginId);
+          throw Object.assign(new Error("아이디 또는 비밀번호가 올바르지 않습니다."), { status: 401 });
+        }
+        clearLoginFailures(body.loginId);
         const token = randomHex(32);
         db.sessions.push({ id: id("session"), token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(), createdAt: nowIso() });
         await this.saveDb();
