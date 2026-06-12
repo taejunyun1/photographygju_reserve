@@ -562,6 +562,42 @@ function withReservationDetails(db, reservation) {
   };
 }
 
+function publicReservationSummary(db, reservation) {
+  const user = db.users.find((item) => item.id === reservation.userId);
+  const equipmentItems = reservation.type === "equipment"
+    ? (reservation.fields.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
+    : [];
+  const fields = reservation.fields || {};
+  return {
+    id: reservation.id,
+    type: reservation.type,
+    status: reservation.status,
+    userId: reservation.userId,
+    userName: user?.name || "예약자",
+    userStatus: user?.studentStatus || "",
+    fields: {
+      reservedDate: fields.reservedDate || "",
+      period: fields.period || "",
+      rentalTime: fields.rentalTime || "",
+      returnTime: fields.returnTime || "",
+      timeSlots: fields.timeSlots || [],
+      studioSpaces: fields.studioSpaces || [],
+      studioSpace: fields.studioSpace || "",
+      processTypes: fields.processTypes || [],
+      participantCount: fields.participantCount || "",
+      printType: fields.printType || "",
+      startTime: fields.startTime || "",
+      endTime: fields.endTime || ""
+    },
+    equipmentItems: equipmentItems.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      category: item.category
+    }))
+  };
+}
+
 function formatSlackMessage(db, event, reservation) {
   const user = db.users.find((item) => item.id === reservation.userId) || {};
   const title = {
@@ -669,7 +705,10 @@ async function handleApi(req, res, pathname) {
         settings: db.settings,
         darkroomChemicals: db.darkroomChemicals,
         equipment: db.equipment.filter((item) => item.active),
-        notices: db.notices.filter((notice) => notice.status === "published")
+        notices: db.notices.filter((notice) => notice.status === "published"),
+        reservations: db.reservations
+          .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
+          .map((reservation) => publicReservationSummary(db, reservation))
       });
       return;
     }

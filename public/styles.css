@@ -571,6 +571,38 @@ button {
   margin-bottom: 8px;
 }
 
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.legend-dot.other {
+  background: var(--green);
+}
+
+.legend-dot.blocked {
+  background: var(--red);
+}
+
 .calendar-weekdays span {
   color: var(--muted);
   text-align: center;
@@ -616,6 +648,14 @@ button {
   border-color: var(--primary);
 }
 
+.calendar-day.has-own {
+  box-shadow: inset 0 0 0 1px rgba(0, 63, 177, 0.3);
+}
+
+.calendar-day.has-other {
+  border-color: rgba(0, 111, 75, 0.35);
+}
+
 .calendar-day.selected {
   background: var(--primary);
   border-color: var(--primary);
@@ -623,6 +663,44 @@ button {
 }
 
 .calendar-day.selected small {
+  color: #fff;
+}
+
+.calendar-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-end;
+  min-height: 20px;
+}
+
+.calendar-marker {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 6px;
+  font-size: 10px;
+  line-height: 13px;
+  font-weight: 900;
+}
+
+.calendar-marker.mine {
+  background: var(--primary-container);
+  color: var(--primary);
+}
+
+.calendar-marker.other {
+  background: #d9fbe8;
+  color: var(--green);
+}
+
+.calendar-marker.blocked {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.calendar-day.selected .calendar-marker {
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
@@ -644,6 +722,68 @@ button {
 
 .calendar-day.blocked small {
   color: var(--red);
+}
+
+.calendar-day.selected.blocked small {
+  color: #fff;
+}
+
+.calendar-reservations {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.empty-calendar-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.calendar-reservation-row {
+  display: grid;
+  grid-template-columns: auto minmax(64px, 0.35fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--surface-lowest);
+  padding: 9px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.calendar-reservation-row span {
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.calendar-reservation-row.mine span {
+  background: var(--primary-container);
+  color: var(--primary);
+}
+
+.calendar-reservation-row.other span {
+  background: #d9fbe8;
+  color: var(--green);
+}
+
+.calendar-reservation-row strong,
+.calendar-reservation-row em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.calendar-reservation-row strong {
+  font-style: normal;
+  font-weight: 900;
+}
+
+.calendar-reservation-row em {
+  color: var(--muted);
+  font-style: normal;
 }
 
 .control-grid {
@@ -1322,6 +1462,24 @@ tr:last-child td {
 
   .calendar-day small {
     display: none;
+  }
+
+  .calendar-day .calendar-marker {
+    display: inline-flex;
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .calendar-markers {
+    gap: 3px;
+  }
+
+  .calendar-reservation-row {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .prop {

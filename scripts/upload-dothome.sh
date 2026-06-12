@@ -3,8 +3,12 @@ set -euo pipefail
 
 : "${DOTHOME_FTP_HOST:?Set DOTHOME_FTP_HOST}"
 : "${DOTHOME_FTP_USER:?Set DOTHOME_FTP_USER}"
-: "${DOTHOME_FTP_PASSWORD:?Set DOTHOME_FTP_PASSWORD}"
 : "${DOTHOME_REMOTE_DIR:=/hosting/photographygju/html}"
+
+if [[ -z "${DOTHOME_FTP_PASSWORD:-}" ]]; then
+  read -r -s -p "Dothome FTP password: " DOTHOME_FTP_PASSWORD
+  echo
+fi
 
 npm run build
 

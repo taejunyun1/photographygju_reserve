@@ -191,6 +191,53 @@ function reservationDate(reservation) {
   return reservation?.fields?.reservedDate || "";
 }
 
+function sharedReservations(type, key) {
+  return (state.bootstrap?.reservations || [])
+    .filter((item) => item.type === type)
+    .filter((item) => reservationDate(item) === key);
+}
+
+function isMineReservation(reservation) {
+  return Boolean(state.user?.id && reservation.userId === state.user.id);
+}
+
+function calendarReservationMeta(reservation) {
+  const f = reservation.fields || {};
+  if (reservation.type === "equipment") {
+    const items = (reservation.equipmentItems || []).map((item) => item.code || item.name).join(", ");
+    return `${f.rentalTime || "-"} 대여 · ${items || "기자재"}`;
+  }
+  if (reservation.type === "studio") {
+    return `${(f.timeSlots || []).join(", ") || "-"} · ${(f.studioSpaces || [f.studioSpace]).filter(Boolean).join(", ") || "-"}`;
+  }
+  if (reservation.type === "darkroom") {
+    return `${(f.timeSlots || []).join(", ") || "-"} · ${(f.processTypes || []).join(", ") || "작업"}`;
+  }
+  return `${f.startTime || "-"}-${f.endTime || "-"} · ${f.printType || "출력"}`;
+}
+
+function calendarDayDetails(type, selected) {
+  if (!selected) return "";
+  const reservations = sharedReservations(type, selected);
+  if (!reservations.length) {
+    return `<div class="calendar-reservations empty-calendar-note">선택한 날짜에 공유된 ${typeLabel[type]} 예약이 없습니다.</div>`;
+  }
+  return `
+    <div class="calendar-reservations">
+      ${reservations.map((reservation) => {
+        const mine = isMineReservation(reservation);
+        return `
+          <div class="calendar-reservation-row ${mine ? "mine" : "other"}">
+            <span>${mine ? "내 예약" : "타인 예약"}</span>
+            <strong>${escapeHtml(reservation.userName || "예약자")}</strong>
+            <em>${escapeHtml(calendarReservationMeta(reservation))}</em>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function calendar(type) {
   const monthKey = state.calendarMonth || todayKey().slice(0, 7);
   state.calendarMonth = monthKey;
@@ -205,7 +252,9 @@ function calendar(type) {
     const day = new Date(start);
     day.setDate(start.getDate() + index);
     const key = dateKey(day);
-    const count = state.myReservations.filter((item) => reservationDate(item) === key).length;
+    const reservations = sharedReservations(type, key);
+    const ownCount = reservations.filter(isMineReservation).length;
+    const otherCount = reservations.length - ownCount;
     const blocked = blockedItemsForDate(state.bootstrap.settings.blockedSchedules || [], key).filter((item) => item.type === type);
     return {
       key,
@@ -213,7 +262,8 @@ function calendar(type) {
       currentMonth: day.getMonth() === month - 1,
       selected: key === selected,
       today: key === today,
-      count,
+      ownCount,
+      otherCount,
       blocked
     };
   });
@@ -235,16 +285,25 @@ function calendar(type) {
       <div class="calendar-weekdays">
         ${["일", "월", "화", "수", "목", "금", "토"].map((item) => `<span>${item}</span>`).join("")}
       </div>
+      <div class="calendar-legend">
+        <span><i class="legend-dot mine"></i>내 예약</span>
+        <span><i class="legend-dot other"></i>타인 예약</span>
+        <span><i class="legend-dot blocked"></i>차단</span>
+      </div>
       <div class="calendar-grid-large">
         ${days.map((day) => `
-          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
+          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
             <span>${day.day}</span>
-            ${day.count ? `<small>내 예약 ${day.count}</small>` : ""}
-            ${day.blocked.length ? `<small>수업 차단</small>` : ""}
+            <div class="calendar-markers">
+              ${day.ownCount ? `<small class="calendar-marker mine">내 ${day.ownCount}</small>` : ""}
+              ${day.otherCount ? `<small class="calendar-marker other">타인 ${day.otherCount}</small>` : ""}
+              ${day.blocked.length ? `<small class="calendar-marker blocked">차단</small>` : ""}
+            </div>
           </button>
         `).join("")}
       </div>
       <p class="selected-date">선택한 날짜: <strong data-calendar-selected>${selected || "날짜를 선택하세요"}</strong></p>
+      <div data-calendar-details>${calendarDayDetails(type, selected)}</div>
     </section>
   `;
 }
@@ -1226,6 +1285,7 @@ async function submitReservation(form) {
   state.reservationType = "";
   if (type === "equipment") state.selectedEquipmentItemIds = [];
   state.view = "mine";
+  await loadBootstrap();
   await loadMyReservations();
   toast(type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");
 }
@@ -1275,6 +1335,8 @@ document.addEventListener("click", async (event) => {
       if (input) input.value = target.dataset.calendarDay;
       const selectedLabel = widget?.querySelector("[data-calendar-selected]");
       if (selectedLabel) selectedLabel.textContent = target.dataset.calendarDay;
+      const details = widget?.querySelector("[data-calendar-details]");
+      if (details) details.innerHTML = calendarDayDetails(type, target.dataset.calendarDay);
       return;
     }
     if (target.dataset.action === "logout") await logout();
@@ -1315,6 +1377,7 @@ document.addEventListener("click", async (event) => {
     if (target.dataset.cancelRes) {
       if (!confirm("예약을 취소할까요?")) return;
       await api(`/api/reservations/${target.dataset.cancelRes}/cancel`, { method: "POST", body: { reason: "학생 취소" } });
+      await loadBootstrap();
       await loadMyReservations();
       toast("예약이 취소되었습니다.");
     }

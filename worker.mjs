@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+const PASSWORD_ITERATIONS = 100000;
 
 const defaultSettings = {
   appName: "GJU-reserve",
@@ -184,7 +185,7 @@ async function hashPassword(password, salt = randomHex(16)) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: 120000 },
+    { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: PASSWORD_ITERATIONS },
     key,
     256
   );
@@ -574,6 +575,42 @@ function withReservationDetails(db, reservation) {
   return { ...reservation, user: user ? publicUser(user) : null, equipmentItems };
 }
 
+function publicReservationSummary(db, reservation) {
+  const user = db.users.find((item) => item.id === reservation.userId);
+  const equipmentItems = reservation.type === "equipment"
+    ? (reservation.fields.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
+    : [];
+  const fields = reservation.fields || {};
+  return {
+    id: reservation.id,
+    type: reservation.type,
+    status: reservation.status,
+    userId: reservation.userId,
+    userName: user?.name || "예약자",
+    userStatus: user?.studentStatus || "",
+    fields: {
+      reservedDate: fields.reservedDate || "",
+      period: fields.period || "",
+      rentalTime: fields.rentalTime || "",
+      returnTime: fields.returnTime || "",
+      timeSlots: fields.timeSlots || [],
+      studioSpaces: fields.studioSpaces || [],
+      studioSpace: fields.studioSpace || "",
+      processTypes: fields.processTypes || [],
+      participantCount: fields.participantCount || "",
+      printType: fields.printType || "",
+      startTime: fields.startTime || "",
+      endTime: fields.endTime || ""
+    },
+    equipmentItems: equipmentItems.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      category: item.category
+    }))
+  };
+}
+
 function formatSlackMessage(db, event, reservation) {
   const user = db.users.find((item) => item.id === reservation.userId) || {};
   const title = {
@@ -693,7 +730,10 @@ export class GjuReserveDb extends DurableObject {
           settings: db.settings,
           darkroomChemicals: db.darkroomChemicals,
           equipment: db.equipment.filter((item) => item.active),
-          notices: db.notices.filter((notice) => notice.status === "published")
+          notices: db.notices.filter((notice) => notice.status === "published"),
+          reservations: db.reservations
+            .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
+            .map((reservation) => publicReservationSummary(db, reservation))
         });
       }
 
