@@ -1,0 +1,5 @@
+facility,source,category,name,brand,model,quantity,code_prefix,reservable,inquiry_only,status,notes
+사진영상미디어학과 기자재실,department,Body,소니 A7M3,소니,A7M3,3,CAM-SONY-A7M3,true,false,available,
+사진영상미디어학과 기자재실,department,Lens,소니 24-70GM,소니,24-70GM,1,LEN-SONY-2470GM,true,false,available,
+사진영상미디어학과 기자재실,department,Lighting,프로포토 B10,프로포토,B10,3,LGT-PROFOTO-B10,true,false,available,
+판타지랩,fantasy_lab,Drone,DJI 매빅3,DJI,매빅3,1,DRN-DJI-MAVIC3,false,true,available,판타지랩 조교 문의
