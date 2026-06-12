@@ -294,8 +294,7 @@ button {
   bottom: 12px;
   transform: translateX(-50%);
   width: min(520px, calc(100% - 24px));
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
   gap: 4px;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--line);
@@ -304,6 +303,7 @@ button {
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
   z-index: 20;
+  overflow-x: auto;
 }
 
 .desktop-nav {
@@ -333,6 +333,7 @@ button {
 }
 
 .mobile-nav button {
+  flex: 0 0 64px;
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -513,6 +514,10 @@ button {
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow);
+}
+
+.span-two {
+  grid-column: 1 / -1;
 }
 
 .card-title {
@@ -1059,6 +1064,51 @@ button {
   border-left: 4px solid var(--primary);
 }
 
+.report-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.lecture-card {
+  display: grid;
+  gap: 10px;
+}
+
+.lecture-list-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 100px 110px 76px auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.lecture-list-row strong,
+.lecture-list-row em,
+.lecture-list-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lecture-list-row strong {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.lecture-list-row em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.lecture-desc {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: pre-wrap;
+}
+
 .empty {
   color: var(--muted);
   padding: 18px;
@@ -1519,6 +1569,10 @@ tr:last-child td {
   .calendar-reservation-row {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .lecture-list-row {
+    grid-template-columns: 1fr;
   }
 
   .prop {

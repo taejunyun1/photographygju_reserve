@@ -14,6 +14,7 @@ const state = {
     darkroom: "",
     print: ""
   },
+  activeReportReservationId: "",
   selectedEquipmentItemIds: [],
   equipmentCategoryFilter: "Body",
   adminView: "dashboard",
@@ -31,6 +32,8 @@ const state = {
   adminEquipment: [],
   adminReports: [],
   adminNotices: [],
+  lectures: [],
+  adminLectures: [],
   summary: null,
   toast: ""
 };
@@ -71,6 +74,8 @@ const typeLabel = {
   darkroom: "암실",
   print: "출력실"
 };
+
+const lectureStatusOptions = ["모집중", "진행완료", "취소"];
 
 const sourceLabel = {
   department: "극기관",
@@ -212,6 +217,14 @@ function adminGuide(title, body) {
 function arrayIncludesAny(values, candidates) {
   const source = new Set(Array.isArray(values) ? values : []);
   return candidates.some((item) => source.has(item));
+}
+
+function areSlotsConsecutive(selectedSlots, orderedSlots) {
+  const unique = [...new Set(selectedSlots)];
+  if (unique.length !== selectedSlots.length) return false;
+  const indices = unique.map((slot) => orderedSlots.indexOf(slot)).sort((a, b) => a - b);
+  if (indices.some((index) => index < 0)) return false;
+  return indices.every((index, position) => position === 0 || index === indices[position - 1] + 1);
 }
 
 function dateKey(date) {
@@ -375,7 +388,10 @@ async function init() {
   await loadBootstrap();
   await loadMe();
   if (state.user?.role === "admin") await loadAdminData();
-  if (state.user?.role === "student") await loadMyReservations();
+  if (state.user?.role === "student") {
+    await loadMyReservations();
+    await loadLectures();
+  }
   render();
 }
 
@@ -386,7 +402,10 @@ async function login(form) {
   state.user = result.user;
   localStorage.setItem("gju_token", state.token);
   if (state.user.role === "admin") await loadAdminData();
-  if (state.user.role === "student") await loadMyReservations();
+  if (state.user.role === "student") {
+    await loadMyReservations();
+    await loadLectures();
+  }
   toast("로그인되었습니다.");
 }
 
@@ -402,6 +421,7 @@ async function logout() {
   state.token = "";
   state.user = null;
   state.myReservations = [];
+  state.lectures = [];
   localStorage.removeItem("gju_token");
   render();
 }
@@ -410,14 +430,19 @@ async function loadMyReservations() {
   state.myReservations = await api("/api/reservations/my");
 }
 
+async function loadLectures() {
+  state.lectures = await api("/api/lectures");
+}
+
 async function loadAdminData() {
-  const [summary, users, reservations, equipment, reports, notices] = await Promise.all([
+  const [summary, users, reservations, equipment, reports, notices, lectures] = await Promise.all([
     api("/api/admin/summary"),
     api("/api/admin/users"),
     api("/api/admin/reservations"),
     api("/api/admin/equipment"),
     api("/api/admin/reports"),
-    api("/api/admin/notices")
+    api("/api/admin/notices"),
+    api("/api/admin/lectures")
   ]);
   Object.assign(state, {
     summary,
@@ -425,7 +450,8 @@ async function loadAdminData() {
     adminReservations: reservations,
     adminEquipment: equipment,
     adminReports: reports,
-    adminNotices: notices
+    adminNotices: notices,
+    adminLectures: lectures
   });
 }
 
@@ -477,9 +503,20 @@ function studentShell() {
     home: "홈",
     reserve: "예약",
     mine: "내 예약",
+    reports: "보고서",
+    lectures: "비교과 특강",
     notices: "공지",
     my: "마이"
   }[state.view] || "GJU-reserve";
+  const navItems = [
+    ["home", "홈"],
+    ["reserve", "예약"],
+    ["mine", "내 예약"],
+    ["reports", "보고서"],
+    ["lectures", "특강"],
+    ["notices", "공지"],
+    ["my", "마이"]
+  ];
   return `
     <main class="student-shell">
       <header class="top-appbar">
@@ -491,13 +528,7 @@ function studentShell() {
           </div>
         </div>
         <nav class="desktop-nav">
-          ${[
-            ["home", "홈"],
-            ["reserve", "예약"],
-            ["mine", "내 예약"],
-            ["notices", "공지"],
-            ["my", "마이"]
-          ].map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
+          ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
         </nav>
         <button class="button ghost compact" data-action="logout">나가기</button>
       </header>
@@ -510,13 +541,7 @@ function studentShell() {
       </section>
       ${studentContent()}
       <nav class="mobile-nav">
-        ${[
-          ["home", "홈"],
-          ["reserve", "예약"],
-          ["mine", "내 예약"],
-          ["notices", "공지"],
-          ["my", "마이"]
-        ].map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
+        ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
       </nav>
     </main>
   `;
@@ -525,6 +550,8 @@ function studentShell() {
 function studentContent() {
   if (state.view === "reserve") return reserveView();
   if (state.view === "mine") return myReservationsView();
+  if (state.view === "reports") return reportsView();
+  if (state.view === "lectures") return lecturesView();
   if (state.view === "notices") return noticesView();
   if (state.view === "my") return myPageView();
   return homeView();
@@ -700,7 +727,7 @@ function studioForm() {
           </div>
           <span class="tag green">자동 확정</span>
         </div>
-        <p class="muted">최대 3타임까지 선택 가능합니다. 사용 후 48시간 이내 보고서를 제출해야 합니다.</p>
+        <p class="muted">연속된 시간만 최대 3타임까지 선택 가능합니다. 사용 후 48시간 이내 보고서를 제출해야 합니다.</p>
         <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSlots.map((slot) => `<label class="choice-card compact-choice"><input type="checkbox" name="studioSlots" value="${slot}" /><span><strong>${slot}</strong></span></label>`).join("")}</div></div>
         <div class="field"><label>사용 공간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="studioSpaces" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>
         <div class="field"><label>사용 명단</label><input class="input" name="participants" placeholder="대표자 및 팀원" value="${escapeHtml(state.user.name)}" required /></div>
@@ -800,6 +827,97 @@ function myReservationsView() {
   return `<section class="grid">${state.myReservations.length ? state.myReservations.map(reservationCard).join("") : `<p class="empty">예약 내역이 없습니다.</p>`}</section>`;
 }
 
+function isReportDue(reservation) {
+  if (reservation.type !== "studio") return false;
+  if (reservation.fields?.reportStatus === "submitted") return false;
+  if (["cancelled", "admin_cancelled", "rejected"].includes(reservation.status)) return false;
+  return String(reservation.fields?.reservedDate || "") <= todayKey();
+}
+
+function reportsView() {
+  const pending = state.myReservations.filter(isReportDue);
+  const submitted = state.myReservations.filter((item) => item.type === "studio" && item.fields?.reportStatus === "submitted");
+  return `
+    <section class="grid">
+      <div class="card">
+        <h2 class="card-title">스튜디오 보고서</h2>
+        <p class="muted">스튜디오 사용 후 48시간 이내 작성합니다. 제출하면 Admin 보고서 화면에 바로 표시됩니다.</p>
+      </div>
+      ${pending.length ? pending.map(reportRequestCard).join("") : `<p class="empty">작성할 스튜디오 보고서가 없습니다.</p>`}
+      ${submitted.length ? `<div class="card"><h2 class="card-title">제출 완료</h2>${submitted.map((reservation) => `<p class="muted">${escapeHtml(reservation.fields.reservedDate)} · ${(reservation.fields.timeSlots || []).join(", ")} · 보고서 제출완료</p>`).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
+function reportRequestCard(reservation) {
+  const f = reservation.fields || {};
+  const active = state.activeReportReservationId === reservation.id;
+  return `
+    <article class="card report-card">
+      <div class="chips"><span class="tag blue">스튜디오</span><span class="tag yellow">보고서 필요</span></div>
+      <h3 class="card-title" style="margin-top:10px">${escapeHtml(f.reservedDate || "-")}</h3>
+      <p class="muted">${escapeHtml((f.timeSlots || []).join(", "))} · ${escapeHtml((f.studioSpaces || [f.studioSpace]).filter(Boolean).join(", "))}</p>
+      ${active ? studioReportForm(reservation) : `<button class="button primary" data-report-open="${reservation.id}">보고서 작성</button>`}
+    </article>
+  `;
+}
+
+function studioReportForm(reservation) {
+  const f = reservation.fields || {};
+  return `
+    <form class="report-form" data-form="studio-report" data-reservation-id="${reservation.id}">
+      <div class="field"><label>실제 사용 시간</label><input class="input" name="actualTime" value="${escapeHtml((f.timeSlots || []).join(", "))}" required /></div>
+      <div class="field"><label>실제 사용 인원</label><input class="input" name="participants" value="${escapeHtml(f.participants || state.user.name)}" required /></div>
+      <div class="field"><label>사용 장비</label><textarea class="textarea" name="usedEquipment" placeholder="사용한 조명/스탠드/배경지 등"></textarea></div>
+      <label class="field consent"><span><input type="checkbox" name="cleanupConfirmed" value="true" required /> 정리정돈을 완료했습니다.</span></label>
+      <label class="field consent"><span><input type="checkbox" name="damageFound" value="true" /> 파손 또는 이상이 있습니다.</span></label>
+      <div class="field"><label>파손/이상 내용</label><textarea class="textarea" name="damageDescription" placeholder="없으면 비워두세요."></textarea></div>
+      <div class="field"><label>비고</label><textarea class="textarea" name="notes"></textarea></div>
+      <div class="row-actions">
+        <button class="button primary" type="submit">보고서 제출</button>
+        <button class="button ghost" type="button" data-report-close>닫기</button>
+      </div>
+    </form>
+  `;
+}
+
+function lecturesView() {
+  return `
+    <section class="grid">
+      <div class="card">
+        <h2 class="card-title">비교과 특강</h2>
+        <p class="muted">모집중인 특강은 내부 신청으로 바로 접수할 수 있습니다.</p>
+      </div>
+      ${state.lectures.length ? state.lectures.map(lectureCard).join("") : `<p class="empty">등록된 비교과 특강이 없습니다.</p>`}
+    </section>
+  `;
+}
+
+function lectureCard(lecture) {
+  const canApply = lecture.status === "모집중" && !lecture.applied && state.user?.approvalStatus === "approved";
+  const count = Number(lecture.applicationCount || 0);
+  const capacity = Number(lecture.capacity || 0);
+  const countLabel = capacity ? `${count}/${capacity}` : `${count}`;
+  return `
+    <article class="card lecture-card">
+      <div class="lecture-list-row">
+        <span>${escapeHtml(lecture.lectureDate || "-")}</span>
+        <strong>${escapeHtml(lecture.title)}</strong>
+        <em>${escapeHtml(lecture.instructorName || "-")}</em>
+        <em>${escapeHtml(lecture.location || "-")}</em>
+        <span>${escapeHtml(countLabel)}</span>
+        ${tag(lecture.status || "모집중", lecture.status === "모집중" ? "green" : lecture.status === "취소" ? "red" : "gray")}
+      </div>
+      <p class="muted">${escapeHtml(lecture.time || "")}${lecture.targetGrades ? ` · 대상 ${escapeHtml(lecture.targetGrades)}` : ""}${lecture.professor ? ` · 담당 ${escapeHtml(lecture.professor)}` : ""}</p>
+      ${lecture.description ? `<p class="lecture-desc">${escapeHtml(lecture.description)}</p>` : ""}
+      ${lecture.notes ? `<p class="muted">비고: ${escapeHtml(lecture.notes)}</p>` : ""}
+      <div class="row-actions">
+        ${lecture.applied ? `<span class="tag blue">신청완료</span>` : canApply ? `<button class="button primary" data-lecture-apply="${lecture.id}">신청</button>` : ""}
+      </div>
+    </article>
+  `;
+}
+
 function noticeCard(notice) {
   return `
     <article class="card notice">
@@ -852,6 +970,7 @@ function adminShell() {
             ["reservations", "예약 관리"],
             ["equipment", "기자재"],
             ["reports", "보고서"],
+            ["lectures", "비교과 특강"],
             ["notices", "공지사항"],
             ["settings", "설정"]
           ].map(([key, label]) => `<button class="${state.adminView === key ? "active" : ""}" data-admin-view="${key}">${label}</button>`).join("")}
@@ -875,6 +994,7 @@ function adminTitle() {
     reservations: "예약 관리",
     equipment: "기자재 관리",
     reports: "보고서",
+    lectures: "비교과 특강",
     notices: "공지사항",
     settings: "설정"
   }[state.adminView];
@@ -885,6 +1005,7 @@ function adminContent() {
   if (state.adminView === "reservations") return adminReservationsView();
   if (state.adminView === "equipment") return adminEquipmentView();
   if (state.adminView === "reports") return adminReportsView();
+  if (state.adminView === "lectures") return adminLecturesView();
   if (state.adminView === "notices") return adminNoticesView();
   if (state.adminView === "settings") return adminSettingsView();
   return adminDashboardView();
@@ -1143,6 +1264,71 @@ function adminReportsView() {
   `;
 }
 
+function adminLecturesView() {
+  return `
+    <section class="grid">
+      ${adminGuide("비교과 특강 사용 가이드", "특강 정보를 등록하면 학생 화면에 리스트가 표시됩니다. 모집중 상태인 특강은 학생이 직접 신청할 수 있고, 결과는 CSV로 내려받아 엑셀에서 열 수 있습니다.")}
+      <div class="card">
+        <h2 class="card-title">특강 등록</h2>
+        <form class="grid two" data-form="lecture-add">
+          <div class="field"><label>특강명</label><input class="input" name="title" required /></div>
+          <div class="field"><label>특강일</label><input class="input" name="lectureDate" type="date" required /></div>
+          <div class="field"><label>시간</label><input class="input" name="time" placeholder="14:00-16:00" required /></div>
+          <div class="field"><label>장소</label><input class="input" name="location" required /></div>
+          <div class="field"><label>강사명</label><input class="input" name="instructorName" required /></div>
+          <div class="field"><label>강사 소속</label><input class="input" name="instructorAffiliation" /></div>
+          <div class="field"><label>담당교수</label><input class="input" name="professor" /></div>
+          <div class="field"><label>대상 학년</label><input class="input" name="targetGrades" placeholder="예: 2-4학년" /></div>
+          <div class="field"><label>모집인원</label><input class="input" name="capacity" type="number" min="0" value="0" /></div>
+          <div class="field"><label>신청인원</label><input class="input" name="baseApplicationCount" type="number" min="0" value="0" /></div>
+          <div class="field"><label>진행상태</label><select class="select" name="status">${lectureStatusOptions.map((item) => `<option>${item}</option>`).join("")}</select></div>
+          <div class="field"><label>비고</label><input class="input" name="notes" /></div>
+          <div class="field span-two"><label>특강 내용</label><textarea class="textarea" name="description" required></textarea></div>
+          <button class="button primary" type="submit">특강 등록</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="form-head">
+          <div>
+            <h2 class="card-title">특강 리스트</h2>
+            <p class="muted">날짜, 특강명, 강사명, 장소, 신청인원, 진행상태를 기준으로 확인합니다.</p>
+          </div>
+          <button class="button" data-action="lecture-export">CSV 내보내기</button>
+        </div>
+        ${state.adminLectures.length ? adminLectureTable(state.adminLectures) : `<p class="empty">등록된 비교과 특강이 없습니다.</p>`}
+      </div>
+    </section>
+  `;
+}
+
+function adminLectureTable(lectures) {
+  return `
+    <div class="table-wrap embedded">
+      <table>
+        <thead><tr><th>날짜</th><th>특강명</th><th>강사명</th><th>장소</th><th>신청인원</th><th>진행상태</th><th>작업</th></tr></thead>
+        <tbody>${lectures.map((lecture) => {
+          const count = Number(lecture.applicationCount || 0);
+          const capacity = Number(lecture.capacity || 0);
+          return `
+            <tr>
+              <td>${escapeHtml(lecture.lectureDate || "-")}<br><span class="muted">${escapeHtml(lecture.time || "")}</span></td>
+              <td><strong>${escapeHtml(lecture.title)}</strong><br><span class="muted">${escapeHtml(lecture.description || "")}</span></td>
+              <td>${escapeHtml(lecture.instructorName || "-")}<br><span class="muted">${escapeHtml(lecture.instructorAffiliation || "")}</span></td>
+              <td>${escapeHtml(lecture.location || "-")}</td>
+              <td>${capacity ? `${count}/${capacity}` : count}</td>
+              <td><select class="select compact-select" data-lecture-status="${lecture.id}">${lectureStatusOptions.map((item) => `<option value="${item}" ${lecture.status === item ? "selected" : ""}>${item}</option>`).join("")}</select></td>
+              <td>
+                <button class="button compact" data-lecture-update="${lecture.id}">상태 저장</button>
+                <div class="muted">${(lecture.applications || []).map((app) => `${app.userName || app.name || ""} ${app.studentId || ""}`).filter(Boolean).join(", ") || "신청자 없음"}</div>
+              </td>
+            </tr>
+          `;
+        }).join("")}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function adminNoticesView() {
   return `
     <section class="grid">
@@ -1294,6 +1480,52 @@ function parseCsv(text) {
   });
 }
 
+function csvEscape(value) {
+  const text = String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function downloadLectureCsv() {
+  const headers = ["특강명", "특강일", "시간", "장소", "강사명", "강사 소속", "담당교수", "대상 학년", "모집인원", "신청인원", "진행상태", "신청자", "학번", "신분", "연락처", "신청일", "비고"];
+  const rows = state.adminLectures.flatMap((lecture) => {
+    const applications = lecture.applications || [];
+    const base = [
+      lecture.title,
+      lecture.lectureDate,
+      lecture.time,
+      lecture.location,
+      lecture.instructorName,
+      lecture.instructorAffiliation,
+      lecture.professor,
+      lecture.targetGrades,
+      lecture.capacity,
+      lecture.applicationCount,
+      lecture.status
+    ];
+    if (!applications.length) {
+      return [[...base, "", "", "", "", "", lecture.notes || ""]];
+    }
+    return applications.map((app) => [
+      ...base,
+      app.userName,
+      app.studentId,
+      app.studentStatus,
+      app.phone,
+      formatDateTime(app.appliedAt),
+      lecture.notes || ""
+    ]);
+  });
+  const csv = "\uFEFF" + [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `gju-lectures-${todayKey()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function submitReservation(form) {
   const type = form.dataset.type;
   const data = formData(form);
@@ -1314,6 +1546,12 @@ async function submitReservation(form) {
     fields.reportStatus = "required";
     if (!fields.timeSlots.length) throw new Error("스튜디오 사용 시간을 선택하세요.");
     if (!fields.studioSpaces.length) throw new Error("스튜디오 사용 공간을 선택하세요.");
+    if (fields.timeSlots.length > state.bootstrap.settings.studioMaxSlots) {
+      throw new Error(`스튜디오는 최대 ${state.bootstrap.settings.studioMaxSlots}타임까지 예약할 수 있습니다.`);
+    }
+    if (!areSlotsConsecutive(fields.timeSlots, state.bootstrap.settings.studioSlots)) {
+      throw new Error("스튜디오는 연속된 시간만 예약할 수 있습니다.");
+    }
   }
   if (type === "darkroom") {
     fields.timeSlots = getChecked("darkroomSlots");
@@ -1347,26 +1585,9 @@ async function submitReservation(form) {
 }
 
 async function openReport(reservationId) {
-  const actualTime = prompt("실제 사용 시간을 입력하세요.");
-  if (!actualTime) return;
-  const participants = prompt("실제 사용 인원을 입력하세요.");
-  if (!participants) return;
-  const damageDescription = prompt("파손/이상 여부가 있으면 적어주세요. 없으면 비워두세요.") || "";
-  await api("/api/reports/studio", {
-    method: "POST",
-    body: {
-      reservationId,
-      actualTime,
-      participants,
-      usedEquipment: "",
-      cleanupConfirmed: true,
-      damageFound: Boolean(damageDescription),
-      damageDescription,
-      notes: ""
-    }
-  });
-  await loadMyReservations();
-  toast("스튜디오 보고서가 제출되었습니다.");
+  state.view = "reports";
+  state.activeReportReservationId = reservationId;
+  render();
 }
 
 document.addEventListener("click", async (event) => {
@@ -1412,9 +1633,15 @@ document.addEventListener("click", async (event) => {
       render();
       return;
     }
+    if (target.dataset.action === "lecture-export") {
+      downloadLectureCsv();
+      return;
+    }
     if (target.dataset.studentView) {
       state.view = target.dataset.studentView;
       if (state.view === "mine") await loadMyReservations();
+      if (state.view === "reports") await loadMyReservations();
+      if (state.view === "lectures") await loadLectures();
       render();
     }
     if (target.dataset.reserveShortcut) {
@@ -1438,6 +1665,23 @@ document.addEventListener("click", async (event) => {
       toast("예약이 취소되었습니다.");
     }
     if (target.dataset.reportRes) await openReport(target.dataset.reportRes);
+    if (target.dataset.reportOpen) {
+      state.activeReportReservationId = target.dataset.reportOpen;
+      render();
+      return;
+    }
+    if (target.dataset.reportClose !== undefined) {
+      state.activeReportReservationId = "";
+      render();
+      return;
+    }
+    if (target.dataset.lectureApply) {
+      await api(`/api/lectures/${target.dataset.lectureApply}/apply`, { method: "POST" });
+      await loadLectures();
+      toast("특강 신청이 완료되었습니다.");
+      render();
+      return;
+    }
     if (target.dataset.adminView) {
       if (target.dataset.adminReservationTab) state.adminReservationTab = target.dataset.adminReservationTab;
       state.adminView = target.dataset.adminView;
@@ -1455,6 +1699,12 @@ document.addEventListener("click", async (event) => {
     if (target.dataset.adminEquipmentCategoryTab) {
       state.adminEquipmentCategoryTab = target.dataset.adminEquipmentCategoryTab;
       render();
+    }
+    if (target.dataset.lectureUpdate) {
+      const status = document.querySelector(`[data-lecture-status="${target.dataset.lectureUpdate}"]`)?.value || "모집중";
+      await api(`/api/admin/lectures/${target.dataset.lectureUpdate}`, { method: "PATCH", body: { status } });
+      await loadAdminData();
+      toast("특강 상태를 저장했습니다.");
     }
     if (target.dataset.blockedRemove) {
       const settings = state.bootstrap.settings;
@@ -1545,6 +1795,27 @@ document.addEventListener("submit", async (event) => {
       await api("/api/admin/notices", { method: "POST", body: data });
       await loadAdminData();
       toast("공지사항을 게시했습니다.");
+    }
+    if (form.dataset.form === "lecture-add") {
+      const data = formData(form);
+      data.capacity = Number(data.capacity || 0);
+      data.baseApplicationCount = Number(data.baseApplicationCount || 0);
+      await api("/api/admin/lectures", { method: "POST", body: data });
+      form.reset();
+      await loadAdminData();
+      toast("특강을 등록했습니다.");
+    }
+    if (form.dataset.form === "studio-report") {
+      const data = formData(form);
+      data.reservationId = form.dataset.reservationId;
+      data.cleanupConfirmed = data.cleanupConfirmed === "true";
+      data.damageFound = data.damageFound === "true";
+      await api("/api/reports/studio", { method: "POST", body: data });
+      state.activeReportReservationId = "";
+      await loadBootstrap();
+      await loadMyReservations();
+      toast("스튜디오 보고서가 제출되었습니다.");
+      render();
     }
     if (form.dataset.form === "settings-save") {
       const data = formData(form);

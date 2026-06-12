@@ -384,11 +384,13 @@ async function initialDb() {
         password: "student1234"
       })
     ],
-    sessions: [],
-    equipment: seedEquipment(),
-    reservations: [],
-    reports: [],
-    notices: [
+	    sessions: [],
+	    equipment: seedEquipment(),
+	    reservations: [],
+	    reports: [],
+	    lectures: [],
+	    lectureApplications: [],
+	    notices: [
       {
         id: id("notice"),
         title: "GJU-reserve 시범 운영 안내",
@@ -521,6 +523,14 @@ function hasOverlap(a, b) {
   return [...slotSet(a)].some((slot) => bSet.has(slot));
 }
 
+function areSlotsConsecutive(selectedSlots, orderedSlots) {
+  const unique = [...new Set(Array.isArray(selectedSlots) ? selectedSlots : [])];
+  if (unique.length !== (selectedSlots || []).length) return false;
+  const indices = unique.map((slot) => orderedSlots.indexOf(slot)).sort((a, b) => a - b);
+  if (!indices.length || indices.some((index) => index < 0)) return false;
+  return indices.every((index, position) => position === 0 || index === indices[position - 1] + 1);
+}
+
 function studioSpaces(fields = {}) {
   if (Array.isArray(fields.studioSpaces) && fields.studioSpaces.length) return fields.studioSpaces;
   return fields.studioSpace ? [fields.studioSpace] : [];
@@ -558,6 +568,7 @@ function validateReservation(db, type, fields, editingId = null) {
     if (!Array.isArray(fields.timeSlots) || fields.timeSlots.length === 0) throw Object.assign(new Error("사용 시간을 선택해야 합니다."), { status: 400 });
     if (studioSpaces(fields).length === 0) throw Object.assign(new Error("사용 장소를 1개 이상 선택해야 합니다."), { status: 400 });
     if (fields.timeSlots.length > db.settings.studioMaxSlots) throw Object.assign(new Error(`스튜디오는 최대 ${db.settings.studioMaxSlots}타임까지 예약할 수 있습니다.`), { status: 400 });
+    if (!areSlotsConsecutive(fields.timeSlots, db.settings.studioSlots)) throw Object.assign(new Error("스튜디오는 연속된 시간만 예약할 수 있습니다."), { status: 400 });
     const selectedSpaces = studioSpaces(fields);
     const conflict = db.reservations.find((reservation) => {
       if (reservation.id === editingId || reservation.type !== "studio") return false;
@@ -636,6 +647,40 @@ function publicReservationSummary(db, reservation) {
       name: item.name,
       category: item.category
     }))
+  };
+}
+
+function lectureApplicationCount(db, lecture) {
+  const internalCount = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id).length;
+  return internalCount + Number(lecture.baseApplicationCount || 0);
+}
+
+function lectureSummary(db, lecture, user = null) {
+  const applications = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id);
+  return {
+    ...lecture,
+    applicationCount: lectureApplicationCount(db, lecture),
+    applied: user ? applications.some((item) => item.userId === user.id) : false
+  };
+}
+
+function lectureDetail(db, lecture) {
+  const applications = (db.lectureApplications || [])
+    .filter((item) => item.lectureId === lecture.id)
+    .map((item) => {
+      const user = db.users.find((candidate) => candidate.id === item.userId) || {};
+      return {
+        ...item,
+        userName: item.userName || user.name || "",
+        studentId: item.studentId || user.studentId || "",
+        studentStatus: item.studentStatus || user.studentStatus || "",
+        phone: item.phone || user.phone || "",
+        email: item.email || user.email || ""
+      };
+    });
+  return {
+    ...lectureSummary(db, lecture),
+    applications
   };
 }
 
@@ -730,11 +775,15 @@ export class GjuReserveDb extends DurableObject {
         await this.saveDb();
       }
     }
-    this.db.settings = { ...defaultSettings, ...(this.db.settings || {}) };
-    this.db.darkroomChemicals = this.db.darkroomChemicals || darkroomChemicals;
-    this.db.importBatches = this.db.importBatches || [];
-    this.db.slackLogs = this.db.slackLogs || [];
-    this.db.auditLogs = this.db.auditLogs || [];
+	    this.db.settings = { ...defaultSettings, ...(this.db.settings || {}) };
+	    this.db.darkroomChemicals = this.db.darkroomChemicals || darkroomChemicals;
+	    this.db.importBatches = this.db.importBatches || [];
+	    this.db.reservations = this.db.reservations || [];
+	    this.db.reports = this.db.reports || [];
+	    this.db.lectures = this.db.lectures || [];
+	    this.db.lectureApplications = this.db.lectureApplications || [];
+	    this.db.slackLogs = this.db.slackLogs || [];
+	    this.db.auditLogs = this.db.auditLogs || [];
     return this.db;
   }
 
@@ -817,6 +866,45 @@ export class GjuReserveDb extends DurableObject {
         return ok(db.reservations.filter((item) => item.userId === user.id).map((item) => withReservationDetails(db, item)));
       }
 
+      if (routeKey(method, pathname) === "GET /api/lectures") {
+        const user = requireUser(request, db);
+        const lectures = db.lectures
+          .map((lecture) => lectureSummary(db, lecture, user))
+          .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")));
+        return ok(lectures);
+      }
+
+      const lectureApplyMatch = pathname.match(/^\/api\/lectures\/([^/]+)\/apply$/);
+      if (method === "POST" && lectureApplyMatch) {
+        const user = requireApprovedStudent(request, db);
+        const lecture = db.lectures.find((item) => item.id === lectureApplyMatch[1]);
+        if (!lecture) throw Object.assign(new Error("특강을 찾을 수 없습니다."), { status: 404 });
+        if (lecture.status !== "모집중") throw Object.assign(new Error("모집중인 특강만 신청할 수 있습니다."), { status: 400 });
+        if (db.lectureApplications.some((item) => item.lectureId === lecture.id && item.userId === user.id)) {
+          throw Object.assign(new Error("이미 신청한 특강입니다."), { status: 409 });
+        }
+        const capacity = Number(lecture.capacity || 0);
+        if (capacity > 0 && lectureApplicationCount(db, lecture) >= capacity) {
+          throw Object.assign(new Error("모집 인원이 마감되었습니다."), { status: 409 });
+        }
+        const application = {
+          id: id("lecture_app"),
+          lectureId: lecture.id,
+          userId: user.id,
+          userName: user.name,
+          studentId: user.studentId || "",
+          studentStatus: user.studentStatus || "",
+          phone: user.phone || "",
+          email: user.email || "",
+          appliedAt: nowIso()
+        };
+        db.lectureApplications.push(application);
+        audit(db, user, "lecture.applied", lecture.id, { applicationId: application.id });
+        await postSlack(this.env, db, "lecture_apply", `[비교과 특강 신청]\n특강: ${lecture.title}\n일시: ${lecture.lectureDate} ${lecture.time || ""}\n신청자: ${user.name} / ${maskPhone(user.phone)}\n신분: ${user.studentStatus || "-"}`);
+        await this.saveDb();
+        return ok(lectureSummary(db, lecture, user));
+      }
+
       if (routeKey(method, pathname) === "POST /api/reservations") {
         const user = requireApprovedStudent(request, db);
         const body = await parseBody(request);
@@ -882,6 +970,9 @@ export class GjuReserveDb extends DurableObject {
         const reservation = db.reservations.find((item) => item.id === body.reservationId && item.type === "studio");
         if (!reservation) throw Object.assign(new Error("스튜디오 예약을 찾을 수 없습니다."), { status: 404 });
         if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 스튜디오 예약 보고서만 제출할 수 있습니다."), { status: 403 });
+        if (db.reports.some((item) => item.reservationId === reservation.id && item.type === "studio")) {
+          throw Object.assign(new Error("이미 제출된 스튜디오 보고서입니다."), { status: 409 });
+        }
         const report = {
           id: id("report"),
           type: "studio",
@@ -1073,6 +1164,61 @@ export class GjuReserveDb extends DurableObject {
           reservation: db.reservations.find((item) => item.id === report.reservationId),
           user: publicUser(db.users.find((item) => item.id === report.userId))
         })));
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/lectures") {
+        requireAdmin(request, db);
+        const lectures = db.lectures
+          .map((lecture) => lectureDetail(db, lecture))
+          .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")));
+        return ok(lectures);
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/lectures") {
+        const admin = requireAdmin(request, db);
+        const body = await parseBody(request);
+        assertRequired(body, ["title", "lectureDate", "time", "location", "instructorName", "description"]);
+        const lecture = {
+          id: id("lecture"),
+          title: body.title,
+          lectureDate: body.lectureDate,
+          time: body.time,
+          location: body.location,
+          instructorName: body.instructorName,
+          instructorAffiliation: body.instructorAffiliation || "",
+          professor: body.professor || "",
+          targetGrades: body.targetGrades || "",
+          capacity: Math.max(0, Number(body.capacity || 0)),
+          baseApplicationCount: Math.max(0, Number(body.baseApplicationCount || 0)),
+          description: body.description,
+          status: ["모집중", "진행완료", "취소"].includes(body.status) ? body.status : "모집중",
+          notes: body.notes || "",
+          createdAt: nowIso(),
+          updatedAt: nowIso()
+        };
+        db.lectures.push(lecture);
+        audit(db, admin, "lecture.created", lecture.id);
+        await this.saveDb();
+        return ok(lectureDetail(db, lecture));
+      }
+
+      const lecturePatchMatch = pathname.match(/^\/api\/admin\/lectures\/([^/]+)$/);
+      if (method === "PATCH" && lecturePatchMatch) {
+        const admin = requireAdmin(request, db);
+        const body = await parseBody(request);
+        const lecture = db.lectures.find((item) => item.id === lecturePatchMatch[1]);
+        if (!lecture) throw Object.assign(new Error("특강을 찾을 수 없습니다."), { status: 404 });
+        const editableFields = ["title", "lectureDate", "time", "location", "instructorName", "instructorAffiliation", "professor", "targetGrades", "description", "notes"];
+        for (const field of editableFields) {
+          if (body[field] !== undefined) lecture[field] = body[field];
+        }
+        if (body.capacity !== undefined) lecture.capacity = Math.max(0, Number(body.capacity || 0));
+        if (body.baseApplicationCount !== undefined) lecture.baseApplicationCount = Math.max(0, Number(body.baseApplicationCount || 0));
+        if (body.status !== undefined) lecture.status = ["모집중", "진행완료", "취소"].includes(body.status) ? body.status : lecture.status;
+        lecture.updatedAt = nowIso();
+        audit(db, admin, "lecture.updated", lecture.id, body);
+        await this.saveDb();
+        return ok(lectureDetail(db, lecture));
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
