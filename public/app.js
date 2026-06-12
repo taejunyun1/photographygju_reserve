@@ -207,10 +207,6 @@ function getChecked(name) {
   return [...document.querySelectorAll(`[name="${name}"]:checked`)].map((item) => item.value);
 }
 
-function getMultiSelect(id) {
-  return [...document.querySelector(id).selectedOptions].map((option) => option.value);
-}
-
 function equipmentCategories() {
   const fromSettings = state.bootstrap?.settings?.equipmentCategories || ["Body", "Lens", "Lighting", "Audio", "Drone", "Other"];
   const fromEquipment = (state.bootstrap?.equipment || []).map((item) => item.category).filter(Boolean);
@@ -237,11 +233,6 @@ function noticePreview(body = "") {
   const compact = String(body).replace(/\s+/g, " ").trim();
   if (compact.length <= 74) return compact;
   return `${compact.slice(0, 74)}...`;
-}
-
-function arrayIncludesAny(values, candidates) {
-  const source = new Set(Array.isArray(values) ? values : []);
-  return candidates.some((item) => source.has(item));
 }
 
 function areSlotsConsecutive(selectedSlots, orderedSlots) {
@@ -1040,8 +1031,16 @@ function myPageView() {
           <div class="prop"><span class="key">학번</span><span>${escapeHtml(state.user.studentId || "-")}</span></div>
           <div class="prop"><span class="key">학년</span><span>${escapeHtml(state.user.grade || "-")}</span></div>
           <div class="prop"><span class="key">신분</span><span>${escapeHtml(state.user.studentStatus)}</span></div>
-          <div class="prop"><span class="key">연락처</span><span>${escapeHtml(state.user.phone)}</span></div>
         </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">개인정보 수정</h2>
+        <form class="report-form" data-form="profile-edit">
+          <div class="field"><label>이름</label><input class="input" name="name" value="${escapeHtml(state.user.name || "")}" required /></div>
+          <div class="field"><label>이메일</label><input class="input" name="email" type="email" value="${escapeHtml(state.user.email || "")}" /></div>
+          <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.user.phone || "")}" /></div>
+          <button class="button primary full" type="submit">개인정보 저장</button>
+        </form>
       </div>
       <div class="card">
         <h2 class="card-title">비밀번호 변경</h2>
@@ -1112,11 +1111,17 @@ function adminShell() {
               <span>${adminTitle()}</span>
             </div>
           </div>
-          <button class="button ghost compact" data-action="logout">나가기</button>
+          <div class="header-actions">
+            <button class="button ghost compact ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">내 정보</button>
+            <button class="button ghost compact" data-action="logout">나가기</button>
+          </div>
         </header>
         <header class="admin-header">
           <div><h1 class="page-title">${adminTitle()}</h1><p class="muted">admin 통합 관리 계정</p></div>
-          <button class="button ghost" data-action="logout">로그아웃</button>
+          <div class="header-actions">
+            <button class="button ghost ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">내 정보</button>
+            <button class="button ghost" data-action="logout">로그아웃</button>
+          </div>
         </header>
         ${adminContent()}
       </section>
@@ -1136,11 +1141,13 @@ function adminTitle() {
     reports: "보고서",
     lectures: "비교과 특강",
     notices: "공지사항",
-    settings: "설정"
+    settings: "설정",
+    account: "내 정보"
   }[state.adminView];
 }
 
 function adminContent() {
+  if (state.adminView === "account") return adminAccountView();
   if (state.adminView === "users") return adminUsersView();
   if (state.adminView === "reservations") return adminReservationsView();
   if (state.adminView === "equipment") return adminEquipmentView();
@@ -1149,6 +1156,33 @@ function adminContent() {
   if (state.adminView === "notices") return adminNoticesView();
   if (state.adminView === "settings") return adminSettingsView();
   return adminDashboardView();
+}
+
+function adminAccountView() {
+  const u = state.user || {};
+  return `
+    <section class="grid">
+      ${adminGuide("내 정보 사용 가이드", "관리자 계정의 이름, 이메일, 연락처와 비밀번호를 직접 변경할 수 있습니다. 비밀번호는 현재 비밀번호 확인 후 변경됩니다.")}
+      <div class="card">
+        <h2 class="card-title">개인정보 수정</h2>
+        <form class="report-form" data-form="profile-edit">
+          <div class="field"><label>이름</label><input class="input" name="name" value="${escapeHtml(u.name || "")}" required /></div>
+          <div class="field"><label>이메일</label><input class="input" name="email" type="email" value="${escapeHtml(u.email || "")}" /></div>
+          <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(u.phone || "")}" /></div>
+          <button class="button primary full" type="submit">개인정보 저장</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2 class="card-title">비밀번호 변경</h2>
+        <form class="report-form" data-form="password-change">
+          <div class="field"><label>현재 비밀번호</label><input class="input" name="currentPassword" type="password" autocomplete="current-password" required /></div>
+          <div class="field"><label>새 비밀번호</label><input class="input" name="newPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <div class="field"><label>새 비밀번호 확인</label><input class="input" name="confirmPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
+          <button class="button primary full" type="submit">비밀번호 변경</button>
+        </form>
+      </div>
+    </section>
+  `;
 }
 
 function adminDashboardView() {
@@ -1186,6 +1220,7 @@ function adminUsersView() {
                   <div class="row-actions">
                     <button class="button primary" data-user-approval="${user.id}" data-status="approved">승인</button>
                     <button class="button danger" data-user-approval="${user.id}" data-status="rejected">반려</button>
+                    <button class="button" data-user-reset="${user.id}">비번 리셋</button>
                   </div>
                   <div class="limit-actions">
                     <select class="select compact-select" data-user-limit-duration="${user.id}">
@@ -1851,7 +1886,6 @@ document.addEventListener("click", async (event) => {
     if (target.dataset.adminView) {
       if (target.dataset.adminReservationTab) state.adminReservationTab = target.dataset.adminReservationTab;
       state.adminView = target.dataset.adminView;
-      await loadAdminData();
       render();
     }
     if (target.dataset.adminReservationTab && !target.dataset.adminView) {
@@ -1897,6 +1931,18 @@ document.addEventListener("click", async (event) => {
       await loadAdminData();
       toast("사용자 상태를 변경했습니다.");
     }
+    if (target.dataset.userReset) {
+      const input = prompt("새 비밀번호를 입력하세요. 비워두면 임시 비밀번호가 자동 생성됩니다.", "");
+      if (input === null) return;
+      const body = input.trim() ? { newPassword: input.trim() } : {};
+      const result = await api(`/api/admin/users/${target.dataset.userReset}/password`, { method: "PATCH", body });
+      if (result.generatedPassword) {
+        alert(`임시 비밀번호: ${result.generatedPassword}\n학생에게 전달한 뒤 첫 로그인에서 변경하도록 안내하세요.`);
+      } else {
+        toast("비밀번호를 변경했습니다.");
+      }
+      return;
+    }
     if (target.dataset.resStatus) {
       await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
       await loadAdminData();
@@ -1933,6 +1979,13 @@ document.addEventListener("submit", async (event) => {
     if (form.dataset.form === "signup") await signup(form);
     if (form.dataset.form === "password-change") {
       await changePassword(form);
+      return;
+    }
+    if (form.dataset.form === "profile-edit") {
+      const result = await api("/api/me", { method: "PATCH", body: formData(form) });
+      state.user = result.user;
+      toast("개인정보를 저장했습니다.");
+      render();
       return;
     }
     if (form.dataset.form === "reservation") await submitReservation(form);

@@ -187,6 +187,20 @@ function randomHex(bytes = 16) {
   return [...values].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function randomPassword(length = 8) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const values = new Uint32Array(length);
+  crypto.getRandomValues(values);
+  return [...values].map((value) => alphabet[value % alphabet.length]).join("");
+}
+
+function safeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i += 1) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
+}
+
 async function hashPassword(password, salt = randomHex(16)) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -203,7 +217,7 @@ async function verifyPassword(password, stored) {
   const [type, salt, expected] = stored.split(":");
   if (type !== "pbkdf2" || !salt || !expected) return false;
   const next = await hashPassword(password, salt);
-  return next === stored;
+  return safeEqual(next, stored);
 }
 
 function normalizeStatusLabel(status) {
@@ -476,6 +490,9 @@ function requireApprovedStudent(request, db) {
 async function parseBody(request) {
   const text = await request.text();
   if (!text) return {};
+  if (text.length > 1024 * 1024) {
+    throw Object.assign(new Error("요청 본문이 너무 큽니다."), { status: 413 });
+  }
   try {
     return JSON.parse(text);
   } catch {
@@ -788,6 +805,14 @@ export class GjuReserveDb extends DurableObject {
   }
 
   async saveDb() {
+    if (this.db) {
+      if (Array.isArray(this.db.auditLogs) && this.db.auditLogs.length > 1000) {
+        this.db.auditLogs = this.db.auditLogs.slice(-1000);
+      }
+      if (Array.isArray(this.db.slackLogs) && this.db.slackLogs.length > 500) {
+        this.db.slackLogs = this.db.slackLogs.slice(-500);
+      }
+    }
     await this.ctx.storage.put("db", this.db);
   }
 
@@ -832,6 +857,27 @@ export class GjuReserveDb extends DurableObject {
         user.passwordHash = await hashPassword(body.newPassword);
         user.updatedAt = nowIso();
         audit(db, user, "user.password_changed", user.id);
+        await this.saveDb();
+        return ok({ user: publicUser(user) });
+      }
+
+      if (routeKey(method, pathname) === "PATCH /api/me") {
+        const user = requireUser(request, db);
+        const body = await parseBody(request);
+        const next = {};
+        if (body.name !== undefined) next.name = String(body.name).trim();
+        if (body.phone !== undefined) next.phone = String(body.phone).trim();
+        if (body.grade !== undefined) next.grade = String(body.grade).trim();
+        if (body.email !== undefined) {
+          const email = String(body.email).trim();
+          if (email && db.users.some((item) => item.id !== user.id && item.email === email)) {
+            throw Object.assign(new Error("이미 사용 중인 이메일입니다."), { status: 409 });
+          }
+          next.email = email;
+        }
+        if (next.name === "") throw Object.assign(new Error("이름을 입력하세요."), { status: 400 });
+        Object.assign(user, next, { updatedAt: nowIso() });
+        audit(db, user, "user.profile_updated", user.id, { fields: Object.keys(next) });
         await this.saveDb();
         return ok({ user: publicUser(user) });
       }
@@ -1045,6 +1091,23 @@ export class GjuReserveDb extends DurableObject {
         audit(db, admin, "user.approval_changed", user.id, { approvalStatus: user.approvalStatus, blockDuration: user.blockDuration || "" });
         await this.saveDb();
         return ok(publicUser(user));
+      }
+
+      const userPasswordResetMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
+      if (method === "PATCH" && userPasswordResetMatch) {
+        const admin = requireAdmin(request, db);
+        const body = await parseBody(request);
+        const user = db.users.find((item) => item.id === userPasswordResetMatch[1]);
+        if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
+        const generated = !body.newPassword;
+        const newPassword = generated ? randomPassword() : String(body.newPassword);
+        if (newPassword.length < 4) throw Object.assign(new Error("새 비밀번호는 4자 이상이어야 합니다."), { status: 400 });
+        user.passwordHash = await hashPassword(newPassword);
+        user.updatedAt = nowIso();
+        db.sessions = (db.sessions || []).filter((session) => session.userId !== user.id);
+        audit(db, admin, "user.password_reset", user.id, { generated });
+        await this.saveDb();
+        return ok({ user: publicUser(user), generatedPassword: generated ? newPassword : null });
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/reservations") {
@@ -1280,7 +1343,6 @@ export class GjuReserveDb extends DurableObject {
 
       throw Object.assign(new Error("API 경로를 찾을 수 없습니다."), { status: 404 });
     } catch (error) {
-      await this.saveDb();
       return fail(error);
     }
   }

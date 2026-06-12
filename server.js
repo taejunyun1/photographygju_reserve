@@ -217,6 +217,14 @@ function id(prefix) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 14)}`;
 }
 
+function randomPassword(length = 8) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = crypto.randomBytes(length);
+  let out = "";
+  for (let i = 0; i < length; i += 1) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
 function normalizeStatusLabel(status) {
   const labels = {
     approval_pending: "승인 대기",
@@ -372,6 +380,12 @@ function readDb() {
 
 function writeDb(db) {
   ensureDir(DATA_DIR);
+  if (Array.isArray(db.auditLogs) && db.auditLogs.length > 1000) {
+    db.auditLogs = db.auditLogs.slice(-1000);
+  }
+  if (Array.isArray(db.slackLogs) && db.slackLogs.length > 500) {
+    db.slackLogs = db.slackLogs.slice(-500);
+  }
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
@@ -818,6 +832,28 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
+    if (routeKey(method, pathname) === "PATCH /api/me") {
+      const user = requireUser(req, db);
+      const body = await parseBody(req);
+      const next = {};
+      if (body.name !== undefined) next.name = String(body.name).trim();
+      if (body.phone !== undefined) next.phone = String(body.phone).trim();
+      if (body.grade !== undefined) next.grade = String(body.grade).trim();
+      if (body.email !== undefined) {
+        const email = String(body.email).trim();
+        if (email && db.users.some((item) => item.id !== user.id && item.email === email)) {
+          throw Object.assign(new Error("이미 사용 중인 이메일입니다."), { status: 409 });
+        }
+        next.email = email;
+      }
+      if (next.name === "") throw Object.assign(new Error("이름을 입력하세요."), { status: 400 });
+      Object.assign(user, next, { updatedAt: nowIso() });
+      audit(db, user, "user.profile_updated", user.id, { fields: Object.keys(next) });
+      writeDb(db);
+      sendOk(res, { user: publicUser(user) });
+      return;
+    }
+
     if (routeKey(method, pathname) === "POST /api/auth/signup") {
       const body = await parseBody(req);
       assertRequired(body, ["name", "studentStatus", "phone", "email", "password"]);
@@ -1070,6 +1106,24 @@ async function handleApi(req, res, pathname) {
       return;
     }
 
+    const userPasswordResetMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
+    if (method === "PATCH" && userPasswordResetMatch) {
+      const admin = requireAdmin(req, db);
+      const body = await parseBody(req);
+      const user = db.users.find((item) => item.id === userPasswordResetMatch[1]);
+      if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
+      const generated = !body.newPassword;
+      const newPassword = generated ? randomPassword() : String(body.newPassword);
+      if (newPassword.length < 4) throw Object.assign(new Error("새 비밀번호는 4자 이상이어야 합니다."), { status: 400 });
+      user.passwordHash = hashPassword(newPassword);
+      user.updatedAt = nowIso();
+      db.sessions = (db.sessions || []).filter((session) => session.userId !== user.id);
+      audit(db, admin, "user.password_reset", user.id, { generated });
+      writeDb(db);
+      sendOk(res, { user: publicUser(user), generatedPassword: generated ? newPassword : null });
+      return;
+    }
+
     if (routeKey(method, pathname) === "GET /api/admin/reservations") {
       requireAdmin(req, db);
       sendOk(res, db.reservations.map((item) => withReservationDetails(db, item)));
@@ -1319,9 +1373,17 @@ async function handleApi(req, res, pathname) {
 
     throw Object.assign(new Error("API 경로를 찾을 수 없습니다."), { status: 404 });
   } catch (error) {
-    writeDb(db);
     sendError(res, error);
   }
+}
+
+// Dev server reads/writes a single JSON file per request. Serialize API handling
+// so concurrent reservations cannot race on read-modify-write and lose writes.
+let apiChain = Promise.resolve();
+function handleApiSerialized(req, res, pathname) {
+  const run = apiChain.then(() => handleApi(req, res, pathname));
+  apiChain = run.catch(() => {});
+  return run;
 }
 
 function serveStatic(req, res, pathname) {
@@ -1342,7 +1404,7 @@ function serveStatic(req, res, pathname) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
   if (url.pathname.startsWith("/api/")) {
-    await handleApi(req, res, url.pathname);
+    await handleApiSerialized(req, res, url.pathname);
     return;
   }
   serveStatic(req, res, url.pathname);
