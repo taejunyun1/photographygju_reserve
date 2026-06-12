@@ -116,12 +116,14 @@ function toast(message) {
 }
 
 async function api(path, options = {}) {
+  const apiBase = String(window.GJU_API_BASE || "").replace(/\/$/, "");
+  const url = path.startsWith("http") ? path : `${apiBase}${path}`;
   const headers = {
     "content-type": "application/json",
     ...(options.headers || {})
   };
   if (state.token) headers.authorization = `Bearer ${state.token}`;
-  const response = await fetch(path, {
+  const response = await fetch(url, {
     ...options,
     headers,
     body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body

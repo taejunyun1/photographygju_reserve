@@ -1,6 +1,6 @@
 # GJU-reserve
 
-광주대학교 사진영상미디어학과용 모바일 우선 예약 시스템 프로토타입입니다.
+광주대학교 사진영상미디어학과용 모바일 우선 예약 시스템입니다.
 
 ## Run
 
@@ -21,7 +21,7 @@ ID: admin
 PW: admin
 ```
 
-Production must set a different admin password with `ADMIN_PASSWORD`.
+Local development uses `server.js` and a file DB. Production uses the Cloudflare Worker in `worker.mjs`.
 
 ## Current Features
 
@@ -39,6 +39,8 @@ Production must set a different admin password with `ADMIN_PASSWORD`.
 - CSV equipment import
 - Slack notification hook through `SLACK_WEBHOOK_URL`
 - Local file DB at `data/db.json`
+- Cloudflare Worker API backend with Durable Object storage
+- Dothome static frontend support through `public/config.js`
 
 ## Environment
 
@@ -50,16 +52,74 @@ SLACK_WEBHOOK_URL=rotated-slack-webhook-url
 
 Do not commit `.env`, Slack webhook URLs, FTP passwords, or production admin passwords.
 
-## Cloudflare Workers Static Assets
+## Production Architecture
 
-The connected Cloudflare project currently deploys through Workers with:
+Production is split into two simple pieces:
+
+```text
+Dothome static hosting
+  - https://photographygju.dothome.co.kr/
+  - serves index.html, styles.css, app.js, config.js
+
+Cloudflare Worker
+  - https://photographygju-reserve.taejunyun.workers.dev
+  - serves /api/*
+  - stores data in one Durable Object: GJU_RESERVE_DB
+  - sends Slack notifications through SLACK_WEBHOOK_URL
+```
+
+`public/config.js` keeps local and Cloudflare same-origin API calls relative, but points Dothome traffic to the Worker API.
+
+## Cloudflare Deploy
+
+The connected Cloudflare project deploys through Workers with:
 
 ```text
 Deploy command: npx wrangler deploy
 Assets directory: public
 ```
 
-`wrangler.jsonc` sets `assets.not_found_handling` to `single-page-application`, so `/admin` and other SPA routes load `index.html` without a `_redirects` file.
+`wrangler.jsonc` uses:
+
+- `main: ./worker.mjs`
+- `assets.binding: ASSETS`
+- `assets.run_worker_first: ["/api/*"]`
+- `durable_objects.bindings[0].name: GJU_RESERVE_DB`
+- `migrations[0].new_sqlite_classes: ["GjuReserveDb"]`
+
+Set the Slack webhook as a Worker secret before production use:
+
+```bash
+npx wrangler secret put SLACK_WEBHOOK_URL
+```
+
+Then deploy:
+
+```bash
+npm run deploy
+```
+
+## Dothome Upload
+
+Upload these files from `public/` to the Dothome webroot:
+
+```text
+index.html
+styles.css
+app.js
+config.js
+```
+
+The Dothome host should only serve the frontend. Do not upload `.env`, `data/`, `References/`, or any credential files.
+
+Or use the upload script without committing credentials:
+
+```bash
+export DOTHOME_FTP_HOST="112.175.185.143"
+export DOTHOME_FTP_USER="photographygju"
+export DOTHOME_FTP_PASSWORD="..."
+npm run upload:dothome
+```
 
 If this project is later moved to Cloudflare Pages instead of Workers, use:
 
@@ -72,9 +132,8 @@ Root directory: /
 ## Notes
 
 - This dev build uses a local JSON database so it can run without external services.
-- The API boundaries are shaped so the storage layer can later move to Cloudflare D1.
+- The production Worker uses Durable Object storage so the small reservation service does not need a separate DB subscription.
 - `data/` is ignored by git.
 - FTP credentials are not needed for local development and must not be stored in this repo.
-- A backend/API is required for the real product because signup approval, reservations, admin actions, database writes, and Slack notifications need server-side logic.
-- For production, use Cloudflare Pages Functions or Workers with D1 instead of a separate VPS/server.
-- Dothome FTP-only static hosting can host static files, but cannot run this full reservation product unless a separate backend is added.
+- A backend/API is required because signup approval, reservations, admin actions, database writes, and Slack notifications need server-side logic.
+- Dothome FTP-only static hosting can host the frontend, but cannot run the API by itself.

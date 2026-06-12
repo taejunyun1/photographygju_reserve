@@ -1,14 +1,35 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "photographygju-reserve",
+  "main": "./worker.mjs",
   "compatibility_date": "2026-06-12",
   "observability": {
     "enabled": true
   },
   "assets": {
     "directory": "./public",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "GJU_RESERVE_DB",
+        "class_name": "GjuReserveDb"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "GjuReserveDb"
+      ]
+    }
+  ],
   "compatibility_flags": [
     "nodejs_compat"
   ]
