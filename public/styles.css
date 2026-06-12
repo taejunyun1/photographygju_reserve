@@ -1075,6 +1075,46 @@ button {
   gap: 10px;
 }
 
+.lecture-mini-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lecture-mini-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-lowest);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.lecture-mini-row strong,
+.lecture-mini-row small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lecture-mini-row strong {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.lecture-mini-row small,
+.lecture-date {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
 .lecture-list-row {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr) 100px 110px 76px auto;
@@ -1119,6 +1159,11 @@ button {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 276px 1fr;
+}
+
+.admin-mobile-header,
+.admin-mobile-nav {
+  display: none;
 }
 
 .sidebar {
@@ -1482,25 +1527,70 @@ tr:last-child td {
 @media (max-width: 820px) {
   .admin-shell {
     display: block;
+    min-height: 100vh;
   }
 
   .sidebar {
-    position: static;
-    height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .side-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: none;
   }
 
   .admin-main {
-    padding: 18px 14px 88px;
+    padding: 14px 14px 104px;
   }
 
   .admin-header {
-    display: grid;
+    display: none;
+  }
+
+  .admin-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    margin: -14px -14px 16px;
+    padding: 10px 14px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(249, 249, 255, 0.94);
+    border-bottom: 1px solid var(--line-soft);
+    backdrop-filter: blur(16px);
+  }
+
+  .admin-mobile-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    width: min(520px, calc(100% - 24px));
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    z-index: 20;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .admin-mobile-nav button {
+    flex: 0 0 82px;
+    border: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--muted);
+    padding: 9px 5px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 800;
+  }
+
+  .admin-mobile-nav button.active {
+    color: var(--on-primary-container);
+    background: var(--primary-container);
   }
 
   .admin-reservation-grid {
@@ -1573,6 +1663,14 @@ tr:last-child td {
 
   .lecture-list-row {
     grid-template-columns: 1fr;
+  }
+
+  .lecture-mini-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .lecture-mini-row .lecture-date {
+    grid-column: 1 / -1;
   }
 
   .prop {

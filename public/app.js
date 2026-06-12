@@ -75,6 +75,17 @@ const typeLabel = {
   print: "출력실"
 };
 
+const adminNavItems = [
+  ["dashboard", "대시보드"],
+  ["users", "학생 승인"],
+  ["reservations", "예약 관리"],
+  ["equipment", "기자재"],
+  ["reports", "보고서"],
+  ["lectures", "비교과 특강"],
+  ["notices", "공지사항"],
+  ["settings", "설정"]
+];
+
 const lectureStatusOptions = ["모집중", "진행완료", "취소"];
 
 const sourceLabel = {
@@ -575,12 +586,48 @@ function facilityCard(type, title, desc, code, statusText, tone = "blue") {
   `;
 }
 
+function homeLecturesCard(lectures) {
+  if (!lectures.length) return "";
+  return `
+    <div class="card">
+      <div class="form-head">
+        <div>
+          <h2 class="card-title">모집중인 특강</h2>
+          <p class="muted">현재 신청 가능한 비교과 특강입니다.</p>
+        </div>
+        <button class="button compact" data-student-view="lectures">전체 보기</button>
+      </div>
+      <div class="lecture-mini-list">
+        ${lectures.map((lecture) => {
+          const count = Number(lecture.applicationCount || 0);
+          const capacity = Number(lecture.capacity || 0);
+          const countLabel = capacity ? `${count}/${capacity}` : `${count}`;
+          return `
+            <button class="lecture-mini-row" data-student-view="lectures">
+              <span class="lecture-date">${escapeHtml(lecture.lectureDate || "-")}</span>
+              <span>
+                <strong>${escapeHtml(lecture.title)}</strong>
+                <small>${escapeHtml(lecture.time || "")}${lecture.location ? ` · ${escapeHtml(lecture.location)}` : ""}</small>
+              </span>
+              <span class="tag green">${escapeHtml(countLabel)}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function homeView() {
   const pending = state.user.approvalStatus !== "approved";
   const next = state.myReservations
     .filter((item) => !["cancelled", "admin_cancelled", "rejected"].includes(item.status))
     .sort((a, b) => String(a.fields.reservedDate).localeCompare(String(b.fields.reservedDate)))[0];
   const pinned = (state.bootstrap.notices || []).filter((item) => item.pinned).slice(0, 2);
+  const recruitingLectures = (state.lectures || [])
+    .filter((lecture) => lecture.status === "모집중")
+    .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")))
+    .slice(0, 3);
   return `
     <section class="grid">
       ${pending ? `<div class="card notice"><h2 class="card-title">승인 대기</h2><p class="muted">학과 관리자 승인 후 예약할 수 있습니다. 반려 시 학과 관리자에게 연락하세요.</p></div>` : ""}
@@ -594,6 +641,7 @@ function homeView() {
         <h2 class="card-title">다음 예약</h2>
         ${next ? reservationCard(next) : `<p class="empty">예정된 예약이 없습니다.</p>`}
       </div>
+      ${homeLecturesCard(recruitingLectures)}
       ${pinned.map((notice) => noticeCard(notice)).join("")}
     </section>
   `;
@@ -964,25 +1012,29 @@ function adminShell() {
           </div>
         </div>
         <nav class="side-nav">
-          ${[
-            ["dashboard", "대시보드"],
-            ["users", "학생 승인"],
-            ["reservations", "예약 관리"],
-            ["equipment", "기자재"],
-            ["reports", "보고서"],
-            ["lectures", "비교과 특강"],
-            ["notices", "공지사항"],
-            ["settings", "설정"]
-          ].map(([key, label]) => `<button class="${state.adminView === key ? "active" : ""}" data-admin-view="${key}">${label}</button>`).join("")}
+          ${adminNavItems.map(([key, label]) => `<button class="${state.adminView === key ? "active" : ""}" data-admin-view="${key}">${label}</button>`).join("")}
         </nav>
       </aside>
       <section class="admin-main">
+        <header class="admin-mobile-header">
+          <div class="appbar-brand">
+            <div class="brand-mark">G</div>
+            <div>
+              <strong>GJU-reserve</strong>
+              <span>${adminTitle()}</span>
+            </div>
+          </div>
+          <button class="button ghost compact" data-action="logout">나가기</button>
+        </header>
         <header class="admin-header">
           <div><h1 class="page-title">${adminTitle()}</h1><p class="muted">admin 통합 관리 계정</p></div>
           <button class="button ghost" data-action="logout">로그아웃</button>
         </header>
         ${adminContent()}
       </section>
+      <nav class="admin-mobile-nav">
+        ${adminNavItems.map(([key, label]) => `<button class="${state.adminView === key ? "active" : ""}" data-admin-view="${key}">${label}</button>`).join("")}
+      </nav>
     </main>
   `;
 }
