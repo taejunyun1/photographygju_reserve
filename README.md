@@ -50,17 +50,24 @@ SLACK_WEBHOOK_URL=rotated-slack-webhook-url
 
 Do not commit `.env`, Slack webhook URLs, FTP passwords, or production admin passwords.
 
-## Cloudflare Pages
+## Cloudflare Workers Static Assets
 
-Use these settings when connecting this repository to Cloudflare Pages:
+The connected Cloudflare project currently deploys through Workers with:
+
+```text
+Deploy command: npx wrangler deploy
+Assets directory: public
+```
+
+`wrangler.jsonc` sets `assets.not_found_handling` to `single-page-application`, so `/admin` and other SPA routes load `index.html` without a `_redirects` file.
+
+If this project is later moved to Cloudflare Pages instead of Workers, use:
 
 ```text
 Build command: npm run build
 Build output directory: dist
 Root directory: /
 ```
-
-`public/_redirects` keeps `/admin` and other SPA routes loading `index.html`.
 
 ## Notes
 
