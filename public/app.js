@@ -663,7 +663,7 @@ function reserveView() {
   }
   return `
     <button class="button ghost" data-action="reserve-back">← 예약 종류</button>
-    <div style="height:12px"></div>
+    <div class="section-gap"></div>
     ${reservationForm(state.reservationType)}
   `;
 }
@@ -861,7 +861,7 @@ function reservationCard(reservation) {
   return `
     <article class="card">
       <div class="chips">${tag(reservation.status)}<span class="tag">${title}</span></div>
-      <h3 class="card-title" style="margin-top:10px">${date}</h3>
+      <h3 class="card-title card-title-spaced">${date}</h3>
       <p class="muted">${escapeHtml(meta)}</p>
       <div class="row-actions">
         ${!["cancelled", "admin_cancelled", "returned", "completed"].includes(reservation.status) ? `<button class="button danger" data-cancel-res="${reservation.id}">취소</button>` : ""}
@@ -903,7 +903,7 @@ function reportRequestCard(reservation) {
   return `
     <article class="card report-card">
       <div class="chips"><span class="tag blue">스튜디오</span><span class="tag yellow">보고서 필요</span></div>
-      <h3 class="card-title" style="margin-top:10px">${escapeHtml(f.reservedDate || "-")}</h3>
+      <h3 class="card-title card-title-spaced">${escapeHtml(f.reservedDate || "-")}</h3>
       <p class="muted">${escapeHtml((f.timeSlots || []).join(", "))} · ${escapeHtml((f.studioSpaces || [f.studioSpace]).filter(Boolean).join(", "))}</p>
       ${active ? studioReportForm(reservation) : `<button class="button primary" data-report-open="${reservation.id}">보고서 작성</button>`}
     </article>
@@ -970,7 +970,7 @@ function noticeCard(notice) {
   return `
     <article class="card notice">
       <div class="chips"><span class="tag blue">${escapeHtml(notice.category)}</span>${notice.pinned ? `<span class="tag yellow">고정</span>` : ""}</div>
-      <h3 class="card-title" style="margin-top:10px">${escapeHtml(notice.title)}</h3>
+      <h3 class="card-title card-title-spaced">${escapeHtml(notice.title)}</h3>
       <p class="muted">${escapeHtml(notice.body)}</p>
       ${notice.link ? `<a class="button" href="${escapeHtml(notice.link)}" target="_blank" rel="noreferrer">신청 링크</a>` : ""}
     </article>
@@ -1304,7 +1304,7 @@ function adminReportsView() {
       ${state.adminReports.length ? state.adminReports.map((report) => `
         <article class="card">
           <div class="chips"><span class="tag blue">스튜디오 보고서</span><span class="tag green">제출완료</span></div>
-          <h3 class="card-title" style="margin-top:10px">${escapeHtml(report.user?.name || "-")}</h3>
+          <h3 class="card-title card-title-spaced">${escapeHtml(report.user?.name || "-")}</h3>
           <div class="property-list">
             <div class="prop"><span class="key">예약</span><span>${escapeHtml(report.reservationId)}</span></div>
             <div class="prop"><span class="key">사용 시간</span><span>${escapeHtml(report.fields.actualTime)}</span></div>

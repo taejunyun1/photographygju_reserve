@@ -28,6 +28,17 @@
   --purple-soft: #e3ddff;
   --radius: 8px;
   --radius-sm: 4px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --control-height: 42px;
+  --control-height-sm: 36px;
+  --control-pad-x: 14px;
+  --control-pad-y: 10px;
+  --focus-ring: 0 0 0 3px rgba(19, 83, 216, 0.14);
   --shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
   --shadow-strong: 0 24px 60px rgba(20, 27, 43, 0.16);
 }
@@ -42,6 +53,7 @@ body {
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   letter-spacing: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -53,6 +65,12 @@ select {
 
 button {
   cursor: pointer;
+  max-width: 100%;
+  min-width: 0;
+}
+
+a {
+  color: inherit;
 }
 
 .app {
@@ -83,6 +101,7 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .brand {
@@ -146,7 +165,14 @@ button {
   background: transparent;
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  min-width: 0;
+  max-width: 100%;
   font-weight: 700;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .segmented button.active,
@@ -173,6 +199,7 @@ button {
 .select,
 .textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   background: var(--surface-lowest);
   color: var(--text);
@@ -191,7 +218,7 @@ button {
 .select:focus,
 .textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(19, 83, 216, 0.14);
+  box-shadow: var(--focus-ring);
 }
 
 .button {
@@ -199,18 +226,40 @@ button {
   background: var(--surface-lowest);
   color: var(--text);
   border-radius: var(--radius);
-  padding: 11px 14px;
+  padding: var(--control-pad-y) var(--control-pad-x);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 42px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-height);
   font-weight: 700;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
 .button:active {
   transform: scale(0.98);
+}
+
+.button:focus-visible,
+.tab-button:focus-visible,
+.segmented button:focus-visible,
+.mobile-nav button:focus-visible,
+.desktop-nav button:focus-visible,
+.side-nav button:focus-visible,
+.admin-mobile-nav button:focus-visible,
+.calendar-day:focus-visible,
+.facility-card:focus-visible,
+.stat-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .button.primary {
@@ -230,12 +279,15 @@ button {
 }
 
 .button.compact {
-  min-height: 38px;
+  min-height: var(--control-height-sm);
   padding: 8px 12px;
+  font-size: 13px;
+  line-height: 17px;
 }
 
 .button.full {
   width: 100%;
+  flex-basis: 100%;
 }
 
 .top-appbar {
@@ -259,6 +311,10 @@ button {
   color: var(--primary);
   font-size: 18px;
   line-height: 22px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .appbar-brand span {
@@ -266,6 +322,15 @@ button {
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-appbar .button,
+.admin-mobile-header .button {
+  flex: 0 0 auto;
 }
 
 .student-shell {
@@ -322,9 +387,13 @@ button {
   background: transparent;
   color: var(--muted);
   padding: 9px 12px;
+  min-width: 0;
   font-size: 13px;
   line-height: 18px;
   font-weight: 800;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .desktop-nav button.active {
@@ -340,7 +409,11 @@ button {
   color: var(--muted);
   padding: 9px 5px;
   font-size: 12px;
+  line-height: 16px;
   font-weight: 800;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .mobile-nav button.active {
@@ -480,6 +553,7 @@ button {
   justify-content: space-between;
   gap: 12px;
   align-items: flex-end;
+  min-width: 0;
 }
 
 .facility-body strong {
@@ -487,6 +561,7 @@ button {
   font-size: 18px;
   line-height: 26px;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .facility-body p {
@@ -498,6 +573,9 @@ button {
 
 .reserve-label {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
   color: var(--primary);
   border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
@@ -505,7 +583,9 @@ button {
   font-size: 12px;
   line-height: 16px;
   font-weight: 800;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .card {
@@ -514,6 +594,7 @@ button {
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .span-two {
@@ -525,6 +606,11 @@ button {
   font-size: 18px;
   line-height: 26px;
   font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.card-title-spaced {
+  margin-top: 10px;
 }
 
 .reservation-layout {
@@ -554,6 +640,13 @@ button {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.form-head > *,
+.calendar-head > * {
+  min-width: 0;
 }
 
 .calendar-head h2 {
@@ -756,6 +849,7 @@ button {
   padding: 9px;
   font-size: 12px;
   line-height: 16px;
+  min-width: 0;
 }
 
 .calendar-reservation-row span {
@@ -803,6 +897,7 @@ button {
 
 .choice-card {
   min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   background: var(--surface-lowest);
   color: var(--text);
@@ -814,6 +909,7 @@ button {
   align-items: start;
   font-size: 14px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .field .choice-card {
@@ -827,9 +923,11 @@ button {
 
 .choice-card strong {
   display: block;
+  min-width: 0;
   font-size: 14px;
   line-height: 19px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .choice-card small {
@@ -987,6 +1085,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   padding: 5px 9px;
   border-radius: 999px;
   font-size: 12px;
@@ -996,6 +1095,8 @@ button {
   background: var(--surface-container);
   border: 1px solid var(--line-soft);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tag.blue { background: var(--primary-container); color: var(--on-primary-container); border-color: #b5c4ff; }
@@ -1039,15 +1140,23 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
   border: 1px solid var(--line);
   background: var(--surface-lowest);
   color: var(--muted);
   padding: 8px 10px;
   border-radius: var(--radius);
   font-weight: 700;
+  font-size: 13px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
 }
 
 .chip:has(input:checked) {
@@ -1083,6 +1192,7 @@ button {
 
 .lecture-mini-row {
   width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr) auto;
   gap: 10px;
@@ -1191,7 +1301,10 @@ button {
   background: transparent;
   color: var(--muted);
   padding: 12px;
+  min-width: 0;
   font-weight: 800;
+  line-height: 18px;
+  overflow-wrap: anywhere;
 }
 
 .side-nav button.active {
@@ -1250,9 +1363,12 @@ th {
   background: transparent;
   color: inherit;
   padding: 0;
+  max-width: 100%;
   font: inherit;
   font-weight: 900;
   text-transform: uppercase;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .table-sort.active {
@@ -1266,13 +1382,21 @@ tr:last-child td {
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
+  align-items: stretch;
 }
 
 .row-actions .button {
-  min-height: 32px;
-  padding: 6px 8px;
+  flex: 1 1 88px;
+  min-height: var(--control-height-sm);
+  padding: 7px 10px;
   font-size: 12px;
+  line-height: 16px;
+}
+
+.row-actions .button.compact {
+  flex: 0 1 auto;
 }
 
 .limit-actions {
@@ -1280,6 +1404,7 @@ tr:last-child td {
   grid-template-columns: minmax(92px, 1fr) auto;
   gap: 6px;
   margin-top: 6px;
+  min-width: 0;
 }
 
 .compact-select {
@@ -1340,6 +1465,7 @@ tr:last-child td {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   border: 1px solid #b5c4ff;
   background: var(--primary-container);
   color: var(--on-primary-container);
@@ -1348,6 +1474,7 @@ tr:last-child td {
   font-size: 12px;
   line-height: 16px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .selected-pill button {
@@ -1369,6 +1496,12 @@ tr:last-child td {
   border-radius: var(--radius);
   background: var(--surface-low);
   overflow-x: auto;
+  min-width: 0;
+}
+
+.tab-row .tab-button {
+  flex: 0 1 auto;
+  min-height: var(--control-height-sm);
 }
 
 .tab-row.wrap {
@@ -1421,12 +1554,18 @@ tr:last-child td {
 
 .inline-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  min-width: 0;
 }
 
 .inline-form .input {
-  flex: 1;
+  flex: 1 1 180px;
+}
+
+.inline-form .button {
+  flex: 0 1 auto;
 }
 
 .preview-box {
@@ -1482,6 +1621,10 @@ tr:last-child td {
 
 .hidden {
   display: none !important;
+}
+
+.section-gap {
+  height: 12px;
 }
 
 @media (min-width: 680px) {
@@ -1583,9 +1726,13 @@ tr:last-child td {
     background: transparent;
     color: var(--muted);
     padding: 9px 5px;
+    min-width: 0;
     font-size: 12px;
     line-height: 16px;
     font-weight: 800;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .admin-mobile-nav button.active {
@@ -1625,6 +1772,16 @@ tr:last-child td {
     margin-right: -14px;
   }
 
+  .mobile-nav button {
+    flex-basis: 58px;
+  }
+
+  .admin-mobile-nav button {
+    flex-basis: 72px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
   .calendar-card,
   .reservation-panel {
     padding: 14px;
@@ -1632,6 +1789,32 @@ tr:last-child td {
 
   .calendar-head {
     display: grid;
+  }
+
+  .calendar-head .row-actions,
+  .form-head > .button,
+  .form-head > a.button,
+  .limit-actions {
+    width: 100%;
+  }
+
+  .calendar-head .row-actions .button,
+  .form-head > .button,
+  .form-head > a.button {
+    flex: 1 1 0;
+  }
+
+  .limit-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .facility-body {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reserve-label {
+    width: 100%;
   }
 
   .calendar-day {
