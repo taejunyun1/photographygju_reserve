@@ -560,6 +560,19 @@ function addDaysToDateKey(key, days) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function todayKeySeoul() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date()).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 function equipmentPeriodDays(period = "") {
   if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
   if (String(period).includes("1박2일")) return 1;
@@ -607,6 +620,9 @@ function printCapacityBuckets(settings) {
 function validateReservation(db, type, fields, editingId = null) {
   if (!["equipment", "studio", "darkroom", "print"].includes(type)) {
     throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
+  }
+  if (fields.reservedDate && fields.reservedDate < todayKeySeoul()) {
+    throw Object.assign(new Error("오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다."), { status: 400 });
   }
 
   if (type === "equipment") {

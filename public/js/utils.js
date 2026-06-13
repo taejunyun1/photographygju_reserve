@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-equiprange1";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-equiprange1";
+import { state } from "./state.js?v=20260613-calrange1";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-calrange1";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -122,12 +122,6 @@ export function reservationDate(reservation) {
   return reservation?.fields?.reservedDate || "";
 }
 
-export function sharedReservations(type, key) {
-  return (state.bootstrap?.reservations || [])
-    .filter((item) => item.type === type)
-    .filter((item) => reservationDate(item) === key);
-}
-
 export function addDaysToDateKey(key, days) {
   const date = new Date(`${key}T00:00:00`);
   date.setDate(date.getDate() + days);
@@ -182,6 +176,24 @@ export function equipmentRangeLabel(reservedDate, period) {
   if (!range) return "기간을 선택하세요";
   if (range.start === range.end) return range.start;
   return `${range.start} - ${range.end}`;
+}
+
+export function reservationOverlapsDate(reservation, key) {
+  if (!reservation || !key) return false;
+  if (reservation.type === "equipment") {
+    return dateRangesOverlap(equipmentReservationRange(reservation.fields), { start: key, end: key });
+  }
+  return reservationDate(reservation) === key;
+}
+
+export function sharedReservations(type, key) {
+  return (state.bootstrap?.reservations || [])
+    .filter((item) => item.type === type)
+    .filter((item) => reservationOverlapsDate(item, key));
+}
+
+export function isPastDate(key) {
+  return Boolean(key && key < todayKey());
 }
 
 export function timeToMinutes(value) {
@@ -271,7 +283,8 @@ export function calendarReservationMeta(reservation) {
   const f = reservation.fields || {};
   if (reservation.type === "equipment") {
     const items = (reservation.equipmentItems || []).map((item) => item.code || item.name).join(", ");
-    return `${f.rentalTime || "-"} 대여 · ${items || "기자재"}`;
+    const range = equipmentRangeLabel(f.reservedDate, f.period);
+    return `${range} · ${f.rentalTime || "-"} 대여 · ${items || "기자재"}`;
   }
   if (reservation.type === "studio") {
     return `${(f.timeSlots || []).join(", ") || "-"} · ${(f.studioSpaces || [f.studioSpace]).filter(Boolean).join(", ") || "-"}`;
@@ -332,12 +345,14 @@ export function calendar(type) {
     const ownCount = reservations.filter(isMineReservation).length;
     const otherCount = reservations.length - ownCount;
     const blocked = blockedItemsForDate(state.bootstrap.settings.blockedSchedules || [], key).filter((item) => item.type === type);
+    const past = key < today;
     return {
       key,
       day: day.getDate(),
       currentMonth: day.getMonth() === month - 1,
       selected: key === selected,
       today: key === today,
+      past,
       ownCount,
       otherCount,
       blocked
@@ -368,7 +383,7 @@ export function calendar(type) {
       </div>
       <div class="calendar-grid-large">
         ${days.map((day) => `
-          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
+          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.past ? "past" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
             <span>${day.day}</span>
             <div class="calendar-markers">
               ${day.ownCount ? `<small class="calendar-marker mine">내 ${day.ownCount}</small>` : ""}

@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260613-equiprange1";
+import "./js/main.js?v=20260613-calrange1";

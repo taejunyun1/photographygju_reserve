@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260613-equiprange1";
+import { state } from "./state.js?v=20260613-calrange1";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260613-equiprange1";
+} from "./constants.js?v=20260613-calrange1";
 import {
   addMonths,
   adminGuide,
@@ -20,8 +20,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260613-equiprange1";
-import { noticeCard } from "./views-student.js?v=20260613-equiprange1";
+} from "./utils.js?v=20260613-calrange1";
+import { noticeCard } from "./views-student.js?v=20260613-calrange1";
 
 export function adminShell() {
   return `

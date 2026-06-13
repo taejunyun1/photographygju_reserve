@@ -786,6 +786,15 @@ a {
   color: var(--muted-2);
 }
 
+.calendar-day.past:not(.selected) {
+  background: var(--surface-low);
+  color: var(--muted-2);
+}
+
+.calendar-day.past:not(.selected) .calendar-marker {
+  opacity: 0.85;
+}
+
 .calendar-day.today {
   border-color: var(--primary);
 }

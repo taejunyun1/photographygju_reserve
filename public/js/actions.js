@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260613-equiprange1";
-import { api } from "./api.js?v=20260613-equiprange1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-equiprange1";
-import { render, toast } from "./renderer.js?v=20260613-equiprange1";
+import { state } from "./state.js?v=20260613-calrange1";
+import { api } from "./api.js?v=20260613-calrange1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-calrange1";
+import { render, toast } from "./renderer.js?v=20260613-calrange1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -10,11 +10,12 @@ import {
   formData,
   formatDateTime,
   getChecked,
+  isPastDate,
   minutesToTime,
   printSelectionConflicts,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-equiprange1";
+} from "./utils.js?v=20260613-calrange1";
 
 export async function login(form) {
   const data = formData(form);
@@ -95,6 +96,9 @@ export async function submitReservation(form) {
   let fields = { ...data };
   if (!fields.reservedDate) {
     throw new Error("캘린더에서 예약 날짜를 선택하세요.");
+  }
+  if (isPastDate(fields.reservedDate)) {
+    throw new Error("오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다.");
   }
   if (type === "equipment") {
     const visibleChecked = getChecked("equipmentItemIds");
