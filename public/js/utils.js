@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-calrange1";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-calrange1";
+import { state } from "./state.js?v=20260613-refactor2";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-refactor2";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -298,7 +298,8 @@ export function calendarReservationMeta(reservation) {
 export function calendarDayDetails(type, selected) {
   if (!selected) return "";
   const reservations = sharedReservations(type, selected);
-  if (!reservations.length) {
+  const blocked = reservationBlockedItemsForDate(type, selected);
+  if (!reservations.length && !blocked.length) {
     return `<div class="calendar-reservations empty-calendar-note">선택한 날짜에 공유된 ${typeLabel[type]} 예약이 없습니다.</div>`;
   }
   return `
@@ -313,6 +314,13 @@ export function calendarDayDetails(type, selected) {
           </div>
         `;
       }).join("")}
+      ${blocked.map((item) => `
+        <div class="calendar-reservation-row blocked">
+          <span>차단</span>
+          <strong>${escapeHtml(item.target || item.label || "운영 차단")}</strong>
+          <em>${escapeHtml(`${item.start || "-"}-${item.end || "-"}${item.from ? ` · ${item.from}~${item.to}` : ""}`)}</em>
+        </div>
+      `).join("")}
     </div>
   `;
 }
@@ -325,6 +333,88 @@ export function blockedItemsForDate(items, key) {
     if (item.to && key > item.to) return false;
     return true;
   });
+}
+
+export function reservationBlockedItemsForDate(type, key) {
+  const schedules = blockedItemsForDate(state.bootstrap.settings.blockedSchedules || [], key)
+    .filter((item) => item.type === type);
+  if (type !== "darkroom") return schedules;
+  const darkroomRules = blockedItemsForDate(state.bootstrap.settings.darkroomBlockedRules || [], key)
+    .map((item, index) => ({ ...item, id: item.id || `darkroom_rule_${index}`, type: "darkroom", target: item.label || "암실 사용 불가" }));
+  return [...schedules, ...darkroomRules];
+}
+
+export function timeRangeFromLabel(value) {
+  const match = String(value || "").match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+  if (!match) return null;
+  const start = timeToMinutes(match[1]);
+  let end = timeToMinutes(match[2]);
+  if (start === null || end === null) return null;
+  if (end <= start) end += 1440;
+  return { start, end };
+}
+
+export function scheduleOverlapsRange(item, range) {
+  if (!range) return true;
+  const start = timeToMinutes(item.start);
+  let end = timeToMinutes(item.end);
+  if (start === null || end === null) return true;
+  if (end <= start) end += 1440;
+  return intervalsOverlap(range.start, range.end, start, end);
+}
+
+export function studioTargetMatches(target, space) {
+  const rawTarget = String(target || "").trim();
+  if (!rawTarget) return true;
+  const rawSpace = String(space || "").trim();
+  if (!rawSpace) return true;
+  const normalizedTarget = rawTarget.toLowerCase().replace(/[\s,_/()·-]+/g, "");
+  const normalizedSpace = rawSpace.toLowerCase().replace(/[\s,_/()·-]+/g, "");
+  if (normalizedTarget.includes(normalizedSpace) || normalizedSpace.includes(normalizedTarget)) return true;
+  const wantsA = /studio\s*a|스튜디오\s*a|(^|[^a-z])a($|[^a-z])/i.test(rawTarget);
+  const wantsB = /studio\s*b|스튜디오\s*b|(^|[^a-z])b($|[^a-z])/i.test(rawTarget);
+  const isA = /studio\s*a|스튜디오\s*a/i.test(rawSpace);
+  const isB = /studio\s*b|스튜디오\s*b/i.test(rawSpace);
+  return (wantsA && isA) || (wantsB && isB);
+}
+
+export function blockingSchedulesForSlot(type, key, slot, target = "") {
+  const range = timeRangeFromLabel(slot);
+  return reservationBlockedItemsForDate(type, key)
+    .filter((item) => scheduleOverlapsRange(item, range))
+    .filter((item) => type !== "studio" || studioTargetMatches(item.target, target));
+}
+
+export function studioSlotBlocked(date, space, slot) {
+  return Boolean(date && blockingSchedulesForSlot("studio", date, slot, space).length);
+}
+
+export function darkroomSlotBlocked(date, slot) {
+  return Boolean(date && blockingSchedulesForSlot("darkroom", date, slot).length);
+}
+
+export function printSelectionBlocked(date, startTime, endTime) {
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  if (!date || start === null || end === null || end <= start) return [];
+  return reservationBlockedItemsForDate("print", date)
+    .filter((item) => scheduleOverlapsRange(item, { start, end }));
+}
+
+export function printBucketBlocked(date, bucket) {
+  return Boolean(date && reservationBlockedItemsForDate("print", date).some((item) => scheduleOverlapsRange(item, bucket)));
+}
+
+export function equipmentRangeBlocked(date, period) {
+  const range = equipmentReservationRange({ reservedDate: date, period });
+  if (!range) return [];
+  const blocked = [];
+  let cursor = range.start;
+  while (cursor <= range.end && blocked.length < 31) {
+    blocked.push(...reservationBlockedItemsForDate("equipment", cursor));
+    cursor = addDaysToDateKey(cursor, 1);
+  }
+  return blocked;
 }
 
 export function calendar(type) {
@@ -344,7 +434,7 @@ export function calendar(type) {
     const reservations = sharedReservations(type, key);
     const ownCount = reservations.filter(isMineReservation).length;
     const otherCount = reservations.length - ownCount;
-    const blocked = blockedItemsForDate(state.bootstrap.settings.blockedSchedules || [], key).filter((item) => item.type === type);
+    const blocked = reservationBlockedItemsForDate(type, key);
     const past = key < today;
     return {
       key,
@@ -400,20 +490,47 @@ export function calendar(type) {
 }
 
 export function parseCsv(text) {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((item) => item.trim());
-  return lines.slice(1).map((line) => {
-    const values = line.split(",").map((item) => item.trim());
-    const row = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || "";
-    });
-    return row;
-  });
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const source = String(text || "");
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    const next = source[index + 1];
+    if (quoted && char === "\"" && next === "\"") {
+      cell += "\"";
+      index += 1;
+      continue;
+    }
+    if (char === "\"") {
+      quoted = !quoted;
+      continue;
+    }
+    if (!quoted && char === ",") {
+      row.push(cell.trim());
+      cell = "";
+      continue;
+    }
+    if (!quoted && (char === "\n" || char === "\r")) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+    cell += char;
+  }
+  row.push(cell.trim());
+  if (row.some(Boolean)) rows.push(row);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map((item) => item.trim());
+  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])));
 }
 
 export function csvEscape(value) {
   const text = String(value ?? "");
-  return `"${text.replaceAll('"', '""')}"`;
+  const protectedText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  return `"${protectedText.replaceAll('"', '""')}"`;
 }

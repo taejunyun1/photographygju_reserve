@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260613-calrange1";
-import { api } from "./api.js?v=20260613-calrange1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-calrange1";
+import { state } from "./state.js?v=20260613-refactor2";
+import { api } from "./api.js?v=20260613-refactor2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-refactor2";
 import {
   changePassword,
   downloadLectureCsv,
@@ -9,13 +9,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260613-calrange1";
-import { render, toast } from "./renderer.js?v=20260613-calrange1";
+} from "./actions.js?v=20260613-refactor2";
+import { render, toast } from "./renderer.js?v=20260613-refactor2";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260613-calrange1";
+} from "./utils.js?v=20260613-refactor2";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {

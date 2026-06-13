@@ -1,28 +1,35 @@
-import { state } from "./state.js?v=20260613-calrange1";
-import { api } from "./api.js?v=20260613-calrange1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-calrange1";
-import { render, toast } from "./renderer.js?v=20260613-calrange1";
+import { state } from "./state.js?v=20260613-refactor2";
+import { api } from "./api.js?v=20260613-refactor2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-refactor2";
+import { render, toast } from "./renderer.js?v=20260613-refactor2";
 import {
   areSlotsConsecutive,
   csvEscape,
+  darkroomSlotBlocked,
   darkroomSlotRemaining,
+  equipmentRangeBlocked,
   equipmentItemReservedInRange,
   formData,
   formatDateTime,
   getChecked,
   isPastDate,
   minutesToTime,
+  printSelectionBlocked,
   printSelectionConflicts,
+  studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-calrange1";
+} from "./utils.js?v=20260613-refactor2";
 
 export async function login(form) {
   const data = formData(form);
   const result = await api("/api/auth/login", { method: "POST", body: data });
   state.token = result.token;
   state.user = result.user;
+  state.view = "home";
+  state.reservationType = "";
   localStorage.setItem("gju_token", state.token);
+  await loadBootstrap();
   if (state.user.role === "admin") await loadAdminData();
   if (state.user.role === "student") {
     await loadMyReservations();
@@ -44,7 +51,17 @@ export async function logout() {
   state.user = null;
   state.myReservations = [];
   state.lectures = [];
+  state.view = "home";
+  state.reservationType = "";
   state.activeNoticeId = "";
+  state.activeReportReservationId = "";
+  state.selectedDates = { equipment: "", studio: "", darkroom: "", print: "" };
+  state.selectedEquipmentItemIds = [];
+  state.selectedEquipmentPeriod = "";
+  state.selectedEquipmentRentalTime = "";
+  state.selectedEquipmentReturnTime = "";
+  state.selectedStudioSpace = "";
+  state.selectedStudioSlots = [];
   localStorage.removeItem("gju_token");
   render();
 }
@@ -108,6 +125,7 @@ export async function submitReservation(form) {
     state.selectedEquipmentReturnTime = fields.returnTime || state.selectedEquipmentReturnTime;
     fields.equipmentItemIds = state.selectedEquipmentItemIds;
     if (!fields.equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
+    if (equipmentRangeBlocked(fields.reservedDate, fields.period).length) throw new Error("선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다.");
     const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields.reservedDate, fields.period));
     if (unavailableItems.length) throw new Error("선택한 대여 기간에 이미 예약된 기자재가 포함되어 있습니다.");
   }
@@ -126,6 +144,10 @@ export async function submitReservation(form) {
     if (!areSlotsConsecutive(fields.timeSlots, state.bootstrap.settings.studioSlots)) {
       throw new Error("스튜디오는 연속된 시간만 예약할 수 있습니다.");
     }
+    const blockedPairs = fields.studioSpaces.flatMap((space) => fields.timeSlots
+      .filter((slot) => studioSlotBlocked(fields.reservedDate, space, slot))
+      .map((slot) => `${space} / ${slot}`));
+    if (blockedPairs.length) throw new Error(`차단된 스튜디오 시간입니다: ${blockedPairs.slice(0, 3).join(", ")}`);
     const conflicts = studioSelectionConflicts(fields.reservedDate, fields.studioSpaces, fields.timeSlots);
     if (conflicts.length) throw new Error(`이미 예약된 스튜디오 조합입니다: ${conflicts.slice(0, 3).join(", ")}`);
   }
@@ -140,6 +162,8 @@ export async function submitReservation(form) {
     if (!fields.timeSlots.length) throw new Error("암실 사용 시간을 선택하세요.");
     if (!fields.processTypes.length) throw new Error("암실 작업 유형을 선택하세요.");
     const participantCount = Math.max(1, Number(fields.participantCount || 1));
+    const blockedSlots = fields.timeSlots.filter((slot) => darkroomSlotBlocked(fields.reservedDate, slot));
+    if (blockedSlots.length) throw new Error(`암실 사용 불가 시간입니다: ${blockedSlots.join(", ")}`);
     const fullSlots = fields.timeSlots.filter((slot) => darkroomSlotRemaining(fields.reservedDate, slot) < participantCount);
     if (fullSlots.length) throw new Error(`암실 정원을 초과하는 시간입니다: ${fullSlots.join(", ")}`);
   }
@@ -153,6 +177,8 @@ export async function submitReservation(form) {
     if (!fields.printTypes.length) throw new Error("출력 종류를 선택하세요.");
     if (!fields.papers.length) throw new Error("용지를 선택하세요.");
     if (!fields.sizes.length) throw new Error("사이즈를 선택하세요.");
+    const blockedPrintSlots = printSelectionBlocked(fields.reservedDate, fields.startTime, fields.endTime);
+    if (blockedPrintSlots.length) throw new Error("선택한 출력실 시간이 차단 일정과 겹칩니다.");
     const printConflicts = printSelectionConflicts(fields.reservedDate, fields.startTime, fields.endTime);
     if (printConflicts.length) {
       const labels = printConflicts.map((bucket) => `${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)}`).join(", ");

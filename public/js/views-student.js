@@ -1,24 +1,28 @@
-import { state } from "./state.js?v=20260613-calrange1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260613-calrange1";
+import { state } from "./state.js?v=20260613-refactor2";
+import { statusLabel, typeLabel } from "./constants.js?v=20260613-refactor2";
 import {
   areSlotsConsecutive,
   calendar,
+  darkroomSlotBlocked,
   darkroomSlotRemaining,
   equipmentCategories,
   equipmentItemReservedInRange,
+  equipmentRangeBlocked,
   equipmentRangeLabel,
   escapeHtml,
   isPastDate,
   minutesToTime,
   noticePreview,
+  printBucketBlocked,
   printBucketUsage,
   printCapacityBuckets,
+  studioSlotBlocked,
   studioPairReservedOnDate,
   sortedNotices,
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260613-calrange1";
+} from "./utils.js?v=20260613-refactor2";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -273,7 +277,7 @@ function pastDateMessage() {
   return `<p class="muted">오늘 이전 날짜는 예약할 수 없습니다. 캘린더의 기존 예약 기록만 확인할 수 있습니다.</p>`;
 }
 
-function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastDate) {
+function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastDate, rangeBlocked) {
   if (!selectedDate) {
     return reservationStep(2, "대여 기간/시간 선택", `<p class="muted">먼저 캘린더에서 대여 시작 날짜를 선택하세요.</p>`, { locked: true });
   }
@@ -283,22 +287,25 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastD
   return reservationStep(2, "대여 기간/시간 선택", `
     <div class="studio-time-summary">
       <strong>${escapeHtml(equipmentRangeLabel(selectedDate, period))}</strong>
-      <span>선택한 기간 전체에 겹치는 장비는 다음 단계에서 자동으로 제외됩니다.</span>
+      <span>${rangeBlocked ? "선택 기간에 차단 일정이 포함되어 예약할 수 없습니다." : "선택한 기간 전체에 겹치는 장비는 다음 단계에서 자동으로 제외됩니다."}</span>
     </div>
     <div class="grid two control-grid">
       <div class="field"><label>대여기간</label><select class="select" name="period">${state.bootstrap.settings.equipmentPeriods.map((item) => `<option ${item === period ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       <div class="field"><label>대여 시간</label><select class="select" name="rentalTime">${state.bootstrap.settings.equipmentRentalTimes.map((item) => `<option ${item === rentalTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       <div class="field"><label>반납 시간</label><select class="select" name="returnTime">${state.bootstrap.settings.equipmentReturnTimes.map((item) => `<option ${item === returnTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
     </div>
-  `);
+  `, rangeBlocked ? { note: "기간을 변경하거나 다른 날짜를 선택하세요." } : {});
 }
 
-function equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, pastDate) {
+function equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, pastDate, rangeBlocked) {
   if (!selectedDate) {
     return reservationStep(3, "기자재 선택", `<p class="muted">대여 시작 날짜를 선택하면 기자재 목록이 열립니다.</p>`, { locked: true });
   }
   if (pastDate) {
     return reservationStep(3, "기자재 선택", pastDateMessage(), { locked: true });
+  }
+  if (rangeBlocked) {
+    return reservationStep(3, "기자재 선택", `<p class="muted">선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다. 다른 기간을 선택하세요.</p>`, { locked: true });
   }
   return reservationStep(3, "기자재 선택", `
     <div class="equipment-picker-head">
@@ -334,9 +341,12 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
   `, { note: "카테고리로 좁혀보고 필요한 장비는 여러 개 담을 수 있습니다." });
 }
 
-function equipmentDetailStep(selectedItems, pastDate) {
+function equipmentDetailStep(selectedItems, pastDate, rangeBlocked) {
   if (pastDate) {
     return reservationStep(4, "나머지 정보 입력", pastDateMessage(), { locked: true });
+  }
+  if (rangeBlocked) {
+    return reservationStep(4, "나머지 정보 입력", `<p class="muted">차단 일정과 겹치는 기간에는 승인 요청을 보낼 수 없습니다.</p>`, { locked: true });
   }
   if (!selectedItems.length) {
     return reservationStep(4, "나머지 정보 입력", `<p class="muted">기자재를 1개 이상 선택하면 연락처, 목적, 요청사항 입력란이 열립니다.</p>`, { locked: true });
@@ -359,7 +369,10 @@ export function equipmentForm() {
   const period = selectedEquipmentPeriod();
   const rentalTime = selectedEquipmentTime("selectedEquipmentRentalTime", "equipmentRentalTimes");
   const returnTime = selectedEquipmentTime("selectedEquipmentReturnTime", "equipmentReturnTimes");
+  const rangeBlocked = Boolean(selectedDate && !pastDate && equipmentRangeBlocked(selectedDate, period).length);
   if (pastDate) {
+    state.selectedEquipmentItemIds = [];
+  } else if (rangeBlocked) {
     state.selectedEquipmentItemIds = [];
   } else if (selectedDate) {
     state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => !equipmentItemReservedInRange(itemId, selectedDate, period));
@@ -381,9 +394,9 @@ export function equipmentForm() {
         </div>
         <p class="muted">카메라 Body, Lens, 조명, 음향 장비를 한 번에 여러 개 담을 수 있습니다. 카메라/렌즈 대여 시 가방 또는 케이스를 지참해야 합니다.</p>
         ${reservationStep(1, "날짜 선택", `<p class="selected-date">대여 시작 날짜: <strong>${selectedDate || "캘린더에서 날짜를 선택하세요"}</strong></p>`)}
-        ${equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastDate)}
-        ${equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, pastDate)}
-        ${equipmentDetailStep(selectedItems, pastDate)}
+        ${equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastDate, rangeBlocked)}
+        ${equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, pastDate, rangeBlocked)}
+        ${equipmentDetailStep(selectedItems, pastDate, rangeBlocked)}
       </section>
     </form>
   `;
@@ -442,7 +455,7 @@ function studioSpaceStep(selectedDate, pastDate) {
     2,
     "공간 1개 선택",
     `<div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((space) => {
-      const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, space, slot));
+      const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, space, slot) && !studioSlotBlocked(selectedDate, space, slot));
       const full = availableSlots.length === 0;
       return `
         <label class="choice-card compact-choice ${full ? "is-unavailable" : ""}">
@@ -469,7 +482,7 @@ function studioTimeStep(selectedDate, pastDate) {
     return reservationStep(3, "사용 가능한 시간 선택", `<p class="muted">공간을 1개 선택하면 해당 공간의 남은 시간만 표시됩니다.</p>`, { locked: true });
   }
   const maxSlots = Number(state.bootstrap.settings.studioMaxSlots || 3);
-  const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+  const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot) && !studioSlotBlocked(selectedDate, state.selectedStudioSpace, slot));
   if (!availableSlots.length) {
     return reservationStep(
       3,
@@ -523,8 +536,9 @@ function printStartOption(time, selectedDate) {
   const capacity = Number(state.bootstrap.settings.printCapacityPerWindow || 4);
   const bucket = printCapacityBuckets().find((item) => minute !== null && minute >= item.start && minute < item.end);
   const count = selectedDate && bucket ? printBucketUsage(selectedDate, bucket) : 0;
-  const full = selectedDate && bucket && count >= capacity;
-  return `<option ${full ? "disabled" : ""}>${escapeHtml(time)}${full ? " 마감" : ""}</option>`;
+  const blocked = selectedDate && bucket && printBucketBlocked(selectedDate, bucket);
+  const full = selectedDate && bucket && (count >= capacity || blocked);
+  return `<option ${full ? "disabled" : ""}>${escapeHtml(time)}${blocked ? " 차단" : full ? " 마감" : ""}</option>`;
 }
 
 function printAvailabilityPanel(selectedDate) {
@@ -538,8 +552,9 @@ function printAvailabilityPanel(selectedDate) {
       <div class="availability-chip-grid">
         ${printCapacityBuckets().map((bucket) => {
           const count = printBucketUsage(selectedDate, bucket);
-          const full = count >= capacity;
-          return `<span class="availability-chip ${full ? "blocked" : "open"}">${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)} · ${Math.max(0, capacity - count)}명 가능</span>`;
+          const blocked = printBucketBlocked(selectedDate, bucket);
+          const full = count >= capacity || blocked;
+          return `<span class="availability-chip ${full ? "blocked" : "open"}">${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)} · ${blocked ? "차단" : `${Math.max(0, capacity - count)}명 가능`}</span>`;
         }).join("")}
       </div>
     </div>
@@ -554,14 +569,14 @@ export function studioForm() {
     state.selectedStudioSlots = [];
   }
   if (selectedDate && state.selectedStudioSpace) {
-    const spaceAvailable = state.bootstrap.settings.studioSlots.some((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+    const spaceAvailable = state.bootstrap.settings.studioSlots.some((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot) && !studioSlotBlocked(selectedDate, state.selectedStudioSpace, slot));
     if (!spaceAvailable) {
       state.selectedStudioSpace = "";
       state.selectedStudioSlots = [];
     }
   }
   if (selectedDate && state.selectedStudioSpace) {
-    state.selectedStudioSlots = state.selectedStudioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+    state.selectedStudioSlots = state.selectedStudioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot) && !studioSlotBlocked(selectedDate, state.selectedStudioSpace, slot));
   }
   return `
     <form class="reservation-layout" data-form="reservation" data-type="studio">
@@ -591,8 +606,9 @@ export function darkroomForm() {
   const slotStep = canReserve
     ? reservationStep(2, "사용 가능한 시간 선택", `<div class="choice-grid">${state.bootstrap.settings.darkroomSlots.map((slot) => {
       const remaining = darkroomSlotRemaining(selectedDate, slot);
-      const full = remaining <= 0;
-      return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="darkroomSlots" value="${slot}" ${full ? "disabled" : ""} /><span><strong>${slot}</strong><small>잔여 ${remaining}명</small></span></label>`;
+      const blocked = darkroomSlotBlocked(selectedDate, slot);
+      const full = remaining <= 0 || blocked;
+      return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="darkroomSlots" value="${slot}" ${full ? "disabled" : ""} /><span><strong>${slot}</strong><small>${blocked ? "사용 불가" : `잔여 ${remaining}명`}</small></span></label>`;
     }).join("")}</div>`, { note: "정원이 찬 시간은 선택할 수 없습니다." })
     : reservationStep(2, "사용 가능한 시간 선택", selectedDate ? pastDateMessage() : `<p class="muted">먼저 캘린더에서 암실 사용 날짜를 선택하세요.</p>`, { locked: true });
   const processStep = canReserve

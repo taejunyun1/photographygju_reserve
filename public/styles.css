@@ -922,6 +922,11 @@ a {
   color: var(--green);
 }
 
+.calendar-reservation-row.blocked span {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .calendar-reservation-row strong,
 .calendar-reservation-row em {
   min-width: 0;

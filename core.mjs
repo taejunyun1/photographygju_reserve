@@ -16,6 +16,18 @@ const LIMIT_DURATION_DAYS = {
   month1: 30,
   semester: 120
 };
+const APPROVAL_STATUSES = new Set(["approval_pending", "approved", "rejected", "blocked"]);
+const RESERVATION_STATUSES = new Set(["pending_approval", "auto_confirmed", "approved", "cancelled", "admin_cancelled", "checked_out", "returned", "completed", "rejected"]);
+const EQUIPMENT_STATUSES = new Set(["available", "rented", "maintenance", "repair", "lost", "사용 가능", "대여 중", "점검 중", "수리 중", "분실"]);
+const WEEKDAY_INDEX = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6
+};
 
 const defaultSettings = {
   appName: "GJU-reserve",
@@ -246,6 +258,15 @@ function maskPhone(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
   if (digits.length < 7) return phone || "";
   return `${digits.slice(0, 3)}-****-${digits.slice(-4)}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function categoryPrefix(category) {
@@ -605,6 +626,88 @@ function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
+function dateKeysInRange(range) {
+  if (!range) return [];
+  const keys = [];
+  let cursor = range.start;
+  while (cursor && cursor <= range.end && keys.length < 31) {
+    keys.push(cursor);
+    cursor = addDaysToDateKey(cursor, 1);
+  }
+  return keys;
+}
+
+function dayIndexForDateKey(key) {
+  return new Date(`${key}T00:00:00`).getDay();
+}
+
+function ruleAppliesToDate(rule, key) {
+  if (!rule || !key || WEEKDAY_INDEX[rule.day] !== dayIndexForDateKey(key)) return false;
+  if (rule.from && key < rule.from) return false;
+  if (rule.to && key > rule.to) return false;
+  return true;
+}
+
+function timeRangeFromLabel(value) {
+  const match = String(value || "").match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+  if (!match) return null;
+  const start = timeToMinutes(match[1]);
+  let end = timeToMinutes(match[2]);
+  if (start === null || end === null) return null;
+  if (end <= start) end += 1440;
+  return { start, end };
+}
+
+function ruleTimeRange(rule) {
+  const start = timeToMinutes(rule?.start);
+  let end = timeToMinutes(rule?.end);
+  if (start === null || end === null) return null;
+  if (end <= start) end += 1440;
+  return { start, end };
+}
+
+function scheduleOverlapsRange(rule, range) {
+  if (!range) return true;
+  const blocked = ruleTimeRange(rule);
+  if (!blocked) return true;
+  return intervalsOverlap(range.start, range.end, blocked.start, blocked.end);
+}
+
+function studioTargetMatches(target, space) {
+  const rawTarget = String(target || "").trim();
+  if (!rawTarget) return true;
+  const rawSpace = String(space || "").trim();
+  if (!rawSpace) return true;
+  const normalizedTarget = rawTarget.toLowerCase().replace(/[\s,_/()·-]+/g, "");
+  const normalizedSpace = rawSpace.toLowerCase().replace(/[\s,_/()·-]+/g, "");
+  if (normalizedTarget.includes(normalizedSpace) || normalizedSpace.includes(normalizedTarget)) return true;
+
+  const wantsA = /studio\s*a|스튜디오\s*a|(^|[^a-z])a($|[^a-z])/i.test(rawTarget);
+  const wantsB = /studio\s*b|스튜디오\s*b|(^|[^a-z])b($|[^a-z])/i.test(rawTarget);
+  const isA = /studio\s*a|스튜디오\s*a/i.test(rawSpace);
+  const isB = /studio\s*b|스튜디오\s*b/i.test(rawSpace);
+  return (wantsA && isA) || (wantsB && isB);
+}
+
+function blockingSchedulesFor(db, type, key, range = null, target = "") {
+  return (db.settings.blockedSchedules || [])
+    .filter((rule) => rule.type === type)
+    .filter((rule) => ruleAppliesToDate(rule, key))
+    .filter((rule) => scheduleOverlapsRange(rule, range))
+    .filter((rule) => type !== "studio" || studioTargetMatches(rule.target, target));
+}
+
+function darkroomBlockedRulesFor(db, key, slot) {
+  const range = timeRangeFromLabel(slot);
+  return (db.settings.darkroomBlockedRules || [])
+    .filter((rule) => ruleAppliesToDate(rule, key))
+    .filter((rule) => scheduleOverlapsRange(rule, range));
+}
+
+function blockLabel(rule) {
+  return `${rule.label || rule.day || "차단"} ${rule.start || ""}-${rule.end || ""}`.trim();
+}
+
 function printCapacityBuckets(settings) {
   const start = timeToMinutes(settings.printAvailableStart);
   const end = timeToMinutes(settings.printAvailableEnd);
@@ -631,6 +734,10 @@ function validateReservation(db, type, fields, editingId = null) {
       throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });
     }
     const requestedRange = equipmentReservationRange(fields);
+    const blockedDate = dateKeysInRange(requestedRange).find((key) => blockingSchedulesFor(db, "equipment", key).length);
+    if (blockedDate) {
+      throw Object.assign(new Error(`${blockedDate}은 기자재 예약 차단 일정이 있어 예약할 수 없습니다.`), { status: 409 });
+    }
     for (const itemId of fields.equipmentItemIds) {
       const item = db.equipment.find((eq) => eq.id === itemId);
       if (!item || !item.active || !item.reservable) {
@@ -655,6 +762,14 @@ function validateReservation(db, type, fields, editingId = null) {
     if (fields.timeSlots.length > db.settings.studioMaxSlots) throw Object.assign(new Error(`스튜디오는 최대 ${db.settings.studioMaxSlots}타임까지 예약할 수 있습니다.`), { status: 400 });
     if (!areSlotsConsecutive(fields.timeSlots, db.settings.studioSlots)) throw Object.assign(new Error("스튜디오는 연속된 시간만 예약할 수 있습니다."), { status: 400 });
     const selectedSpaces = studioSpaces(fields);
+    for (const space of selectedSpaces) {
+      for (const slot of fields.timeSlots) {
+        const blocked = blockingSchedulesFor(db, "studio", fields.reservedDate, timeRangeFromLabel(slot), space);
+        if (blocked.length) {
+          throw Object.assign(new Error(`${space} ${slot}은 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
+        }
+      }
+    }
     const conflict = db.reservations.find((reservation) => {
       if (reservation.id === editingId || reservation.type !== "studio") return false;
       if (!isBlockingReservation(reservation)) return false;
@@ -670,6 +785,13 @@ function validateReservation(db, type, fields, editingId = null) {
     if (!Array.isArray(fields.timeSlots) || fields.timeSlots.length === 0) throw Object.assign(new Error("암실 사용 시간을 선택해야 합니다."), { status: 400 });
     const participantCount = Math.max(1, Number(fields.participantCount || 1));
     for (const slot of fields.timeSlots) {
+      const blocked = [
+        ...darkroomBlockedRulesFor(db, fields.reservedDate, slot),
+        ...blockingSchedulesFor(db, "darkroom", fields.reservedDate, timeRangeFromLabel(slot))
+      ];
+      if (blocked.length) {
+        throw Object.assign(new Error(`${slot}은 암실 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
+      }
       const reservedCount = db.reservations
         .filter((reservation) => reservation.id !== editingId)
         .filter((reservation) => reservation.type === "darkroom")
@@ -694,6 +816,10 @@ function validateReservation(db, type, fields, editingId = null) {
     }
     if (start < availableStart || end > availableEnd) {
       throw Object.assign(new Error(`출력실 사용 가능 시간은 ${db.settings.printAvailableStart}-${db.settings.printAvailableEnd}입니다.`), { status: 400 });
+    }
+    const blocked = blockingSchedulesFor(db, "print", fields.reservedDate, { start, end });
+    if (blocked.length) {
+      throw Object.assign(new Error(`${fields.startTime}-${fields.endTime}은 출력실 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
     }
     const capacity = Number(db.settings.printCapacityPerWindow || 4);
     const overloaded = printCapacityBuckets(db.settings)
@@ -937,14 +1063,17 @@ export async function handleApiRequest(ctx) {
 
   try {
       if (routeKey(method, pathname) === "GET /api/bootstrap") {
+        const user = getAuthUser(authorization, db);
         return ok({
           settings: db.settings,
           darkroomChemicals: db.darkroomChemicals,
           equipment: db.equipment.filter((item) => item.active),
           notices: db.notices.filter((notice) => notice.status === "published"),
-          reservations: db.reservations
-            .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
-            .map((reservation) => publicReservationSummary(db, reservation))
+          reservations: user
+            ? db.reservations
+              .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
+              .map((reservation) => publicReservationSummary(db, reservation))
+            : []
         });
       }
 
@@ -1159,7 +1288,7 @@ export async function handleApiRequest(ctx) {
           reservationId: reservation.id,
           userId: user.id,
           fields: body,
-          htmlSnapshot: `<article><h1>스튜디오 보고서</h1><p>예약: ${reservation.id}</p><p>사용 시간: ${body.actualTime}</p><p>인원: ${body.participants}</p><p>파손/이상: ${body.damageFound ? body.damageDescription || "있음" : "없음"}</p></article>`,
+          htmlSnapshot: `<article><h1>스튜디오 보고서</h1><p>예약: ${escapeHtml(reservation.id)}</p><p>사용 시간: ${escapeHtml(body.actualTime)}</p><p>인원: ${escapeHtml(body.participants)}</p><p>파손/이상: ${escapeHtml(body.damageFound ? body.damageDescription || "있음" : "없음")}</p></article>`,
           submittedAt: nowIso(),
           expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 183).toISOString()
         };
@@ -1194,7 +1323,11 @@ export async function handleApiRequest(ctx) {
         const body = await parseBody(readText);
         const user = db.users.find((item) => item.id === userApprovalMatch[1]);
         if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
-        user.approvalStatus = body.approvalStatus || "approved";
+        const nextApprovalStatus = body.approvalStatus || "approved";
+        if (!APPROVAL_STATUSES.has(nextApprovalStatus)) {
+          throw Object.assign(new Error("지원하지 않는 사용자 상태입니다."), { status: 400 });
+        }
+        user.approvalStatus = nextApprovalStatus;
         if (user.approvalStatus === "blocked") {
           user.blockDuration = body.limitDuration || "week1";
           user.blockedAt = nowIso();
@@ -1239,6 +1372,9 @@ export async function handleApiRequest(ctx) {
         const reservation = db.reservations.find((item) => item.id === adminReservationStatusMatch[1]);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         assertRequired(body, ["status"]);
+        if (!RESERVATION_STATUSES.has(body.status)) {
+          throw Object.assign(new Error("지원하지 않는 예약 상태입니다."), { status: 400 });
+        }
         reservation.status = body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
         reservation.updatedAt = nowIso();
@@ -1348,6 +1484,10 @@ export async function handleApiRequest(ctx) {
         const body = await parseBody(readText);
         const item = db.equipment.find((eq) => eq.id === equipmentPatchMatch[1]);
         if (!item) throw Object.assign(new Error("기자재를 찾을 수 없습니다."), { status: 404 });
+        const nextStatus = body.status ?? item.status;
+        if (nextStatus && !EQUIPMENT_STATUSES.has(nextStatus)) {
+          throw Object.assign(new Error("지원하지 않는 기자재 상태입니다."), { status: 400 });
+        }
         Object.assign(item, body, { updatedAt: nowIso() });
         audit(db, admin, "equipment.updated", item.id, body);
         await saveDb();
