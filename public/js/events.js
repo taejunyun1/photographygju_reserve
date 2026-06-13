@@ -1,0 +1,312 @@
+import { state } from "./state.js?v=20260613-mod3";
+import { api } from "./api.js?v=20260613-mod3";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-mod3";
+import {
+  changePassword,
+  downloadLectureCsv,
+  login,
+  logout,
+  openReport,
+  signup,
+  submitReservation
+} from "./actions.js?v=20260613-mod3";
+import { render, toast } from "./renderer.js?v=20260613-mod3";
+import {
+  calendarDayDetails,
+  equipmentCategories,
+  formData,
+  parseCsv
+} from "./utils.js?v=20260613-mod3";
+import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-mod3";
+
+export function setupEventHandlers() {
+  document.addEventListener("click", async (event) => {
+    const target = event.target.closest("button, a");
+    if (!target) return;
+    try {
+      if (target.dataset.authMode) {
+        state.authMode = target.dataset.authMode;
+        render();
+      }
+      if (target.dataset.noticeOpen) {
+        state.activeNoticeId = target.dataset.noticeOpen;
+        render();
+        return;
+      }
+      if (target.dataset.noticeClose !== undefined) {
+        state.activeNoticeId = "";
+        render();
+        return;
+      }
+      if (target.dataset.calendarMonth) {
+        state.calendarMonth = target.dataset.calendarMonth;
+        render();
+        return;
+      }
+      if (target.dataset.calendarDay) {
+        const widget = target.closest("[data-calendar]");
+        const type = widget?.dataset.calendar || state.reservationType;
+        state.selectedDates[type] = target.dataset.calendarDay;
+        widget?.querySelectorAll(".calendar-day").forEach((button) => button.classList.toggle("selected", button === target));
+        const input = widget?.querySelector('input[name="reservedDate"]');
+        if (input) input.value = target.dataset.calendarDay;
+        const selectedLabel = widget?.querySelector("[data-calendar-selected]");
+        if (selectedLabel) selectedLabel.textContent = target.dataset.calendarDay;
+        const details = widget?.querySelector("[data-calendar-details]");
+        if (details) details.innerHTML = calendarDayDetails(type, target.dataset.calendarDay);
+        return;
+      }
+      if (target.dataset.action === "logout") await logout();
+      if (target.dataset.equipmentCategory) {
+        state.equipmentCategoryFilter = target.dataset.equipmentCategory;
+        render();
+        return;
+      }
+      if (target.dataset.equipmentRemove) {
+        state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.dataset.equipmentRemove);
+        render();
+        return;
+      }
+      if (target.dataset.action === "csv-preview") {
+        const form = target.closest("form");
+        state.csvPreviewRows = parseCsv(formData(form).csv || "");
+        render();
+        return;
+      }
+      if (target.dataset.action === "lecture-export") {
+        downloadLectureCsv();
+        return;
+      }
+      if (target.dataset.studentView) {
+        state.view = target.dataset.studentView;
+        if (state.view === "mine") await loadMyReservations();
+        if (state.view === "reports") await loadMyReservations();
+        if (state.view === "lectures") await loadLectures();
+        render();
+      }
+      if (target.dataset.reserveShortcut) {
+        state.view = "reserve";
+        state.reservationType = target.dataset.reserveShortcut;
+        render();
+      }
+      if (target.dataset.reserveType) {
+        state.reservationType = target.dataset.reserveType;
+        render();
+      }
+      if (target.dataset.action === "reserve-back") {
+        state.reservationType = "";
+        render();
+      }
+      if (target.dataset.cancelRes) {
+        if (!confirm("예약을 취소할까요?")) return;
+        await api(`/api/reservations/${target.dataset.cancelRes}/cancel`, { method: "POST", body: { reason: "학생 취소" } });
+        await loadBootstrap();
+        await loadMyReservations();
+        toast("예약이 취소되었습니다.");
+      }
+      if (target.dataset.reportRes) await openReport(target.dataset.reportRes);
+      if (target.dataset.reportOpen) {
+        state.activeReportReservationId = target.dataset.reportOpen;
+        render();
+        return;
+      }
+      if (target.dataset.reportClose !== undefined) {
+        state.activeReportReservationId = "";
+        render();
+        return;
+      }
+      if (target.dataset.lectureApply) {
+        await api(`/api/lectures/${target.dataset.lectureApply}/apply`, { method: "POST" });
+        await loadLectures();
+        toast("특강 신청이 완료되었습니다.");
+        render();
+        return;
+      }
+      if (target.dataset.adminView) {
+        if (target.dataset.adminReservationTab) state.adminReservationTab = target.dataset.adminReservationTab;
+        state.adminView = target.dataset.adminView;
+        render();
+      }
+      if (target.dataset.adminReservationTab && !target.dataset.adminView) {
+        state.adminReservationTab = target.dataset.adminReservationTab;
+        render();
+      }
+      if (target.dataset.adminEquipmentTab) {
+        state.adminEquipmentTab = target.dataset.adminEquipmentTab;
+        render();
+      }
+      if (target.dataset.adminEquipmentCategoryTab) {
+        state.adminEquipmentCategoryTab = target.dataset.adminEquipmentCategoryTab;
+        render();
+      }
+      if (target.dataset.lectureUpdate) {
+        const status = document.querySelector(`[data-lecture-status="${target.dataset.lectureUpdate}"]`)?.value || "모집중";
+        await api(`/api/admin/lectures/${target.dataset.lectureUpdate}`, { method: "PATCH", body: { status } });
+        await loadAdminData();
+        toast("특강 상태를 저장했습니다.");
+      }
+      if (target.dataset.blockedRemove) {
+        const settings = state.bootstrap.settings;
+        const blockedSchedules = (settings.blockedSchedules || []).filter((item) => item.id !== target.dataset.blockedRemove);
+        await api("/api/admin/settings", { method: "PATCH", body: { blockedSchedules } });
+        await loadBootstrap();
+        toast("차단 일정을 삭제했습니다.");
+      }
+      if (target.dataset.userSort) {
+        const field = target.dataset.userSort;
+        state.adminUserSort = {
+          field,
+          direction: state.adminUserSort.field === field && state.adminUserSort.direction === "asc" ? "desc" : "asc"
+        };
+        render();
+        return;
+      }
+      if (target.dataset.userApproval) {
+        const body = { approvalStatus: target.dataset.status };
+        if (target.dataset.status === "blocked") {
+          body.limitDuration = document.querySelector(`[data-user-limit-duration="${target.dataset.userApproval}"]`)?.value || "week1";
+        }
+        await api(`/api/admin/users/${target.dataset.userApproval}/approval`, { method: "PATCH", body });
+        await loadAdminData();
+        toast("사용자 상태를 변경했습니다.");
+      }
+      if (target.dataset.userReset) {
+        const input = prompt("새 비밀번호를 입력하세요. 비워두면 임시 비밀번호가 자동 생성됩니다.", "");
+        if (input === null) return;
+        const body = input.trim() ? { newPassword: input.trim() } : {};
+        const result = await api(`/api/admin/users/${target.dataset.userReset}/password`, { method: "PATCH", body });
+        if (result.generatedPassword) {
+          alert(`임시 비밀번호: ${result.generatedPassword}\n학생에게 전달한 뒤 첫 로그인에서 변경하도록 안내하세요.`);
+        } else {
+          toast("비밀번호를 변경했습니다.");
+        }
+        return;
+      }
+      if (target.dataset.resStatus) {
+        await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
+        await loadAdminData();
+        toast("예약 상태를 변경했습니다.");
+      }
+      if (target.dataset.equipmentDisable) {
+        await api(`/api/admin/equipment/${target.dataset.equipmentDisable}`, { method: "PATCH", body: { active: false } });
+        await loadAdminData();
+        toast("장비를 비활성화했습니다.");
+      }
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+
+  document.addEventListener("change", (event) => {
+    const target = event.target;
+    if (target.name === "equipmentItemIds") {
+      if (target.checked && !state.selectedEquipmentItemIds.includes(target.value)) {
+        state.selectedEquipmentItemIds.push(target.value);
+      }
+      if (!target.checked) {
+        state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.value);
+      }
+      syncEquipmentSelectionSheet();
+    }
+  });
+
+  document.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    try {
+      if (form.dataset.form === "login") await login(form);
+      if (form.dataset.form === "signup") await signup(form);
+      if (form.dataset.form === "password-change") {
+        await changePassword(form);
+        return;
+      }
+      if (form.dataset.form === "profile-edit") {
+        const result = await api("/api/me", { method: "PATCH", body: formData(form) });
+        state.user = result.user;
+        toast("개인정보를 저장했습니다.");
+        render();
+        return;
+      }
+      if (form.dataset.form === "reservation") await submitReservation(form);
+      if (form.dataset.form === "equipment-add") {
+        const data = formData(form);
+        data.quantity = Number(data.quantity || 1);
+        await api("/api/admin/equipment", { method: "POST", body: data });
+        await loadBootstrap();
+        await loadAdminData();
+        toast("장비를 추가했습니다.");
+      }
+      if (form.dataset.form === "equipment-category-add") {
+        const data = formData(form);
+        const next = [...new Set([...(state.bootstrap.settings.equipmentCategories || equipmentCategories()), data.categoryName.trim()].filter(Boolean))];
+        await api("/api/admin/settings", { method: "PATCH", body: { equipmentCategories: next } });
+        await loadBootstrap();
+        toast("카테고리를 추가했습니다.");
+      }
+      if (form.dataset.form === "equipment-import") {
+        const rows = state.csvPreviewRows.length ? state.csvPreviewRows : parseCsv(formData(form).csv || "");
+        await api("/api/admin/equipment/import", { method: "POST", body: { rows } });
+        state.csvPreviewRows = [];
+        await loadBootstrap();
+        await loadAdminData();
+        toast("CSV 장비를 등록했습니다.");
+      }
+      if (form.dataset.form === "notice-add") {
+        const data = formData(form);
+        data.pinned = data.pinned === "true";
+        await api("/api/admin/notices", { method: "POST", body: data });
+        await loadAdminData();
+        toast("공지사항을 게시했습니다.");
+      }
+      if (form.dataset.form === "lecture-add") {
+        const data = formData(form);
+        data.capacity = Number(data.capacity || 0);
+        data.baseApplicationCount = Number(data.baseApplicationCount || 0);
+        await api("/api/admin/lectures", { method: "POST", body: data });
+        form.reset();
+        await loadAdminData();
+        toast("특강을 등록했습니다.");
+      }
+      if (form.dataset.form === "studio-report") {
+        const data = formData(form);
+        data.reservationId = form.dataset.reservationId;
+        data.cleanupConfirmed = data.cleanupConfirmed === "true";
+        data.damageFound = data.damageFound === "true";
+        await api("/api/reports/studio", { method: "POST", body: data });
+        state.activeReportReservationId = "";
+        await loadBootstrap();
+        await loadMyReservations();
+        toast("스튜디오 보고서가 제출되었습니다.");
+        render();
+      }
+      if (form.dataset.form === "settings-save") {
+        const data = formData(form);
+        data.darkroomCapacity = Number(data.darkroomCapacity || 6);
+        await api("/api/admin/settings", { method: "PATCH", body: data });
+        await loadBootstrap();
+        toast("설정을 저장했습니다.");
+      }
+      if (form.dataset.form === "blocked-schedule-add") {
+        const data = formData(form);
+        const blockedSchedules = [
+          ...(state.bootstrap.settings.blockedSchedules || []),
+          {
+            id: `block_${Date.now()}`,
+            type: data.type,
+            day: data.day,
+            from: data.from,
+            to: data.to,
+            start: data.start,
+            end: data.end,
+            target: data.target || ""
+          }
+        ];
+        await api("/api/admin/settings", { method: "PATCH", body: { blockedSchedules } });
+        await loadBootstrap();
+        toast("차단 일정을 추가했습니다.");
+      }
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+}

@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GJU-reserve 조교 인수인계 운영 매뉴얼</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7fb;
+        --paper: #ffffff;
+        --ink: #111827;
+        --muted: #667085;
+        --line: #d9dee8;
+        --line-soft: #e9edf5;
+        --blue: #2453c6;
+        --blue-soft: #e8efff;
+        --green: #0f8a5f;
+        --green-soft: #e7f6ef;
+        --yellow: #9a6b00;
+        --yellow-soft: #fff4d6;
+        --red: #c24136;
+        --red-soft: #ffefed;
+        --radius: 12px;
+        --shadow: 0 18px 45px rgba(21, 32, 53, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+        font-size: 15px;
+        line-height: 1.65;
+      }
+
+      a {
+        color: var(--blue);
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 28px 18px 72px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        padding: 28px;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--blue);
+        font-size: 12px;
+        line-height: 1.2;
+        font-weight: 900;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: clamp(30px, 5vw, 48px);
+        font-weight: 900;
+      }
+
+      h2 {
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      h3 {
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .meta {
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: #fbfcff;
+        padding: 12px;
+      }
+
+      .meta span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .meta strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .toc {
+        position: sticky;
+        top: 18px;
+        align-self: start;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+        padding: 14px;
+      }
+
+      .toc strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .toc a {
+        display: block;
+        border-radius: 8px;
+        padding: 7px 8px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .toc a:hover {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      main {
+        display: grid;
+        gap: 18px;
+      }
+
+      section {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+
+      section > h2 + p {
+        margin-top: 8px;
+      }
+
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .card,
+      .step,
+      .warning,
+      .ok,
+      .note {
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: #fbfcff;
+        padding: 14px;
+      }
+
+      .step {
+        display: grid;
+        gap: 8px;
+      }
+
+      .step-number {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--blue);
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .warning {
+        background: var(--yellow-soft);
+        border-color: #f0d28a;
+      }
+
+      .ok {
+        background: var(--green-soft);
+        border-color: #b8e2cf;
+      }
+
+      .note {
+        background: var(--blue-soft);
+        border-color: #bed0ff;
+      }
+
+      .danger {
+        background: var(--red-soft);
+        border-color: #f4b6ae;
+      }
+
+      ul,
+      ol {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+
+      li + li {
+        margin-top: 5px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        overflow: hidden;
+        border-radius: var(--radius);
+      }
+
+      th,
+      td {
+        border: 1px solid var(--line-soft);
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f3f6fb;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      code {
+        border: 1px solid var(--line-soft);
+        border-radius: 7px;
+        background: #f8fafc;
+        padding: 2px 6px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .badge.blue {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .badge.green {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .badge.yellow {
+        background: var(--yellow-soft);
+        color: var(--yellow);
+      }
+
+      .badge.red {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .flow div {
+        position: relative;
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: #fbfcff;
+        padding: 12px;
+      }
+
+      .flow strong {
+        display: block;
+      }
+
+      .flow span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .checklist label {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+        background: #fbfcff;
+        padding: 10px;
+      }
+
+      .footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+
+      @media (max-width: 860px) {
+        .shell {
+          padding: 14px 12px 48px;
+        }
+
+        .hero,
+        section {
+          padding: 18px;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .toc {
+          position: static;
+        }
+
+        .meta-grid,
+        .card-grid,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .shell {
+          max-width: none;
+          padding: 0;
+        }
+
+        .toc {
+          display: none;
+        }
+
+        .layout {
+          display: block;
+        }
+
+        .hero,
+        section {
+          break-inside: avoid;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <p class="eyebrow">GJU-reserve handover guide</p>
+        <h1>조교 인수인계 운영 매뉴얼</h1>
+        <p class="muted">
+          광주대학교 사진영상미디어학과 예약 시스템을 실제 학기 운영에 맞춰 관리하기 위한 화면별 사용법입니다.
+          계정 비밀번호, Slack Webhook, FTP 비밀번호 같은 민감정보는 이 문서에 적지 않습니다.
+        </p>
+        <div class="meta-grid">
+          <div class="meta"><span>학생 서비스</span><strong>https://photographygju.dothome.co.kr/</strong></div>
+          <div class="meta"><span>관리자 접근</span><strong>관리자 계정으로 로그인</strong></div>
+          <div class="meta"><span>알림 채널</span><strong>#예약_현황automatic</strong></div>
+          <div class="meta"><span>최종 갱신</span><strong>2026-06-13</strong></div>
+        </div>
+      </header>
+
+      <div class="layout">
+        <nav class="toc" aria-label="문서 목차">
+          <strong>목차</strong>
+          <a href="#daily">1. 매일 운영 순서</a>
+          <a href="#roles">2. 계정과 권한</a>
+          <a href="#dashboard">3. 대시보드</a>
+          <a href="#users">4. 학생 승인</a>
+          <a href="#reservations">5. 예약 관리</a>
+          <a href="#equipment">6. 기자재 관리</a>
+          <a href="#studio">7. 스튜디오 보고서</a>
+          <a href="#lectures">8. 비교과 특강</a>
+          <a href="#notices">9. 공지사항</a>
+          <a href="#settings">10. 설정과 차단 일정</a>
+          <a href="#student">11. 학생 화면 안내</a>
+          <a href="#slack">12. Slack 알림</a>
+          <a href="#trouble">13. 문제 발생 시</a>
+          <a href="#handover">14. 다음 조교에게 넘길 것</a>
+        </nav>
+
+        <main>
+          <section id="daily">
+            <h2>1. 매일 운영 순서</h2>
+            <p class="muted">학기 중에는 아래 순서대로 보면 대부분의 업무가 처리됩니다.</p>
+            <div class="flow">
+              <div><strong>가입 승인</strong><span>신규 학생 확인</span></div>
+              <div><strong>기자재 승인</strong><span>대여 가능 여부 확인</span></div>
+              <div><strong>오늘 예약</strong><span>대여, 반납, 사용 완료</span></div>
+              <div><strong>보고서/공지</strong><span>스튜디오 보고서, 공지 갱신</span></div>
+            </div>
+            <div class="checklist">
+              <label><input type="checkbox" /> 오전 10시 전후: 대시보드에서 가입 승인 대기, 기자재 승인 대기, 오늘 예약 수를 확인합니다.</label>
+              <label><input type="checkbox" /> 대여 시간 전: 기자재 예약의 장비 목록과 학생 연락처를 확인합니다.</label>
+              <label><input type="checkbox" /> 반납 시간 후: 기자재 상태를 확인하고 예약 상태를 <strong>반납 완료</strong> 또는 <strong>관리자 취소</strong>로 정리합니다.</label>
+              <label><input type="checkbox" /> 스튜디오 사용 다음날: 보고서 제출 여부를 확인하고 미제출 학생에게 연락합니다.</label>
+              <label><input type="checkbox" /> 특강/공지 변경이 있으면 Admin에서 게시 후 학생 홈에 잘 보이는지 확인합니다.</label>
+            </div>
+          </section>
+
+          <section id="roles">
+            <h2>2. 계정과 권한</h2>
+            <p class="muted">학생은 직접 가입하고, 조교가 승인해야 예약할 수 있습니다. 인증 절차는 학과 내부 링크 공유와 실명 가입을 전제로 합니다.</p>
+            <table>
+              <thead>
+                <tr><th>구분</th><th>할 수 있는 일</th><th>주의</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge blue">학생</span></td>
+                  <td>공지 열람, 특강 신청, 예약 신청, 내 예약 확인, 스튜디오 보고서 제출, 내 정보 수정</td>
+                  <td>승인 전에는 예약 불가. 이름, 학번, 신분, 연락처를 실제 정보로 유지해야 합니다.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge green">조교/Admin</span></td>
+                  <td>학생 승인, 예약 처리, 장비 등록/비활성화, 보고서 확인, 특강/공지/설정 관리</td>
+                  <td>비밀번호와 Webhook은 문서나 채팅에 남기지 않습니다. 조교 교체 시 계정 비밀번호를 반드시 변경합니다.</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="warning">
+              <strong>중요</strong>
+              <p>공용 PC에서 Admin을 사용한 뒤에는 반드시 로그아웃합니다. 학생 화면과 Admin 화면이 같은 앱 안에 있으므로 계정 역할에 따라 보이는 메뉴가 달라집니다.</p>
+            </div>
+          </section>
+
+          <section id="dashboard">
+            <h2>3. 대시보드</h2>
+            <p class="muted">대시보드는 조교가 하루 업무를 시작할 때 보는 첫 화면입니다. 카드 클릭 시 해당 관리 페이지로 이동합니다.</p>
+            <div class="card-grid">
+              <div class="card">
+                <h3>가입 승인 대기</h3>
+                <p>새로 가입한 학생 수입니다. 클릭하면 <strong>학생 승인</strong>으로 이동합니다.</p>
+              </div>
+              <div class="card">
+                <h3>기자재 승인 대기</h3>
+                <p>조교 승인 전 기자재 예약입니다. 장비 수량과 일정 충돌을 확인합니다.</p>
+              </div>
+              <div class="card">
+                <h3>오늘 예약</h3>
+                <p>오늘 날짜의 기자재, 스튜디오, 암실, 출력 예약입니다.</p>
+              </div>
+              <div class="card">
+                <h3>보고서 확인 필요</h3>
+                <p>스튜디오 사용 후 보고서가 필요하거나 확인해야 할 항목입니다.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="users">
+            <h2>4. 학생 승인</h2>
+            <p class="muted">학생 가입 신청을 승인, 반려, 제한할 수 있습니다. 이름, 학번, 신분, 상태 기준으로 정렬할 수 있습니다.</p>
+            <table>
+              <thead>
+                <tr><th>버튼</th><th>의미</th><th>언제 사용하나</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><span class="badge green">승인</span></td><td>학생 예약 가능</td><td>학과 학생 또는 허용 대상임을 확인했을 때</td></tr>
+                <tr><td><span class="badge red">반려</span></td><td>예약 불가</td><td>정보가 틀렸거나 학과 대상자가 아닐 때</td></tr>
+                <tr><td><span class="badge yellow">제한</span></td><td>기간 동안 예약 불가</td><td>규칙 위반, 경고 누적, 관리자 판단으로 일정 기간 막아야 할 때</td></tr>
+                <tr><td>비번 리셋</td><td>임시 또는 지정 비밀번호 발급</td><td>학생이 비밀번호를 잊었을 때</td></tr>
+              </tbody>
+            </table>
+            <div class="note">
+              <strong>제한 기간</strong>
+              <p>제한은 1주일, 2주일, 1달, 1학기 중 선택합니다. 제한 중인 학생은 공지는 볼 수 있지만 예약은 할 수 없습니다.</p>
+            </div>
+          </section>
+
+          <section id="reservations">
+            <h2>5. 예약 관리</h2>
+            <p class="muted">예약 관리는 전체, 기자재, 암실, 스튜디오, 출력 탭으로 나뉩니다. 예약 카드에는 학생명, 날짜, 연락처, 상세 항목, 상태 변경 버튼이 표시됩니다.</p>
+            <table>
+              <thead>
+                <tr><th>예약 종류</th><th>확정 방식</th><th>조교가 해야 할 일</th><th>주요 상태</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>기자재</td>
+                  <td><span class="badge yellow">조교 승인</span></td>
+                  <td>선택 장비, 대여일, 대여/반납 시간, 2박3일 여부, 장비 상태 확인 후 승인합니다.</td>
+                  <td>승인 대기 → 승인 → 대여 완료 → 반납 완료</td>
+                </tr>
+                <tr>
+                  <td>스튜디오</td>
+                  <td><span class="badge green">자동 확정</span></td>
+                  <td>공간과 연속 타임을 확인하고, 사용 후 보고서 제출 여부를 확인합니다.</td>
+                  <td>자동 확정 → 사용 완료</td>
+                </tr>
+                <tr>
+                  <td>암실</td>
+                  <td><span class="badge green">자동 확정</span></td>
+                  <td>정원, 야간/주말 연락 여부, 약품 사용량 입력 상태를 확인합니다.</td>
+                  <td>자동 확정 → 사용 완료</td>
+                </tr>
+                <tr>
+                  <td>출력실</td>
+                  <td><span class="badge green">자동 확정</span></td>
+                  <td>사용 시간이 10:00-19:00 범위인지, 파일 준비/입금/정리 규칙을 안내합니다.</td>
+                  <td>자동 확정 → 사용 완료</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="warning">
+              <strong>취소 처리 기준</strong>
+              <p>학생이 연락 없이 오지 않았거나, 파일/장비 준비가 규정과 맞지 않거나, 수업/공휴일/현장 상황으로 사용이 불가하면 관리자 취소로 정리하고 필요하면 학생 제한 또는 경고를 별도 처리합니다.</p>
+            </div>
+          </section>
+
+          <section id="equipment">
+            <h2>6. 기자재 관리</h2>
+            <p class="muted">카테고리, 관리처, CSV 업로드, 등록된 전체 기자재 탭을 관리합니다. 장비는 가능한 개체별 코드로 관리하는 것이 좋습니다.</p>
+            <div class="card-grid">
+              <div class="step">
+                <span class="step-number">1</span>
+                <h3>장비 추가</h3>
+                <p>장비명, 카테고리, 수량, 코드 prefix, 관리처, 비고를 입력합니다. 수량이 3이면 코드가 붙은 개체 3개로 관리됩니다.</p>
+              </div>
+              <div class="step">
+                <span class="step-number">2</span>
+                <h3>카테고리 추가</h3>
+                <p>Body, Lens, Lighting 외에 Tripod, Monitor 같은 분류가 필요하면 먼저 카테고리를 추가합니다.</p>
+              </div>
+              <div class="step">
+                <span class="step-number">3</span>
+                <h3>CSV 업로드</h3>
+                <p>엑셀에서 CSV로 저장한 뒤 내용을 붙여넣고 <strong>미리보기</strong>를 눌러 행이 제대로 읽혔는지 확인합니다.</p>
+              </div>
+              <div class="step">
+                <span class="step-number">4</span>
+                <h3>비활성 처리</h3>
+                <p>수리 중, 분실, 운영 제외 장비는 삭제하지 말고 비활성 처리합니다. 과거 예약 내역을 보존하기 위해서입니다.</p>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr><th>관리처</th><th>운영 방식</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>극기관</td><td>기본 예약 가능 장비입니다. 학생이 직접 선택하고 조교가 승인합니다.</td></tr>
+                <tr><td>판타지랩</td><td>기본값은 문의 전용입니다. 판타지랩 조교에게 연락 후 대여하도록 안내합니다.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section id="studio">
+            <h2>7. 스튜디오 보고서</h2>
+            <p class="muted">학생은 스튜디오 사용 후 서비스 안에서 보고서를 제출합니다. Admin의 보고서 화면에는 제출된 보고서가 누적됩니다.</p>
+            <div class="flow">
+              <div><strong>예약 확정</strong><span>학생이 연속 최대 3타임 예약</span></div>
+              <div><strong>사용 완료</strong><span>정리정돈 확인</span></div>
+              <div><strong>보고서 제출</strong><span>사용 후 48시간 이내</span></div>
+              <div><strong>Admin 확인</strong><span>파손/이상 여부 확인</span></div>
+            </div>
+            <div class="danger card">
+              <strong>보고서 미제출</strong>
+              <p>사용 후 48시간이 지나도 보고서가 없으면 학생에게 연락합니다. 반복 미제출이나 부적절 사용은 경고/제한 정책에 따라 처리합니다.</p>
+            </div>
+          </section>
+
+          <section id="lectures">
+            <h2>8. 비교과 특강</h2>
+            <p class="muted">Admin에서 특강을 등록하면 학생 화면과 홈의 모집중 특강 카드에 표시됩니다.</p>
+            <table>
+              <thead>
+                <tr><th>입력 필드</th><th>설명</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>특강명, 특강일, 시간, 장소</td><td>학생 리스트와 CSV에 표시되는 기본 정보입니다.</td></tr>
+                <tr><td>강사명, 강사 소속, 담당교수</td><td>특강 안내와 내부 기록에 사용합니다.</td></tr>
+                <tr><td>대상 학년, 모집인원, 신청인원</td><td>학생이 신청 가능 여부를 판단할 때 참고합니다.</td></tr>
+                <tr><td>특강 내용, 비고</td><td>학생 안내와 운영 메모입니다.</td></tr>
+                <tr><td>진행상태</td><td>모집중, 진행완료, 취소 중 선택합니다. 모집중인 특강만 학생 신청 버튼이 표시됩니다.</td></tr>
+              </tbody>
+            </table>
+            <div class="ok">
+              <strong>CSV 내보내기</strong>
+              <p>특강 결과는 Admin의 <strong>CSV 내보내기</strong>로 엑셀에서 열 수 있습니다. 신청자 이름, 학번, 신분, 연락처, 신청일이 포함됩니다.</p>
+            </div>
+          </section>
+
+          <section id="notices">
+            <h2>9. 공지사항</h2>
+            <p class="muted">공지사항은 학생 홈 최상단과 공지 탭에 표시됩니다. 학생은 공지를 누르면 바텀시트로 전체 내용을 봅니다.</p>
+            <table>
+              <thead>
+                <tr><th>항목</th><th>운영 기준</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>카테고리</td><td>일반, 비교과, 특강, 장비/시설, 긴급 중 선택합니다.</td></tr>
+                <tr><td>상단 고정</td><td>중요 공지나 일정 변경은 고정합니다. 고정 공지는 홈에서 먼저 보입니다.</td></tr>
+                <tr><td>신청/참고 링크</td><td>Slack 신청 링크, 외부 폼, 참고 문서가 있으면 입력합니다.</td></tr>
+              </tbody>
+            </table>
+            <div class="note">
+              <strong>짧게 쓰기</strong>
+              <p>홈에는 본문이 짧게 보이므로 제목에 핵심을 넣고, 자세한 규정은 본문에 정리합니다.</p>
+            </div>
+          </section>
+
+          <section id="settings">
+            <h2>10. 설정과 차단 일정</h2>
+            <p class="muted">설정은 예약 가능 규칙에 직접 영향을 줍니다. 학기 초 또는 방학 전후에 반드시 확인합니다.</p>
+            <div class="card-grid">
+              <div class="card">
+                <h3>운영 설정</h3>
+                <ul>
+                  <li>출력비 계좌 안내</li>
+                  <li>암실 최대 인원</li>
+                  <li>출력실 시작/종료 시간</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>수업/학기 차단 일정</h3>
+                <ul>
+                  <li>시설: 스튜디오, 암실, 기자재, 출력실</li>
+                  <li>요일, 시작일, 종료일, 시간</li>
+                  <li>공간/메모: Studio A/B, 수업명 등</li>
+                </ul>
+              </div>
+            </div>
+            <div class="warning">
+              <strong>학기 시작 전 확인</strong>
+              <p>수업 때문에 사용 불가한 요일과 시간이 생기면 차단 일정에 등록합니다. 학생 예약 캘린더에는 차단 마커가 표시됩니다.</p>
+            </div>
+          </section>
+
+          <section id="student">
+            <h2>11. 학생 화면 안내</h2>
+            <p class="muted">학생 문의가 들어오면 아래 구조로 안내하면 됩니다.</p>
+            <table>
+              <thead>
+                <tr><th>탭</th><th>학생이 하는 일</th><th>문의 대응</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>홈</td><td>공지, 모집중 특강, 다음 예약 확인</td><td>중요 안내는 공지로 올렸는지 확인합니다.</td></tr>
+                <tr><td>예약</td><td>기자재, 스튜디오, 출력실, 암실 예약</td><td>승인 대기/이용 제한 상태면 예약이 막힙니다.</td></tr>
+                <tr><td>내 예약</td><td>본인 예약 확인/취소</td><td>취소 가능 여부와 조교 연락 필요 여부를 안내합니다.</td></tr>
+                <tr><td>보고서</td><td>스튜디오 사용 후 보고서 제출</td><td>사용일 이후 보고서 작성 항목이 뜹니다.</td></tr>
+                <tr><td>특강</td><td>모집중 특강 신청</td><td>진행완료/취소 상태는 신청 버튼이 없습니다.</td></tr>
+                <tr><td>공지</td><td>전체 공지 확인</td><td>공지 클릭 시 바텀시트로 자세히 표시됩니다.</td></tr>
+                <tr><td>마이</td><td>이름/연락처 수정, 비밀번호 변경, 로그아웃</td><td>학생 이메일 수정은 받지 않습니다. 연락처 최신화가 중요합니다.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section id="slack">
+            <h2>12. Slack 알림</h2>
+            <p class="muted">예약과 주요 이벤트는 Slack 채널 <code>#예약_현황automatic</code>에 텍스트로 공유됩니다.</p>
+            <div class="card-grid">
+              <div class="card">
+                <h3>주로 올라오는 내용</h3>
+                <ul>
+                  <li>학생 가입 신청</li>
+                  <li>기자재 예약 승인 요청</li>
+                  <li>스튜디오/암실/출력 예약 확정</li>
+                  <li>스튜디오 보고서 제출</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>주의</h3>
+                <ul>
+                  <li>Webhook URL은 서버 환경변수로만 관리합니다.</li>
+                  <li>전화번호 등 개인정보는 필요한 범위에서만 공유합니다.</li>
+                  <li>Slack 전송 실패가 있어도 Admin 예약 내역을 기준으로 처리합니다.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section id="trouble">
+            <h2>13. 문제 발생 시</h2>
+            <table>
+              <thead>
+                <tr><th>상황</th><th>먼저 확인할 것</th><th>처리</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>학생이 로그인이 안 된다고 함</td>
+                  <td>아이디가 이메일 또는 학번인지, 승인 상태인지 확인</td>
+                  <td>Admin 학생 승인에서 상태 확인 후 필요하면 비밀번호 리셋</td>
+                </tr>
+                <tr>
+                  <td>예약 버튼이 안 보임</td>
+                  <td>학생 승인 상태, 이용 제한 상태, 특강 진행상태 확인</td>
+                  <td>승인 또는 제한 해제 후 다시 접속 안내</td>
+                </tr>
+                <tr>
+                  <td>기자재 수량이 맞지 않음</td>
+                  <td>Admin 기자재 관리에서 비활성/문의전용 상태 확인</td>
+                  <td>장비 추가 또는 비활성 처리, 필요하면 CSV로 일괄 반영</td>
+                </tr>
+                <tr>
+                  <td>Slack에 알림이 안 올라옴</td>
+                  <td>Admin 예약 내역에는 저장됐는지 확인</td>
+                  <td>예약 내역을 우선 기준으로 처리하고, 개발 담당자에게 Webhook 상태 확인 요청</td>
+                </tr>
+                <tr>
+                  <td>페이지가 비어 보임</td>
+                  <td>브라우저 새로고침, 다른 브라우저, 네트워크 상태 확인</td>
+                  <td>지속되면 화면 캡처와 발생 시간을 기록해 개발 담당자에게 전달</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section id="handover">
+            <h2>14. 다음 조교에게 넘길 것</h2>
+            <p class="muted">조교는 1년 단위로 바뀌므로, 계정과 운영 규칙을 문서화해 넘기는 것이 중요합니다.</p>
+            <div class="checklist">
+              <label><input type="checkbox" /> Admin 계정 목록과 각 계정의 담당 역할을 최신화합니다.</label>
+              <label><input type="checkbox" /> 조교 교체 직후 Admin 비밀번호를 변경합니다.</label>
+              <label><input type="checkbox" /> 학기 수업 차단 일정과 방학 운영 규칙을 확인합니다.</label>
+              <label><input type="checkbox" /> 기자재 리스트에서 수리 중/분실/신규 장비를 반영합니다.</label>
+              <label><input type="checkbox" /> 출력비 계좌 안내와 특강 담당교수 정보를 최신화합니다.</label>
+              <label><input type="checkbox" /> Slack 채널 담당자와 알림 확인 방식을 공유합니다.</label>
+              <label><input type="checkbox" /> 이 문서와 최신 운영 규칙 파일의 위치를 다음 조교에게 전달합니다.</label>
+            </div>
+            <div class="ok">
+              <strong>운영 기준</strong>
+              <p>시스템 기록이 기준입니다. 다만 학생과 현장에서 직접 조율한 내용이 있으면 Admin 메모, 공지, Slack 메시지 중 하나로 남겨 다음 조교가 추적할 수 있게 합니다.</p>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <p class="footer">GJU-reserve 조교 인수인계 운영 매뉴얼 · 광주대학교 사진영상미디어학과</p>
+    </div>
+  </body>
+</html>

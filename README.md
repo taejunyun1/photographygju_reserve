@@ -59,7 +59,7 @@ Production is split into two simple pieces:
 ```text
 Dothome static hosting
   - https://photographygju.dothome.co.kr/
-  - serves index.html, styles.css, app.js, config.js
+  - serves index.html, styles.css, app.js, config.js, js/*
 
 Cloudflare Worker
   - https://photographygju-reserve.taejunyun.workers.dev
@@ -101,13 +101,14 @@ npm run deploy
 
 ## Dothome Upload
 
-Upload these files from `public/` to the Dothome webroot:
+Upload the built `dist/` files to the Dothome webroot:
 
 ```text
 index.html
 styles.css
 app.js
 config.js
+js/*
 ```
 
 The Dothome host should only serve the frontend. Do not upload `.env`, `data/`, `References/`, or any credential files.
@@ -120,6 +121,8 @@ export DOTHOME_FTP_USER="photographygju"
 export DOTHOME_FTP_PASSWORD="..."
 npm run upload:dothome
 ```
+
+The upload script runs `npm run build` and uploads every file under `dist/`, including nested frontend modules.
 
 If this project is later moved to Cloudflare Pages instead of Workers, use:
 
@@ -137,3 +140,4 @@ Root directory: /
 - FTP credentials are not needed for local development and must not be stored in this repo.
 - A backend/API is required because signup approval, reservations, admin actions, database writes, and Slack notifications need server-side logic.
 - Dothome FTP-only static hosting can host the frontend, but cannot run the API by itself.
+- The frontend entry remains `public/app.js`, but the implementation is split under `public/js/` for maintainability.

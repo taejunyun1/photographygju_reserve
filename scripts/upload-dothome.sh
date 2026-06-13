@@ -12,11 +12,12 @@ fi
 
 npm run build
 
-for file in index.html styles.css app.js config.js; do
+while IFS= read -r -d "" file; do
+  relative="${file#dist/}"
   curl --fail --ftp-create-dirs \
     --user "${DOTHOME_FTP_USER}:${DOTHOME_FTP_PASSWORD}" \
-    --upload-file "dist/${file}" \
-    "ftp://${DOTHOME_FTP_HOST}${DOTHOME_REMOTE_DIR}/${file}"
-done
+    --upload-file "${file}" \
+    "ftp://${DOTHOME_FTP_HOST}${DOTHOME_REMOTE_DIR}/${relative}"
+done < <(find dist -type f -print0)
 
 echo "Uploaded frontend files to Dothome."
