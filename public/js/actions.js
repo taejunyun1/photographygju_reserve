@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260613-conflict1";
-import { api } from "./api.js?v=20260613-conflict1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-conflict1";
-import { render, toast } from "./renderer.js?v=20260613-conflict1";
+import { state } from "./state.js?v=20260613-studioflow1";
+import { api } from "./api.js?v=20260613-studioflow1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-studioflow1";
+import { render, toast } from "./renderer.js?v=20260613-studioflow1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -14,7 +14,7 @@ import {
   printSelectionConflicts,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-conflict1";
+} from "./utils.js?v=20260613-studioflow1";
 
 export async function login(form) {
   const data = formData(form);
@@ -105,12 +105,14 @@ export async function submitReservation(form) {
     if (unavailableItems.length) throw new Error("선택한 날짜에 이미 예약된 기자재가 포함되어 있습니다.");
   }
   if (type === "studio") {
-    fields.timeSlots = getChecked("studioSlots");
-    fields.studioSpaces = getChecked("studioSpaces");
-    fields.studioSpace = fields.studioSpaces.join(", ");
+    const selectedSlots = getChecked("studioSlots");
+    state.selectedStudioSlots = [...new Set([...state.selectedStudioSlots, ...selectedSlots])];
+    fields.timeSlots = state.selectedStudioSlots;
+    fields.studioSpace = data.studioSpace || state.selectedStudioSpace;
+    fields.studioSpaces = fields.studioSpace ? [fields.studioSpace] : [];
     fields.reportStatus = "required";
     if (!fields.timeSlots.length) throw new Error("스튜디오 사용 시간을 선택하세요.");
-    if (!fields.studioSpaces.length) throw new Error("스튜디오 사용 공간을 선택하세요.");
+    if (fields.studioSpaces.length !== 1) throw new Error("스튜디오 사용 공간을 1개 선택하세요.");
     if (fields.timeSlots.length > state.bootstrap.settings.studioMaxSlots) {
       throw new Error(`스튜디오는 최대 ${state.bootstrap.settings.studioMaxSlots}타임까지 예약할 수 있습니다.`);
     }
@@ -153,6 +155,10 @@ export async function submitReservation(form) {
   await api("/api/reservations", { method: "POST", body: { type, fields } });
   state.reservationType = "";
   if (type === "equipment") state.selectedEquipmentItemIds = [];
+  if (type === "studio") {
+    state.selectedStudioSpace = "";
+    state.selectedStudioSlots = [];
+  }
   state.view = "mine";
   await loadBootstrap();
   await loadMyReservations();

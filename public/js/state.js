@@ -17,6 +17,8 @@ export const state = {
   activeNoticeId: "",
   activeReportReservationId: "",
   selectedEquipmentItemIds: [],
+  selectedStudioSpace: "",
+  selectedStudioSlots: [],
   equipmentCategoryFilter: "Body",
   adminView: "dashboard",
   adminReservationTab: "equipment",

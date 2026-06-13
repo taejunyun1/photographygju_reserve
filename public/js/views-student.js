@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-conflict1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260613-conflict1";
+import { state } from "./state.js?v=20260613-studioflow1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260613-studioflow1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -16,7 +16,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260613-conflict1";
+} from "./utils.js?v=20260613-studioflow1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -346,28 +346,97 @@ export function syncEquipmentSelectionSheet() {
   sheet.outerHTML = equipmentSelectionSheet(currentSelectedEquipmentItems());
 }
 
-function studioAvailabilityPanel(selectedDate) {
-  if (!selectedDate) {
-    return `<div class="availability-panel"><strong>스튜디오 예약 가능 현황</strong><p class="muted">날짜를 선택하면 장소별 사용 불가 시간이 표시됩니다.</p></div>`;
-  }
+function studioStep(index, title, body, options = {}) {
   return `
-    <div class="availability-panel">
-      <strong>스튜디오 예약 가능 현황</strong>
-      <div class="availability-matrix">
-        ${state.bootstrap.settings.studioSpaces.map((space) => `
-          <div class="availability-row">
-            <b>${escapeHtml(space)}</b>
-            <div>
-              ${state.bootstrap.settings.studioSlots.map((slot) => {
-                const reserved = studioPairReservedOnDate(selectedDate, space, slot);
-                return `<span class="availability-chip ${reserved ? "blocked" : "open"}">${escapeHtml(slot)} ${reserved ? "불가" : "가능"}</span>`;
-              }).join("")}
-            </div>
-          </div>
-        `).join("")}
+    <section class="reservation-step ${options.locked ? "is-locked" : ""}">
+      <div class="step-heading">
+        <span>${index}</span>
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          ${options.note ? `<p>${escapeHtml(options.note)}</p>` : ""}
+        </div>
       </div>
-    </div>
+      ${body}
+    </section>
   `;
+}
+
+function studioSpaceStep(selectedDate) {
+  if (!selectedDate) {
+    return studioStep(2, "공간 1개 선택", `<p class="muted">먼저 캘린더에서 예약 날짜를 선택하세요.</p>`, { locked: true });
+  }
+  return studioStep(
+    2,
+    "공간 1개 선택",
+    `<div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((space) => {
+      const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, space, slot));
+      const full = availableSlots.length === 0;
+      return `
+        <label class="choice-card compact-choice ${full ? "is-unavailable" : ""}">
+          <input type="radio" name="studioSpace" value="${escapeHtml(space)}" ${state.selectedStudioSpace === space ? "checked" : ""} ${full ? "disabled" : ""} />
+          <span>
+            <strong>${escapeHtml(space)}</strong>
+            <small>${full ? "해당 날짜 예약 불가" : `선택 가능 시간 ${availableSlots.length}개`}</small>
+          </span>
+        </label>
+      `;
+    }).join("")}</div>`,
+    { note: "선택한 날짜에 시간대가 남아 있는 공간만 선택할 수 있습니다." }
+  );
+}
+
+function studioTimeStep(selectedDate) {
+  if (!selectedDate) {
+    return studioStep(3, "사용 가능한 시간 선택", `<p class="muted">날짜와 공간을 선택하면 사용 가능한 시간만 표시됩니다.</p>`, { locked: true });
+  }
+  if (!state.selectedStudioSpace) {
+    return studioStep(3, "사용 가능한 시간 선택", `<p class="muted">공간을 1개 선택하면 해당 공간의 남은 시간만 표시됩니다.</p>`, { locked: true });
+  }
+  const maxSlots = Number(state.bootstrap.settings.studioMaxSlots || 3);
+  const availableSlots = state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+  if (!availableSlots.length) {
+    return studioStep(
+      3,
+      "사용 가능한 시간 선택",
+      `<p class="empty-calendar-note">선택한 날짜와 공간에는 예약 가능한 시간이 없습니다.</p>`,
+      { note: `${state.selectedStudioSpace} · ${selectedDate}` }
+    );
+  }
+  return studioStep(
+    3,
+    "사용 가능한 시간 선택",
+    `
+      <div class="studio-time-summary">
+        <strong>${escapeHtml(state.selectedStudioSpace)}</strong>
+        <span>${escapeHtml(selectedDate)} · 최대 ${maxSlots}타임 연속 선택</span>
+      </div>
+      <div class="choice-grid">${availableSlots.map((slot) => {
+        const checked = state.selectedStudioSlots.includes(slot);
+        const maxed = state.selectedStudioSlots.length >= maxSlots && !checked;
+        return `
+          <label class="choice-card compact-choice ${maxed ? "is-unavailable" : ""}">
+            <input type="checkbox" name="studioSlots" value="${escapeHtml(slot)}" ${checked ? "checked" : ""} ${maxed ? "disabled" : ""} />
+            <span><strong>${escapeHtml(slot)}</strong><small>${checked ? "선택됨" : "예약 가능"}</small></span>
+          </label>
+        `;
+      }).join("")}</div>
+    `,
+    { note: "이미 예약된 시간은 목록에 표시하지 않습니다." }
+  );
+}
+
+function studioDetailStep() {
+  if (!state.selectedStudioSlots.length) {
+    return studioStep(4, "나머지 정보 입력", `<p class="muted">사용 시간을 선택하면 명단, 필요 장비, 목적, 연락처 입력란이 열립니다.</p>`, { locked: true });
+  }
+  return studioStep(4, "나머지 정보 입력", `
+    <div class="field"><label>사용 명단</label><input class="input" name="participants" placeholder="대표자 및 팀원" value="${escapeHtml(state.user.name)}" required /></div>
+    <div class="field"><label>필요 장비</label><textarea class="textarea" name="requiredEquipment" placeholder="포멕스 E1000 2개, C스탠드 4개 등"></textarea></div>
+    <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose"></textarea></div>
+    <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.user.phone)}" required /></div>
+    <label class="field consent"><span><input type="checkbox" required /> 사용 후 정리정돈과 보고서 제출 규정을 확인했습니다.</span></label>
+    <button class="button primary full" type="submit">예약 확정</button>
+  `);
 }
 
 function printStartOption(time, selectedDate) {
@@ -400,6 +469,20 @@ function printAvailabilityPanel(selectedDate) {
 
 export function studioForm() {
   const selectedDate = state.selectedDates.studio || "";
+  if (!selectedDate) {
+    state.selectedStudioSpace = "";
+    state.selectedStudioSlots = [];
+  }
+  if (selectedDate && state.selectedStudioSpace) {
+    const spaceAvailable = state.bootstrap.settings.studioSlots.some((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+    if (!spaceAvailable) {
+      state.selectedStudioSpace = "";
+      state.selectedStudioSlots = [];
+    }
+  }
+  if (selectedDate && state.selectedStudioSpace) {
+    state.selectedStudioSlots = state.selectedStudioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, state.selectedStudioSpace, slot));
+  }
   return `
     <form class="reservation-layout" data-form="reservation" data-type="studio">
       ${calendar("studio")}
@@ -411,24 +494,11 @@ export function studioForm() {
           </div>
           <span class="tag green">자동 확정</span>
         </div>
-        <p class="muted">연속된 시간만 최대 3타임까지 선택 가능합니다. 사용 후 48시간 이내 보고서를 제출해야 합니다.</p>
-        <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSlots.map((slot) => {
-          const remainingSpaces = selectedDate ? state.bootstrap.settings.studioSpaces.filter((space) => !studioPairReservedOnDate(selectedDate, space, slot)).length : null;
-          const full = selectedDate && remainingSpaces === 0;
-          return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="studioSlots" value="${slot}" ${full ? "disabled" : ""} /><span><strong>${slot}</strong><small>${selectedDate ? `잔여 공간 ${remainingSpaces}` : "날짜 선택 후 확인"}</small></span></label>`;
-        }).join("")}</div></div>
-        <div class="field"><label>사용 공간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((item) => {
-          const remainingSlots = selectedDate ? state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, item, slot)).length : null;
-          const full = selectedDate && remainingSlots === 0;
-          return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="studioSpaces" value="${item}" ${full ? "disabled" : ""} /><span><strong>${item}</strong><small>${selectedDate ? `가능 시간 ${remainingSlots}` : "날짜 선택 후 확인"}</small></span></label>`;
-        }).join("")}</div></div>
-        ${studioAvailabilityPanel(selectedDate)}
-        <div class="field"><label>사용 명단</label><input class="input" name="participants" placeholder="대표자 및 팀원" value="${escapeHtml(state.user.name)}" required /></div>
-        <div class="field"><label>필요 장비</label><textarea class="textarea" name="requiredEquipment" placeholder="포멕스 E1000 2개, C스탠드 4개 등"></textarea></div>
-        <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose"></textarea></div>
-        <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.user.phone)}" required /></div>
-        <label class="field consent"><span><input type="checkbox" required /> 사용 후 정리정돈과 보고서 제출 규정을 확인했습니다.</span></label>
-        <button class="button primary full" type="submit">예약 확정</button>
+        <p class="muted">날짜를 선택한 뒤 공간 1개를 고르면, 그 공간에서 실제로 사용 가능한 시간만 표시됩니다. 연속된 시간만 최대 3타임까지 선택 가능합니다.</p>
+        ${studioStep(1, "날짜 선택", `<p class="selected-date">선택한 날짜: <strong>${selectedDate || "캘린더에서 날짜를 선택하세요"}</strong></p>`)}
+        ${studioSpaceStep(selectedDate)}
+        ${studioTimeStep(selectedDate)}
+        ${studioDetailStep()}
       </section>
     </form>
   `;

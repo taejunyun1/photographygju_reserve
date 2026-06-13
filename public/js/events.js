@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260613-conflict1";
-import { api } from "./api.js?v=20260613-conflict1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-conflict1";
+import { state } from "./state.js?v=20260613-studioflow1";
+import { api } from "./api.js?v=20260613-studioflow1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-studioflow1";
 import {
   changePassword,
   downloadLectureCsv,
@@ -9,14 +9,14 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260613-conflict1";
-import { render, toast } from "./renderer.js?v=20260613-conflict1";
+} from "./actions.js?v=20260613-studioflow1";
+import { render, toast } from "./renderer.js?v=20260613-studioflow1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260613-conflict1";
-import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-conflict1";
+} from "./utils.js?v=20260613-studioflow1";
+import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-studioflow1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -46,6 +46,10 @@ export function setupEventHandlers() {
         const widget = target.closest("[data-calendar]");
         const type = widget?.dataset.calendar || state.reservationType;
         state.selectedDates[type] = target.dataset.calendarDay;
+        if (type === "studio") {
+          state.selectedStudioSpace = "";
+          state.selectedStudioSlots = [];
+        }
         render();
         return;
       }
@@ -192,6 +196,22 @@ export function setupEventHandlers() {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
+    if (target.name === "studioSpace") {
+      state.selectedStudioSpace = target.value;
+      state.selectedStudioSlots = [];
+      render();
+      return;
+    }
+    if (target.name === "studioSlots") {
+      if (target.checked && !state.selectedStudioSlots.includes(target.value)) {
+        state.selectedStudioSlots.push(target.value);
+      }
+      if (!target.checked) {
+        state.selectedStudioSlots = state.selectedStudioSlots.filter((slot) => slot !== target.value);
+      }
+      render();
+      return;
+    }
     if (target.name === "equipmentItemIds") {
       if (target.checked && !state.selectedEquipmentItemIds.includes(target.value)) {
         state.selectedEquipmentItemIds.push(target.value);

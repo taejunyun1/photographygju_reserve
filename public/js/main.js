@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260613-conflict1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260613-conflict1";
-import { setupEventHandlers } from "./events.js?v=20260613-conflict1";
-import { render } from "./renderer.js?v=20260613-conflict1";
-import { escapeHtml } from "./utils.js?v=20260613-conflict1";
+import { $app, state } from "./state.js?v=20260613-studioflow1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260613-studioflow1";
+import { setupEventHandlers } from "./events.js?v=20260613-studioflow1";
+import { render } from "./renderer.js?v=20260613-studioflow1";
+import { escapeHtml } from "./utils.js?v=20260613-studioflow1";
 
 async function init() {
   await loadBootstrap();
