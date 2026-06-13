@@ -1,12 +1,12 @@
-import { state } from "./state.js?v=20260613-studioflow1";
-import { api } from "./api.js?v=20260613-studioflow1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-studioflow1";
-import { render, toast } from "./renderer.js?v=20260613-studioflow1";
+import { state } from "./state.js?v=20260613-equiprange1";
+import { api } from "./api.js?v=20260613-equiprange1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-equiprange1";
+import { render, toast } from "./renderer.js?v=20260613-equiprange1";
 import {
   areSlotsConsecutive,
   csvEscape,
   darkroomSlotRemaining,
-  equipmentItemReservedOnDate,
+  equipmentItemReservedInRange,
   formData,
   formatDateTime,
   getChecked,
@@ -14,7 +14,7 @@ import {
   printSelectionConflicts,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-studioflow1";
+} from "./utils.js?v=20260613-equiprange1";
 
 export async function login(form) {
   const data = formData(form);
@@ -99,10 +99,13 @@ export async function submitReservation(form) {
   if (type === "equipment") {
     const visibleChecked = getChecked("equipmentItemIds");
     state.selectedEquipmentItemIds = [...new Set([...state.selectedEquipmentItemIds, ...visibleChecked])];
+    state.selectedEquipmentPeriod = fields.period || state.selectedEquipmentPeriod;
+    state.selectedEquipmentRentalTime = fields.rentalTime || state.selectedEquipmentRentalTime;
+    state.selectedEquipmentReturnTime = fields.returnTime || state.selectedEquipmentReturnTime;
     fields.equipmentItemIds = state.selectedEquipmentItemIds;
     if (!fields.equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
-    const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedOnDate(itemId, fields.reservedDate));
-    if (unavailableItems.length) throw new Error("선택한 날짜에 이미 예약된 기자재가 포함되어 있습니다.");
+    const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields.reservedDate, fields.period));
+    if (unavailableItems.length) throw new Error("선택한 대여 기간에 이미 예약된 기자재가 포함되어 있습니다.");
   }
   if (type === "studio") {
     const selectedSlots = getChecked("studioSlots");

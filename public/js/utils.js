@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-studioflow1";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-studioflow1";
+import { state } from "./state.js?v=20260613-equiprange1";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-equiprange1";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -145,16 +145,43 @@ export function equipmentReservationDates(fields = {}) {
   return Array.from({ length: equipmentPeriodDays(fields.period) + 1 }, (_, index) => addDaysToDateKey(fields.reservedDate, index));
 }
 
-export function equipmentItemReservedOnDate(itemId, key) {
-  if (!itemId || !key) return false;
-  return (state.bootstrap?.reservations || []).some((reservation) => {
+export function equipmentReservationRange(fields = {}) {
+  const start = fields.reservedDate || "";
+  if (!start) return null;
+  return { start, end: addDaysToDateKey(start, equipmentPeriodDays(fields.period)) };
+}
+
+export function dateRangesOverlap(a, b) {
+  if (!a || !b) return false;
+  return a.start <= b.end && b.start <= a.end;
+}
+
+export function equipmentItemReservationConflict(itemId, reservedDate, period) {
+  if (!itemId || !reservedDate) return null;
+  const requestedRange = equipmentReservationRange({ reservedDate, period });
+  return (state.bootstrap?.reservations || []).find((reservation) => {
     if (reservation.type !== "equipment") return false;
     const itemIds = [
       ...(reservation.fields?.equipmentItemIds || []),
       ...(reservation.equipmentItems || []).map((item) => item.id)
     ];
-    return itemIds.includes(itemId) && equipmentReservationDates(reservation.fields).includes(key);
-  });
+    return itemIds.includes(itemId) && dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
+  }) || null;
+}
+
+export function equipmentItemReservedInRange(itemId, reservedDate, period) {
+  return Boolean(equipmentItemReservationConflict(itemId, reservedDate, period));
+}
+
+export function equipmentItemReservedOnDate(itemId, key) {
+  return equipmentItemReservedInRange(itemId, key, "당일");
+}
+
+export function equipmentRangeLabel(reservedDate, period) {
+  const range = equipmentReservationRange({ reservedDate, period });
+  if (!range) return "기간을 선택하세요";
+  if (range.start === range.end) return range.start;
+  return `${range.start} - ${range.end}`;
 }
 
 export function timeToMinutes(value) {

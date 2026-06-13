@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260613-studioflow1";
+import "./js/main.js?v=20260613-equiprange1";

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260613-studioflow1";
-import { api } from "./api.js?v=20260613-studioflow1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-studioflow1";
+import { state } from "./state.js?v=20260613-equiprange1";
+import { api } from "./api.js?v=20260613-equiprange1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-equiprange1";
 import {
   changePassword,
   downloadLectureCsv,
@@ -9,14 +9,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260613-studioflow1";
-import { render, toast } from "./renderer.js?v=20260613-studioflow1";
+} from "./actions.js?v=20260613-equiprange1";
+import { render, toast } from "./renderer.js?v=20260613-equiprange1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260613-studioflow1";
-import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-studioflow1";
+} from "./utils.js?v=20260613-equiprange1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -212,6 +211,13 @@ export function setupEventHandlers() {
       render();
       return;
     }
+    if (["period", "rentalTime", "returnTime"].includes(target.name) && target.closest("[data-type=\"equipment\"]")) {
+      if (target.name === "period") state.selectedEquipmentPeriod = target.value;
+      if (target.name === "rentalTime") state.selectedEquipmentRentalTime = target.value;
+      if (target.name === "returnTime") state.selectedEquipmentReturnTime = target.value;
+      render();
+      return;
+    }
     if (target.name === "equipmentItemIds") {
       if (target.checked && !state.selectedEquipmentItemIds.includes(target.value)) {
         state.selectedEquipmentItemIds.push(target.value);
@@ -219,7 +225,7 @@ export function setupEventHandlers() {
       if (!target.checked) {
         state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.value);
       }
-      syncEquipmentSelectionSheet();
+      render();
     }
   });
 

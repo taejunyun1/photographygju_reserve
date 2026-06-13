@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260613-studioflow1";
+import { state } from "./state.js?v=20260613-equiprange1";
 
 export async function api(path, options = {}) {
   const apiBase = String(window.GJU_API_BASE || "").replace(/\/$/, "");
