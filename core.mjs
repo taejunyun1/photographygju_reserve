@@ -67,6 +67,8 @@ const defaultSettings = {
   printAvailableStart: "10:00",
   printAvailableEnd: "19:00",
   printTimeUnitMinutes: 60,
+  printCapacityWindowMinutes: 120,
+  printCapacityPerWindow: 4,
   printTypes: ["과제", "개인 작품"],
   printPapers: ["글로시", "매트"],
   printSizes: ["소형", "중형", "대형"],
@@ -548,6 +550,60 @@ function studioSpaces(fields = {}) {
   return fields.studioSpace ? [fields.studioSpace] : [];
 }
 
+function isBlockingReservation(reservation) {
+  return !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status);
+}
+
+function addDaysToDateKey(key, days) {
+  const date = new Date(`${key}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function equipmentPeriodDays(period = "") {
+  if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
+  if (String(period).includes("1박2일")) return 1;
+  return 0;
+}
+
+function equipmentReservationRange(fields = {}) {
+  const start = fields.reservedDate || "";
+  if (!start) return null;
+  return { start, end: addDaysToDateKey(start, equipmentPeriodDays(fields.period)) };
+}
+
+function dateRangesOverlap(a, b) {
+  if (!a || !b) return false;
+  return a.start <= b.end && b.start <= a.end;
+}
+
+function timeToMinutes(value) {
+  const match = String(value || "").match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function minutesToTime(minutes) {
+  const normalized = ((minutes % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+function printCapacityBuckets(settings) {
+  const start = timeToMinutes(settings.printAvailableStart);
+  const end = timeToMinutes(settings.printAvailableEnd);
+  const windowMinutes = Number(settings.printCapacityWindowMinutes || 120);
+  if (start === null || end === null || windowMinutes <= 0) return [];
+  const buckets = [];
+  for (let cursor = start; cursor < end; cursor += windowMinutes) {
+    buckets.push({ start: cursor, end: Math.min(cursor + windowMinutes, end) });
+  }
+  return buckets;
+}
+
 function validateReservation(db, type, fields, editingId = null) {
   if (!["equipment", "studio", "darkroom", "print"].includes(type)) {
     throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
@@ -558,6 +614,7 @@ function validateReservation(db, type, fields, editingId = null) {
     if (!Array.isArray(fields.equipmentItemIds) || fields.equipmentItemIds.length === 0) {
       throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });
     }
+    const requestedRange = equipmentReservationRange(fields);
     for (const itemId of fields.equipmentItemIds) {
       const item = db.equipment.find((eq) => eq.id === itemId);
       if (!item || !item.active || !item.reservable) {
@@ -565,12 +622,12 @@ function validateReservation(db, type, fields, editingId = null) {
       }
       const conflict = db.reservations.find((reservation) => {
         if (reservation.id === editingId || reservation.type !== "equipment") return false;
-        if (["cancelled", "admin_cancelled", "rejected", "returned"].includes(reservation.status)) return false;
-        if (reservation.fields.reservedDate !== fields.reservedDate) return false;
-        return Array.isArray(reservation.fields.equipmentItemIds) && reservation.fields.equipmentItemIds.includes(itemId);
+        if (!isBlockingReservation(reservation)) return false;
+        if (!Array.isArray(reservation.fields.equipmentItemIds) || !reservation.fields.equipmentItemIds.includes(itemId)) return false;
+        return dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
       });
       if (conflict) {
-        throw Object.assign(new Error(`${item.code} 기자재가 해당 날짜에 이미 예약되어 있습니다.`), { status: 409 });
+        throw Object.assign(new Error(`${item.code} 기자재가 해당 기간에 이미 예약되어 있습니다.`), { status: 409 });
       }
     }
   }
@@ -584,7 +641,7 @@ function validateReservation(db, type, fields, editingId = null) {
     const selectedSpaces = studioSpaces(fields);
     const conflict = db.reservations.find((reservation) => {
       if (reservation.id === editingId || reservation.type !== "studio") return false;
-      if (["cancelled", "admin_cancelled", "rejected"].includes(reservation.status)) return false;
+      if (!isBlockingReservation(reservation)) return false;
       return reservation.fields.reservedDate === fields.reservedDate &&
         hasOverlap(studioSpaces(reservation.fields), selectedSpaces) &&
         hasOverlap(reservation.fields.timeSlots, fields.timeSlots);
@@ -600,7 +657,7 @@ function validateReservation(db, type, fields, editingId = null) {
       const reservedCount = db.reservations
         .filter((reservation) => reservation.id !== editingId)
         .filter((reservation) => reservation.type === "darkroom")
-        .filter((reservation) => !["cancelled", "admin_cancelled", "rejected"].includes(reservation.status))
+        .filter(isBlockingReservation)
         .filter((reservation) => reservation.fields.reservedDate === fields.reservedDate)
         .filter((reservation) => Array.isArray(reservation.fields.timeSlots) && reservation.fields.timeSlots.includes(slot))
         .reduce((sum, reservation) => sum + Math.max(1, Number(reservation.fields.participantCount || 1)), 0);
@@ -612,8 +669,38 @@ function validateReservation(db, type, fields, editingId = null) {
 
   if (type === "print") {
     assertRequired(fields, ["reservedDate", "startTime", "endTime", "phone", "printType", "paper", "size"]);
-    if (fields.startTime < db.settings.printAvailableStart || fields.endTime > db.settings.printAvailableEnd) {
+    const start = timeToMinutes(fields.startTime);
+    const end = timeToMinutes(fields.endTime);
+    const availableStart = timeToMinutes(db.settings.printAvailableStart);
+    const availableEnd = timeToMinutes(db.settings.printAvailableEnd);
+    if (start === null || end === null || end <= start) {
+      throw Object.assign(new Error("출력실 시작/종료 시간을 올바르게 선택하세요."), { status: 400 });
+    }
+    if (start < availableStart || end > availableEnd) {
       throw Object.assign(new Error(`출력실 사용 가능 시간은 ${db.settings.printAvailableStart}-${db.settings.printAvailableEnd}입니다.`), { status: 400 });
+    }
+    const capacity = Number(db.settings.printCapacityPerWindow || 4);
+    const overloaded = printCapacityBuckets(db.settings)
+      .filter((bucket) => intervalsOverlap(start, end, bucket.start, bucket.end))
+      .map((bucket) => {
+        const count = db.reservations
+          .filter((reservation) => reservation.id !== editingId)
+          .filter((reservation) => reservation.type === "print")
+          .filter(isBlockingReservation)
+          .filter((reservation) => reservation.fields.reservedDate === fields.reservedDate)
+          .filter((reservation) => {
+            const reservationStart = timeToMinutes(reservation.fields.startTime);
+            const reservationEnd = timeToMinutes(reservation.fields.endTime);
+            return reservationStart !== null &&
+              reservationEnd !== null &&
+              intervalsOverlap(reservationStart, reservationEnd, bucket.start, bucket.end);
+          }).length;
+        return { ...bucket, count };
+      })
+      .filter((bucket) => bucket.count + 1 > capacity);
+    if (overloaded.length) {
+      const labels = overloaded.map((bucket) => `${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)}`).join(", ");
+      throw Object.assign(new Error(`출력실 ${labels} 시간대는 2시간 기준 최대 ${capacity}명까지 예약 가능합니다.`), { status: 409 });
     }
   }
 }

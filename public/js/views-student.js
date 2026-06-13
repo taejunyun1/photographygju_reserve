@@ -1,15 +1,22 @@
-import { state } from "./state.js?v=20260613-mod3";
-import { statusLabel, typeLabel } from "./constants.js?v=20260613-mod3";
+import { state } from "./state.js?v=20260613-conflict1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260613-conflict1";
 import {
   areSlotsConsecutive,
   calendar,
+  darkroomSlotRemaining,
   equipmentCategories,
+  equipmentItemReservedOnDate,
   escapeHtml,
+  minutesToTime,
   noticePreview,
+  printBucketUsage,
+  printCapacityBuckets,
+  studioPairReservedOnDate,
   sortedNotices,
   tag,
+  timeToMinutes,
   todayKey
-} from "./utils.js?v=20260613-mod3";
+} from "./utils.js?v=20260613-conflict1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -248,6 +255,10 @@ export function equipmentForm() {
   const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable);
   const categories = equipmentCategories().filter((cat) => reservable.some((item) => item.category === cat));
   if (!categories.includes(state.equipmentCategoryFilter)) state.equipmentCategoryFilter = categories[0] || "Other";
+  const selectedDate = state.selectedDates.equipment || "";
+  if (selectedDate) {
+    state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => !equipmentItemReservedOnDate(itemId, selectedDate));
+  }
   const visibleItems = reservable.filter((item) => item.category === state.equipmentCategoryFilter);
   const selectedItems = state.selectedEquipmentItemIds
     .map((itemId) => reservable.find((item) => item.id === itemId))
@@ -284,15 +295,18 @@ export function equipmentForm() {
             <span>${visibleItems.length}개 중 ${selectedItems.filter((item) => item.category === state.equipmentCategoryFilter).length}개 선택</span>
           </div>
           <div class="choice-grid equipment-choice-grid">
-            ${visibleItems.map((item) => `
-              <label class="choice-card equipment-choice">
-                <input type="checkbox" name="equipmentItemIds" value="${item.id}" ${state.selectedEquipmentItemIds.includes(item.id) ? "checked" : ""} />
+            ${visibleItems.map((item) => {
+              const unavailable = selectedDate && equipmentItemReservedOnDate(item.id, selectedDate);
+              return `
+              <label class="choice-card equipment-choice ${unavailable ? "is-unavailable" : ""}">
+                <input type="checkbox" name="equipmentItemIds" value="${item.id}" ${state.selectedEquipmentItemIds.includes(item.id) ? "checked" : ""} ${unavailable ? "disabled" : ""} />
                 <span>
                   <strong>${escapeHtml(item.name)}</strong>
-                  <small>${escapeHtml(item.code)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}</small>
+                  <small>${escapeHtml(item.code)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}${unavailable ? " · 선택일 예약됨" : ""}</small>
                 </span>
               </label>
-            `).join("")}
+            `;
+            }).join("")}
           </div>
         </div>
         <div class="field"><label>스탠드/소프트박스 요청</label><input class="input" name="standRequest" placeholder="예약 후 조교와 직접 확인" /></div>
@@ -332,7 +346,60 @@ export function syncEquipmentSelectionSheet() {
   sheet.outerHTML = equipmentSelectionSheet(currentSelectedEquipmentItems());
 }
 
+function studioAvailabilityPanel(selectedDate) {
+  if (!selectedDate) {
+    return `<div class="availability-panel"><strong>스튜디오 예약 가능 현황</strong><p class="muted">날짜를 선택하면 장소별 사용 불가 시간이 표시됩니다.</p></div>`;
+  }
+  return `
+    <div class="availability-panel">
+      <strong>스튜디오 예약 가능 현황</strong>
+      <div class="availability-matrix">
+        ${state.bootstrap.settings.studioSpaces.map((space) => `
+          <div class="availability-row">
+            <b>${escapeHtml(space)}</b>
+            <div>
+              ${state.bootstrap.settings.studioSlots.map((slot) => {
+                const reserved = studioPairReservedOnDate(selectedDate, space, slot);
+                return `<span class="availability-chip ${reserved ? "blocked" : "open"}">${escapeHtml(slot)} ${reserved ? "불가" : "가능"}</span>`;
+              }).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function printStartOption(time, selectedDate) {
+  const minute = timeToMinutes(time);
+  const capacity = Number(state.bootstrap.settings.printCapacityPerWindow || 4);
+  const bucket = printCapacityBuckets().find((item) => minute !== null && minute >= item.start && minute < item.end);
+  const count = selectedDate && bucket ? printBucketUsage(selectedDate, bucket) : 0;
+  const full = selectedDate && bucket && count >= capacity;
+  return `<option ${full ? "disabled" : ""}>${escapeHtml(time)}${full ? " 마감" : ""}</option>`;
+}
+
+function printAvailabilityPanel(selectedDate) {
+  const capacity = Number(state.bootstrap.settings.printCapacityPerWindow || 4);
+  if (!selectedDate) {
+    return `<div class="availability-panel"><strong>출력실 예약 가능 현황</strong><p class="muted">날짜를 선택하면 2시간 단위 잔여 인원이 표시됩니다.</p></div>`;
+  }
+  return `
+    <div class="availability-panel">
+      <strong>출력실 예약 가능 현황</strong>
+      <div class="availability-chip-grid">
+        ${printCapacityBuckets().map((bucket) => {
+          const count = printBucketUsage(selectedDate, bucket);
+          const full = count >= capacity;
+          return `<span class="availability-chip ${full ? "blocked" : "open"}">${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)} · ${Math.max(0, capacity - count)}명 가능</span>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 export function studioForm() {
+  const selectedDate = state.selectedDates.studio || "";
   return `
     <form class="reservation-layout" data-form="reservation" data-type="studio">
       ${calendar("studio")}
@@ -345,8 +412,17 @@ export function studioForm() {
           <span class="tag green">자동 확정</span>
         </div>
         <p class="muted">연속된 시간만 최대 3타임까지 선택 가능합니다. 사용 후 48시간 이내 보고서를 제출해야 합니다.</p>
-        <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSlots.map((slot) => `<label class="choice-card compact-choice"><input type="checkbox" name="studioSlots" value="${slot}" /><span><strong>${slot}</strong></span></label>`).join("")}</div></div>
-        <div class="field"><label>사용 공간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="studioSpaces" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>
+        <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSlots.map((slot) => {
+          const remainingSpaces = selectedDate ? state.bootstrap.settings.studioSpaces.filter((space) => !studioPairReservedOnDate(selectedDate, space, slot)).length : null;
+          const full = selectedDate && remainingSpaces === 0;
+          return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="studioSlots" value="${slot}" ${full ? "disabled" : ""} /><span><strong>${slot}</strong><small>${selectedDate ? `잔여 공간 ${remainingSpaces}` : "날짜 선택 후 확인"}</small></span></label>`;
+        }).join("")}</div></div>
+        <div class="field"><label>사용 공간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.studioSpaces.map((item) => {
+          const remainingSlots = selectedDate ? state.bootstrap.settings.studioSlots.filter((slot) => !studioPairReservedOnDate(selectedDate, item, slot)).length : null;
+          const full = selectedDate && remainingSlots === 0;
+          return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="studioSpaces" value="${item}" ${full ? "disabled" : ""} /><span><strong>${item}</strong><small>${selectedDate ? `가능 시간 ${remainingSlots}` : "날짜 선택 후 확인"}</small></span></label>`;
+        }).join("")}</div></div>
+        ${studioAvailabilityPanel(selectedDate)}
         <div class="field"><label>사용 명단</label><input class="input" name="participants" placeholder="대표자 및 팀원" value="${escapeHtml(state.user.name)}" required /></div>
         <div class="field"><label>필요 장비</label><textarea class="textarea" name="requiredEquipment" placeholder="포멕스 E1000 2개, C스탠드 4개 등"></textarea></div>
         <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose"></textarea></div>
@@ -359,6 +435,7 @@ export function studioForm() {
 }
 
 export function darkroomForm() {
+  const selectedDate = state.selectedDates.darkroom || "";
   return `
     <form class="reservation-layout" data-form="reservation" data-type="darkroom">
       ${calendar("darkroom")}
@@ -371,7 +448,11 @@ export function darkroomForm() {
           <span class="tag green">자동 확정</span>
         </div>
         <p class="muted">24시간 2시간 단위 예약입니다. 월/화 14:00-18:00은 사용 불가이며, 최대 ${state.bootstrap.settings.darkroomCapacity}명까지 가능합니다.</p>
-        <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.darkroomSlots.map((slot) => `<label class="choice-card compact-choice"><input type="checkbox" name="darkroomSlots" value="${slot}" /><span><strong>${slot}</strong></span></label>`).join("")}</div></div>
+        <div class="field"><label>사용 시간 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.darkroomSlots.map((slot) => {
+          const remaining = selectedDate ? darkroomSlotRemaining(selectedDate, slot) : null;
+          const full = selectedDate && remaining <= 0;
+          return `<label class="choice-card compact-choice ${full ? "is-unavailable" : ""}"><input type="checkbox" name="darkroomSlots" value="${slot}" ${full ? "disabled" : ""} /><span><strong>${slot}</strong><small>${selectedDate ? `잔여 ${remaining}명` : "날짜 선택 후 확인"}</small></span></label>`;
+        }).join("")}</div></div>
         <div class="field"><label>사용 인원</label><input class="input" name="participantCount" type="number" min="1" max="${state.bootstrap.settings.darkroomCapacity}" value="1" /></div>
         <div class="field"><label>작업 유형 멀티 선택</label><div class="choice-grid">${["현상", "인화"].map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="processTypes" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>
         <div class="field"><label>사용 약품 및 예정량</label><div class="chemical-grid">${state.bootstrap.darkroomChemicals.map((chem) => `<div class="field"><label>${chem.name}</label><select class="select" name="chem-${chem.id}"><option value="">사용 안 함</option>${chem.options.map((option) => `<option>${option}</option>`).join("")}</select></div>`).join("")}</div></div>
@@ -385,6 +466,7 @@ export function darkroomForm() {
 }
 
 export function printForm() {
+  const selectedDate = state.selectedDates.print || "";
   const hours = [];
   for (let h = 10; h <= 19; h += 1) hours.push(`${String(h).padStart(2, "0")}:00`);
   return `
@@ -400,9 +482,10 @@ export function printForm() {
         </div>
         <p class="muted">실제 사용 가능 시간은 ${state.bootstrap.settings.printAvailableStart}-${state.bootstrap.settings.printAvailableEnd}입니다. 가격은 현장에서 확인합니다.</p>
         <div class="grid two control-grid">
-          <div class="field"><label>시작</label><select class="select" name="startTime">${hours.slice(0, -1).map((item) => `<option>${item}</option>`).join("")}</select></div>
+          <div class="field"><label>시작</label><select class="select" name="startTime">${hours.slice(0, -1).map((item) => printStartOption(item, selectedDate)).join("")}</select></div>
           <div class="field"><label>종료</label><select class="select" name="endTime">${hours.slice(1).map((item) => `<option>${item}</option>`).join("")}</select></div>
         </div>
+        ${printAvailabilityPanel(selectedDate)}
         <div class="field"><label>출력 종류 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.printTypes.map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="printTypes" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>
         <div class="field"><label>용지 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.printPapers.map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="papers" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>
         <div class="field"><label>사이즈 멀티 선택</label><div class="choice-grid">${state.bootstrap.settings.printSizes.map((item) => `<label class="choice-card compact-choice"><input type="checkbox" name="sizes" value="${item}" /><span><strong>${item}</strong></span></label>`).join("")}</div></div>

@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-mod3";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-mod3";
+import { state } from "./state.js?v=20260613-conflict1";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260613-conflict1";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -126,6 +126,114 @@ export function sharedReservations(type, key) {
   return (state.bootstrap?.reservations || [])
     .filter((item) => item.type === type)
     .filter((item) => reservationDate(item) === key);
+}
+
+export function addDaysToDateKey(key, days) {
+  const date = new Date(`${key}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return dateKey(date);
+}
+
+export function equipmentPeriodDays(period = "") {
+  if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
+  if (String(period).includes("1박2일")) return 1;
+  return 0;
+}
+
+export function equipmentReservationDates(fields = {}) {
+  if (!fields.reservedDate) return [];
+  return Array.from({ length: equipmentPeriodDays(fields.period) + 1 }, (_, index) => addDaysToDateKey(fields.reservedDate, index));
+}
+
+export function equipmentItemReservedOnDate(itemId, key) {
+  if (!itemId || !key) return false;
+  return (state.bootstrap?.reservations || []).some((reservation) => {
+    if (reservation.type !== "equipment") return false;
+    const itemIds = [
+      ...(reservation.fields?.equipmentItemIds || []),
+      ...(reservation.equipmentItems || []).map((item) => item.id)
+    ];
+    return itemIds.includes(itemId) && equipmentReservationDates(reservation.fields).includes(key);
+  });
+}
+
+export function timeToMinutes(value) {
+  const match = String(value || "").match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+export function minutesToTime(minutes) {
+  const normalized = ((minutes % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+export function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+export function studioPairReservedOnDate(date, space, slot) {
+  if (!date || !space || !slot) return false;
+  return sharedReservations("studio", date).some((reservation) => {
+    const spaces = (reservation.fields?.studioSpaces || [reservation.fields?.studioSpace]).filter(Boolean);
+    return spaces.includes(space) && (reservation.fields?.timeSlots || []).includes(slot);
+  });
+}
+
+export function studioSelectionConflicts(date, spaces = [], slots = []) {
+  if (!date) return [];
+  const conflicts = [];
+  spaces.forEach((space) => {
+    slots.forEach((slot) => {
+      if (studioPairReservedOnDate(date, space, slot)) conflicts.push(`${space} / ${slot}`);
+    });
+  });
+  return conflicts;
+}
+
+export function darkroomSlotUsage(date, slot) {
+  if (!date || !slot) return 0;
+  return sharedReservations("darkroom", date)
+    .filter((reservation) => (reservation.fields?.timeSlots || []).includes(slot))
+    .reduce((sum, reservation) => sum + Math.max(1, Number(reservation.fields?.participantCount || 1)), 0);
+}
+
+export function darkroomSlotRemaining(date, slot) {
+  const capacity = Number(state.bootstrap?.settings?.darkroomCapacity || 6);
+  return Math.max(0, capacity - darkroomSlotUsage(date, slot));
+}
+
+export function printCapacityBuckets() {
+  const settings = state.bootstrap?.settings || {};
+  const start = timeToMinutes(settings.printAvailableStart);
+  const end = timeToMinutes(settings.printAvailableEnd);
+  const windowMinutes = Number(settings.printCapacityWindowMinutes || 120);
+  if (start === null || end === null || windowMinutes <= 0) return [];
+  const buckets = [];
+  for (let cursor = start; cursor < end; cursor += windowMinutes) {
+    buckets.push({ start: cursor, end: Math.min(cursor + windowMinutes, end) });
+  }
+  return buckets;
+}
+
+export function printBucketUsage(date, bucket) {
+  if (!date || !bucket) return 0;
+  return sharedReservations("print", date).filter((reservation) => {
+    const start = timeToMinutes(reservation.fields?.startTime);
+    const end = timeToMinutes(reservation.fields?.endTime);
+    return start !== null && end !== null && intervalsOverlap(start, end, bucket.start, bucket.end);
+  }).length;
+}
+
+export function printSelectionConflicts(date, startTime, endTime) {
+  const start = timeToMinutes(startTime);
+  const end = timeToMinutes(endTime);
+  if (!date || start === null || end === null || end <= start) return [];
+  const capacity = Number(state.bootstrap?.settings?.printCapacityPerWindow || 4);
+  return printCapacityBuckets()
+    .filter((bucket) => intervalsOverlap(start, end, bucket.start, bucket.end))
+    .map((bucket) => ({ ...bucket, count: printBucketUsage(date, bucket) }))
+    .filter((bucket) => bucket.count + 1 > capacity);
 }
 
 export function isMineReservation(reservation) {

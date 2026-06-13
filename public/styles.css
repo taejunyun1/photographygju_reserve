@@ -993,6 +993,21 @@ a {
   color: var(--on-primary-container);
 }
 
+.choice-card.is-unavailable {
+  border-color: var(--line-soft);
+  background: var(--surface-low);
+  color: var(--muted);
+}
+
+.choice-card.is-unavailable input {
+  cursor: not-allowed;
+}
+
+.choice-card.is-unavailable strong,
+.choice-card.is-unavailable small {
+  color: var(--muted);
+}
+
 .compact-choice {
   align-items: center;
   padding: 10px;
@@ -1065,6 +1080,68 @@ a {
 
 .info-strip strong {
   color: var(--text);
+}
+
+.availability-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  padding: 12px;
+}
+
+.availability-panel > strong {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 900;
+}
+
+.availability-matrix,
+.availability-chip-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.availability-row {
+  display: grid;
+  gap: 7px;
+}
+
+.availability-row b {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.availability-row div,
+.availability-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.availability-chip {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-lowest);
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.availability-chip.open {
+  border-color: #8cd9b8;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.availability-chip.blocked {
+  border-color: #ffb4ab;
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .stat-grid {

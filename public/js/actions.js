@@ -1,15 +1,20 @@
-import { state } from "./state.js?v=20260613-mod3";
-import { api } from "./api.js?v=20260613-mod3";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-mod3";
-import { render, toast } from "./renderer.js?v=20260613-mod3";
+import { state } from "./state.js?v=20260613-conflict1";
+import { api } from "./api.js?v=20260613-conflict1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-conflict1";
+import { render, toast } from "./renderer.js?v=20260613-conflict1";
 import {
   areSlotsConsecutive,
   csvEscape,
+  darkroomSlotRemaining,
+  equipmentItemReservedOnDate,
   formData,
   formatDateTime,
   getChecked,
+  minutesToTime,
+  printSelectionConflicts,
+  studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-mod3";
+} from "./utils.js?v=20260613-conflict1";
 
 export async function login(form) {
   const data = formData(form);
@@ -96,6 +101,8 @@ export async function submitReservation(form) {
     state.selectedEquipmentItemIds = [...new Set([...state.selectedEquipmentItemIds, ...visibleChecked])];
     fields.equipmentItemIds = state.selectedEquipmentItemIds;
     if (!fields.equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
+    const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedOnDate(itemId, fields.reservedDate));
+    if (unavailableItems.length) throw new Error("선택한 날짜에 이미 예약된 기자재가 포함되어 있습니다.");
   }
   if (type === "studio") {
     fields.timeSlots = getChecked("studioSlots");
@@ -110,6 +117,8 @@ export async function submitReservation(form) {
     if (!areSlotsConsecutive(fields.timeSlots, state.bootstrap.settings.studioSlots)) {
       throw new Error("스튜디오는 연속된 시간만 예약할 수 있습니다.");
     }
+    const conflicts = studioSelectionConflicts(fields.reservedDate, fields.studioSpaces, fields.timeSlots);
+    if (conflicts.length) throw new Error(`이미 예약된 스튜디오 조합입니다: ${conflicts.slice(0, 3).join(", ")}`);
   }
   if (type === "darkroom") {
     fields.timeSlots = getChecked("darkroomSlots");
@@ -121,6 +130,9 @@ export async function submitReservation(form) {
     })).filter((item) => item.amount);
     if (!fields.timeSlots.length) throw new Error("암실 사용 시간을 선택하세요.");
     if (!fields.processTypes.length) throw new Error("암실 작업 유형을 선택하세요.");
+    const participantCount = Math.max(1, Number(fields.participantCount || 1));
+    const fullSlots = fields.timeSlots.filter((slot) => darkroomSlotRemaining(fields.reservedDate, slot) < participantCount);
+    if (fullSlots.length) throw new Error(`암실 정원을 초과하는 시간입니다: ${fullSlots.join(", ")}`);
   }
   if (type === "print") {
     fields.printTypes = getChecked("printTypes");
@@ -132,6 +144,11 @@ export async function submitReservation(form) {
     if (!fields.printTypes.length) throw new Error("출력 종류를 선택하세요.");
     if (!fields.papers.length) throw new Error("용지를 선택하세요.");
     if (!fields.sizes.length) throw new Error("사이즈를 선택하세요.");
+    const printConflicts = printSelectionConflicts(fields.reservedDate, fields.startTime, fields.endTime);
+    if (printConflicts.length) {
+      const labels = printConflicts.map((bucket) => `${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)}`).join(", ");
+      throw new Error(`출력실 ${labels} 시간대는 예약 가능 인원이 가득 찼습니다.`);
+    }
   }
   await api("/api/reservations", { method: "POST", body: { type, fields } });
   state.reservationType = "";

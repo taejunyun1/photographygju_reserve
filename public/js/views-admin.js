@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260613-mod3";
+import { state } from "./state.js?v=20260613-conflict1";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260613-mod3";
+} from "./constants.js?v=20260613-conflict1";
 import {
   addMonths,
   adminGuide,
@@ -20,8 +20,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260613-mod3";
-import { noticeCard } from "./views-student.js?v=20260613-mod3";
+} from "./utils.js?v=20260613-conflict1";
+import { noticeCard } from "./views-student.js?v=20260613-conflict1";
 
 export function adminShell() {
   return `

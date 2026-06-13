@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260613-mod3";
-import { api } from "./api.js?v=20260613-mod3";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-mod3";
+import { state } from "./state.js?v=20260613-conflict1";
+import { api } from "./api.js?v=20260613-conflict1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-conflict1";
 import {
   changePassword,
   downloadLectureCsv,
@@ -9,15 +9,14 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260613-mod3";
-import { render, toast } from "./renderer.js?v=20260613-mod3";
+} from "./actions.js?v=20260613-conflict1";
+import { render, toast } from "./renderer.js?v=20260613-conflict1";
 import {
-  calendarDayDetails,
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260613-mod3";
-import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-mod3";
+} from "./utils.js?v=20260613-conflict1";
+import { syncEquipmentSelectionSheet } from "./views-student.js?v=20260613-conflict1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -47,13 +46,7 @@ export function setupEventHandlers() {
         const widget = target.closest("[data-calendar]");
         const type = widget?.dataset.calendar || state.reservationType;
         state.selectedDates[type] = target.dataset.calendarDay;
-        widget?.querySelectorAll(".calendar-day").forEach((button) => button.classList.toggle("selected", button === target));
-        const input = widget?.querySelector('input[name="reservedDate"]');
-        if (input) input.value = target.dataset.calendarDay;
-        const selectedLabel = widget?.querySelector("[data-calendar-selected]");
-        if (selectedLabel) selectedLabel.textContent = target.dataset.calendarDay;
-        const details = widget?.querySelector("[data-calendar-details]");
-        if (details) details.innerHTML = calendarDayDetails(type, target.dataset.calendarDay);
+        render();
         return;
       }
       if (target.dataset.action === "logout") await logout();
