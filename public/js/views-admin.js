@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-loading1";
+import { state } from "./state.js?v=20260614-eqbulk1";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-loading1";
+} from "./constants.js?v=20260614-eqbulk1";
 import {
   addMonths,
   adminGuide,
@@ -22,8 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-loading1";
-import { noticeCard } from "./views-student.js?v=20260614-loading1";
+} from "./utils.js?v=20260614-eqbulk1";
+import { noticeCard } from "./views-student.js?v=20260614-eqbulk1";
+import {
+  equipmentReservableTag,
+  equipmentStatusButtons,
+  selectedAdminEquipmentSet,
+  visibleAdminEquipmentItems
+} from "./admin-equipment.js?v=20260614-eqbulk1";
 
 export function adminShell() {
   return `
@@ -259,12 +265,12 @@ export function adminReservationCard(reservation) {
 }
 
 export function adminEquipmentView() {
-  const active = state.adminEquipment.filter((item) => item.active !== false);
   const categories = equipmentCategories();
   const sourceTabs = [["department", "극기관"], ["fantasy_lab", "판타지랩"], ["all", "전체"]];
-  const filtered = active
-    .filter((item) => state.adminEquipmentTab === "all" || item.source === state.adminEquipmentTab)
-    .filter((item) => state.adminEquipmentCategoryTab === "all" || item.category === state.adminEquipmentCategoryTab);
+  const filtered = visibleAdminEquipmentItems();
+  const selected = selectedAdminEquipmentSet();
+  const visibleSelectedCount = filtered.filter((item) => selected.has(item.id)).length;
+  const allVisibleSelected = filtered.length > 0 && visibleSelectedCount === filtered.length;
   return `
     <section class="grid">
       ${adminGuide("기자재 사용 가이드", "카테고리와 관리처를 먼저 정리한 뒤 장비를 등록합니다. CSV는 바로 등록하지 말고 미리보기로 행이 제대로 읽혔는지 확인한 다음 등록하세요.")}
@@ -307,7 +313,7 @@ export function adminEquipmentView() {
             <h2 class="card-title">등록된 전체 기자재</h2>
             <p class="muted">관리처와 카테고리 탭으로 나눠 확인합니다.</p>
           </div>
-          <span class="tag blue">${filtered.length}개</span>
+          <span class="tag blue" data-admin-equipment-count>${filtered.length}개</span>
         </div>
         <div class="tab-row">
           ${sourceTabs.map(([key, label]) => `<button class="tab-button ${state.adminEquipmentTab === key ? "active" : ""}" data-admin-equipment-tab="${key}">${label}</button>`).join("")}
@@ -322,22 +328,30 @@ export function adminEquipmentView() {
           <button class="tab-button ${state.adminEquipmentCategoryTab === "all" ? "active" : ""}" data-admin-equipment-category-tab="all">전체</button>
           ${categories.map((cat) => `<button class="tab-button ${state.adminEquipmentCategoryTab === cat ? "active" : ""}" data-admin-equipment-category-tab="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
         </div>
+        <div class="equipment-bulk-bar">
+          <label class="table-check">
+            <input type="checkbox" data-equipment-select-all ${allVisibleSelected ? "checked" : ""} />
+            <span>전체 선택</span>
+          </label>
+          <span class="tag" data-admin-equipment-selected-count>${selected.size}개 선택</span>
+          <div class="bulk-actions" aria-label="선택 기자재 상태 변경">
+            ${equipmentStatusOptions.map((status) => `<button class="button compact" type="button" data-equipment-bulk-status="${status}" ${selected.size ? "" : "disabled"}>${status}</button>`).join("")}
+            <button class="button danger compact" type="button" data-equipment-bulk-remove ${selected.size ? "" : "disabled"}>선택 기자재 제거</button>
+          </div>
+        </div>
         <div class="table-wrap embedded">
           <table>
-            <thead><tr><th>코드</th><th>장비</th><th>분류</th><th>관리처</th><th>상태</th><th>예약</th><th>작업</th></tr></thead>
+            <thead><tr><th class="check-col"><span class="sr-only">선택</span></th><th>코드</th><th>장비</th><th>분류</th><th>관리처</th><th>상태</th><th>예약</th><th>작업</th></tr></thead>
             <tbody>${filtered.map((item) => `
-              <tr>
+              <tr data-equipment-row="${item.id}" data-status="${escapeHtml(item.status || "")}" class="${selected.has(item.id) ? "selected" : ""}">
+                <td class="check-col"><input type="checkbox" data-equipment-select="${item.id}" ${selected.has(item.id) ? "checked" : ""} aria-label="${escapeHtml(`${item.code} ${item.name} 선택`)}" /></td>
                 <td>${escapeHtml(item.code)}</td>
                 <td>${escapeHtml(item.name)}<br><span class="muted">${escapeHtml(item.notes || "")}</span></td>
                 <td>${escapeHtml(item.category)}</td>
                 <td>${escapeHtml(sourceLabel[item.source] || item.facility || "-")}</td>
-                <td>
-                  <select class="select compact-select" data-equipment-status="${item.id}">
-                    ${equipmentStatusOptions.map((status) => `<option value="${status}" ${item.status === status ? "selected" : ""}>${status}</option>`).join("")}
-                  </select>
-                </td>
-                <td>${item.reservable ? tag("가능", "green") : tag("문의전용", "yellow")}</td>
-                <td><button class="button danger" data-equipment-disable="${item.id}">비활성</button></td>
+                <td>${equipmentStatusButtons(item)}</td>
+                <td data-equipment-reservable-cell="${item.id}">${equipmentReservableTag(item)}</td>
+                <td><button class="button danger" data-equipment-remove-admin="${item.id}">기자재 제거</button></td>
               </tr>`).join("")}</tbody>
           </table>
         </div>

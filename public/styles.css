@@ -1728,6 +1728,35 @@ tr:last-child td {
   border-bottom: 0;
 }
 
+tr.selected td {
+  background: rgba(19, 83, 216, 0.07);
+}
+
+.check-col {
+  width: 42px;
+  min-width: 42px;
+  text-align: center;
+}
+
+.check-col input,
+.table-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1760,6 +1789,61 @@ tr:last-child td {
   min-height: 32px;
   padding: 6px 8px;
   font-size: 12px;
+}
+
+.equipment-bulk-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--surface-lowest);
+}
+
+.table-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 800;
+}
+
+.bulk-actions,
+.equipment-status-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bulk-actions {
+  margin-left: auto;
+}
+
+.status-button {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-lowest);
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 900;
+}
+
+.status-button.active {
+  border-color: var(--primary);
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.status-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .status-cell {

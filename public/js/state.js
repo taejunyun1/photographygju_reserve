@@ -29,6 +29,7 @@ export const state = {
   adminReservationTab: "equipment",
   adminEquipmentTab: "department",
   adminEquipmentCategoryTab: "all",
+  selectedAdminEquipmentIds: [],
   adminUserSort: {
     field: "approvalStatus",
     direction: "asc"

@@ -309,6 +309,51 @@ function equipmentReservableForStatus(status) {
   return normalizeEquipmentStatus(status) === "가능";
 }
 
+function booleanFromBody(value) {
+  return value === true || value === "true";
+}
+
+function equipmentAuditDetail(patch, extra = {}) {
+  const allowed = ["facility", "source", "category", "name", "brand", "model", "code", "status", "reservable", "inquiryOnly", "notes", "active"];
+  return allowed.reduce((detail, field) => {
+    if (patch[field] !== undefined) detail[field] = patch[field];
+    return detail;
+  }, { ...extra });
+}
+
+function applyEquipmentPatch(item, patch = {}) {
+  const nextStatus = patch.status !== undefined ? normalizeEquipmentStatus(patch.status) : normalizeEquipmentStatus(item.status);
+  if (nextStatus && !EQUIPMENT_STATUSES.has(nextStatus)) {
+    throw Object.assign(new Error("지원하지 않는 기자재 상태입니다."), { status: 400 });
+  }
+  if (patch.facility !== undefined) item.facility = String(patch.facility).trim() || item.facility;
+  if (patch.source !== undefined) item.source = patch.source === "fantasy_lab" ? "fantasy_lab" : "department";
+  if (patch.category !== undefined) item.category = String(patch.category).trim() || item.category;
+  if (patch.name !== undefined) item.name = String(patch.name).trim() || item.name;
+  if (patch.brand !== undefined) item.brand = String(patch.brand || "");
+  if (patch.model !== undefined) item.model = String(patch.model || "");
+  if (patch.code !== undefined) item.code = String(patch.code).trim() || item.code;
+  if (patch.notes !== undefined) item.notes = String(patch.notes || "");
+  if (patch.active !== undefined) item.active = booleanFromBody(patch.active);
+  if (patch.reservable !== undefined) item.reservable = booleanFromBody(patch.reservable);
+  if (patch.inquiryOnly !== undefined) item.inquiryOnly = booleanFromBody(patch.inquiryOnly);
+  item.status = nextStatus;
+  item.updatedAt = nowIso();
+  if (item.source === "fantasy_lab" || item.facility === "판타지랩") {
+    item.source = "fantasy_lab";
+    item.facility = "판타지랩";
+    item.reservable = false;
+    item.inquiryOnly = true;
+    if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
+  } else if (patch.status !== undefined) {
+    item.reservable = equipmentReservableForStatus(item.status);
+    item.inquiryOnly = !item.reservable;
+  } else if (patch.reservable !== undefined) {
+    item.inquiryOnly = !item.reservable;
+  }
+  return item;
+}
+
 function seedEquipment() {
   const items = [];
   let groupIndex = 0;
@@ -1801,30 +1846,34 @@ export async function handleApiRequest(ctx) {
         return ok(batch);
       }
 
+      if (routeKey(method, pathname) === "PATCH /api/admin/equipment/bulk") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const ids = Array.isArray(body.ids) ? [...new Set(body.ids.map((item) => String(item || "").trim()).filter(Boolean))] : [];
+        if (!ids.length) throw Object.assign(new Error("변경할 기자재를 선택하세요."), { status: 400 });
+        if (ids.length > 200) throw Object.assign(new Error("한 번에 변경할 수 있는 기자재는 200개까지입니다."), { status: 400 });
+        if (!body.patch || typeof body.patch !== "object" || Array.isArray(body.patch)) {
+          throw Object.assign(new Error("변경할 기자재 값을 입력하세요."), { status: 400 });
+        }
+        const items = ids.map((itemId) => {
+          const item = db.equipment.find((eq) => eq.id === itemId);
+          if (!item) throw Object.assign(new Error("기자재를 찾을 수 없습니다."), { status: 404 });
+          return item;
+        });
+        const updated = items.map((item) => applyEquipmentPatch(item, body.patch));
+        audit(db, admin, "equipment.updated", ids.join(","), equipmentAuditDetail(body.patch, { count: updated.length, bulk: true }));
+        await saveDb();
+        return ok(updated);
+      }
+
       const equipmentPatchMatch = pathname.match(/^\/api\/admin\/equipment\/([^/]+)$/);
       if (method === "PATCH" && equipmentPatchMatch) {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         const item = db.equipment.find((eq) => eq.id === equipmentPatchMatch[1]);
         if (!item) throw Object.assign(new Error("기자재를 찾을 수 없습니다."), { status: 404 });
-        const nextStatus = body.status !== undefined ? normalizeEquipmentStatus(body.status) : normalizeEquipmentStatus(item.status);
-        if (nextStatus && !EQUIPMENT_STATUSES.has(nextStatus)) {
-          throw Object.assign(new Error("지원하지 않는 기자재 상태입니다."), { status: 400 });
-        }
-        Object.assign(item, body, { status: nextStatus, updatedAt: nowIso() });
-        if (item.source === "fantasy_lab" || item.facility === "판타지랩") {
-          item.source = "fantasy_lab";
-          item.facility = "판타지랩";
-          item.reservable = false;
-          item.inquiryOnly = true;
-          if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
-        } else if (body.status !== undefined) {
-          item.reservable = equipmentReservableForStatus(item.status);
-          item.inquiryOnly = !item.reservable;
-        } else if (body.reservable !== undefined) {
-          item.inquiryOnly = !item.reservable;
-        }
-        audit(db, admin, "equipment.updated", item.id, body);
+        applyEquipmentPatch(item, body);
+        audit(db, admin, "equipment.updated", item.id, equipmentAuditDetail(body));
         await saveDb();
         return ok(item);
       }

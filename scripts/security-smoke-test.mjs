@@ -136,6 +136,45 @@ assert.equal(brokenEquipment.status, 200);
 assert.equal(brokenEquipment.body.data.status, "파손");
 assert.equal(brokenEquipment.body.data.reservable, false);
 
+const ignoredEquipmentPatch = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
+  id: "eq_should_not_override",
+  createdAt: "2000-01-01T00:00:00.000Z",
+  status: "가능"
+}, adminToken);
+assert.equal(ignoredEquipmentPatch.status, 200);
+assert.equal(ignoredEquipmentPatch.body.data.id, createdRepairEquipment.body.data[0].id);
+assert.notEqual(ignoredEquipmentPatch.body.data.createdAt, "2000-01-01T00:00:00.000Z");
+assert.equal(ignoredEquipmentPatch.body.data.status, "가능");
+
+const bulkEquipment = await api("POST", "/api/admin/equipment", {
+  name: "일괄 상태 테스트 장비",
+  category: "Other",
+  source: "department",
+  quantity: 2,
+  status: "가능"
+}, adminToken);
+assert.equal(bulkEquipment.status, 200);
+const bulkIds = bulkEquipment.body.data.map((item) => item.id);
+const bulkRepair = await api("PATCH", "/api/admin/equipment/bulk", {
+  ids: bulkIds,
+  patch: { status: "수리중", id: "eq_bulk_override" }
+}, adminToken);
+assert.equal(bulkRepair.status, 200);
+assert.equal(bulkRepair.body.data.length, 2);
+assert.equal(bulkRepair.body.data.every((item) => bulkIds.includes(item.id) && item.status === "수리중" && item.reservable === false), true);
+
+const bulkRemove = await api("PATCH", "/api/admin/equipment/bulk", {
+  ids: [bulkIds[0]],
+  patch: { active: false }
+}, adminToken);
+assert.equal(bulkRemove.status, 200);
+assert.equal(bulkRemove.body.data[0].active, false);
+
+const brokenForReservation = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
+  status: "파손"
+}, adminToken);
+assert.equal(brokenForReservation.status, 200);
+
 const failedLogin = await api("POST", "/api/auth/login", {
   loginId: "20260001",
   password: "wrong-password"
@@ -164,7 +203,7 @@ const brokenEquipmentReservation = await api("POST", "/api/reservations", {
     rentalTime: "10:15",
     returnTime: "17:10",
     phone: "01039546412",
-    equipmentItemIds: [brokenEquipment.body.data.id]
+    equipmentItemIds: [brokenForReservation.body.data.id]
   }
 }, studentLogin.body.data.token);
 assert.equal(brokenEquipmentReservation.status, 400);

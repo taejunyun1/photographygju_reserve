@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-loading1";
-import { api } from "./api.js?v=20260614-loading1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-loading1";
+import { state } from "./state.js?v=20260614-eqbulk1";
+import { api } from "./api.js?v=20260614-eqbulk1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-eqbulk1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-loading1";
-import { render, toast } from "./renderer.js?v=20260614-loading1";
+} from "./actions.js?v=20260614-eqbulk1";
+import { render, toast } from "./renderer.js?v=20260614-eqbulk1";
+import {
+  patchAdminEquipment,
+  setAdminEquipmentSelection,
+  setVisibleAdminEquipmentSelection,
+  syncAdminEquipmentDom,
+  syncAdminEquipmentSelectionDom
+} from "./admin-equipment.js?v=20260614-eqbulk1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-loading1";
+} from "./utils.js?v=20260614-eqbulk1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -215,10 +222,50 @@ export function setupEventHandlers() {
           .then(() => render())
           .catch((error) => toast(`상태는 변경됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`));
       }
-      if (target.dataset.equipmentDisable) {
-        await api(`/api/admin/equipment/${target.dataset.equipmentDisable}`, { method: "PATCH", body: { active: false } });
-        await loadAdminData();
-        toast("장비를 비활성화했습니다.");
+      if (target.dataset.equipmentStatusAction) {
+        const itemId = target.dataset.equipmentStatusAction;
+        const status = target.dataset.status;
+        if (!status) return;
+        target.disabled = true;
+        let updated;
+        try {
+          updated = await patchAdminEquipment([itemId], { status });
+        } finally {
+          target.disabled = false;
+        }
+        syncAdminEquipmentDom(updated);
+        toast("기자재 상태를 변경했습니다.");
+        return;
+      }
+      if (target.dataset.equipmentBulkStatus) {
+        const ids = [...state.selectedAdminEquipmentIds];
+        if (!ids.length) {
+          toast("선택된 기자재가 없습니다.");
+          return;
+        }
+        const updated = await patchAdminEquipment(ids, { status: target.dataset.equipmentBulkStatus });
+        syncAdminEquipmentDom(updated);
+        toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`);
+        return;
+      }
+      if (target.dataset.equipmentRemoveAdmin) {
+        if (!confirm("이 기자재를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.")) return;
+        const updated = await patchAdminEquipment([target.dataset.equipmentRemoveAdmin], { active: false });
+        syncAdminEquipmentDom(updated);
+        toast("기자재를 제거했습니다.");
+        return;
+      }
+      if (target.dataset.equipmentBulkRemove !== undefined) {
+        const ids = [...state.selectedAdminEquipmentIds];
+        if (!ids.length) {
+          toast("선택된 기자재가 없습니다.");
+          return;
+        }
+        if (!confirm(`선택한 기자재 ${ids.length}개를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.`)) return;
+        const updated = await patchAdminEquipment(ids, { active: false });
+        syncAdminEquipmentDom(updated);
+        toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);
+        return;
       }
     } catch (error) {
       toast(error.message);
@@ -227,18 +274,14 @@ export function setupEventHandlers() {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
-    if (target.dataset.equipmentStatus) {
-      void (async () => {
-        try {
-          await api(`/api/admin/equipment/${target.dataset.equipmentStatus}`, { method: "PATCH", body: { status: target.value } });
-          await loadBootstrap();
-          await loadAdminData();
-          toast("기자재 상태를 변경했습니다.");
-          render();
-        } catch (error) {
-          toast(error.message);
-        }
-      })();
+    if (target.dataset.equipmentSelectAll !== undefined) {
+      setVisibleAdminEquipmentSelection(target.checked);
+      syncAdminEquipmentSelectionDom();
+      return;
+    }
+    if (target.dataset.equipmentSelect) {
+      setAdminEquipmentSelection(target.dataset.equipmentSelect, target.checked);
+      syncAdminEquipmentSelectionDom();
       return;
     }
     if (target.name === "studioSpace") {
