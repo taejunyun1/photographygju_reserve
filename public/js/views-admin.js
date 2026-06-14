@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-security2";
+import { state } from "./state.js?v=20260614-fasttoast1";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-security2";
+} from "./constants.js?v=20260614-fasttoast1";
 import {
   addMonths,
   adminGuide,
@@ -20,8 +20,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-security2";
-import { noticeCard } from "./views-student.js?v=20260614-security2";
+} from "./utils.js?v=20260614-fasttoast1";
+import { noticeCard } from "./views-student.js?v=20260614-fasttoast1";
 
 export function adminShell() {
   return `

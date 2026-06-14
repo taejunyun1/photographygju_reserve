@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-security2";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-security2";
+import { state } from "./state.js?v=20260614-fasttoast1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-fasttoast1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-security2";
+} from "./utils.js?v=20260614-fasttoast1";
 
 export function authView() {
   const isLogin = state.authMode === "login";

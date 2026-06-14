@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260614-security2";
-import { escapeHtml } from "./utils.js?v=20260614-security2";
-import { adminShell } from "./views-admin.js?v=20260614-security2";
-import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-security2";
+import { $app, state } from "./state.js?v=20260614-fasttoast1";
+import { escapeHtml } from "./utils.js?v=20260614-fasttoast1";
+import { adminShell } from "./views-admin.js?v=20260614-fasttoast1";
+import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-fasttoast1";
 
 export function render() {
   if (!state.bootstrap) {
@@ -12,11 +12,15 @@ export function render() {
   $app.innerHTML = `<div class="app">${body}${noticeBottomSheet()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
 }
 
+let toastTimer = null;
+
 export function toast(message) {
+  if (toastTimer) clearTimeout(toastTimer);
   state.toast = message;
   render();
-  setTimeout(() => {
+  toastTimer = setTimeout(() => {
     state.toast = "";
+    toastTimer = null;
     render();
   }, 2600);
 }

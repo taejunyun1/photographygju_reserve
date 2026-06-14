@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260614-security2";
+import "./js/main.js?v=20260614-fasttoast1";

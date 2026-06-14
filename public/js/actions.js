@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260614-security2";
-import { api } from "./api.js?v=20260614-security2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-security2";
-import { render, toast } from "./renderer.js?v=20260614-security2";
+import { state } from "./state.js?v=20260614-fasttoast1";
+import { api } from "./api.js?v=20260614-fasttoast1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-fasttoast1";
+import { render, toast } from "./renderer.js?v=20260614-fasttoast1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,7 +19,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260614-security2";
+} from "./utils.js?v=20260614-fasttoast1";
 
 export async function login(form) {
   const data = formData(form);
@@ -197,7 +197,8 @@ export async function submitReservation(form) {
       throw new Error(`출력실 ${labels} 시간대는 예약 가능 인원이 가득 찼습니다.`);
     }
   }
-  await api("/api/reservations", { method: "POST", body: { type, fields } });
+  toast("예약을 처리 중입니다.");
+  const reservation = await api("/api/reservations", { method: "POST", body: { type, fields } });
   state.reservationType = "";
   if (type === "equipment") state.selectedEquipmentItemIds = [];
   if (type === "studio") {
@@ -205,9 +206,20 @@ export async function submitReservation(form) {
     state.selectedStudioSlots = [];
   }
   state.view = "mine";
-  await loadBootstrap();
-  await loadMyReservations();
+  state.myReservations = [
+    reservation,
+    ...state.myReservations.filter((item) => item.id !== reservation.id)
+  ];
+  if (state.bootstrap?.reservations) {
+    state.bootstrap.reservations = [
+      reservation,
+      ...state.bootstrap.reservations.filter((item) => item.id !== reservation.id)
+    ];
+  }
   toast(type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");
+  Promise.all([loadBootstrap(), loadMyReservations()])
+    .then(() => render())
+    .catch((error) => toast(`예약은 처리됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`));
 }
 
 export async function openReport(reservationId) {

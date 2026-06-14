@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-security2";
-import { api } from "./api.js?v=20260614-security2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-security2";
+import { state } from "./state.js?v=20260614-fasttoast1";
+import { api } from "./api.js?v=20260614-fasttoast1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-fasttoast1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-security2";
-import { render, toast } from "./renderer.js?v=20260614-security2";
+} from "./actions.js?v=20260614-fasttoast1";
+import { render, toast } from "./renderer.js?v=20260614-fasttoast1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-security2";
+} from "./utils.js?v=20260614-fasttoast1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -109,10 +109,16 @@ export function setupEventHandlers() {
       }
       if (target.dataset.cancelRes) {
         if (!confirm("예약을 취소할까요?")) return;
-        await api(`/api/reservations/${target.dataset.cancelRes}/cancel`, { method: "POST", body: { reason: "학생 취소" } });
-        await loadBootstrap();
-        await loadMyReservations();
+        toast("예약 취소를 처리 중입니다.");
+        const cancelled = await api(`/api/reservations/${target.dataset.cancelRes}/cancel`, { method: "POST", body: { reason: "학생 취소" } });
+        state.myReservations = state.myReservations.map((reservation) => reservation.id === cancelled.id ? cancelled : reservation);
+        if (state.bootstrap?.reservations) {
+          state.bootstrap.reservations = state.bootstrap.reservations.filter((reservation) => reservation.id !== cancelled.id);
+        }
         toast("예약이 취소되었습니다.");
+        Promise.all([loadBootstrap(), loadMyReservations()])
+          .then(() => render())
+          .catch((error) => toast(`취소는 처리됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`));
       }
       if (target.dataset.reportRes) await openReport(target.dataset.reportRes);
       if (target.dataset.reportOpen) {
@@ -193,9 +199,13 @@ export function setupEventHandlers() {
         return;
       }
       if (target.dataset.resStatus) {
-        await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
-        await loadAdminData();
+        toast("예약 상태를 처리 중입니다.");
+        const updated = await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
+        state.adminReservations = state.adminReservations.map((reservation) => reservation.id === updated.id ? updated : reservation);
         toast("예약 상태를 변경했습니다.");
+        Promise.all([loadBootstrap(), loadAdminData()])
+          .then(() => render())
+          .catch((error) => toast(`상태는 변경됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`));
       }
       if (target.dataset.equipmentDisable) {
         await api(`/api/admin/equipment/${target.dataset.equipmentDisable}`, { method: "PATCH", body: { active: false } });
