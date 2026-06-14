@@ -5,6 +5,9 @@ const db = await initialDb("production-admin-password");
 db.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";
 normalizeDb(db);
 assert.equal(db.settings.adminUrl, "https://photographygju.dothome.co.kr");
+const fantasyLabItems = db.equipment.filter((item) => item.source === "fantasy_lab");
+assert.ok(fantasyLabItems.length > 0);
+assert.equal(fantasyLabItems.every((item) => item.facility === "판타지랩" && item.reservable === false && item.inquiryOnly === true), true);
 
 db.sessions.push({
   id: "session_expired",
@@ -74,6 +77,39 @@ const adminLogin = await api("POST", "/api/auth/login", {
 }, "", { ip: "203.0.113.20" });
 assert.equal(adminLogin.status, 200);
 const adminToken = adminLogin.body.data.token;
+
+const createdFantasyLab = await api("POST", "/api/admin/equipment", {
+  name: "테스트 판타지랩 장비",
+  category: "Other",
+  source: "fantasy_lab",
+  quantity: 1,
+  reservable: true
+}, adminToken);
+assert.equal(createdFantasyLab.status, 200);
+assert.equal(createdFantasyLab.body.data[0].reservable, false);
+assert.equal(createdFantasyLab.body.data[0].inquiryOnly, true);
+
+const importedFantasyLab = await api("POST", "/api/admin/equipment/import", {
+  rows: [{
+    name: "CSV 판타지랩 장비",
+    category: "Other",
+    source: "fantasy_lab",
+    quantity: 1,
+    reservable: "true"
+  }]
+}, adminToken);
+assert.equal(importedFantasyLab.status, 200);
+const importedFantasyLabItem = db.equipment.find((item) => item.id === importedFantasyLab.body.data.createdItemIds[0]);
+assert.equal(importedFantasyLabItem.reservable, false);
+assert.equal(importedFantasyLabItem.inquiryOnly, true);
+
+const patchedFantasyLab = await api("PATCH", `/api/admin/equipment/${createdFantasyLab.body.data[0].id}`, {
+  reservable: true,
+  inquiryOnly: false
+}, adminToken);
+assert.equal(patchedFantasyLab.status, 200);
+assert.equal(patchedFantasyLab.body.data.reservable, false);
+assert.equal(patchedFantasyLab.body.data.inquiryOnly, true);
 
 const failedLogin = await api("POST", "/api/auth/login", {
   loginId: "20260001",

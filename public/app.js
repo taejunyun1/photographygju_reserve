@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260614-logs1";
+import "./js/main.js?v=20260614-fantasylab1";

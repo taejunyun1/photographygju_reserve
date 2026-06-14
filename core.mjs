@@ -23,6 +23,7 @@ const LIMIT_DURATION_DAYS = {
 const APPROVAL_STATUSES = new Set(["approval_pending", "approved", "rejected", "blocked"]);
 const RESERVATION_STATUSES = new Set(["pending_approval", "auto_confirmed", "approved", "cancelled", "admin_cancelled", "checked_out", "returned", "completed", "rejected"]);
 const EQUIPMENT_STATUSES = new Set(["available", "rented", "maintenance", "repair", "lost", "사용 가능", "대여 중", "점검 중", "수리 중", "분실"]);
+const FANTASY_LAB_INQUIRY_NOTE = "온라인 예약불가. 판타지랩 조교에게 직접 문의";
 const WEEKDAY_INDEX = {
   sunday: 0,
   monday: 1,
@@ -1114,6 +1115,16 @@ export function normalizeDb(db) {
   db.auditLogs = db.auditLogs || [];
   db.sessions = db.sessions || [];
   db.warnings = db.warnings || [];
+  db.equipment = db.equipment || [];
+  for (const item of db.equipment) {
+    if (item.source === "fantasy_lab" || item.facility === "판타지랩") {
+      item.source = "fantasy_lab";
+      item.facility = "판타지랩";
+      item.reservable = false;
+      item.inquiryOnly = true;
+      if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
+    }
+  }
   return db;
 }
 
@@ -1654,6 +1665,7 @@ export async function handleApiRequest(ctx) {
         const quantity = Math.max(1, Number(body.quantity || 1));
         const base = body.codePrefix || codeBase(body.category, body.name, db.equipment.length + 1);
         const source = body.source || "department";
+        const reservable = source === "fantasy_lab" ? false : body.reservable !== false;
         const created = [];
         for (let index = 1; index <= quantity; index += 1) {
           created.push({
@@ -1664,9 +1676,9 @@ export async function handleApiRequest(ctx) {
             name: body.name,
             code: `${base}-${String(index).padStart(2, "0")}`,
             status: body.status || "available",
-            reservable: body.reservable !== false,
-            inquiryOnly: body.inquiryOnly === true,
-            notes: body.notes || "",
+            reservable,
+            inquiryOnly: !reservable,
+            notes: body.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
             active: true,
             createdAt: nowIso(),
             updatedAt: nowIso()
@@ -1703,7 +1715,9 @@ export async function handleApiRequest(ctx) {
           const quantity = Math.max(1, Number(row.quantity || 1));
           const category = row.category || "Other";
           const source = row.source || (row.facility === "판타지랩" ? "fantasy_lab" : "department");
-          const reservable = row.reservable === true || row.reservable === "true" || (source !== "fantasy_lab" && row.inquiry_only !== "true");
+          const reservable = source === "fantasy_lab"
+            ? false
+            : row.reservable === true || row.reservable === "true" || row.inquiry_only !== "true";
           const base = row.code_prefix || row.codePrefix || codeBase(category, row.name, db.equipment.length + 1);
           for (let index = 1; index <= quantity; index += 1) {
             const item = {
@@ -1718,7 +1732,7 @@ export async function handleApiRequest(ctx) {
               status: row.status || "available",
               reservable,
               inquiryOnly: !reservable,
-              notes: row.notes || "",
+              notes: row.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
               active: true,
               importBatchId: batch.id,
               createdAt: nowIso(),
@@ -1746,6 +1760,15 @@ export async function handleApiRequest(ctx) {
           throw Object.assign(new Error("지원하지 않는 기자재 상태입니다."), { status: 400 });
         }
         Object.assign(item, body, { updatedAt: nowIso() });
+        if (item.source === "fantasy_lab" || item.facility === "판타지랩") {
+          item.source = "fantasy_lab";
+          item.facility = "판타지랩";
+          item.reservable = false;
+          item.inquiryOnly = true;
+          if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
+        } else if (body.reservable !== undefined) {
+          item.inquiryOnly = !item.reservable;
+        }
         audit(db, admin, "equipment.updated", item.id, body);
         await saveDb();
         return ok(item);

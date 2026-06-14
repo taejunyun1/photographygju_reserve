@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-logs1";
-import { api } from "./api.js?v=20260614-logs1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-logs1";
+import { state } from "./state.js?v=20260614-fantasylab1";
+import { api } from "./api.js?v=20260614-fantasylab1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-fantasylab1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-logs1";
-import { render, toast } from "./renderer.js?v=20260614-logs1";
+} from "./actions.js?v=20260614-fantasylab1";
+import { render, toast } from "./renderer.js?v=20260614-fantasylab1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-logs1";
+} from "./utils.js?v=20260614-fantasylab1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {

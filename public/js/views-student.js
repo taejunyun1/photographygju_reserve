@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-logs1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-logs1";
+import { state } from "./state.js?v=20260614-fantasylab1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-fantasylab1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-logs1";
+} from "./utils.js?v=20260614-fantasylab1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -360,6 +360,60 @@ function equipmentDetailStep(selectedItems, pastDate, rangeBlocked) {
   `);
 }
 
+function fantasyLabEquipmentSection() {
+  const items = state.bootstrap.equipment.filter((item) => item.active !== false && item.source === "fantasy_lab");
+  if (!items.length) return "";
+  const groupedMap = new Map();
+  for (const item of items) {
+    const key = `${item.category || "Other"}|${item.name}|${item.notes || ""}`;
+    const group = groupedMap.get(key) || {
+      category: item.category || "Other",
+      name: item.name,
+      notes: item.notes || "",
+      count: 0
+    };
+    group.count += 1;
+    groupedMap.set(key, group);
+  }
+  const grouped = [...groupedMap.values()].sort((a, b) => {
+    const categorySort = equipmentCategories().indexOf(a.category) - equipmentCategories().indexOf(b.category);
+    return categorySort || a.name.localeCompare(b.name, "ko");
+  });
+  const categoryCounts = grouped.reduce((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + item.count;
+    return acc;
+  }, {});
+  return `
+    <section class="reservation-step inquiry-equipment-step">
+      <div class="step-heading">
+        <span>!</span>
+        <div>
+          <strong>온라인 예약불가 기자재</strong>
+          <p>판타지랩 기자재는 목록 확인만 가능하며, 예약과 대여는 판타지랩 조교에게 직접 문의해야 합니다.</p>
+        </div>
+      </div>
+      <div class="info-strip">
+        <strong>판타지랩 장비 안내</strong>
+        <span>아래 장비는 이 사이트에서 선택하거나 예약할 수 없습니다. 필요 시 판타지랩 담당 조교와 일정, 수량, 반납 조건을 별도로 확인하세요.</span>
+      </div>
+      <div class="tab-row wrap">
+        ${Object.entries(categoryCounts).map(([category, count]) => `<span class="tag yellow">${escapeHtml(category)} ${count}</span>`).join("")}
+      </div>
+      <div class="choice-grid equipment-choice-grid">
+        ${grouped.map((item) => `
+          <article class="choice-card equipment-choice is-unavailable">
+            ${tag("예약불가", "yellow")}
+            <span>
+              <strong>${escapeHtml(item.name)}</strong>
+              <small>${escapeHtml(item.category)} · ${item.count}개${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}</small>
+            </span>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 export function equipmentForm() {
   const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable);
   const categories = equipmentCategories().filter((cat) => reservable.some((item) => item.category === cat));
@@ -397,6 +451,7 @@ export function equipmentForm() {
         ${equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastDate, rangeBlocked)}
         ${equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, pastDate, rangeBlocked)}
         ${equipmentDetailStep(selectedItems, pastDate, rangeBlocked)}
+        ${fantasyLabEquipmentSection()}
       </section>
     </form>
   `;

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-logs1";
+import { state } from "./state.js?v=20260614-fantasylab1";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-logs1";
+} from "./constants.js?v=20260614-fantasylab1";
 import {
   addMonths,
   adminGuide,
@@ -21,8 +21,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-logs1";
-import { noticeCard } from "./views-student.js?v=20260614-logs1";
+} from "./utils.js?v=20260614-fantasylab1";
+import { noticeCard } from "./views-student.js?v=20260614-fantasylab1";
 
 export function adminShell() {
   return `
@@ -310,6 +310,12 @@ export function adminEquipmentView() {
         <div class="tab-row">
           ${sourceTabs.map(([key, label]) => `<button class="tab-button ${state.adminEquipmentTab === key ? "active" : ""}" data-admin-equipment-tab="${key}">${label}</button>`).join("")}
         </div>
+        ${state.adminEquipmentTab === "fantasy_lab" ? `
+          <div class="info-strip">
+            <strong>판타지랩 기자재는 온라인 예약불가</strong>
+            <span>학생 화면에는 확인용 목록으로만 표시됩니다. 이 관리처로 등록하거나 CSV 업로드한 장비는 자동으로 문의전용 처리됩니다.</span>
+          </div>
+        ` : ""}
         <div class="tab-row wrap">
           <button class="tab-button ${state.adminEquipmentCategoryTab === "all" ? "active" : ""}" data-admin-equipment-category-tab="all">전체</button>
           ${categories.map((cat) => `<button class="tab-button ${state.adminEquipmentCategoryTab === cat ? "active" : ""}" data-admin-equipment-category-tab="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
