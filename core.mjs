@@ -995,6 +995,33 @@ function lectureDetail(db, lecture) {
   };
 }
 
+function withLectureApplicationDetails(db, application) {
+  const lecture = db.lectures.find((item) => item.id === application.lectureId) || {};
+  return {
+    id: application.id,
+    type: "lecture",
+    status: lecture.status === "취소" ? "cancelled" : "lecture_applied",
+    userId: application.userId,
+    fields: {
+      reservedDate: lecture.lectureDate || "",
+      title: lecture.title || "비교과 특강",
+      time: lecture.time || "",
+      location: lecture.location || "",
+      instructorName: lecture.instructorName || "",
+      instructorAffiliation: lecture.instructorAffiliation || "",
+      professor: lecture.professor || "",
+      targetGrades: lecture.targetGrades || "",
+      description: lecture.description || "",
+      notes: lecture.notes || "",
+      appliedAt: application.appliedAt || ""
+    },
+    lecture: lecture.id ? lectureSummary(db, lecture, null) : null,
+    application,
+    createdAt: application.appliedAt || "",
+    updatedAt: application.appliedAt || ""
+  };
+}
+
 function formatSlackMessage(db, event, reservation) {
   const user = db.users.find((item) => item.id === reservation.userId) || {};
   const title = {
@@ -1390,7 +1417,13 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/reservations/my") {
         const user = requireUser(authorization, db);
-        return ok(db.reservations.filter((item) => item.userId === user.id).map((item) => withReservationDetails(db, item)));
+        const reservations = db.reservations
+          .filter((item) => item.userId === user.id)
+          .map((item) => withReservationDetails(db, item));
+        const lectureApplications = (db.lectureApplications || [])
+          .filter((item) => item.userId === user.id)
+          .map((item) => withLectureApplicationDetails(db, item));
+        return ok([...reservations, ...lectureApplications]);
       }
 
       if (routeKey(method, pathname) === "GET /api/lectures") {

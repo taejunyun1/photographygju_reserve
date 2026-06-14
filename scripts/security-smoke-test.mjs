@@ -131,6 +131,33 @@ assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
 
+const createdLecture = await api("POST", "/api/admin/lectures", {
+  title: "내 예약 표시 테스트 특강",
+  lectureDate: "2026-07-01",
+  time: "14:00-16:00",
+  location: "사진영상미디어학과 강의실",
+  instructorName: "홍길동",
+  instructorAffiliation: "GJU",
+  professor: "김교수",
+  targetGrades: "전체",
+  capacity: 20,
+  description: "내 예약 특강 표시 테스트",
+  notes: "",
+  baseApplicationCount: 0,
+  status: "모집중"
+}, adminToken);
+assert.equal(createdLecture.status, 200);
+
+const lectureApply = await api("POST", `/api/lectures/${createdLecture.body.data.id}/apply`, {}, studentLogin.body.data.token);
+assert.equal(lectureApply.status, 200);
+
+const myReservations = await api("GET", "/api/reservations/my", {}, studentLogin.body.data.token);
+assert.equal(myReservations.status, 200);
+const myLectureReservation = myReservations.body.data.find((item) => item.type === "lecture" && item.fields.title === "내 예약 표시 테스트 특강");
+assert.equal(Boolean(myLectureReservation), true);
+assert.equal(myLectureReservation.status, "lecture_applied");
+assert.equal(myLectureReservation.fields.reservedDate, "2026-07-01");
+
 const revokeResult = await api("POST", `/api/admin/sessions/${studentSession.id}/revoke`, {}, adminToken);
 assert.equal(revokeResult.status, 200);
 assert.equal(db.sessions.some((session) => session.id === studentSession.id), false);

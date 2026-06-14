@@ -9,6 +9,7 @@ export const statusColor = {
   checked_out: "purple",
   returned: "green",
   completed: "green",
+  lecture_applied: "blue",
   warning: "orange",
   blocked: "red"
 };
@@ -25,6 +26,7 @@ export const statusLabel = {
   checked_out: "대여 완료",
   returned: "반납 완료",
   completed: "사용 완료",
+  lecture_applied: "신청완료",
   warning: "경고"
 };
 
@@ -32,7 +34,8 @@ export const typeLabel = {
   equipment: "기자재",
   studio: "스튜디오",
   darkroom: "암실",
-  print: "출력실"
+  print: "출력실",
+  lecture: "특강"
 };
 
 export const adminNavItems = [

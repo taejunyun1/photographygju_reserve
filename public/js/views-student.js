@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-fantasylab1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-fantasylab1";
+import { state } from "./state.js?v=20260614-lecturesmine1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-lecturesmine1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-fantasylab1";
+} from "./utils.js?v=20260614-lecturesmine1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -755,6 +755,7 @@ export function printForm() {
 }
 
 export function reservationCard(reservation) {
+  if (reservation.type === "lecture") return lectureReservationCard(reservation);
   const f = reservation.fields || {};
   const title = typeLabel[reservation.type];
   const date = f.reservedDate || "-";
@@ -774,6 +775,25 @@ export function reservationCard(reservation) {
         ${!["cancelled", "admin_cancelled", "returned", "completed"].includes(reservation.status) ? `<button class="button danger" data-cancel-res="${reservation.id}">취소</button>` : ""}
         ${reservation.type === "studio" && reservation.fields.reportStatus !== "submitted" ? `<button class="button" data-report-res="${reservation.id}">보고서</button>` : ""}
       </div>
+    </article>
+  `;
+}
+
+export function lectureReservationCard(reservation) {
+  const f = reservation.fields || {};
+  const meta = [
+    f.time,
+    f.location,
+    f.instructorName ? `강사 ${f.instructorName}` : "",
+    f.professor ? `담당 ${f.professor}` : ""
+  ].filter(Boolean).join(" · ");
+  return `
+    <article class="card">
+      <div class="chips">${tag(reservation.status)}<span class="tag">${escapeHtml(typeLabel.lecture)}</span></div>
+      <h3 class="card-title card-title-spaced">${escapeHtml(f.reservedDate || "-")} · ${escapeHtml(f.title || "비교과 특강")}</h3>
+      <p class="muted">${escapeHtml(meta || "특강 신청")}</p>
+      ${f.targetGrades ? `<p class="muted">대상 ${escapeHtml(f.targetGrades)}</p>` : ""}
+      ${f.appliedAt ? `<p class="muted">신청일 ${escapeHtml(f.appliedAt.slice(0, 10))}</p>` : ""}
     </article>
   `;
 }
