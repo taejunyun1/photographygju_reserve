@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-myrecent1";
-import { api } from "./api.js?v=20260614-myrecent1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-myrecent1";
+import { state } from "./state.js?v=20260614-design1";
+import { api } from "./api.js?v=20260614-design1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-design1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-myrecent1";
-import { render, toast } from "./renderer.js?v=20260614-myrecent1";
+} from "./actions.js?v=20260614-design1";
+import { render, toast } from "./renderer.js?v=20260614-design1";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260614-myrecent1";
+} from "./admin-equipment.js?v=20260614-design1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-myrecent1";
+} from "./utils.js?v=20260614-design1";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {

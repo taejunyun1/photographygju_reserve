@@ -38,6 +38,9 @@
   --control-height-sm: 36px;
   --control-pad-x: 14px;
   --control-pad-y: 10px;
+  --control-active-border: rgba(0, 63, 177, 0.22);
+  --control-hover-bg: var(--surface-low);
+  --control-pressed-bg: var(--surface-container);
   --focus-ring: 0 0 0 3px rgba(19, 83, 216, 0.14);
   --shadow: 0 12px 32px rgba(20, 27, 43, 0.08);
   --shadow-strong: 0 24px 60px rgba(20, 27, 43, 0.16);
@@ -164,22 +167,24 @@ a {
   color: var(--muted);
   background: transparent;
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  padding: 9px 12px;
   min-width: 0;
   max-width: 100%;
+  min-height: var(--control-height-sm);
   font-weight: 700;
   font-size: 13px;
   line-height: 18px;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .segmented button.active,
 .tab-button.active {
   background: var(--primary-container);
   color: var(--on-primary-container);
-  box-shadow: inset 0 0 0 1px rgba(0, 63, 177, 0.25);
+  box-shadow: inset 0 0 0 1px var(--control-active-border);
 }
 
 .field {
@@ -234,14 +239,14 @@ a {
   min-width: 0;
   max-width: 100%;
   min-height: var(--control-height);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
   line-height: 18px;
   text-align: center;
   text-decoration: none;
   white-space: normal;
   overflow-wrap: anywhere;
-  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .button:active {
@@ -269,13 +274,15 @@ a {
 }
 
 .button.danger {
-  border-color: rgba(186, 26, 26, 0.35);
+  border-color: rgba(186, 26, 26, 0.28);
   background: var(--red-soft);
-  color: var(--red);
+  color: #93000a;
 }
 
 .button.ghost {
   background: transparent;
+  color: var(--primary);
+  border-color: transparent;
 }
 
 .button.compact {
@@ -288,6 +295,36 @@ a {
 .button.full {
   width: 100%;
   flex-basis: 100%;
+}
+
+button:disabled,
+.button:disabled,
+.status-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: var(--control-hover-bg);
+  }
+
+  .button.primary:hover:not(:disabled) {
+    border-color: var(--primary-2);
+    background: var(--primary-2);
+  }
+
+  .button.danger:hover:not(:disabled) {
+    border-color: rgba(186, 26, 26, 0.55);
+    background: #ffe5e1;
+  }
+
+  .button.ghost:hover:not(:disabled) {
+    border-color: var(--control-active-border);
+    background: var(--primary-container);
+  }
 }
 
 .button-row {
@@ -449,11 +486,13 @@ a {
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .desktop-nav button.active {
   background: var(--primary-container);
   color: var(--on-primary-container);
+  box-shadow: inset 0 0 0 1px var(--control-active-border);
 }
 
 .mobile-nav button {
@@ -469,11 +508,13 @@ a {
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .mobile-nav button.active {
   color: var(--on-primary-container);
   background: var(--primary-container);
+  box-shadow: inset 0 0 0 1px var(--control-active-border);
 }
 
 .grid {
@@ -1646,11 +1687,13 @@ a {
   font-weight: 800;
   line-height: 18px;
   overflow-wrap: anywhere;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .side-nav button.active {
   background: var(--primary-container);
   color: var(--on-primary-container);
+  box-shadow: inset 0 0 0 1px var(--control-active-border);
 }
 
 .admin-main {
@@ -1768,9 +1811,9 @@ tr.selected td {
 .row-actions .button {
   flex: 1 1 88px;
   min-height: var(--control-height-sm);
-  padding: 7px 10px;
-  font-size: 12px;
-  line-height: 16px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 17px;
 }
 
 .row-actions .button.compact {
@@ -1824,21 +1867,34 @@ tr.selected td {
 }
 
 .status-button {
-  min-height: 30px;
+  min-height: 32px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface-lowest);
   color: var(--text);
-  padding: 5px 8px;
+  padding: 6px 9px;
   font-size: 12px;
   line-height: 16px;
   font-weight: 900;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .status-button.active {
   border-color: var(--primary);
   background: var(--primary-container);
   color: var(--on-primary-container);
+  box-shadow: inset 0 0 0 1px var(--control-active-border);
+}
+
+@media (hover: hover) {
+  .status-button:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: var(--control-hover-bg);
+  }
+
+  .status-button.active:hover:not(:disabled) {
+    background: var(--primary-container);
+  }
 }
 
 .status-button:focus-visible {
@@ -1946,6 +2002,7 @@ tr.selected td {
   padding: 12px 14px;
   text-align: left;
   box-shadow: var(--shadow);
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
 }
 
 .past-reservation-toggle span {
@@ -1973,6 +2030,17 @@ tr.selected td {
   color: var(--primary);
   font-size: 12px;
   line-height: 16px;
+}
+
+.past-reservation-toggle:active {
+  transform: scale(0.995);
+}
+
+@media (hover: hover) {
+  .past-reservation-toggle:hover {
+    border-color: var(--primary);
+    background: var(--control-hover-bg);
+  }
 }
 
 .past-reservation-toggle:focus-visible {
@@ -2281,11 +2349,13 @@ tr.selected td {
     text-align: center;
     white-space: normal;
     overflow-wrap: anywhere;
+    transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
   }
 
   .admin-mobile-nav button.active {
     color: var(--on-primary-container);
     background: var(--primary-container);
+    box-shadow: inset 0 0 0 1px var(--control-active-border);
   }
 
   .admin-reservation-grid {
