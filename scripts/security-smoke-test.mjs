@@ -243,6 +243,22 @@ assert.equal(sessionsResult.status, 200);
 assert.equal(sessionsResult.body.data.some((session) => "token" in session), false);
 assert.equal(sessionsResult.body.data.some((session) => session.ip === "203.0.113.20"), true);
 
+const studentSignup = await api("POST", "/api/auth/signup", {
+  name: "보안테스트학생",
+  studentStatus: "재학생",
+  phone: "01039546412",
+  email: "security-student@gju.local",
+  studentId: "20260001",
+  grade: "3",
+  password: "student1234"
+});
+assert.equal(studentSignup.status, 200);
+
+const approveStudent = await api("PATCH", `/api/admin/users/${studentSignup.body.data.user.id}/approval`, {
+  approvalStatus: "approved"
+}, adminToken);
+assert.equal(approveStudent.status, 200);
+
 const studentLogin = await api("POST", "/api/auth/login", {
   loginId: "20260001",
   password: "student1234"

@@ -416,87 +416,15 @@ export async function initialDb(adminPassword = "admin") {
         studentStatus: "관리자",
         approvalStatus: "approved",
         password: adminPassword
-      }),
-      await userRecord({
-        name: "김현석",
-        email: "student1@gju.local",
-        phone: "01039546412",
-        studentId: "20260001",
-        grade: "3",
-        studentStatus: "재학생",
-        approvalStatus: "approved",
-        password: "student1234"
-      }),
-      await userRecord({
-        name: "박찬희",
-        email: "student2@gju.local",
-        phone: "01098741976",
-        studentId: "20260002",
-        grade: "2",
-        studentStatus: "재학생",
-        approvalStatus: "approval_pending",
-        password: "student1234"
-      }),
-      await userRecord({
-        name: "정예든",
-        email: "student3@gju.local",
-        phone: "01027156779",
-        studentId: "20260003",
-        grade: "4",
-        studentStatus: "재학생",
-        approvalStatus: "approved",
-        password: "student1234"
-      }),
-      await userRecord({
-        name: "임효주",
-        email: "student4@gju.local",
-        phone: "01011112222",
-        studentId: "20260004",
-        grade: "1",
-        studentStatus: "휴학생",
-        approvalStatus: "approved",
-        password: "student1234"
-      }),
-      await userRecord({
-        name: "오승훈",
-        email: "student5@gju.local",
-        phone: "01033334444",
-        studentId: "20260005",
-        grade: "4",
-        studentStatus: "졸업생",
-        approvalStatus: "approval_pending",
-        password: "student1234"
-      }),
-      await userRecord({
-        name: "민지우",
-        email: "student6@gju.local",
-        phone: "01055556666",
-        studentId: "20260006",
-        grade: "대학원",
-        studentStatus: "대학원생",
-        approvalStatus: "approved",
-        password: "student1234"
       })
     ],
-	    sessions: [],
-	    equipment: seedEquipment(),
-	    reservations: [],
-	    reports: [],
-	    lectures: [],
-	    lectureApplications: [],
-	    notices: [
-      {
-        id: id("notice"),
-        title: "GJU-reserve 시범 운영 안내",
-        category: "긴급",
-        body: "학생은 회원가입 후 admin 승인 전까지 예약할 수 없습니다. 기자재 예약은 조교 승인 후 확정됩니다.",
-        pinned: true,
-        status: "published",
-        link: "",
-        createdAt: nowIso(),
-        updatedAt: nowIso()
-      }
-    ],
+    sessions: [],
+    equipment: seedEquipment(),
+    reservations: [],
+    reports: [],
+    lectures: [],
+    lectureApplications: [],
+    notices: [],
     warnings: [],
     slackLogs: [],
     auditLogs: [],

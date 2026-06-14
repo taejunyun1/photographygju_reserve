@@ -98,6 +98,32 @@ export class GjuReserveDb extends DurableObject {
       return withSecurityHeaders(new Response(null, { status: 204, headers: cors }));
     }
     const url = new URL(request.url);
+    if (url.pathname === "/api/internal/reset-clean") {
+      const secret = this.env.INTERNAL_RESET_SECRET || "";
+      if (!secret || request.headers.get("x-internal-reset-secret") !== secret) {
+        return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
+      }
+      if (!this.env.ADMIN_PASSWORD) {
+        return jsonResponse({ ok: false, error: "ADMIN_PASSWORD must be configured before resetting production data." }, 500, cors);
+      }
+      this.db = await initialDb(this.env.ADMIN_PASSWORD);
+      await this.saveDb();
+      return jsonResponse({
+        ok: true,
+        data: {
+          users: this.db.users.length,
+          equipment: this.db.equipment.length,
+          reservations: this.db.reservations.length,
+          reports: this.db.reports.length,
+          lectures: this.db.lectures.length,
+          lectureApplications: this.db.lectureApplications.length,
+          notices: this.db.notices.length,
+          sessions: this.db.sessions.length,
+          slackLogs: this.db.slackLogs.length,
+          auditLogs: this.db.auditLogs.length
+        }
+      }, 200, cors);
+    }
     if (url.pathname === "/api/internal/cleanup") {
       const secret = this.env.INTERNAL_CRON_SECRET || "";
       if (!secret || request.headers.get("x-internal-cron-secret") !== secret) {

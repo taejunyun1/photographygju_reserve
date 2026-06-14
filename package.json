@@ -7,7 +7,6 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "build": "node scripts/build-static.js",
-    "seed:demo": "node scripts/seed-demo-data.js",
     "check": "node --check core.mjs && node --check server.mjs && node --check worker.mjs",
     "test:security": "node scripts/security-smoke-test.mjs",
     "deploy": "wrangler deploy",
