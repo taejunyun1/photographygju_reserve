@@ -10,6 +10,9 @@ export const statusColor = {
   returned: "green",
   completed: "green",
   lecture_applied: "blue",
+  가능: "green",
+  수리중: "yellow",
+  파손: "red",
   warning: "orange",
   blocked: "red"
 };
@@ -51,6 +54,8 @@ export const adminNavItems = [
 ];
 
 export const lectureStatusOptions = ["모집중", "진행완료", "취소"];
+
+export const equipmentStatusOptions = ["가능", "수리중", "파손"];
 
 export const sourceLabel = {
   department: "극기관",

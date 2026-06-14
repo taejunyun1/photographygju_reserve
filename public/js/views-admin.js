@@ -1,12 +1,13 @@
-import { state } from "./state.js?v=20260614-lecturesmine1";
+import { state } from "./state.js?v=20260614-equipmentstatus1";
 import {
   adminNavItems,
+  equipmentStatusOptions,
   lectureStatusOptions,
   sourceLabel,
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-lecturesmine1";
+} from "./constants.js?v=20260614-equipmentstatus1";
 import {
   addMonths,
   adminGuide,
@@ -21,8 +22,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-lecturesmine1";
-import { noticeCard } from "./views-student.js?v=20260614-lecturesmine1";
+} from "./utils.js?v=20260614-equipmentstatus1";
+import { noticeCard } from "./views-student.js?v=20260614-equipmentstatus1";
 
 export function adminShell() {
   return `
@@ -275,6 +276,7 @@ export function adminEquipmentView() {
           <div class="field"><label>수량</label><input class="input" name="quantity" type="number" min="1" value="1" /></div>
           <div class="field"><label>코드 prefix</label><input class="input" name="codePrefix" placeholder="CAM-SONY-A7M3" /></div>
           <div class="field"><label>관리처</label><select class="select" name="source"><option value="department">극기관</option><option value="fantasy_lab">판타지랩</option></select></div>
+          <div class="field"><label>상태</label><select class="select" name="status">${equipmentStatusOptions.map((status) => `<option value="${status}">${status}</option>`).join("")}</select></div>
           <div class="field"><label>비고</label><input class="input" name="notes" /></div>
           <button class="button primary" type="submit">추가</button>
         </form>
@@ -329,7 +331,11 @@ export function adminEquipmentView() {
                 <td>${escapeHtml(item.name)}<br><span class="muted">${escapeHtml(item.notes || "")}</span></td>
                 <td>${escapeHtml(item.category)}</td>
                 <td>${escapeHtml(sourceLabel[item.source] || item.facility || "-")}</td>
-                <td>${escapeHtml(item.status)}</td>
+                <td>
+                  <select class="select compact-select" data-equipment-status="${item.id}">
+                    ${equipmentStatusOptions.map((status) => `<option value="${status}" ${item.status === status ? "selected" : ""}>${status}</option>`).join("")}
+                  </select>
+                </td>
                 <td>${item.reservable ? tag("가능", "green") : tag("문의전용", "yellow")}</td>
                 <td><button class="button danger" data-equipment-disable="${item.id}">비활성</button></td>
               </tr>`).join("")}</tbody>

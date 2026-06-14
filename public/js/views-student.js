@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-lecturesmine1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-lecturesmine1";
+import { state } from "./state.js?v=20260614-equipmentstatus1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-equipmentstatus1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-lecturesmine1";
+} from "./utils.js?v=20260614-equipmentstatus1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -314,7 +314,7 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
     </div>
     <div class="tab-row wrap equipment-tabs">
       ${categories.map((cat) => {
-        const count = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.category === cat).length;
+        const count = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.status === "가능" && item.category === cat).length;
         const selectedCount = selectedItems.filter((item) => item.category === cat).length;
         return `<button class="tab-button ${state.equipmentCategoryFilter === cat ? "active" : ""}" type="button" data-equipment-category="${escapeHtml(cat)}">${escapeHtml(cat)} <span>${selectedCount ? `${selectedCount}/` : ""}${count}</span></button>`;
       }).join("")}
@@ -415,7 +415,7 @@ function fantasyLabEquipmentSection() {
 }
 
 export function equipmentForm() {
-  const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable);
+  const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.status === "가능");
   const categories = equipmentCategories().filter((cat) => reservable.some((item) => item.category === cat));
   if (!categories.includes(state.equipmentCategoryFilter)) state.equipmentCategoryFilter = categories[0] || "Other";
   const selectedDate = state.selectedDates.equipment || "";
@@ -474,7 +474,7 @@ export function equipmentSelectionSheet(items) {
 }
 
 export function currentSelectedEquipmentItems() {
-  const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable);
+  const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.status === "가능");
   return state.selectedEquipmentItemIds.map((itemId) => reservable.find((item) => item.id === itemId)).filter(Boolean);
 }
 

@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-lecturesmine1";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260614-lecturesmine1";
+import { state } from "./state.js?v=20260614-equipmentstatus1";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260614-equipmentstatus1";
 
 export function escapeHtml(value) {
   return String(value ?? "")

@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260614-lecturesmine1";
-import { api } from "./api.js?v=20260614-lecturesmine1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-lecturesmine1";
-import { render, toast } from "./renderer.js?v=20260614-lecturesmine1";
+import { state } from "./state.js?v=20260614-equipmentstatus1";
+import { api } from "./api.js?v=20260614-equipmentstatus1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-equipmentstatus1";
+import { render, toast } from "./renderer.js?v=20260614-equipmentstatus1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,7 +19,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260614-lecturesmine1";
+} from "./utils.js?v=20260614-equipmentstatus1";
 
 export async function login(form) {
   const data = formData(form);
@@ -145,6 +145,11 @@ export async function submitReservation(form) {
     state.selectedEquipmentReturnTime = fields.returnTime || state.selectedEquipmentReturnTime;
     fields.equipmentItemIds = state.selectedEquipmentItemIds;
     if (!fields.equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
+    const invalidStatusItems = fields.equipmentItemIds.filter((itemId) => {
+      const item = state.bootstrap.equipment.find((candidate) => candidate.id === itemId);
+      return !item || item.active === false || !item.reservable || item.status !== "가능";
+    });
+    if (invalidStatusItems.length) throw new Error("수리중 또는 파손 상태의 기자재가 포함되어 있습니다.");
     if (equipmentRangeBlocked(fields.reservedDate, fields.period).length) throw new Error("선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다.");
     const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields.reservedDate, fields.period));
     if (unavailableItems.length) throw new Error("선택한 대여 기간에 이미 예약된 기자재가 포함되어 있습니다.");

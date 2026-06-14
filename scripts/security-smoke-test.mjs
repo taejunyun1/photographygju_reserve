@@ -111,6 +111,31 @@ assert.equal(patchedFantasyLab.status, 200);
 assert.equal(patchedFantasyLab.body.data.reservable, false);
 assert.equal(patchedFantasyLab.body.data.inquiryOnly, true);
 
+const createdRepairEquipment = await api("POST", "/api/admin/equipment", {
+  name: "수리 상태 테스트 장비",
+  category: "Other",
+  source: "department",
+  quantity: 1,
+  status: "수리중"
+}, adminToken);
+assert.equal(createdRepairEquipment.status, 200);
+assert.equal(createdRepairEquipment.body.data[0].status, "수리중");
+assert.equal(createdRepairEquipment.body.data[0].reservable, false);
+
+const fixedEquipment = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
+  status: "가능"
+}, adminToken);
+assert.equal(fixedEquipment.status, 200);
+assert.equal(fixedEquipment.body.data.status, "가능");
+assert.equal(fixedEquipment.body.data.reservable, true);
+
+const brokenEquipment = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
+  status: "파손"
+}, adminToken);
+assert.equal(brokenEquipment.status, 200);
+assert.equal(brokenEquipment.body.data.status, "파손");
+assert.equal(brokenEquipment.body.data.reservable, false);
+
 const failedLogin = await api("POST", "/api/auth/login", {
   loginId: "20260001",
   password: "wrong-password"
@@ -130,6 +155,19 @@ const studentLogin = await api("POST", "/api/auth/login", {
 assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
+
+const brokenEquipmentReservation = await api("POST", "/api/reservations", {
+  type: "equipment",
+  fields: {
+    reservedDate: "2026-07-02",
+    period: "당일",
+    rentalTime: "10:15",
+    returnTime: "17:10",
+    phone: "01039546412",
+    equipmentItemIds: [brokenEquipment.body.data.id]
+  }
+}, studentLogin.body.data.token);
+assert.equal(brokenEquipmentReservation.status, 400);
 
 const createdLecture = await api("POST", "/api/admin/lectures", {
   title: "내 예약 표시 테스트 특강",

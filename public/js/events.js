@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-lecturesmine1";
-import { api } from "./api.js?v=20260614-lecturesmine1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-lecturesmine1";
+import { state } from "./state.js?v=20260614-equipmentstatus1";
+import { api } from "./api.js?v=20260614-equipmentstatus1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-equipmentstatus1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-lecturesmine1";
-import { render, toast } from "./renderer.js?v=20260614-lecturesmine1";
+} from "./actions.js?v=20260614-equipmentstatus1";
+import { render, toast } from "./renderer.js?v=20260614-equipmentstatus1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-lecturesmine1";
+} from "./utils.js?v=20260614-equipmentstatus1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -227,6 +227,20 @@ export function setupEventHandlers() {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
+    if (target.dataset.equipmentStatus) {
+      void (async () => {
+        try {
+          await api(`/api/admin/equipment/${target.dataset.equipmentStatus}`, { method: "PATCH", body: { status: target.value } });
+          await loadBootstrap();
+          await loadAdminData();
+          toast("기자재 상태를 변경했습니다.");
+          render();
+        } catch (error) {
+          toast(error.message);
+        }
+      })();
+      return;
+    }
     if (target.name === "studioSpace") {
       state.selectedStudioSpace = target.value;
       state.selectedStudioSlots = [];
