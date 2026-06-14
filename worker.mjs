@@ -103,10 +103,16 @@ export class GjuReserveDb extends DurableObject {
       if (!secret || request.headers.get("x-internal-reset-secret") !== secret) {
         return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
       }
-      if (!this.env.ADMIN_PASSWORD) {
+      const existingDb = this.db || await this.ctx.storage.get("db");
+      const existingAdmin = existingDb?.users?.find((user) => user.username === "admin");
+      if (!this.env.ADMIN_PASSWORD && !existingAdmin?.passwordHash) {
         return jsonResponse({ ok: false, error: "ADMIN_PASSWORD must be configured before resetting production data." }, 500, cors);
       }
-      this.db = await initialDb(this.env.ADMIN_PASSWORD);
+      const fallbackPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+      this.db = await initialDb(this.env.ADMIN_PASSWORD || fallbackPassword);
+      if (existingAdmin?.passwordHash) {
+        this.db.users[0].passwordHash = existingAdmin.passwordHash;
+      }
       await this.saveDb();
       return jsonResponse({
         ok: true,
