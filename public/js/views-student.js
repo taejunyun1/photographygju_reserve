@@ -1,6 +1,7 @@
-import { state } from "./state.js?v=20260614-scrolltop1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-scrolltop1";
+import { state } from "./state.js?v=20260614-myrecent1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-myrecent1";
 import {
+  addDaysToDateKey,
   areSlotsConsecutive,
   calendar,
   darkroomSlotBlocked,
@@ -9,6 +10,7 @@ import {
   equipmentItemReservedInRange,
   equipmentRangeBlocked,
   equipmentRangeLabel,
+  equipmentReservationRange,
   escapeHtml,
   isPastDate,
   minutesToTime,
@@ -22,7 +24,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-scrolltop1";
+} from "./utils.js?v=20260614-myrecent1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -798,8 +800,60 @@ export function lectureReservationCard(reservation) {
   `;
 }
 
+function reservationTimelineDate(reservation) {
+  const fields = reservation.fields || {};
+  if (reservation.type === "equipment") {
+    return equipmentReservationRange(fields)?.end || fields.reservedDate || "";
+  }
+  return fields.reservedDate || fields.appliedAt?.slice(0, 10) || reservation.createdAt?.slice(0, 10) || "";
+}
+
+function sortReservationsForMine(reservations = []) {
+  return [...reservations].sort((a, b) => {
+    const dateCompare = reservationTimelineDate(b).localeCompare(reservationTimelineDate(a));
+    if (dateCompare) return dateCompare;
+    return String(b.createdAt || b.fields?.appliedAt || "").localeCompare(String(a.createdAt || a.fields?.appliedAt || ""));
+  });
+}
+
+function myReservationGroups() {
+  const cutoff = addDaysToDateKey(todayKey(), -5);
+  return sortReservationsForMine(state.myReservations).reduce((groups, reservation) => {
+    const date = reservationTimelineDate(reservation);
+    if (date && date < cutoff) groups.past.push(reservation);
+    else groups.recent.push(reservation);
+    return groups;
+  }, { recent: [], past: [] });
+}
+
 export function myReservationsView() {
-  return `<section class="grid">${state.myReservations.length ? state.myReservations.map(reservationCard).join("") : `<p class="empty">예약 내역이 없습니다.</p>`}</section>`;
+  if (!state.myReservations.length) {
+    return `<section class="grid"><p class="empty">예약 내역이 없습니다.</p></section>`;
+  }
+  const { recent, past } = myReservationGroups();
+  const pastOpen = Boolean(state.pastReservationsOpen);
+  return `
+    <section class="grid">
+      <div class="reservation-section-head">
+        <div>
+          <h2 class="card-title">최근 예약</h2>
+          <p class="muted">최근 5일 이내 기록과 예정 예약을 표시합니다.</p>
+        </div>
+        <span class="tag blue">${recent.length}건</span>
+      </div>
+      ${recent.length ? recent.map(reservationCard).join("") : `<p class="empty">최근 5일 이내 예약 내역이 없습니다.</p>`}
+      <div class="past-reservation-panel ${pastOpen ? "open" : ""}">
+        <button class="past-reservation-toggle" type="button" data-past-reservations-toggle aria-expanded="${pastOpen ? "true" : "false"}">
+          <span>
+            <strong>지난 예약</strong>
+            <em>5일 이전 예약 ${past.length}건</em>
+          </span>
+          <b>${pastOpen ? "접기" : "펼치기"}</b>
+        </button>
+        ${pastOpen ? `<div class="past-reservation-list">${past.length ? past.map(reservationCard).join("") : `<p class="empty">지난 예약 내역이 없습니다.</p>`}</div>` : ""}
+      </div>
+    </section>
+  `;
 }
 
 export function isReportDue(reservation) {

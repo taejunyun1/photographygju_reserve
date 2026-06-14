@@ -18,6 +18,7 @@ export const state = {
   },
   activeNoticeId: "",
   activeReportReservationId: "",
+  pastReservationsOpen: false,
   selectedEquipmentItemIds: [],
   selectedEquipmentPeriod: "",
   selectedEquipmentRentalTime: "",

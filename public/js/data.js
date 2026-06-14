@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-scrolltop1";
-import { api } from "./api.js?v=20260614-scrolltop1";
+import { state } from "./state.js?v=20260614-myrecent1";
+import { api } from "./api.js?v=20260614-myrecent1";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
