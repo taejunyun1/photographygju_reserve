@@ -15,7 +15,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev",
+  "connect-src 'self'",
   "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",

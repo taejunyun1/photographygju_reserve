@@ -60,6 +60,7 @@ Production is split into two simple pieces:
 Dothome static hosting
   - https://photographygju.dothome.co.kr/
   - serves index.html, styles.css, app.js, config.js, js/*
+  - serves /api/* through the PHP proxy in public/api/
 
 Cloudflare Worker
   - https://photographygju-reserve.taejunyun.workers.dev
@@ -68,7 +69,7 @@ Cloudflare Worker
   - sends Slack notifications through SLACK_WEBHOOK_URL
 ```
 
-`public/config.js` keeps local and Cloudflare same-origin API calls relative, but points Dothome traffic to the Worker API.
+`public/config.js` keeps API calls same-origin. On Dothome, `/api/*` is proxied to the Worker by `public/api/index.php`, so browsers only call `https://photographygju.dothome.co.kr/api/*`.
 
 ## Cloudflare Deploy
 
@@ -109,9 +110,11 @@ styles.css
 app.js
 config.js
 js/*
+api/.htaccess
+api/index.php
 ```
 
-The Dothome host should only serve the frontend. Do not upload `.env`, `data/`, `References/`, or any credential files.
+The Dothome host serves the frontend and a small PHP API proxy. The proxy requires PHP cURL and Apache `.htaccess` rewrite support. Do not upload `.env`, `data/`, `References/`, or any credential files.
 
 Or use the upload script without committing credentials:
 
