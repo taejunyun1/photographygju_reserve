@@ -112,7 +112,11 @@ export class GjuReserveDb extends DurableObject {
       readText: () => request.text(),
       db,
       saveDb: () => this.saveDb(),
-      slackWebhook: this.env.SLACK_WEBHOOK_URL
+      slackWebhook: this.env.SLACK_WEBHOOK_URL,
+      clientIp: request.headers.get("cf-connecting-ip") ||
+        request.headers.get("x-forwarded-for")?.split(",")[0] ||
+        "",
+      userAgent: request.headers.get("user-agent") || ""
     });
     return jsonResponse(result.body, result.status, cors);
   }

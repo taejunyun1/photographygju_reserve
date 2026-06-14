@@ -92,7 +92,9 @@ async function handleApi(req, res, pathname) {
       readText: () => readRawBody(req),
       db,
       saveDb: async () => writeDb(db),
-      slackWebhook: process.env.SLACK_WEBHOOK_URL
+      slackWebhook: process.env.SLACK_WEBHOOK_URL,
+      clientIp: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0],
+      userAgent: req.headers["user-agent"] || ""
     });
   } catch (error) {
     result = { status: error.status || 500, body: { ok: false, error: error.message || "서버 오류가 발생했습니다." } };

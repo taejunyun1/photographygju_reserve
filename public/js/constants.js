@@ -43,6 +43,7 @@ export const adminNavItems = [
   ["reports", "보고서"],
   ["lectures", "비교과 특강"],
   ["notices", "공지사항"],
+  ["logs", "로그/세션"],
   ["settings", "설정"]
 ];
 

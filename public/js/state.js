@@ -40,6 +40,8 @@ export const state = {
   adminEquipment: [],
   adminReports: [],
   adminNotices: [],
+  adminSessions: [],
+  adminLogs: [],
   lectures: [],
   adminLectures: [],
   summary: null,

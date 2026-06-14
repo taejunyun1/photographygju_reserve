@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { adminExportData, cleanupExpiredData, initialDb, normalizeDb } from "../core.mjs";
+import { adminExportData, cleanupExpiredData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const db = await initialDb("production-admin-password");
 db.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";
@@ -53,5 +53,69 @@ assert.equal(db.reports[0].htmlSnapshot, "");
 const exported = adminExportData(db);
 assert.equal(exported.users.some((user) => "passwordHash" in user), false);
 assert.equal(exported.settings.adminUrl, "https://photographygju.dothome.co.kr");
+
+async function api(method, pathname, body = {}, token = "", meta = {}) {
+  return handleApiRequest({
+    method,
+    pathname,
+    authorization: token ? `Bearer ${token}` : "",
+    readText: async () => JSON.stringify(body),
+    db,
+    saveDb: async () => {},
+    slackWebhook: "",
+    clientIp: meta.ip || "203.0.113.10",
+    userAgent: meta.userAgent || "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+  });
+}
+
+const adminLogin = await api("POST", "/api/auth/login", {
+  loginId: "admin",
+  password: "production-admin-password"
+}, "", { ip: "203.0.113.20" });
+assert.equal(adminLogin.status, 200);
+const adminToken = adminLogin.body.data.token;
+
+const failedLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260001",
+  password: "wrong-password"
+}, "", { ip: "203.0.113.21" });
+assert.equal(failedLogin.status, 401);
+assert.equal(db.auditLogs.some((log) => log.action === "auth.login_failed" && log.detail.ip === "203.0.113.21"), true);
+
+const sessionsResult = await api("GET", "/api/admin/sessions", {}, adminToken);
+assert.equal(sessionsResult.status, 200);
+assert.equal(sessionsResult.body.data.some((session) => "token" in session), false);
+assert.equal(sessionsResult.body.data.some((session) => session.ip === "203.0.113.20"), true);
+
+const studentLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260001",
+  password: "student1234"
+}, "", { ip: "203.0.113.30", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1" });
+assert.equal(studentLogin.status, 200);
+const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
+assert.equal(Boolean(studentSession?.ip), true);
+
+const revokeResult = await api("POST", `/api/admin/sessions/${studentSession.id}/revoke`, {}, adminToken);
+assert.equal(revokeResult.status, 200);
+assert.equal(db.sessions.some((session) => session.id === studentSession.id), false);
+
+const firstStudentLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260001",
+  password: "student1234"
+});
+const secondStudentLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260001",
+  password: "student1234"
+});
+assert.equal(firstStudentLogin.status, 200);
+assert.equal(secondStudentLogin.status, 200);
+const studentId = firstStudentLogin.body.data.user.id;
+assert.equal(db.sessions.filter((session) => session.userId === studentId).length, 2);
+const changePassword = await api("PATCH", "/api/me/password", {
+  currentPassword: "student1234",
+  newPassword: "student12345"
+}, firstStudentLogin.body.data.token);
+assert.equal(changePassword.status, 200);
+assert.equal(db.sessions.some((session) => session.userId === studentId), false);
 
 console.log("security smoke test passed");

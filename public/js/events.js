@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-remember1";
-import { api } from "./api.js?v=20260614-remember1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-remember1";
+import { state } from "./state.js?v=20260614-logs1";
+import { api } from "./api.js?v=20260614-logs1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-logs1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-remember1";
-import { render, toast } from "./renderer.js?v=20260614-remember1";
+} from "./actions.js?v=20260614-logs1";
+import { render, toast } from "./renderer.js?v=20260614-logs1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-remember1";
+} from "./utils.js?v=20260614-logs1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -196,6 +196,14 @@ export function setupEventHandlers() {
         } else {
           toast("비밀번호를 변경했습니다.");
         }
+        return;
+      }
+      if (target.dataset.sessionRevoke) {
+        if (!confirm("이 기기를 원격 로그아웃할까요?")) return;
+        await api(`/api/admin/sessions/${target.dataset.sessionRevoke}/revoke`, { method: "POST" });
+        state.adminSessions = state.adminSessions.filter((session) => session.id !== target.dataset.sessionRevoke);
+        await loadAdminData();
+        toast("해당 기기를 로그아웃했습니다.");
         return;
       }
       if (target.dataset.resStatus) {

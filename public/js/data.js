@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-remember1";
-import { api } from "./api.js?v=20260614-remember1";
+import { state } from "./state.js?v=20260614-logs1";
+import { api } from "./api.js?v=20260614-logs1";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
@@ -25,14 +25,16 @@ export async function loadLectures() {
 }
 
 export async function loadAdminData() {
-  const [summary, users, reservations, equipment, reports, notices, lectures] = await Promise.all([
+  const [summary, users, reservations, equipment, reports, notices, lectures, sessions, logs] = await Promise.all([
     api("/api/admin/summary"),
     api("/api/admin/users"),
     api("/api/admin/reservations"),
     api("/api/admin/equipment"),
     api("/api/admin/reports"),
     api("/api/admin/notices"),
-    api("/api/admin/lectures")
+    api("/api/admin/lectures"),
+    api("/api/admin/sessions"),
+    api("/api/admin/logs")
   ]);
   Object.assign(state, {
     summary,
@@ -41,6 +43,8 @@ export async function loadAdminData() {
     adminEquipment: equipment,
     adminReports: reports,
     adminNotices: notices,
-    adminLectures: lectures
+    adminLectures: lectures,
+    adminSessions: sessions,
+    adminLogs: logs
   });
 }

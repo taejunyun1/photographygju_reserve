@@ -462,6 +462,63 @@ function publicUser(user) {
   };
 }
 
+function cleanMeta(value, max = 240) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function requestMeta(ctx) {
+  return {
+    ip: cleanMeta(ctx.clientIp || "", 80),
+    userAgent: cleanMeta(ctx.userAgent || "", 240)
+  };
+}
+
+function sessionDeviceLabel(userAgent = "") {
+  const ua = String(userAgent);
+  const os = /iPhone|iPad|iPod/.test(ua)
+    ? "iOS"
+    : /Android/.test(ua)
+      ? "Android"
+      : /Mac OS X|Macintosh/.test(ua)
+        ? "Mac"
+        : /Windows/.test(ua)
+          ? "Windows"
+          : "기기";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /Chrome\//.test(ua)
+      ? "Chrome"
+      : /Safari\//.test(ua)
+        ? "Safari"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : "Browser";
+  return `${os} / ${browser}`;
+}
+
+function publicSession(db, session) {
+  if (!session) return null;
+  const user = db.users.find((item) => item.id === session.userId);
+  return {
+    id: session.id,
+    userId: session.userId,
+    user: publicUser(user),
+    ip: session.ip || "",
+    userAgent: session.userAgent || "",
+    device: session.device || sessionDeviceLabel(session.userAgent || ""),
+    createdAt: session.createdAt,
+    lastSeenAt: session.lastSeenAt || session.createdAt,
+    expiresAt: session.expiresAt
+  };
+}
+
+function publicAuditLog(db, log) {
+  return {
+    ...log,
+    actor: publicUser(db.users.find((user) => user.id === log.actorId))
+  };
+}
+
 function effectiveApprovalStatus(user) {
   if (!user || user.approvalStatus !== "blocked") return user?.approvalStatus;
   if (!user.blockedUntil) return "blocked";
@@ -478,17 +535,25 @@ function blockEndLabel(value) {
   return value.slice(0, 10);
 }
 
+function authToken(authorization) {
+  const auth = authorization || "";
+  return auth.startsWith("Bearer ") ? auth.slice(7) : "";
+}
+
 function cleanSessions(db) {
   const now = Date.now();
   db.sessions = (db.sessions || []).filter((session) => new Date(session.expiresAt).getTime() > now);
 }
 
-function getAuthUser(authorization, db) {
-  const auth = authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+function getAuthSession(authorization, db) {
+  const token = authToken(authorization);
   if (!token) return null;
   cleanSessions(db);
-  const session = db.sessions.find((item) => item.token === token);
+  return db.sessions.find((item) => item.token === token) || null;
+}
+
+function getAuthUser(authorization, db) {
+  const session = getAuthSession(authorization, db);
   if (!session) return null;
   return db.users.find((user) => user.id === session.userId) || null;
 }
@@ -1150,6 +1215,7 @@ export function adminExportData(db) {
     darkroomChemicals: db.darkroomChemicals,
     equipment: db.equipment,
     users: db.users.map(publicUser),
+    sessions: db.sessions.map((session) => publicSession(db, session)).filter(Boolean),
     reservations: db.reservations.map((reservation) => withReservationDetails(db, reservation)),
     reports: db.reports.map((report) => ({
       ...report,
@@ -1175,6 +1241,7 @@ export function adminExportData(db) {
 export async function handleApiRequest(ctx) {
   const { method, pathname, authorization = "", readText, db, slackWebhook } = ctx;
   const saveDb = ctx.saveDb;
+  const meta = requestMeta(ctx);
 
   try {
       if (routeKey(method, pathname) === "GET /api/bootstrap") {
@@ -1209,7 +1276,9 @@ export async function handleApiRequest(ctx) {
         }
         user.passwordHash = await hashPassword(body.newPassword);
         user.updatedAt = nowIso();
-        audit(db, user, "user.password_changed", user.id);
+        const revokedSessions = db.sessions.filter((session) => session.userId === user.id).length;
+        db.sessions = db.sessions.filter((session) => session.userId !== user.id);
+        audit(db, user, "user.password_changed", user.id, { ...meta, revokedSessions });
         await saveDb();
         return ok({ user: publicUser(user) });
       }
@@ -1262,25 +1331,48 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "POST /api/auth/login") {
         const body = await parseBody(readText);
         assertRequired(body, ["loginId", "password"]);
-        assertLoginAllowed(body.loginId);
+        try {
+          assertLoginAllowed(body.loginId);
+        } catch (error) {
+          audit(db, null, "auth.login_blocked", "auth", { ...meta, loginId: cleanMeta(body.loginId, 120), reason: "too_many_attempts" });
+          await saveDb();
+          throw error;
+        }
         const user = db.users.find((item) => {
           if (body.loginId === "admin" && item.username === "admin") return true;
           return item.email === body.loginId || item.studentId === body.loginId || item.username === body.loginId;
         });
         if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
           registerLoginFailure(body.loginId);
+          audit(db, user || null, "auth.login_failed", user?.id || "auth", { ...meta, loginId: cleanMeta(body.loginId, 120), reason: "invalid_credentials" });
+          await saveDb();
           throw Object.assign(new Error("아이디 또는 비밀번호가 올바르지 않습니다."), { status: 401 });
         }
         clearLoginFailures(body.loginId);
         const token = randomHex(32);
-        db.sessions.push({ id: id("session"), token, userId: user.id, expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(), createdAt: nowIso() });
+        const session = {
+          id: id("session"),
+          token,
+          userId: user.id,
+          ip: meta.ip,
+          userAgent: meta.userAgent,
+          device: sessionDeviceLabel(meta.userAgent),
+          expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+          createdAt: nowIso(),
+          lastSeenAt: nowIso()
+        };
+        db.sessions.push(session);
+        audit(db, user, "auth.login_success", session.id, { ...meta, device: session.device });
         await saveDb();
         return ok({ token, user: publicUser(user) });
       }
 
       if (routeKey(method, pathname) === "POST /api/auth/logout") {
         const body = await parseBody(readText);
-        db.sessions = db.sessions.filter((session) => session.token !== body.token);
+        const session = db.sessions.find((item) => item.token === body.token);
+        const user = session ? db.users.find((item) => item.id === session.userId) : null;
+        db.sessions = db.sessions.filter((item) => item.token !== body.token);
+        if (session) audit(db, user || null, "auth.logout", session.id, { ...meta, ip: session.ip || meta.ip, device: session.device || sessionDeviceLabel(session.userAgent || meta.userAgent) });
         await saveDb();
         return ok();
       }
@@ -1437,6 +1529,44 @@ export async function handleApiRequest(ctx) {
         const summary = cleanupExpiredData(db, new Date(), admin.id);
         if (summary.changed) await saveDb();
         return ok(summary);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/sessions") {
+        requireAdmin(authorization, db);
+        cleanSessions(db);
+        return ok(db.sessions
+          .map((session) => publicSession(db, session))
+          .filter(Boolean)
+          .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))));
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/logs") {
+        requireAdmin(authorization, db);
+        return ok((db.auditLogs || [])
+          .slice(-400)
+          .reverse()
+          .map((log) => publicAuditLog(db, log)));
+      }
+
+      const sessionRevokeMatch = pathname.match(/^\/api\/admin\/sessions\/([^/]+)\/revoke$/);
+      if (method === "POST" && sessionRevokeMatch) {
+        const admin = requireAdmin(authorization, db);
+        const currentSession = getAuthSession(authorization, db);
+        const session = db.sessions.find((item) => item.id === sessionRevokeMatch[1]);
+        if (!session) throw Object.assign(new Error("세션을 찾을 수 없습니다."), { status: 404 });
+        if (currentSession?.id === session.id) {
+          throw Object.assign(new Error("현재 로그인 중인 세션은 나가기 버튼으로 종료하세요."), { status: 400 });
+        }
+        const publicTarget = publicSession(db, session);
+        db.sessions = db.sessions.filter((item) => item.id !== session.id);
+        audit(db, admin, "session.revoked", session.id, {
+          ...meta,
+          targetUserId: session.userId,
+          targetIp: session.ip || "",
+          targetDevice: session.device || sessionDeviceLabel(session.userAgent || "")
+        });
+        await saveDb();
+        return ok(publicTarget);
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/users") {

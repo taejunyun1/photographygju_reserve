@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-remember1";
+import { state } from "./state.js?v=20260614-logs1";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-remember1";
+} from "./constants.js?v=20260614-logs1";
 import {
   addMonths,
   adminGuide,
@@ -14,14 +14,15 @@ import {
   dateKey,
   equipmentCategories,
   escapeHtml,
+  formatDateTime,
   monthTitle,
   sortedAdminUsers,
   tag,
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-remember1";
-import { noticeCard } from "./views-student.js?v=20260614-remember1";
+} from "./utils.js?v=20260614-logs1";
+import { noticeCard } from "./views-student.js?v=20260614-logs1";
 
 export function adminShell() {
   return `
@@ -77,6 +78,7 @@ export function adminTitle() {
     reports: "보고서",
     lectures: "비교과 특강",
     notices: "공지사항",
+    logs: "로그/세션",
     settings: "설정",
     account: "내 정보"
   }[state.adminView];
@@ -90,6 +92,7 @@ export function adminContent() {
   if (state.adminView === "reports") return adminReportsView();
   if (state.adminView === "lectures") return adminLecturesView();
   if (state.adminView === "notices") return adminNoticesView();
+  if (state.adminView === "logs") return adminLogsView();
   if (state.adminView === "settings") return adminSettingsView();
   return adminDashboardView();
 }
@@ -456,6 +459,96 @@ export function adminNoticesView() {
         </form>
       </div>
       ${state.adminNotices.map(noticeCard).join("")}
+    </section>
+  `;
+}
+
+function auditActionLabel(action) {
+  return {
+    "auth.login_success": "로그인",
+    "auth.login_failed": "로그인 실패",
+    "auth.login_blocked": "로그인 차단",
+    "auth.logout": "로그아웃",
+    "session.revoked": "원격 로그아웃",
+    "reservation.created": "예약 생성",
+    "reservation.cancelled": "예약 취소",
+    "reservation.updated": "예약 수정",
+    "reservation.status_changed": "예약 상태 변경",
+    "lecture.applied": "특강 신청",
+    "studio_report.created": "보고서 제출",
+    "user.password_changed": "비밀번호 변경",
+    "user.password_reset": "비밀번호 리셋",
+    "user.approval_changed": "학생 상태 변경",
+    "user.profile_updated": "개인정보 수정",
+    "equipment.created": "장비 등록",
+    "equipment.imported": "장비 CSV 등록",
+    "equipment.updated": "장비 수정",
+    "notice.created": "공지 작성",
+    "settings.updated": "설정 변경",
+    "maintenance.cleanup": "보관정책 정리"
+  }[action] || action;
+}
+
+function auditDetailText(log) {
+  const d = log.detail || {};
+  const parts = [];
+  if (d.loginId) parts.push(`ID ${d.loginId}`);
+  if (d.ip || d.targetIp) parts.push(`IP ${d.ip || d.targetIp}`);
+  if (d.device || d.targetDevice) parts.push(d.device || d.targetDevice);
+  if (d.status) parts.push(`상태 ${d.status}`);
+  if (d.type && typeLabel[d.type]) parts.push(typeLabel[d.type]);
+  if (d.reason) parts.push(`사유 ${d.reason}`);
+  if (d.revokedSessions !== undefined) parts.push(`세션 종료 ${d.revokedSessions}개`);
+  if (d.targetUserId) parts.push(`대상 ${d.targetUserId}`);
+  return parts.join(" · ") || "-";
+}
+
+export function adminLogsView() {
+  const sessions = state.adminSessions || [];
+  const logs = state.adminLogs || [];
+  return `
+    <section class="grid">
+      ${adminGuide("로그/세션 사용 가이드", "학생과 관리자의 로그인 위치, 로그인 실패, 예약 생성/취소, 상태 변경 기록을 확인합니다. 의심스러운 IP나 기기가 있으면 해당 세션을 원격 로그아웃하세요.")}
+      <div class="card">
+        <h2 class="card-title">현재 로그인 세션</h2>
+        <p class="muted">IP는 Cloudflare/브라우저 요청 기준입니다. 같은 기기라도 브라우저나 네트워크가 바뀌면 별도 세션으로 보일 수 있습니다.</p>
+        <div class="table-wrap embedded">
+          <table>
+            <thead><tr><th>사용자</th><th>IP</th><th>기기</th><th>로그인</th><th>만료</th><th>작업</th></tr></thead>
+            <tbody>
+              ${sessions.length ? sessions.map((session) => `
+                <tr>
+                  <td><strong>${escapeHtml(session.user?.name || "-")}</strong><br><span class="muted">${escapeHtml(session.user?.studentId || session.user?.email || session.userId || "")}</span></td>
+                  <td>${escapeHtml(session.ip || "-")}</td>
+                  <td><strong>${escapeHtml(session.device || "-")}</strong><br><span class="muted">${escapeHtml(session.userAgent || "-")}</span></td>
+                  <td>${formatDateTime(session.createdAt)}</td>
+                  <td>${formatDateTime(session.expiresAt)}</td>
+                  <td><button class="button danger compact" data-session-revoke="${session.id}">로그아웃</button></td>
+                </tr>
+              `).join("") : `<tr><td colspan="6" class="empty">현재 로그인 세션이 없습니다.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">활동 로그</h2>
+        <div class="table-wrap embedded">
+          <table>
+            <thead><tr><th>시간</th><th>작업</th><th>사용자</th><th>대상</th><th>상세</th></tr></thead>
+            <tbody>
+              ${logs.length ? logs.map((log) => `
+                <tr>
+                  <td>${formatDateTime(log.createdAt)}</td>
+                  <td><strong>${escapeHtml(auditActionLabel(log.action))}</strong></td>
+                  <td>${escapeHtml(log.actor?.name || "-")}<br><span class="muted">${escapeHtml(log.actor?.studentId || log.actor?.email || "")}</span></td>
+                  <td>${escapeHtml(log.targetId || "-")}</td>
+                  <td>${escapeHtml(auditDetailText(log))}</td>
+                </tr>
+              `).join("") : `<tr><td colspan="5" class="empty">기록된 로그가 없습니다.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
   `;
 }

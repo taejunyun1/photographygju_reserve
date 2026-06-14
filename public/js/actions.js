@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260614-remember1";
-import { api } from "./api.js?v=20260614-remember1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-remember1";
-import { render, toast } from "./renderer.js?v=20260614-remember1";
+import { state } from "./state.js?v=20260614-logs1";
+import { api } from "./api.js?v=20260614-logs1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-logs1";
+import { render, toast } from "./renderer.js?v=20260614-logs1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,7 +19,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260614-remember1";
+} from "./utils.js?v=20260614-logs1";
 
 export async function login(form) {
   const data = formData(form);
@@ -249,5 +249,15 @@ export async function changePassword(form) {
     }
   });
   form.reset();
-  toast("비밀번호가 변경되었습니다.");
+  state.token = "";
+  state.user = null;
+  state.myReservations = [];
+  state.lectures = [];
+  state.adminSessions = [];
+  state.adminLogs = [];
+  state.view = "home";
+  state.adminView = "dashboard";
+  localStorage.removeItem("gju_token");
+  sessionStorage.removeItem("gju_token");
+  toast("비밀번호가 변경되었습니다. 모든 기기에서 로그아웃되었습니다.");
 }
