@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
+import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
 
 // Browser JS may only read API responses from these origins. The API itself is
 // bearer-token authenticated (no cookies), so this is defense-in-depth.
@@ -8,6 +8,28 @@ const ALLOWED_ORIGINS = new Set([
   "https://admin.photographygju.dothome.co.kr",
   "https://photographygju-reserve.taejunyun.workers.dev"
 ]);
+
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev",
+  "base-uri 'none'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "upgrade-insecure-requests"
+].join("; ");
+
+const SECURITY_HEADERS = {
+  "content-security-policy": CONTENT_SECURITY_POLICY,
+  "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "referrer-policy": "no-referrer",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY"
+};
 
 function corsHeadersFor(origin) {
   const allowed = origin && (ALLOWED_ORIGINS.has(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin));
@@ -18,6 +40,28 @@ function corsHeadersFor(origin) {
     "access-control-max-age": "86400",
     "vary": "Origin"
   };
+}
+
+function withSecurityHeaders(response, extraHeaders = {}) {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) headers.set(key, value);
+  for (const [key, value] of Object.entries(extraHeaders)) headers.set(key, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function jsonResponse(body, status, headers = {}) {
+  return withSecurityHeaders(new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...headers,
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8"
+    }
+  }));
 }
 
 export class GjuReserveDb extends DurableObject {
@@ -48,10 +92,19 @@ export class GjuReserveDb extends DurableObject {
   async fetch(request) {
     const cors = corsHeadersFor(request.headers.get("origin"));
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: cors });
+      return withSecurityHeaders(new Response(null, { status: 204, headers: cors }));
     }
     const url = new URL(request.url);
     const db = await this.loadDb();
+    if (url.pathname === "/api/internal/cleanup") {
+      const secret = this.env.INTERNAL_CRON_SECRET || "";
+      if (!secret || request.headers.get("x-internal-cron-secret") !== secret) {
+        return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
+      }
+      const summary = cleanupExpiredData(db, new Date(), "cron");
+      if (summary.changed) await this.saveDb();
+      return jsonResponse({ ok: true, data: summary }, 200, cors);
+    }
     const result = await handleApiRequest({
       method: request.method || "GET",
       pathname: url.pathname,
@@ -61,10 +114,7 @@ export class GjuReserveDb extends DurableObject {
       saveDb: () => this.saveDb(),
       slackWebhook: this.env.SLACK_WEBHOOK_URL
     });
-    return new Response(JSON.stringify(result.body), {
-      status: result.status,
-      headers: { ...cors, "content-type": "application/json; charset=utf-8" }
-    });
+    return jsonResponse(result.body, result.status, cors);
   }
 }
 
@@ -75,6 +125,18 @@ export default {
       const stub = env.GJU_RESERVE_DB.getByName("global");
       return stub.fetch(request);
     }
-    return env.ASSETS.fetch(request);
+    return withSecurityHeaders(await env.ASSETS.fetch(request));
+  },
+
+  async scheduled(_event, env, ctx) {
+    if (!env.INTERNAL_CRON_SECRET) {
+      console.warn("INTERNAL_CRON_SECRET is not configured; cleanup skipped.");
+      return;
+    }
+    const stub = env.GJU_RESERVE_DB.getByName("global");
+    ctx.waitUntil(stub.fetch("https://gju-reserve.internal/api/internal/cleanup", {
+      method: "POST",
+      headers: { "x-internal-cron-secret": env.INTERNAL_CRON_SECRET }
+    }));
   }
 };

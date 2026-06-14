@@ -9,6 +9,10 @@ const PASSWORD_MIN_LENGTH = 8;
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LOCK_MS = 5 * 60 * 1000;
+const PRODUCTION_STUDENT_URL = "https://photographygju.dothome.co.kr";
+const LEGACY_ADMIN_URL = "https://admin.photographygju.dothome.co.kr";
+const RESERVATION_RETENTION_DAYS = 90;
+const REPORT_HTML_RETENTION_DAYS = 183;
 const loginAttempts = new Map();
 const LIMIT_DURATION_DAYS = {
   week1: 7,
@@ -32,8 +36,8 @@ const WEEKDAY_INDEX = {
 const defaultSettings = {
   appName: "GJU-reserve",
   departmentName: "광주대학교 사진영상미디어학과",
-  studentUrl: "https://photographygju.dothome.co.kr",
-  adminUrl: "https://admin.photographygju.dothome.co.kr",
+  studentUrl: PRODUCTION_STUDENT_URL,
+  adminUrl: PRODUCTION_STUDENT_URL,
   slackChannel: "#예약_현황automatic",
   phoneMasking: true,
   reservationWindowDays: 30,
@@ -1032,6 +1036,9 @@ function routeKey(method, pathname) {
 
 export function normalizeDb(db) {
   db.settings = { ...defaultSettings, ...(db.settings || {}) };
+  if (db.settings.adminUrl === LEGACY_ADMIN_URL) {
+    db.settings.adminUrl = db.settings.studentUrl || PRODUCTION_STUDENT_URL;
+  }
   db.darkroomChemicals = db.darkroomChemicals || darkroomChemicals;
   db.importBatches = db.importBatches || [];
   db.reservations = db.reservations || [];
@@ -1049,6 +1056,114 @@ export function capLogs(db) {
   if (Array.isArray(db.auditLogs) && db.auditLogs.length > 1000) db.auditLogs = db.auditLogs.slice(-1000);
   if (Array.isArray(db.slackLogs) && db.slackLogs.length > 500) db.slackLogs = db.slackLogs.slice(-500);
   return db;
+}
+
+const TERMINAL_RETENTION_STATUSES = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
+
+function cutoffMs(nowDate, days) {
+  return nowDate.getTime() - days * 24 * 60 * 60 * 1000;
+}
+
+function parseRecordTime(value) {
+  if (!value) return Number.NaN;
+  const text = String(value);
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(text)
+    ? Date.parse(`${text}T00:00:00+09:00`)
+    : Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function reservationRetentionTime(reservation) {
+  return parseRecordTime(reservation.fields?.reservedDate) ||
+    parseRecordTime(reservation.updatedAt) ||
+    parseRecordTime(reservation.createdAt);
+}
+
+export function cleanupExpiredData(db, nowDate = new Date(), actorId = "system") {
+  normalizeDb(db);
+  const nowValue = nowDate.toISOString();
+  const nowMs = nowDate.getTime();
+  const reservationCutoff = cutoffMs(nowDate, RESERVATION_RETENTION_DAYS);
+  const reportHtmlCutoff = cutoffMs(nowDate, REPORT_HTML_RETENTION_DAYS);
+  const summary = {
+    at: nowValue,
+    anonymizedReservations: 0,
+    deletedReportHtmlSnapshots: 0,
+    deletedExpiredSessions: 0
+  };
+
+  for (const reservation of db.reservations) {
+    if (!TERMINAL_RETENTION_STATUSES.has(reservation.status) || reservation.retentionAnonymizedAt) continue;
+    const retentionTime = reservationRetentionTime(reservation);
+    if (!Number.isFinite(retentionTime) || retentionTime > reservationCutoff) continue;
+    reservation.userId = "";
+    reservation.fields = {
+      ...reservation.fields,
+      phone: "",
+      studentStatus: "",
+      renterName: "",
+      userName: ""
+    };
+    reservation.history = [];
+    reservation.retentionAnonymizedAt = nowValue;
+    summary.anonymizedReservations += 1;
+  }
+
+  for (const report of db.reports) {
+    if (!report.htmlSnapshot || report.htmlDeletedAt) continue;
+    const expiresAt = parseRecordTime(report.expiresAt);
+    const submittedAt = parseRecordTime(report.submittedAt);
+    const expiredByDate = Number.isFinite(expiresAt) && expiresAt <= nowMs;
+    const expiredBySubmittedAt = Number.isFinite(submittedAt) && submittedAt <= reportHtmlCutoff;
+    if (!expiredByDate && !expiredBySubmittedAt) continue;
+    report.htmlSnapshot = "";
+    report.htmlDeletedAt = nowValue;
+    summary.deletedReportHtmlSnapshots += 1;
+  }
+
+  const beforeSessions = db.sessions.length;
+  db.sessions = db.sessions.filter((session) => parseRecordTime(session.expiresAt) > nowDate.getTime());
+  summary.deletedExpiredSessions = beforeSessions - db.sessions.length;
+
+  const changed = summary.anonymizedReservations ||
+    summary.deletedReportHtmlSnapshots ||
+    summary.deletedExpiredSessions;
+  if (changed) {
+    db.auditLogs.push({
+      id: id("audit"),
+      actorId,
+      action: "maintenance.cleanup",
+      targetId: "db",
+      detail: summary,
+      createdAt: nowValue
+    });
+    capLogs(db);
+  }
+  return { ...summary, changed: Boolean(changed) };
+}
+
+export function adminExportData(db) {
+  normalizeDb(db);
+  return {
+    exportedAt: nowIso(),
+    settings: db.settings,
+    darkroomChemicals: db.darkroomChemicals,
+    equipment: db.equipment,
+    users: db.users.map(publicUser),
+    reservations: db.reservations.map((reservation) => withReservationDetails(db, reservation)),
+    reports: db.reports.map((report) => ({
+      ...report,
+      reservation: db.reservations.find((reservation) => reservation.id === report.reservationId) || null,
+      user: publicUser(db.users.find((user) => user.id === report.userId))
+    })),
+    notices: db.notices,
+    lectures: db.lectures.map((lecture) => lectureDetail(db, lecture)),
+    lectureApplications: db.lectureApplications,
+    warnings: db.warnings,
+    auditLogs: db.auditLogs,
+    slackLogs: db.slackLogs,
+    importBatches: db.importBatches
+  };
 }
 
 // Adapter contract:
@@ -1310,6 +1425,18 @@ export async function handleApiRequest(ctx) {
         const todayReservations = db.reservations.filter((item) => item.fields.reservedDate === today).length;
         const missingReports = db.reservations.filter((item) => item.type === "studio" && item.status !== "cancelled" && item.fields.reportStatus !== "submitted").length;
         return ok({ pendingUsers, pendingEquipment, todayReservations, missingReports });
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/export") {
+        requireAdmin(authorization, db);
+        return ok(adminExportData(db));
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/maintenance/cleanup") {
+        const admin = requireAdmin(authorization, db);
+        const summary = cleanupExpiredData(db, new Date(), admin.id);
+        if (summary.changed) await saveDb();
+        return ok(summary);
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/users") {

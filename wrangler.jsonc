@@ -6,13 +6,16 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    "crons": [
+      "0 18 * * *"
+    ]
+  },
   "assets": {
     "directory": "./public",
     "not_found_handling": "single-page-application",
     "binding": "ASSETS",
-    "run_worker_first": [
-      "/api/*"
-    ]
+    "run_worker_first": true
   },
   "durable_objects": {
     "bindings": [

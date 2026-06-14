@@ -1,21 +1,22 @@
-import { state } from "./state.js?v=20260613-refactor2";
-import { api } from "./api.js?v=20260613-refactor2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-refactor2";
+import { state } from "./state.js?v=20260614-security2";
+import { api } from "./api.js?v=20260614-security2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-security2";
 import {
   changePassword,
+  downloadAdminBackup,
   downloadLectureCsv,
   login,
   logout,
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260613-refactor2";
-import { render, toast } from "./renderer.js?v=20260613-refactor2";
+} from "./actions.js?v=20260614-security2";
+import { render, toast } from "./renderer.js?v=20260614-security2";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260613-refactor2";
+} from "./utils.js?v=20260614-security2";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -71,6 +72,19 @@ export function setupEventHandlers() {
       }
       if (target.dataset.action === "lecture-export") {
         downloadLectureCsv();
+        return;
+      }
+      if (target.dataset.action === "admin-export") {
+        await downloadAdminBackup();
+        toast("백업 JSON을 내려받았습니다.");
+        return;
+      }
+      if (target.dataset.action === "admin-cleanup") {
+        if (!confirm("만료된 세션을 삭제하고 오래된 개인정보/보고서 HTML을 정리할까요?")) return;
+        const result = await api("/api/admin/maintenance/cleanup", { method: "POST" });
+        await loadAdminData();
+        toast(`정리 완료: 예약 익명화 ${result.anonymizedReservations}건, 보고서 HTML 삭제 ${result.deletedReportHtmlSnapshots}건, 세션 삭제 ${result.deletedExpiredSessions}건`);
+        render();
         return;
       }
       if (target.dataset.studentView) {

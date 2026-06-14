@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260613-refactor2";
+import { state } from "./state.js?v=20260614-security2";
 import {
   adminNavItems,
   lectureStatusOptions,
@@ -6,7 +6,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260613-refactor2";
+} from "./constants.js?v=20260614-security2";
 import {
   addMonths,
   adminGuide,
@@ -20,8 +20,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260613-refactor2";
-import { noticeCard } from "./views-student.js?v=20260613-refactor2";
+} from "./utils.js?v=20260614-security2";
+import { noticeCard } from "./views-student.js?v=20260614-security2";
 
 export function adminShell() {
   return `
@@ -499,6 +499,14 @@ export function adminSettingsView() {
       </div>
       ${adminBlockedCalendar(settings.blockedSchedules || [])}
       <div class="card"><h2 class="card-title">Slack</h2><p class="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p></div>
+      <div class="card">
+        <h2 class="card-title">보안 / 데이터 관리</h2>
+        <p class="muted">조교 교체 전에는 백업 JSON을 내려받고, 학기 종료 후에는 보관정책 정리를 실행하세요. 정리 작업은 오래된 예약 개인정보를 익명화하고 만료된 보고서 HTML과 세션을 삭제합니다.</p>
+        <div class="button-row">
+          <button class="button" data-action="admin-export">백업 JSON</button>
+          <button class="button danger" data-action="admin-cleanup">보관정책 정리</button>
+        </div>
+      </div>
     </section>
   `;
 }

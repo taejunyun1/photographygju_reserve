@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260613-refactor2";
-import { statusLabel, typeLabel } from "./constants.js?v=20260613-refactor2";
+import { state } from "./state.js?v=20260614-security2";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-security2";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260613-refactor2";
+} from "./utils.js?v=20260614-security2";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -43,10 +43,9 @@ export function authView() {
         ${
           isLogin
             ? `<form data-form="login">
-                <div class="field"><label>아이디</label><input class="input" name="loginId" placeholder="admin 또는 이메일/학번" required /></div>
-                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" required /></div>
+                <div class="field"><label>아이디</label><input class="input" name="loginId" placeholder="이메일/학번" autocomplete="username" required /></div>
+                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" autocomplete="current-password" required /></div>
                 <button class="button primary full" type="submit">접속</button>
-                <p class="muted">개발 기본 Admin: admin / admin. 프로덕션에서는 반드시 변경합니다.</p>
               </form>`
             : `<form data-form="signup">
                 <div class="field"><label>이름</label><input class="input" name="name" required /></div>
@@ -57,7 +56,7 @@ export function authView() {
                 </select></div>
                 <div class="field"><label>연락처</label><input class="input" name="phone" inputmode="tel" required /></div>
                 <div class="field"><label>이메일</label><input class="input" name="email" type="email" required /></div>
-                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" minlength="8" required /></div>
+                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" autocomplete="new-password" minlength="8" required /></div>
                 <button class="button primary full" type="submit">가입 신청</button>
                 <p class="muted">승인 전에도 공지는 볼 수 있지만 예약은 불가합니다.</p>
               </form>`

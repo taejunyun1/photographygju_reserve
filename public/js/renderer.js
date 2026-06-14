@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260613-refactor2";
-import { escapeHtml } from "./utils.js?v=20260613-refactor2";
-import { adminShell } from "./views-admin.js?v=20260613-refactor2";
-import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260613-refactor2";
+import { $app, state } from "./state.js?v=20260614-security2";
+import { escapeHtml } from "./utils.js?v=20260614-security2";
+import { adminShell } from "./views-admin.js?v=20260614-security2";
+import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-security2";
 
 export function render() {
   if (!state.bootstrap) {

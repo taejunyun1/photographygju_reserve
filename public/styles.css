@@ -290,6 +290,17 @@ a {
   flex-basis: 100%;
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button-row .button {
+  flex: 1 1 148px;
+  min-width: 0;
+}
+
 .top-appbar {
   position: sticky;
   top: 0;

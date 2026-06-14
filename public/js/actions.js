@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260613-refactor2";
-import { api } from "./api.js?v=20260613-refactor2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260613-refactor2";
-import { render, toast } from "./renderer.js?v=20260613-refactor2";
+import { state } from "./state.js?v=20260614-security2";
+import { api } from "./api.js?v=20260614-security2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-security2";
+import { render, toast } from "./renderer.js?v=20260614-security2";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,7 +19,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260613-refactor2";
+} from "./utils.js?v=20260614-security2";
 
 export async function login(form) {
   const data = formData(form);
@@ -101,6 +101,18 @@ export function downloadLectureCsv() {
   const link = document.createElement("a");
   link.href = url;
   link.download = `gju-lectures-${todayKey()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAdminBackup() {
+  const data = await api("/api/admin/export");
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `gju-reserve-backup-${todayKey()}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
