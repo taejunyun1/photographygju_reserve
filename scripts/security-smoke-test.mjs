@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { adminExportData, cleanupExpiredData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const db = await initialDb("production-admin-password");
@@ -8,6 +9,27 @@ assert.equal(db.settings.adminUrl, "https://photographygju.dothome.co.kr");
 const fantasyLabItems = db.equipment.filter((item) => item.source === "fantasy_lab");
 assert.ok(fantasyLabItems.length > 0);
 assert.equal(fantasyLabItems.every((item) => item.facility === "판타지랩" && item.reservable === false && item.inquiryOnly === true), true);
+assert.equal(db.users.some((user) => user.username === "ta" && user.email === "ta@gju.local"), false);
+
+db.users.push({
+  id: "user_seeded_ta",
+  role: "admin",
+  username: "ta",
+  name: "조교",
+  email: "ta@gju.local",
+  approvalStatus: "approved",
+  passwordHash: "pbkdf2:test:test"
+});
+db.sessions.push({
+  id: "session_seeded_ta",
+  token: "seeded-ta",
+  userId: "user_seeded_ta",
+  expiresAt: "2026-12-31T00:00:00.000Z",
+  createdAt: "2026-06-01T00:00:00.000Z"
+});
+normalizeDb(db);
+assert.equal(db.users.some((user) => user.id === "user_seeded_ta"), false);
+assert.equal(db.sessions.some((session) => session.userId === "user_seeded_ta"), false);
 
 db.sessions.push({
   id: "session_expired",
@@ -77,6 +99,40 @@ const adminLogin = await api("POST", "/api/auth/login", {
 }, "", { ip: "203.0.113.20" });
 assert.equal(adminLogin.status, 200);
 const adminToken = adminLogin.body.data.token;
+
+const removedTaLogin = await api("POST", "/api/auth/login", {
+  loginId: "ta",
+  password: "ta1234"
+});
+assert.equal(removedTaLogin.status, 401);
+
+const rejectedNoticeLink = await api("POST", "/api/admin/notices", {
+  title: "잘못된 링크",
+  body: "javascript URL 차단",
+  link: "javascript:alert(1)"
+}, adminToken);
+assert.equal(rejectedNoticeLink.status, 400);
+
+const ignoredSettingsKey = await api("PATCH", "/api/admin/settings", {
+  adminUrl: "https://evil.example",
+  darkroomCapacity: 7
+}, adminToken);
+assert.equal(ignoredSettingsKey.status, 200);
+assert.equal(ignoredSettingsKey.body.data.adminUrl, "https://photographygju.dothome.co.kr");
+assert.equal(ignoredSettingsKey.body.data.darkroomCapacity, 7);
+
+const invalidBlockedSchedule = await api("PATCH", "/api/admin/settings", {
+  blockedSchedules: [{
+    id: "block_bad",
+    type: "studio",
+    day: "monday",
+    from: "2026-07-01<script>",
+    to: "2026-07-10",
+    start: "10:00",
+    end: "12:00"
+  }]
+}, adminToken);
+assert.equal(invalidBlockedSchedule.status, 400);
 
 const createdFantasyLab = await api("POST", "/api/admin/equipment", {
   name: "테스트 판타지랩 장비",
@@ -195,6 +251,20 @@ assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
 
+const invalidDateReservation = await api("POST", "/api/reservations", {
+  type: "print",
+  fields: {
+    reservedDate: "9999-12-31<img src=x onerror=alert(1)>",
+    startTime: "10:00",
+    endTime: "11:00",
+    phone: "01039546412",
+    printType: "과제",
+    paper: "글로시",
+    size: "소형"
+  }
+}, studentLogin.body.data.token);
+assert.equal(invalidDateReservation.status, 400);
+
 const brokenEquipmentReservation = await api("POST", "/api/reservations", {
   type: "equipment",
   fields: {
@@ -207,6 +277,47 @@ const brokenEquipmentReservation = await api("POST", "/api/reservations", {
   }
 }, studentLogin.body.data.token);
 assert.equal(brokenEquipmentReservation.status, 400);
+
+const editableReservation = await api("POST", "/api/reservations", {
+  type: "print",
+  fields: {
+    reservedDate: "2026-07-03",
+    startTime: "10:00",
+    endTime: "11:00",
+    phone: "01039546412",
+    printType: "과제",
+    paper: "글로시",
+    size: "소형"
+  }
+}, studentLogin.body.data.token);
+assert.equal(editableReservation.status, 200);
+
+const blockStudent = await api("PATCH", `/api/admin/users/${studentLogin.body.data.user.id}/approval`, {
+  approvalStatus: "blocked",
+  limitDuration: "week1"
+}, adminToken);
+assert.equal(blockStudent.status, 200);
+
+const blockedEdit = await api("PATCH", `/api/reservations/${editableReservation.body.data.id}`, {
+  fields: { reservedDate: "2026-07-04" }
+}, studentLogin.body.data.token);
+assert.equal(blockedEdit.status, 403);
+
+const unblockStudent = await api("PATCH", `/api/admin/users/${studentLogin.body.data.user.id}/approval`, {
+  approvalStatus: "approved"
+}, adminToken);
+assert.equal(unblockStudent.status, 200);
+
+const invalidLectureDate = await api("POST", "/api/admin/lectures", {
+  title: "잘못된 날짜 특강",
+  lectureDate: "2026-07-01<script>",
+  time: "14:00-16:00",
+  location: "사진영상미디어학과 강의실",
+  instructorName: "홍길동",
+  description: "날짜 검증 테스트",
+  status: "모집중"
+}, adminToken);
+assert.equal(invalidLectureDate.status, 400);
 
 const createdLecture = await api("POST", "/api/admin/lectures", {
   title: "내 예약 표시 테스트 특강",
@@ -257,5 +368,19 @@ const changePassword = await api("PATCH", "/api/me/password", {
 }, firstStudentLogin.body.data.token);
 assert.equal(changePassword.status, 200);
 assert.equal(db.sessions.some((session) => session.userId === studentId), false);
+
+const insecureUpload = spawnSync("bash", ["scripts/upload-dothome.sh"], {
+  cwd: process.cwd(),
+  env: {
+    ...process.env,
+    DOTHOME_FTP_HOST: "example.com",
+    DOTHOME_FTP_USER: "demo",
+    DOTHOME_FTP_PASSWORD: "demo",
+    DOTHOME_FTP_SCHEME: "ftp"
+  },
+  encoding: "utf8"
+});
+assert.notEqual(insecureUpload.status, 0);
+assert.match(insecureUpload.stderr, /Refusing insecure upload protocol/);
 
 console.log("security smoke test passed");

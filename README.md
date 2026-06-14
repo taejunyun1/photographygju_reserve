@@ -91,6 +91,7 @@ Assets directory: public
 Set the Slack webhook as a Worker secret before production use:
 
 ```bash
+npx wrangler secret put ADMIN_PASSWORD
 npx wrangler secret put SLACK_WEBHOOK_URL
 ```
 
@@ -122,10 +123,11 @@ Or use the upload script without committing credentials:
 export DOTHOME_FTP_HOST="112.175.185.143"
 export DOTHOME_FTP_USER="photographygju"
 export DOTHOME_FTP_PASSWORD="..."
+export DOTHOME_FTP_SCHEME="ftps"
 npm run upload:dothome
 ```
 
-The upload script runs `npm run build` and uploads every file under `dist/`, including nested frontend modules.
+The upload script runs `npm run build` and uploads every file under `dist/`, including nested frontend modules. It refuses plaintext `ftp`; use `ftps` or `sftp`.
 
 If this project is later moved to Cloudflare Pages instead of Workers, use:
 

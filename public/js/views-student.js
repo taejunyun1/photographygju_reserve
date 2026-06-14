@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-design1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-design1";
+import { state } from "./state.js?v=20260614-security1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-security1";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -24,7 +24,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-design1";
+} from "./utils.js?v=20260614-security1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -771,7 +771,7 @@ export function reservationCard(reservation) {
   return `
     <article class="card">
       <div class="chips">${tag(reservation.status)}<span class="tag">${title}</span></div>
-      <h3 class="card-title card-title-spaced">${date}</h3>
+      <h3 class="card-title card-title-spaced">${escapeHtml(date)}</h3>
       <p class="muted">${escapeHtml(meta)}</p>
       <div class="row-actions">
         ${!["cancelled", "admin_cancelled", "returned", "completed"].includes(reservation.status) ? `<button class="button danger" data-cancel-res="${reservation.id}">취소</button>` : ""}

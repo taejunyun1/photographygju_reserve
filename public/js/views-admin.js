@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-design1";
+import { state } from "./state.js?v=20260614-security1";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-design1";
+} from "./constants.js?v=20260614-security1";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-design1";
-import { noticeCard } from "./views-student.js?v=20260614-design1";
+} from "./utils.js?v=20260614-security1";
+import { noticeCard } from "./views-student.js?v=20260614-security1";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260614-design1";
+} from "./admin-equipment.js?v=20260614-security1";
 
 export function adminShell() {
   return `
@@ -459,7 +459,7 @@ export function adminLectureTable(lectures) {
               <td><select class="select compact-select" data-lecture-status="${lecture.id}">${lectureStatusOptions.map((item) => `<option value="${item}" ${lecture.status === item ? "selected" : ""}>${item}</option>`).join("")}</select></td>
               <td>
                 <button class="button compact" data-lecture-update="${lecture.id}">상태 저장</button>
-                <div class="muted">${(lecture.applications || []).map((app) => `${app.userName || app.name || ""} ${app.studentId || ""}`).filter(Boolean).join(", ") || "신청자 없음"}</div>
+                <div class="muted">${escapeHtml((lecture.applications || []).map((app) => `${app.userName || app.name || ""} ${app.studentId || ""}`).filter(Boolean).join(", ") || "신청자 없음")}</div>
               </td>
             </tr>
           `;

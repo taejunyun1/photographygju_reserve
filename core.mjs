@@ -33,6 +33,9 @@ const WEEKDAY_INDEX = {
   friday: 5,
   saturday: 6
 };
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_VALUE_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print"]);
 
 const defaultSettings = {
   appName: "GJU-reserve",
@@ -415,16 +418,6 @@ export async function initialDb(adminPassword = "admin") {
         password: adminPassword
       }),
       await userRecord({
-        role: "admin",
-        username: "ta",
-        name: "조교",
-        email: "ta@gju.local",
-        phone: "01000000000",
-        studentStatus: "조교",
-        approvalStatus: "approved",
-        password: "ta1234"
-      }),
-      await userRecord({
         name: "김현석",
         email: "student1@gju.local",
         phone: "01039546412",
@@ -628,14 +621,18 @@ function requireAdmin(authorization, db) {
   return user;
 }
 
-function requireApprovedStudent(authorization, db) {
-  const user = requireUser(authorization, db);
+function assertApprovedStudentAccess(user) {
   if (user.role !== "admin" && effectiveApprovalStatus(user) !== "approved") {
     const message = user.approvalStatus === "blocked"
       ? `이용 제한 중입니다.${user.blockedUntil ? ` 제한 종료: ${blockEndLabel(user.blockedUntil)}` : ""}`
       : "관리자 승인 후 예약할 수 있습니다.";
     throw Object.assign(new Error(message), { status: 403 });
   }
+}
+
+function requireApprovedStudent(authorization, db) {
+  const user = requireUser(authorization, db);
+  assertApprovedStudentAccess(user);
   return user;
 }
 
@@ -665,6 +662,57 @@ function assertRequired(body, fields) {
     if (body[field] === undefined || body[field] === null || body[field] === "") {
       throw Object.assign(new Error(`${field} 값이 필요합니다.`), { status: 400 });
     }
+  }
+}
+
+function isValidDateKey(value) {
+  const text = String(value || "");
+  if (!DATE_KEY_RE.test(text)) return false;
+  const [year, month, day] = text.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+}
+
+function assertDateKey(value, label = "날짜") {
+  if (!isValidDateKey(value)) {
+    throw Object.assign(new Error(`${label}는 YYYY-MM-DD 형식으로 입력하세요.`), { status: 400 });
+  }
+}
+
+function assertOptionalDateKey(value, label = "날짜") {
+  if (value !== undefined && value !== null && value !== "") assertDateKey(value, label);
+}
+
+function isValidTimeValue(value) {
+  return TIME_VALUE_RE.test(String(value || ""));
+}
+
+function assertTimeValue(value, label = "시간") {
+  if (!isValidTimeValue(value)) {
+    throw Object.assign(new Error(`${label}는 HH:MM 형식으로 입력하세요.`), { status: 400 });
+  }
+}
+
+function sanitizeHttpUrl(value, label = "링크") {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  let url;
+  try {
+    url = new URL(text);
+  } catch {
+    throw Object.assign(new Error(`${label}는 http 또는 https URL만 입력하세요.`), { status: 400 });
+  }
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw Object.assign(new Error(`${label}는 http 또는 https URL만 입력하세요.`), { status: 400 });
+  }
+  return url.toString();
+}
+
+function assertPlainObject(value, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw Object.assign(new Error(`${label} 값이 올바르지 않습니다.`), { status: 400 });
   }
 }
 
@@ -703,6 +751,7 @@ function isBlockingReservation(reservation) {
 }
 
 function addDaysToDateKey(key, days) {
+  if (!isValidDateKey(key)) return "";
   const date = new Date(`${key}T00:00:00`);
   date.setDate(date.getDate() + days);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -769,6 +818,7 @@ function dayIndexForDateKey(key) {
 }
 
 function ruleAppliesToDate(rule, key) {
+  if (!isValidDateKey(key)) return false;
   if (!rule || !key || WEEKDAY_INDEX[rule.day] !== dayIndexForDateKey(key)) return false;
   if (rule.from && key < rule.from) return false;
   if (rule.to && key > rule.to) return false;
@@ -798,6 +848,73 @@ function scheduleOverlapsRange(rule, range) {
   const blocked = ruleTimeRange(rule);
   if (!blocked) return true;
   return intervalsOverlap(range.start, range.end, blocked.start, blocked.end);
+}
+
+function sanitizeBlockedSchedule(rule = {}) {
+  assertPlainObject(rule, "차단 일정");
+  const type = String(rule.type || "").trim();
+  const day = String(rule.day || "").trim();
+  if (!SETTING_FACILITY_TYPES.has(type)) {
+    throw Object.assign(new Error("지원하지 않는 차단 시설입니다."), { status: 400 });
+  }
+  if (!(day in WEEKDAY_INDEX)) {
+    throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
+  }
+  assertDateKey(rule.from, "차단 시작일");
+  assertDateKey(rule.to, "차단 종료일");
+  if (String(rule.from) > String(rule.to)) {
+    throw Object.assign(new Error("차단 종료일은 시작일 이후여야 합니다."), { status: 400 });
+  }
+  assertTimeValue(rule.start, "차단 시작 시간");
+  assertTimeValue(rule.end, "차단 종료 시간");
+  return {
+    id: String(rule.id || id("block")).trim().slice(0, 80),
+    type,
+    day,
+    from: String(rule.from),
+    to: String(rule.to),
+    start: String(rule.start),
+    end: String(rule.end),
+    target: String(rule.target || "").trim().slice(0, 120)
+  };
+}
+
+function sanitizeSettingsPatch(current, body = {}) {
+  assertPlainObject(body, "설정");
+  const patch = {};
+  if (body.printBankAccount !== undefined) patch.printBankAccount = String(body.printBankAccount || "").trim().slice(0, 240);
+  if (body.darkroomCapacity !== undefined) {
+    const capacity = Number(body.darkroomCapacity);
+    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 200) {
+      throw Object.assign(new Error("암실 최대 인원은 1-200 사이로 입력하세요."), { status: 400 });
+    }
+    patch.darkroomCapacity = Math.floor(capacity);
+  }
+  if (body.printAvailableStart !== undefined) {
+    assertTimeValue(body.printAvailableStart, "출력실 시작 시간");
+    patch.printAvailableStart = String(body.printAvailableStart);
+  }
+  if (body.printAvailableEnd !== undefined) {
+    assertTimeValue(body.printAvailableEnd, "출력실 종료 시간");
+    patch.printAvailableEnd = String(body.printAvailableEnd);
+  }
+  if (body.equipmentCategories !== undefined) {
+    if (!Array.isArray(body.equipmentCategories)) {
+      throw Object.assign(new Error("기자재 카테고리는 배열이어야 합니다."), { status: 400 });
+    }
+    patch.equipmentCategories = [...new Set(body.equipmentCategories
+      .map((item) => String(item || "").trim().slice(0, 60))
+      .filter(Boolean))]
+      .slice(0, 80);
+  }
+  if (body.blockedSchedules !== undefined) {
+    if (!Array.isArray(body.blockedSchedules) || body.blockedSchedules.length > 400) {
+      throw Object.assign(new Error("차단 일정은 400개 이하 배열이어야 합니다."), { status: 400 });
+    }
+    patch.blockedSchedules = body.blockedSchedules.map(sanitizeBlockedSchedule);
+  }
+  if (body.vacationMode !== undefined) patch.vacationMode = body.vacationMode === true;
+  return { ...current, ...patch, updatedAt: nowIso() };
 }
 
 function studioTargetMatches(target, space) {
@@ -851,6 +968,7 @@ function validateReservation(db, type, fields, editingId = null) {
   if (!["equipment", "studio", "darkroom", "print"].includes(type)) {
     throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
   }
+  assertOptionalDateKey(fields.reservedDate, "예약일");
   if (fields.reservedDate && fields.reservedDate < todayKeySeoul()) {
     throw Object.assign(new Error("오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다."), { status: 400 });
   }
@@ -1199,6 +1317,14 @@ export function normalizeDb(db) {
   db.auditLogs = db.auditLogs || [];
   db.sessions = db.sessions || [];
   db.warnings = db.warnings || [];
+  db.users = db.users || [];
+  const seededTaUserIds = db.users
+    .filter((user) => user.role === "admin" && user.username === "ta" && user.email === "ta@gju.local")
+    .map((user) => user.id);
+  if (seededTaUserIds.length) {
+    db.users = db.users.filter((user) => !seededTaUserIds.includes(user.id));
+    db.sessions = db.sessions.filter((session) => !seededTaUserIds.includes(session.userId));
+  }
   db.equipment = db.equipment || [];
   for (const item of db.equipment) {
     item.status = normalizeEquipmentStatus(item.status);
@@ -1572,7 +1698,10 @@ export async function handleApiRequest(ctx) {
         const user = requireUser(authorization, db);
         const reservation = db.reservations.find((item) => item.id === reservationPatchMatch[1]);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
-        if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약만 수정할 수 있습니다."), { status: 403 });
+        if (user.role !== "admin") {
+          if (reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약만 수정할 수 있습니다."), { status: 403 });
+          assertApprovedStudentAccess(user);
+        }
         const body = await parseBody(readText);
         const nextFields = { ...reservation.fields, ...(body.fields || {}) };
         validateReservation(db, reservation.type, nextFields, reservation.id);
@@ -1899,6 +2028,7 @@ export async function handleApiRequest(ctx) {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["title", "lectureDate", "time", "location", "instructorName", "description"]);
+        assertDateKey(body.lectureDate, "특강일");
         const lecture = {
           id: id("lecture"),
           title: body.title,
@@ -1929,6 +2059,7 @@ export async function handleApiRequest(ctx) {
         const body = await parseBody(readText);
         const lecture = db.lectures.find((item) => item.id === lecturePatchMatch[1]);
         if (!lecture) throw Object.assign(new Error("특강을 찾을 수 없습니다."), { status: 404 });
+        if (body.lectureDate !== undefined) assertDateKey(body.lectureDate, "특강일");
         const editableFields = ["title", "lectureDate", "time", "location", "instructorName", "instructorAffiliation", "professor", "targetGrades", "description", "notes"];
         for (const field of editableFields) {
           if (body[field] !== undefined) lecture[field] = body[field];
@@ -1958,7 +2089,7 @@ export async function handleApiRequest(ctx) {
           body: body.body,
           pinned: body.pinned === true,
           status: "published",
-          link: body.link || "",
+          link: sanitizeHttpUrl(body.link || "", "공지 링크"),
           createdAt: nowIso(),
           updatedAt: nowIso()
         };
@@ -1976,7 +2107,7 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "PATCH /api/admin/settings") {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
-        db.settings = { ...db.settings, ...body, updatedAt: nowIso() };
+        db.settings = sanitizeSettingsPatch(db.settings, body);
         audit(db, admin, "settings.updated", "settings", body);
         await saveDb();
         return ok(db.settings);

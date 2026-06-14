@@ -76,7 +76,10 @@ export class GjuReserveDb extends DurableObject {
     if (!this.db) {
       this.db = await this.ctx.storage.get("db");
       if (!this.db) {
-        this.db = await initialDb(this.env.ADMIN_PASSWORD || "admin");
+        if (!this.env.ADMIN_PASSWORD) {
+          throw Object.assign(new Error("ADMIN_PASSWORD must be configured before initializing production data."), { status: 500 });
+        }
+        this.db = await initialDb(this.env.ADMIN_PASSWORD);
         await this.saveDb();
       }
     }
@@ -95,15 +98,26 @@ export class GjuReserveDb extends DurableObject {
       return withSecurityHeaders(new Response(null, { status: 204, headers: cors }));
     }
     const url = new URL(request.url);
-    const db = await this.loadDb();
     if (url.pathname === "/api/internal/cleanup") {
       const secret = this.env.INTERNAL_CRON_SECRET || "";
       if (!secret || request.headers.get("x-internal-cron-secret") !== secret) {
         return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
       }
+      let db;
+      try {
+        db = await this.loadDb();
+      } catch (error) {
+        return jsonResponse({ ok: false, error: error.message || "Server configuration error" }, error.status || 500, cors);
+      }
       const summary = cleanupExpiredData(db, new Date(), "cron");
       if (summary.changed) await this.saveDb();
       return jsonResponse({ ok: true, data: summary }, 200, cors);
+    }
+    let db;
+    try {
+      db = await this.loadDb();
+    } catch (error) {
+      return jsonResponse({ ok: false, error: error.message || "Server configuration error" }, error.status || 500, cors);
     }
     const result = await handleApiRequest({
       method: request.method || "GET",
