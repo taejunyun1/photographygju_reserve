@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260614-fasttoast1";
-import { escapeHtml } from "./utils.js?v=20260614-fasttoast1";
-import { adminShell } from "./views-admin.js?v=20260614-fasttoast1";
-import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-fasttoast1";
+import { $app, state } from "./state.js?v=20260614-remember1";
+import { escapeHtml } from "./utils.js?v=20260614-remember1";
+import { adminShell } from "./views-admin.js?v=20260614-remember1";
+import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-remember1";
 
 export function render() {
   if (!state.bootstrap) {

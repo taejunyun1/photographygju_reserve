@@ -1,7 +1,9 @@
 export const $app = document.querySelector("#app");
 
+const storedToken = localStorage.getItem("gju_token") || sessionStorage.getItem("gju_token") || "";
+
 export const state = {
-  token: localStorage.getItem("gju_token") || "",
+  token: storedToken,
   user: null,
   bootstrap: null,
   view: "home",

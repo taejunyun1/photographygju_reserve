@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260614-fasttoast1";
-import { api } from "./api.js?v=20260614-fasttoast1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-fasttoast1";
-import { render, toast } from "./renderer.js?v=20260614-fasttoast1";
+import { state } from "./state.js?v=20260614-remember1";
+import { api } from "./api.js?v=20260614-remember1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-remember1";
+import { render, toast } from "./renderer.js?v=20260614-remember1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,16 +19,23 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260614-fasttoast1";
+} from "./utils.js?v=20260614-remember1";
 
 export async function login(form) {
   const data = formData(form);
   const result = await api("/api/auth/login", { method: "POST", body: data });
+  const rememberLogin = data.rememberLogin === "true";
   state.token = result.token;
   state.user = result.user;
   state.view = "home";
   state.reservationType = "";
-  localStorage.setItem("gju_token", state.token);
+  if (rememberLogin) {
+    localStorage.setItem("gju_token", state.token);
+    sessionStorage.removeItem("gju_token");
+  } else {
+    sessionStorage.setItem("gju_token", state.token);
+    localStorage.removeItem("gju_token");
+  }
   await loadBootstrap();
   if (state.user.role === "admin") await loadAdminData();
   if (state.user.role === "student") {
@@ -63,6 +70,7 @@ export async function logout() {
   state.selectedStudioSpace = "";
   state.selectedStudioSlots = [];
   localStorage.removeItem("gju_token");
+  sessionStorage.removeItem("gju_token");
   render();
 }
 

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-fasttoast1";
-import { api } from "./api.js?v=20260614-fasttoast1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-fasttoast1";
+import { state } from "./state.js?v=20260614-remember1";
+import { api } from "./api.js?v=20260614-remember1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-remember1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,13 +10,13 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-fasttoast1";
-import { render, toast } from "./renderer.js?v=20260614-fasttoast1";
+} from "./actions.js?v=20260614-remember1";
+import { render, toast } from "./renderer.js?v=20260614-remember1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-fasttoast1";
+} from "./utils.js?v=20260614-remember1";
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {

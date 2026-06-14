@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-fasttoast1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-fasttoast1";
+import { state } from "./state.js?v=20260614-remember1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260614-remember1";
 import {
   areSlotsConsecutive,
   calendar,
@@ -22,7 +22,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-fasttoast1";
+} from "./utils.js?v=20260614-remember1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -45,6 +45,7 @@ export function authView() {
             ? `<form data-form="login">
                 <div class="field"><label>아이디</label><input class="input" name="loginId" placeholder="이메일/학번" autocomplete="username" required /></div>
                 <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" autocomplete="current-password" required /></div>
+                <label class="field consent"><span><input type="checkbox" name="rememberLogin" value="true" checked /> 로그인 유지하기</span></label>
                 <button class="button primary full" type="submit">접속</button>
               </form>`
             : `<form data-form="signup">

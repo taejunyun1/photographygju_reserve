@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-fasttoast1";
-import { api } from "./api.js?v=20260614-fasttoast1";
+import { state } from "./state.js?v=20260614-remember1";
+import { api } from "./api.js?v=20260614-remember1";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
@@ -12,6 +12,7 @@ export async function loadMe() {
   if (!state.user) {
     state.token = "";
     localStorage.removeItem("gju_token");
+    sessionStorage.removeItem("gju_token");
   }
 }
 
