@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260614-eqbulk1";
-import { api } from "./api.js?v=20260614-eqbulk1";
-import { equipmentStatusOptions } from "./constants.js?v=20260614-eqbulk1";
-import { tag } from "./utils.js?v=20260614-eqbulk1";
+import { state } from "./state.js?v=20260614-scrolltop1";
+import { api } from "./api.js?v=20260614-scrolltop1";
+import { equipmentStatusOptions } from "./constants.js?v=20260614-scrolltop1";
+import { tag } from "./utils.js?v=20260614-scrolltop1";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

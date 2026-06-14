@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-eqbulk1";
-import { api } from "./api.js?v=20260614-eqbulk1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-eqbulk1";
+import { state } from "./state.js?v=20260614-scrolltop1";
+import { api } from "./api.js?v=20260614-scrolltop1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-scrolltop1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,33 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-eqbulk1";
-import { render, toast } from "./renderer.js?v=20260614-eqbulk1";
+} from "./actions.js?v=20260614-scrolltop1";
+import { render, toast } from "./renderer.js?v=20260614-scrolltop1";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260614-eqbulk1";
+} from "./admin-equipment.js?v=20260614-scrolltop1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-eqbulk1";
+} from "./utils.js?v=20260614-scrolltop1";
+
+function scrollToPageTop() {
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
+}
+
+function renderAtTop() {
+  render();
+  scrollToPageTop();
+}
 
 export function setupEventHandlers() {
   document.addEventListener("click", async (event) => {
@@ -32,7 +45,8 @@ export function setupEventHandlers() {
     try {
       if (target.dataset.authMode) {
         state.authMode = target.dataset.authMode;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.noticeOpen) {
         state.activeNoticeId = target.dataset.noticeOpen;
@@ -63,7 +77,7 @@ export function setupEventHandlers() {
       if (target.dataset.action === "logout") await logout();
       if (target.dataset.equipmentCategory) {
         state.equipmentCategoryFilter = target.dataset.equipmentCategory;
-        render();
+        renderAtTop();
         return;
       }
       if (target.dataset.equipmentRemove) {
@@ -99,20 +113,24 @@ export function setupEventHandlers() {
         if (state.view === "mine") await loadMyReservations();
         if (state.view === "reports") await loadMyReservations();
         if (state.view === "lectures") await loadLectures();
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.reserveShortcut) {
         state.view = "reserve";
         state.reservationType = target.dataset.reserveShortcut;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.reserveType) {
         state.reservationType = target.dataset.reserveType;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.action === "reserve-back") {
         state.reservationType = "";
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.cancelRes) {
         if (!confirm("예약을 취소할까요?")) return;
@@ -148,19 +166,23 @@ export function setupEventHandlers() {
       if (target.dataset.adminView) {
         if (target.dataset.adminReservationTab) state.adminReservationTab = target.dataset.adminReservationTab;
         state.adminView = target.dataset.adminView;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.adminReservationTab && !target.dataset.adminView) {
         state.adminReservationTab = target.dataset.adminReservationTab;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.adminEquipmentTab) {
         state.adminEquipmentTab = target.dataset.adminEquipmentTab;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.adminEquipmentCategoryTab) {
         state.adminEquipmentCategoryTab = target.dataset.adminEquipmentCategoryTab;
-        render();
+        renderAtTop();
+        return;
       }
       if (target.dataset.lectureUpdate) {
         const status = document.querySelector(`[data-lecture-status="${target.dataset.lectureUpdate}"]`)?.value || "모집중";
