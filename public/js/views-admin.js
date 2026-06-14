@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-equipmentstatus1";
+import { state } from "./state.js?v=20260614-loading1";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-equipmentstatus1";
+} from "./constants.js?v=20260614-loading1";
 import {
   addMonths,
   adminGuide,
@@ -22,8 +22,8 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-equipmentstatus1";
-import { noticeCard } from "./views-student.js?v=20260614-equipmentstatus1";
+} from "./utils.js?v=20260614-loading1";
+import { noticeCard } from "./views-student.js?v=20260614-loading1";
 
 export function adminShell() {
   return `

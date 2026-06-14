@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260614-equipmentstatus1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260614-equipmentstatus1";
-import { setupEventHandlers } from "./events.js?v=20260614-equipmentstatus1";
-import { render } from "./renderer.js?v=20260614-equipmentstatus1";
-import { escapeHtml } from "./utils.js?v=20260614-equipmentstatus1";
+import { $app, state } from "./state.js?v=20260614-loading1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260614-loading1";
+import { setupEventHandlers } from "./events.js?v=20260614-loading1";
+import { render } from "./renderer.js?v=20260614-loading1";
+import { escapeHtml } from "./utils.js?v=20260614-loading1";
 
 async function init() {
   await loadBootstrap();
@@ -16,6 +16,7 @@ async function init() {
 }
 
 setupEventHandlers();
+render();
 
 init().catch((error) => {
   $app.innerHTML = `<main class="auth-shell"><div class="auth-panel">초기화 실패: ${escapeHtml(error.message)}</div></main>`;

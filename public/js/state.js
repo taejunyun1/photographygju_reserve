@@ -45,5 +45,6 @@ export const state = {
   lectures: [],
   adminLectures: [],
   summary: null,
+  loadingCount: 0,
   toast: ""
 };
