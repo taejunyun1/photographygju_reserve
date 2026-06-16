@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260614-security1";
-import { escapeHtml } from "./utils.js?v=20260614-security1";
-import { adminShell } from "./views-admin.js?v=20260614-security1";
-import { authView, noticeBottomSheet, studentShell } from "./views-student.js?v=20260614-security1";
+import { $app, state } from "./state.js?v=20260616-feat1";
+import { escapeHtml } from "./utils.js?v=20260616-feat1";
+import { adminShell } from "./views-admin.js?v=20260616-feat1";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260616-feat1";
 
 document.addEventListener("gju-loading-change", () => render());
 
@@ -23,7 +23,7 @@ export function render() {
     return;
   }
   const body = !state.user ? authView() : state.user.role === "admin" ? adminShell() : studentShell();
-  $app.innerHTML = `<div class="app">${body}${noticeBottomSheet()}${loadingOverlay()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
+  $app.innerHTML = `<div class="app">${body}${noticeBottomSheet()}${warningPopup()}${loadingOverlay()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
 }
 
 let toastTimer = null;

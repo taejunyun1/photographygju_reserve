@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260614-security1";
+import { state } from "./state.js?v=20260616-feat1";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260614-security1";
+} from "./constants.js?v=20260616-feat1";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260614-security1";
-import { noticeCard } from "./views-student.js?v=20260614-security1";
+} from "./utils.js?v=20260616-feat1";
+import { noticeCard } from "./views-student.js?v=20260616-feat1";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260614-security1";
+} from "./admin-equipment.js?v=20260616-feat1";
 
 export function adminShell() {
   return `
@@ -150,7 +150,7 @@ export function adminDashboardView() {
 export function adminUsersView() {
   return `
     <section class="grid">
-      ${adminGuide("학생 승인 사용 가이드", "가입 신청 학생의 이름, 학번, 연락처를 확인한 뒤 바로 승인/반려/제한을 누릅니다. 제한은 1주일, 2주일, 1달, 1학기 중 선택할 수 있고 제한 기간 동안 학생은 예약할 수 없습니다.")}
+      ${adminGuide("학생 승인 사용 가이드", "가입 학생의 이름·학번·연락처를 확인하고 승인/반려/제한을 누릅니다. ‘경고’를 누르면 누적되며 2회 시 자동 1주일, 3회 시 자동 한 학기 예약 제한이 적용됩니다. ‘경고 초기화’로 누적과 제한을 함께 해제할 수 있습니다.")}
       <div class="table-wrap">
         <table>
           <thead><tr><th>${userSortButton("name", "이름")}</th><th>${userSortButton("studentId", "학번")}</th><th>${userSortButton("studentStatus", "신분")}</th><th>연락처</th><th>${userSortButton("approvalStatus", "상태")}</th><th>작업</th></tr></thead>
@@ -168,6 +168,10 @@ export function adminUsersView() {
                     <button class="button danger" data-user-approval="${user.id}" data-status="rejected">반려</button>
                     <button class="button" data-user-reset="${user.id}">비번 리셋</button>
                   </div>
+                  <div class="row-actions">
+                    <button class="button warn" data-user-warn="${user.id}">경고${user.warningCount ? ` (${user.warningCount})` : ""}</button>
+                    ${user.warningCount ? `<button class="button ghost compact" data-user-warn-reset="${user.id}">경고 초기화</button>` : ""}
+                  </div>
                   <div class="limit-actions">
                     <select class="select compact-select" data-user-limit-duration="${user.id}">
                       ${Object.entries(userLimitOptions).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}
@@ -183,22 +187,46 @@ export function adminUsersView() {
   `;
 }
 
+function reservationSearchText(reservation) {
+  const f = reservation.fields || {};
+  return [
+    reservation.user?.name,
+    reservation.user?.studentId,
+    reservation.user?.phone,
+    f.reservedDate,
+    f.studioSpace,
+    ...(Array.isArray(f.studioSpaces) ? f.studioSpaces : []),
+    f.printType,
+    typeLabel[reservation.type] || reservation.type,
+    ...(Array.isArray(reservation.equipmentItems) ? reservation.equipmentItems.flatMap((item) => [item.code, item.name]) : [])
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
 export function adminReservationsView() {
   const tabs = [["all", "전체"], ["equipment", "기자재"], ["darkroom", "암실"], ["studio", "스튜디오"], ["print", "출력"]];
-  const reservations = state.adminReservationTab === "all"
-    ? state.adminReservations
-    : state.adminReservations.filter((reservation) => reservation.type === state.adminReservationTab);
+  const query = (state.adminReservationSearch || "").trim().toLowerCase();
+  const base = query
+    ? state.adminReservations.filter((reservation) => reservationSearchText(reservation).includes(query))
+    : (state.adminReservationTab === "all"
+      ? state.adminReservations
+      : state.adminReservations.filter((reservation) => reservation.type === state.adminReservationTab));
+  // 최신순(예약 생성일 내림차순)으로 정렬해 최근 예약을 위에 노출
+  const reservations = base.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   return `
     <section class="grid">
-      ${adminGuide("예약관리 사용 가이드", "예약 종류별 탭에서 학생 예약을 확인합니다. 기자재는 승인→대여→반납 순서로 처리하고, 스튜디오/암실/출력은 현장 상황에 맞게 완료 또는 취소 처리합니다.")}
-      <div class="tab-row">
+      ${adminGuide("예약관리 사용 가이드", "최신 예약이 위에 표시됩니다. 검색창에 이름·학번·날짜(YYYY-MM-DD)·기자재 코드·스튜디오를 입력하면 전체 예약에서 찾을 수 있습니다. 기자재는 승인→대여→반납 순으로 처리합니다.")}
+      <div class="field">
+        <input class="input" type="text" inputmode="search" placeholder="🔎 전체 검색 (이름·학번·날짜·기자재·스튜디오)" value="${escapeHtml(state.adminReservationSearch || "")}" data-admin-reservation-search autocomplete="off" />
+      </div>
+      <div class="tab-row" ${query ? "hidden" : ""}>
         ${tabs.map(([key, label]) => {
           const count = key === "all" ? state.adminReservations.length : state.adminReservations.filter((item) => item.type === key).length;
           return `<button class="tab-button ${state.adminReservationTab === key ? "active" : ""}" data-admin-reservation-tab="${key}">${label} <span>${count}</span></button>`;
         }).join("")}
       </div>
+      ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${reservations.length}건 · 전체 예약 대상</p>` : ""}
       <div class="admin-reservation-grid">
-        ${reservations.length ? reservations.map(adminReservationCard).join("") : `<p class="empty">해당 탭의 예약이 없습니다.</p>`}
+        ${reservations.length ? reservations.map(adminReservationCard).join("") : `<p class="empty">${query ? "검색 결과가 없습니다." : "해당 탭의 예약이 없습니다."}</p>`}
       </div>
     </section>
   `;

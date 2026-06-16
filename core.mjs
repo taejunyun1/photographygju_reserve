@@ -437,6 +437,7 @@ function publicUser(user) {
   const { passwordHash, ...rest } = user;
   return {
     ...rest,
+    warningCount: Math.max(0, Number(user.warningCount || 0)),
     approvalStatus: effectiveApprovalStatus(user)
   };
 }
@@ -903,6 +904,10 @@ function validateReservation(db, type, fields, editingId = null) {
 
   if (type === "equipment") {
     assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
+    // 2박3일 대여는 금요일(금→일)에만 허용한다.
+    if (String(fields.period).includes("2박3일") && dayIndexForDateKey(fields.reservedDate) !== 5) {
+      throw Object.assign(new Error("2박3일 대여는 금요일에만 가능합니다."), { status: 400 });
+    }
     if (!Array.isArray(fields.equipmentItemIds) || fields.equipmentItemIds.length === 0) {
       throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });
     }
@@ -1761,6 +1766,52 @@ export async function handleApiRequest(ctx) {
         audit(db, admin, "user.approval_changed", user.id, { approvalStatus: user.approvalStatus, blockDuration: user.blockDuration || "" });
         await saveDb();
         return ok(publicUser(user));
+      }
+
+      const userWarningMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/warning$/);
+      if (method === "POST" && userWarningMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const user = db.users.find((item) => item.id === userWarningMatch[1]);
+        if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
+        if (body.reset) {
+          user.warningCount = 0;
+          db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
+          if (user.approvalStatus === "blocked") {
+            user.approvalStatus = "approved";
+            user.blockDuration = "";
+            user.blockedAt = "";
+            user.blockedUntil = "";
+          }
+          user.updatedAt = nowIso();
+          audit(db, admin, "user.warning_reset", user.id);
+          await saveDb();
+          return ok({ user: publicUser(user), autoBlock: "" });
+        }
+        user.warningCount = Math.max(0, Number(user.warningCount || 0)) + 1;
+        const warning = {
+          id: id("warning"),
+          userId: user.id,
+          reason: cleanMeta(body.reason || ""),
+          count: user.warningCount,
+          actorId: admin.id,
+          createdAt: nowIso()
+        };
+        db.warnings.push(warning);
+        // 자동 제재: 경고 2회 → 1주일, 3회 이상 → 한 학기 예약 제한
+        let autoBlock = "";
+        if (user.warningCount >= 3) autoBlock = "semester";
+        else if (user.warningCount >= 2) autoBlock = "week1";
+        if (autoBlock) {
+          user.approvalStatus = "blocked";
+          user.blockDuration = autoBlock;
+          user.blockedAt = nowIso();
+          user.blockedUntil = blockUntilForDuration(autoBlock);
+        }
+        user.updatedAt = nowIso();
+        audit(db, admin, "user.warning_issued", user.id, { count: user.warningCount, autoBlock });
+        await saveDb();
+        return ok({ user: publicUser(user), warning, autoBlock });
       }
 
       const userPasswordResetMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);

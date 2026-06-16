@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260614-security1";
-import { api } from "./api.js?v=20260614-security1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260614-security1";
+import { state } from "./state.js?v=20260616-feat1";
+import { api } from "./api.js?v=20260616-feat1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat1";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260614-security1";
-import { render, toast } from "./renderer.js?v=20260614-security1";
+} from "./actions.js?v=20260616-feat1";
+import { render, toast } from "./renderer.js?v=20260616-feat1";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260614-security1";
+} from "./admin-equipment.js?v=20260616-feat1";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260614-security1";
+} from "./utils.js?v=20260616-feat1";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -232,6 +232,32 @@ export function setupEventHandlers() {
         }
         return;
       }
+      if (target.dataset.userWarn) {
+        const reason = prompt("경고 사유를 입력하세요. (경고 2회 → 자동 1주일, 3회 → 자동 한 학기 제한)", "");
+        if (reason === null) return;
+        const result = await api(`/api/admin/users/${target.dataset.userWarn}/warning`, { method: "POST", body: { reason: reason.trim() } });
+        await loadAdminData();
+        if (result.autoBlock === "semester") {
+          alert(`경고 ${result.user.warningCount}회 누적 → 자동 ‘한 학기’ 예약 제한이 적용되었습니다.`);
+        } else if (result.autoBlock === "week1") {
+          alert(`경고 ${result.user.warningCount}회 누적 → 자동 ‘1주일’ 예약 제한이 적용되었습니다.`);
+        } else {
+          toast(`경고를 부여했습니다. (누적 ${result.user.warningCount}회)`);
+        }
+        return;
+      }
+      if (target.dataset.userWarnReset) {
+        if (!confirm("이 학생의 경고 누적과 예약 제한을 모두 해제할까요?")) return;
+        await api(`/api/admin/users/${target.dataset.userWarnReset}/warning`, { method: "POST", body: { reset: true } });
+        await loadAdminData();
+        toast("경고를 초기화했습니다.");
+        return;
+      }
+      if (target.dataset.warningPopupClose !== undefined) {
+        state.warningPopupDismissed = true;
+        render();
+        return;
+      }
       if (target.dataset.sessionRevoke) {
         if (!confirm("이 기기를 원격 로그아웃할까요?")) return;
         await api(`/api/admin/sessions/${target.dataset.sessionRevoke}/revoke`, { method: "POST" });
@@ -342,6 +368,20 @@ export function setupEventHandlers() {
         state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.value);
       }
       render();
+    }
+  });
+
+  document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (target.dataset && target.dataset.adminReservationSearch !== undefined) {
+      state.adminReservationSearch = target.value;
+      const caret = target.selectionStart;
+      render();
+      const next = document.querySelector("[data-admin-reservation-search]");
+      if (next) {
+        next.focus();
+        try { next.setSelectionRange(caret, caret); } catch (error) { /* noop */ }
+      }
     }
   });
 

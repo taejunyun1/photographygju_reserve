@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260614-security1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260614-security1";
+import { state } from "./state.js?v=20260616-feat1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260616-feat1";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -24,7 +24,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260614-security1";
+} from "./utils.js?v=20260616-feat1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -259,8 +259,19 @@ export function reservationForm(type) {
   return printForm();
 }
 
-function selectedEquipmentPeriod() {
+function isFridayDateKey(dateKey) {
+  return Boolean(dateKey) && new Date(`${dateKey}T00:00:00`).getDay() === 5;
+}
+
+// 2박3일(금→일)은 금요일 시작만 허용한다. 그 외 날짜에서는 옵션에서 제외.
+function equipmentPeriodOptions(selectedDate) {
   const periods = state.bootstrap.settings.equipmentPeriods || ["당일"];
+  if (isFridayDateKey(selectedDate)) return periods;
+  return periods.filter((item) => !String(item).includes("2박3일"));
+}
+
+function selectedEquipmentPeriod(selectedDate) {
+  const periods = equipmentPeriodOptions(selectedDate);
   if (!state.selectedEquipmentPeriod || !periods.includes(state.selectedEquipmentPeriod)) {
     state.selectedEquipmentPeriod = periods[0] || "당일";
   }
@@ -292,7 +303,7 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastD
       <span>${rangeBlocked ? "선택 기간에 차단 일정이 포함되어 예약할 수 없습니다." : "선택한 기간 전체에 겹치는 장비는 다음 단계에서 자동으로 제외됩니다."}</span>
     </div>
     <div class="grid two control-grid">
-      <div class="field"><label>대여기간</label><select class="select" name="period">${state.bootstrap.settings.equipmentPeriods.map((item) => `<option ${item === period ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
+      <div class="field"><label>대여기간</label><select class="select" name="period">${equipmentPeriodOptions(selectedDate).map((item) => `<option ${item === period ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select>${isFridayDateKey(selectedDate) ? "" : `<small class="muted">2박3일 대여는 금요일 시작만 선택할 수 있습니다.</small>`}</div>
       <div class="field"><label>대여 시간</label><select class="select" name="rentalTime">${state.bootstrap.settings.equipmentRentalTimes.map((item) => `<option ${item === rentalTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       <div class="field"><label>반납 시간</label><select class="select" name="returnTime">${state.bootstrap.settings.equipmentReturnTimes.map((item) => `<option ${item === returnTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
     </div>
@@ -422,7 +433,7 @@ export function equipmentForm() {
   if (!categories.includes(state.equipmentCategoryFilter)) state.equipmentCategoryFilter = categories[0] || "Other";
   const selectedDate = state.selectedDates.equipment || "";
   const pastDate = isPastDate(selectedDate);
-  const period = selectedEquipmentPeriod();
+  const period = selectedEquipmentPeriod(selectedDate);
   const rentalTime = selectedEquipmentTime("selectedEquipmentRentalTime", "equipmentRentalTimes");
   const returnTime = selectedEquipmentTime("selectedEquipmentReturnTime", "equipmentReturnTimes");
   const rangeBlocked = Boolean(selectedDate && !pastDate && equipmentRangeBlocked(selectedDate, period).length);
@@ -1032,6 +1043,41 @@ export function noticeBottomSheet() {
         </div>
         <p class="notice-body">${escapeHtml(notice.body)}</p>
         ${notice.link ? `<a class="button primary full" href="${escapeHtml(notice.link)}" target="_blank" rel="noreferrer">신청 링크 열기</a>` : ""}
+      </section>
+    </div>
+  `;
+}
+
+export function warningPopup() {
+  const user = state.user;
+  if (!user || user.role === "admin" || state.warningPopupDismissed) return "";
+  const count = Number(user.warningCount || 0);
+  const blocked = user.approvalStatus === "blocked";
+  if (!count && !blocked) return "";
+  const until = user.blockedUntil ? escapeHtml(String(user.blockedUntil).slice(0, 10)) : "";
+  return `
+    <div class="bottom-sheet-layer" role="presentation">
+      <button class="sheet-backdrop" type="button" data-warning-popup-close aria-label="닫기"></button>
+      <section class="bottom-sheet" role="dialog" aria-modal="true" aria-label="경고 안내">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="chips"><span class="tag ${blocked ? "red" : "orange"}">${blocked ? "예약 제한" : "경고 누적"}</span></div>
+            <h2 class="card-title card-title-spaced">경고 ${count}회 누적</h2>
+          </div>
+          <button class="button ghost compact" type="button" data-warning-popup-close>확인</button>
+        </div>
+        <div class="notice-body">
+          <p>예약 규정 위반 시 경고가 누적되며 자동으로 예약이 제한됩니다.</p>
+          <ul>
+            <li>경고 <strong>2회</strong> → <strong>1주일</strong> 예약 제한</li>
+            <li>경고 <strong>3회</strong> → <strong>한 학기</strong> 예약 제한</li>
+          </ul>
+          ${blocked
+            ? `<p><strong>현재 예약이 제한된 상태입니다.${until ? ` 해제 예정일: ${until}` : ""}</strong></p>`
+            : `<p>현재 누적 경고는 <strong>${count}회</strong>입니다. 규정을 준수해 주세요.</p>`}
+        </div>
+        <button class="button primary full" type="button" data-warning-popup-close>확인했습니다</button>
       </section>
     </div>
   `;

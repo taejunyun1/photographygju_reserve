@@ -28,6 +28,8 @@ export const state = {
   equipmentCategoryFilter: "Body",
   adminView: "dashboard",
   adminReservationTab: "equipment",
+  adminReservationSearch: "",
+  warningPopupDismissed: false,
   adminEquipmentTab: "department",
   adminEquipmentCategoryTab: "all",
   selectedAdminEquipmentIds: [],
