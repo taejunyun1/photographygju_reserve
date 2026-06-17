@@ -904,9 +904,9 @@ function validateReservation(db, type, fields, editingId = null) {
 
   if (type === "equipment") {
     assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
-    // 2박3일 대여는 금요일(금→일)에만 허용한다.
-    if (String(fields.period).includes("2박3일") && dayIndexForDateKey(fields.reservedDate) !== 5) {
-      throw Object.assign(new Error("2박3일 대여는 금요일에만 가능합니다."), { status: 400 });
+    // 2박3일(주말)·주말 대여는 금요일(금→일) 시작만 허용한다.
+    if ((String(fields.period).includes("2박3일") || String(fields.period).includes("주말")) && dayIndexForDateKey(fields.reservedDate) !== 5) {
+      throw Object.assign(new Error("2박3일(주말) 대여는 금요일에만 가능합니다."), { status: 400 });
     }
     if (!Array.isArray(fields.equipmentItemIds) || fields.equipmentItemIds.length === 0) {
       throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });

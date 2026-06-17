@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260616-feat3";
-import { api } from "./api.js?v=20260616-feat3";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat3";
+import { state } from "./state.js?v=20260616-feat4";
+import { api } from "./api.js?v=20260616-feat4";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat4";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260616-feat3";
-import { render, toast } from "./renderer.js?v=20260616-feat3";
+} from "./actions.js?v=20260616-feat4";
+import { render, toast } from "./renderer.js?v=20260616-feat4";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260616-feat3";
+} from "./admin-equipment.js?v=20260616-feat4";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260616-feat3";
+} from "./utils.js?v=20260616-feat4";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -363,9 +363,10 @@ export function setupEventHandlers() {
       return;
     }
     if (["period", "rentalTime", "returnTime"].includes(target.name) && target.closest("[data-type=\"equipment\"]")) {
-      if (target.name === "period") state.selectedEquipmentPeriod = target.value;
-      if (target.name === "rentalTime") state.selectedEquipmentRentalTime = target.value;
-      if (target.name === "returnTime") state.selectedEquipmentReturnTime = target.value;
+      // 대여/반납 시간은 가용성에 영향이 없으므로 상태만 저장하고 재렌더하지 않는다(입력 끊김 방지).
+      if (target.name === "rentalTime") { state.selectedEquipmentRentalTime = target.value; return; }
+      if (target.name === "returnTime") { state.selectedEquipmentReturnTime = target.value; return; }
+      state.selectedEquipmentPeriod = target.value; // 기간 변경은 가용 장비가 달라지므로 재렌더
       render();
       return;
     }

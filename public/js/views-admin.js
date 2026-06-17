@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260616-feat3";
+import { state } from "./state.js?v=20260616-feat4";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260616-feat3";
+} from "./constants.js?v=20260616-feat4";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260616-feat3";
-import { noticeCard } from "./views-student.js?v=20260616-feat3";
+} from "./utils.js?v=20260616-feat4";
+import { noticeCard } from "./views-student.js?v=20260616-feat4";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260616-feat3";
+} from "./admin-equipment.js?v=20260616-feat4";
 
 export function adminShell() {
   return `

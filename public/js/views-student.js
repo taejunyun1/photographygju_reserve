@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260616-feat3";
-import { statusLabel, typeLabel } from "./constants.js?v=20260616-feat3";
+import { state } from "./state.js?v=20260616-feat4";
+import { statusLabel, typeLabel } from "./constants.js?v=20260616-feat4";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -24,7 +24,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260616-feat3";
+} from "./utils.js?v=20260616-feat4";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -263,11 +263,21 @@ function isFridayDateKey(dateKey) {
   return Boolean(dateKey) && new Date(`${dateKey}T00:00:00`).getDay() === 5;
 }
 
-// 2박3일(금→일)은 금요일 시작만 허용한다. 그 외 날짜에서는 옵션에서 제외.
+// "2박3일"은 화면에서 "2박3일(주말)"로 표기한다.
+const EQUIPMENT_PERIOD_LABELS = { "2박3일": "2박3일(주말)" };
+function equipmentPeriodLabel(value) {
+  return EQUIPMENT_PERIOD_LABELS[value] || value;
+}
+
+// 평일에는 주말 옵션을 숨긴다: "주말사용" 항목은 항상 제거하고, "2박3일(주말)"은 금요일 시작만 노출.
 function equipmentPeriodOptions(selectedDate) {
   const periods = state.bootstrap.settings.equipmentPeriods || ["당일"];
-  if (isFridayDateKey(selectedDate)) return periods;
-  return periods.filter((item) => !String(item).includes("2박3일"));
+  const friday = isFridayDateKey(selectedDate);
+  return periods.filter((item) => {
+    if (String(item).includes("주말사용")) return false;
+    if (String(item).includes("2박3일")) return friday;
+    return true;
+  });
 }
 
 function selectedEquipmentPeriod(selectedDate) {
@@ -303,7 +313,7 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, pastD
       <span>${rangeBlocked ? "선택 기간에 차단 일정이 포함되어 예약할 수 없습니다." : "선택한 기간 전체에 겹치는 장비는 다음 단계에서 자동으로 제외됩니다."}</span>
     </div>
     <div class="grid two control-grid">
-      <div class="field"><label>대여기간</label><select class="select" name="period">${equipmentPeriodOptions(selectedDate).map((item) => `<option ${item === period ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select>${isFridayDateKey(selectedDate) ? "" : `<small class="muted">2박3일 대여는 금요일 시작만 선택할 수 있습니다.</small>`}</div>
+      <div class="field"><label>대여기간</label><select class="select" name="period">${equipmentPeriodOptions(selectedDate).map((item) => `<option value="${escapeHtml(item)}" ${item === period ? "selected" : ""}>${escapeHtml(equipmentPeriodLabel(item))}</option>`).join("")}</select>${isFridayDateKey(selectedDate) ? "" : `<small class="muted">2박3일(주말) 대여는 금요일 시작만 선택할 수 있습니다.</small>`}</div>
       <div class="field"><label>대여 시간</label><select class="select" name="rentalTime">${state.bootstrap.settings.equipmentRentalTimes.map((item) => `<option ${item === rentalTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       <div class="field"><label>반납 시간</label><select class="select" name="returnTime">${state.bootstrap.settings.equipmentReturnTimes.map((item) => `<option ${item === returnTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
     </div>
