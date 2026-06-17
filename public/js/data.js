@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260616-feat5";
-import { api } from "./api.js?v=20260616-feat5";
+import { state } from "./state.js?v=20260616-feat6";
+import { api } from "./api.js?v=20260616-feat6";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

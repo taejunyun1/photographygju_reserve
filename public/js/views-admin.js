@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260616-feat5";
+import { state } from "./state.js?v=20260616-feat6";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260616-feat5";
+} from "./constants.js?v=20260616-feat6";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260616-feat5";
-import { noticeCard } from "./views-student.js?v=20260616-feat5";
+} from "./utils.js?v=20260616-feat6";
+import { noticeCard } from "./views-student.js?v=20260616-feat6";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260616-feat5";
+} from "./admin-equipment.js?v=20260616-feat6";
 
 export function adminShell() {
   return `
@@ -462,12 +462,8 @@ function lectureEditForm(lecture) {
   `;
 }
 
-export function adminLecturesView() {
-  const editing = state.editingLectureId ? state.adminLectures.find((item) => item.id === state.editingLectureId) : null;
+function lectureCreateForm() {
   return `
-    <section class="grid">
-      ${adminGuide("비교과 특강 사용 가이드", "특강을 등록하면 학생 화면에 리스트가 표시됩니다. 리스트의 ‘수정’으로 내용을 고치고, ‘삭제’로 특강과 신청 내역을 함께 제거할 수 있습니다. 결과는 CSV로 내려받을 수 있습니다.")}
-      ${editing ? lectureEditForm(editing) : ""}
       <div class="card">
         <h2 class="card-title">특강 등록</h2>
         <form class="grid two" data-form="lecture-add">
@@ -486,7 +482,15 @@ export function adminLecturesView() {
           <div class="field span-two"><label>특강 내용</label><textarea class="textarea" name="description" required></textarea></div>
           <button class="button primary" type="submit">특강 등록</button>
         </form>
-      </div>
+      </div>`;
+}
+
+export function adminLecturesView() {
+  const editing = state.editingLectureId ? state.adminLectures.find((item) => item.id === state.editingLectureId) : null;
+  return `
+    <section class="grid">
+      ${adminGuide("비교과 특강 사용 가이드", "특강을 등록하면 학생 화면에 리스트가 표시됩니다. 리스트의 ‘수정’으로 내용을 고치고, ‘삭제’로 특강과 신청 내역을 함께 제거할 수 있습니다. 결과는 CSV로 내려받을 수 있습니다.")}
+      ${editing ? lectureEditForm(editing) : lectureCreateForm()}
       <div class="card">
         <div class="form-head">
           <div>
