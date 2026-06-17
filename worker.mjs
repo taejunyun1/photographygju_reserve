@@ -98,38 +98,8 @@ export class GjuReserveDb extends DurableObject {
       return withSecurityHeaders(new Response(null, { status: 204, headers: cors }));
     }
     const url = new URL(request.url);
-    if (url.pathname === "/api/internal/reset-clean") {
-      const secret = this.env.INTERNAL_RESET_SECRET || "";
-      if (!secret || request.headers.get("x-internal-reset-secret") !== secret) {
-        return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
-      }
-      const existingDb = this.db || await this.ctx.storage.get("db");
-      const existingAdmin = existingDb?.users?.find((user) => user.username === "admin");
-      if (!this.env.ADMIN_PASSWORD && !existingAdmin?.passwordHash) {
-        return jsonResponse({ ok: false, error: "ADMIN_PASSWORD must be configured before resetting production data." }, 500, cors);
-      }
-      const fallbackPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
-      this.db = await initialDb(this.env.ADMIN_PASSWORD || fallbackPassword);
-      if (existingAdmin?.passwordHash) {
-        this.db.users[0].passwordHash = existingAdmin.passwordHash;
-      }
-      await this.saveDb();
-      return jsonResponse({
-        ok: true,
-        data: {
-          users: this.db.users.length,
-          equipment: this.db.equipment.length,
-          reservations: this.db.reservations.length,
-          reports: this.db.reports.length,
-          lectures: this.db.lectures.length,
-          lectureApplications: this.db.lectureApplications.length,
-          notices: this.db.notices.length,
-          sessions: this.db.sessions.length,
-          slackLogs: this.db.slackLogs.length,
-          auditLogs: this.db.auditLogs.length
-        }
-      }, 200, cors);
-    }
+    // NOTE: a production DB reset endpoint was intentionally removed.
+    // Guardrail: the production database is never reset/initialized in place.
     if (url.pathname === "/api/internal/cleanup") {
       const secret = this.env.INTERNAL_CRON_SECRET || "";
       if (!secret || request.headers.get("x-internal-cron-secret") !== secret) {

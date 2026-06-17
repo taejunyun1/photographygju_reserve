@@ -92,9 +92,12 @@ Set the Slack webhook as a Worker secret before production use:
 
 ```bash
 npx wrangler secret put ADMIN_PASSWORD
-npx wrangler secret put INTERNAL_RESET_SECRET
+npx wrangler secret put INTERNAL_CRON_SECRET
 npx wrangler secret put SLACK_WEBHOOK_URL
 ```
+
+The production database is never reset in place (guardrail). There is no
+reset endpoint; `INTERNAL_CRON_SECRET` only guards the retention-cleanup cron.
 
 Then deploy:
 
