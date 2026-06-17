@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260616-feat1";
-import { api } from "./api.js?v=20260616-feat1";
-import { equipmentStatusOptions } from "./constants.js?v=20260616-feat1";
-import { tag } from "./utils.js?v=20260616-feat1";
+import { state } from "./state.js?v=20260616-feat2";
+import { api } from "./api.js?v=20260616-feat2";
+import { equipmentStatusOptions } from "./constants.js?v=20260616-feat2";
+import { tag } from "./utils.js?v=20260616-feat2";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

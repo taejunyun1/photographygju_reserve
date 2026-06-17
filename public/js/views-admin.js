@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260616-feat1";
+import { state } from "./state.js?v=20260616-feat2";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260616-feat1";
+} from "./constants.js?v=20260616-feat2";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260616-feat1";
-import { noticeCard } from "./views-student.js?v=20260616-feat1";
+} from "./utils.js?v=20260616-feat2";
+import { noticeCard } from "./views-student.js?v=20260616-feat2";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260616-feat1";
+} from "./admin-equipment.js?v=20260616-feat2";
 
 export function adminShell() {
   return `
@@ -177,6 +177,9 @@ export function adminUsersView() {
                       ${Object.entries(userLimitOptions).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}
                     </select>
                     <button class="button" data-user-approval="${user.id}" data-status="blocked">제한</button>
+                  </div>
+                  <div class="row-actions">
+                    <button class="button danger" data-user-delete="${user.id}" data-user-name="${escapeHtml(user.name)}">학생 삭제</button>
                   </div>
                 </td>
               </tr>`).join("")}

@@ -1831,6 +1831,27 @@ export async function handleApiRequest(ctx) {
         return ok({ user: publicUser(user), generatedPassword: generated ? newPassword : null });
       }
 
+      const userDeleteMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
+      if (method === "DELETE" && userDeleteMatch) {
+        const admin = requireAdmin(authorization, db);
+        const user = db.users.find((item) => item.id === userDeleteMatch[1]);
+        if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
+        if (user.role === "admin") {
+          throw Object.assign(new Error("관리자 계정은 삭제할 수 없습니다."), { status: 400 });
+        }
+        // 학생 1명과 연관 데이터를 함께 정리해 고아 레코드를 남기지 않는다 (전체 DB 초기화 아님).
+        const removedReservations = db.reservations.filter((item) => item.userId === user.id).length;
+        db.reservations = db.reservations.filter((item) => item.userId !== user.id);
+        db.reports = (db.reports || []).filter((item) => item.userId !== user.id);
+        db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
+        db.lectureApplications = (db.lectureApplications || []).filter((item) => item.userId !== user.id);
+        db.sessions = (db.sessions || []).filter((item) => item.userId !== user.id);
+        db.users = db.users.filter((item) => item.id !== user.id);
+        audit(db, admin, "user.deleted", user.id, { name: user.name, studentId: user.studentId || "", removedReservations });
+        await saveDb();
+        return ok({ id: user.id, removedReservations });
+      }
+
       if (routeKey(method, pathname) === "GET /api/admin/reservations") {
         requireAdmin(authorization, db);
         return ok(db.reservations.map((item) => withReservationDetails(db, item)));

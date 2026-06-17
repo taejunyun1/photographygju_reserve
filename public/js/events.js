@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260616-feat1";
-import { api } from "./api.js?v=20260616-feat1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat1";
+import { state } from "./state.js?v=20260616-feat2";
+import { api } from "./api.js?v=20260616-feat2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat2";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260616-feat1";
-import { render, toast } from "./renderer.js?v=20260616-feat1";
+} from "./actions.js?v=20260616-feat2";
+import { render, toast } from "./renderer.js?v=20260616-feat2";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260616-feat1";
+} from "./admin-equipment.js?v=20260616-feat2";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260616-feat1";
+} from "./utils.js?v=20260616-feat2";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -251,6 +251,15 @@ export function setupEventHandlers() {
         await api(`/api/admin/users/${target.dataset.userWarnReset}/warning`, { method: "POST", body: { reset: true } });
         await loadAdminData();
         toast("경고를 초기화했습니다.");
+        return;
+      }
+      if (target.dataset.userDelete) {
+        const name = target.dataset.userName || "이 학생";
+        if (!confirm(`${name} 계정을 삭제할까요?\n해당 학생의 예약·보고서·경고 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+        const result = await api(`/api/admin/users/${target.dataset.userDelete}`, { method: "DELETE" });
+        await loadBootstrap();
+        await loadAdminData();
+        toast(`학생을 삭제했습니다.${result.removedReservations ? ` (예약 ${result.removedReservations}건 포함)` : ""}`);
         return;
       }
       if (target.dataset.warningPopupClose !== undefined) {
