@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260616-feat4";
-import { api } from "./api.js?v=20260616-feat4";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat4";
+import { state } from "./state.js?v=20260616-feat5";
+import { api } from "./api.js?v=20260616-feat5";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat5";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260616-feat4";
-import { render, toast } from "./renderer.js?v=20260616-feat4";
+} from "./actions.js?v=20260616-feat5";
+import { render, toast } from "./renderer.js?v=20260616-feat5";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260616-feat4";
+} from "./admin-equipment.js?v=20260616-feat5";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260616-feat4";
+} from "./utils.js?v=20260616-feat5";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -194,6 +194,25 @@ export function setupEventHandlers() {
         await api(`/api/admin/lectures/${target.dataset.lectureUpdate}`, { method: "PATCH", body: { status } });
         await loadAdminData();
         toast("특강 상태를 저장했습니다.");
+      }
+      if (target.dataset.lectureEdit) {
+        state.editingLectureId = target.dataset.lectureEdit;
+        renderAtTop();
+        return;
+      }
+      if (target.dataset.lectureEditCancel !== undefined) {
+        state.editingLectureId = "";
+        render();
+        return;
+      }
+      if (target.dataset.lectureDelete) {
+        const title = target.dataset.lectureTitle || "이 특강";
+        if (!confirm(`'${title}' 특강을 삭제할까요?\n신청 내역도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
+        const result = await api(`/api/admin/lectures/${target.dataset.lectureDelete}`, { method: "DELETE" });
+        if (state.editingLectureId === target.dataset.lectureDelete) state.editingLectureId = "";
+        await loadAdminData();
+        toast(`특강을 삭제했습니다.${result.removedApplications ? ` (신청 ${result.removedApplications}건 포함)` : ""}`);
+        return;
       }
       if (target.dataset.blockedRemove) {
         const settings = state.bootstrap.settings;
@@ -465,6 +484,17 @@ export function setupEventHandlers() {
         form.reset();
         await loadAdminData();
         toast("특강을 등록했습니다.");
+      }
+      if (form.dataset.form === "lecture-edit") {
+        const data = formData(form);
+        data.capacity = Number(data.capacity || 0);
+        data.baseApplicationCount = Number(data.baseApplicationCount || 0);
+        await api(`/api/admin/lectures/${form.dataset.lectureId}`, { method: "PATCH", body: data });
+        state.editingLectureId = "";
+        await loadAdminData();
+        toast("특강을 수정했습니다.");
+        render();
+        return;
       }
       if (form.dataset.form === "studio-report") {
         const data = formData(form);

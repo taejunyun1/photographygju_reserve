@@ -2073,6 +2073,19 @@ export async function handleApiRequest(ctx) {
         return ok(lectureDetail(db, lecture));
       }
 
+      const lectureDeleteMatch = pathname.match(/^\/api\/admin\/lectures\/([^/]+)$/);
+      if (method === "DELETE" && lectureDeleteMatch) {
+        const admin = requireAdmin(authorization, db);
+        const lecture = db.lectures.find((item) => item.id === lectureDeleteMatch[1]);
+        if (!lecture) throw Object.assign(new Error("특강을 찾을 수 없습니다."), { status: 404 });
+        const removedApplications = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id).length;
+        db.lectureApplications = (db.lectureApplications || []).filter((item) => item.lectureId !== lecture.id);
+        db.lectures = db.lectures.filter((item) => item.id !== lecture.id);
+        audit(db, admin, "lecture.deleted", lecture.id, { title: lecture.title, removedApplications });
+        await saveDb();
+        return ok({ id: lecture.id, removedApplications });
+      }
+
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
         requireAdmin(authorization, db);
         return ok(db.notices);

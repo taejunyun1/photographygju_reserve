@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260616-feat4";
+import { state } from "./state.js?v=20260616-feat5";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -7,7 +7,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260616-feat4";
+} from "./constants.js?v=20260616-feat5";
 import {
   addMonths,
   adminGuide,
@@ -22,14 +22,14 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260616-feat4";
-import { noticeCard } from "./views-student.js?v=20260616-feat4";
+} from "./utils.js?v=20260616-feat5";
+import { noticeCard } from "./views-student.js?v=20260616-feat5";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260616-feat4";
+} from "./admin-equipment.js?v=20260616-feat5";
 
 export function adminShell() {
   return `
@@ -435,10 +435,39 @@ export function adminReportsView() {
   `;
 }
 
+function lectureEditForm(lecture) {
+  return `
+    <div class="card">
+      <div class="form-head">
+        <div><h2 class="card-title">특강 수정</h2><p class="muted">${escapeHtml(lecture.title || "")}</p></div>
+        <button class="button ghost compact" type="button" data-lecture-edit-cancel>닫기</button>
+      </div>
+      <form class="grid two" data-form="lecture-edit" data-lecture-id="${lecture.id}">
+        <div class="field"><label>특강명</label><input class="input" name="title" value="${escapeHtml(lecture.title || "")}" required /></div>
+        <div class="field"><label>특강일</label><input class="input" name="lectureDate" type="date" value="${escapeHtml(lecture.lectureDate || "")}" required /></div>
+        <div class="field"><label>시간</label><input class="input" name="time" value="${escapeHtml(lecture.time || "")}" required /></div>
+        <div class="field"><label>장소</label><input class="input" name="location" value="${escapeHtml(lecture.location || "")}" required /></div>
+        <div class="field"><label>강사명</label><input class="input" name="instructorName" value="${escapeHtml(lecture.instructorName || "")}" required /></div>
+        <div class="field"><label>강사 소속</label><input class="input" name="instructorAffiliation" value="${escapeHtml(lecture.instructorAffiliation || "")}" /></div>
+        <div class="field"><label>담당교수</label><input class="input" name="professor" value="${escapeHtml(lecture.professor || "")}" /></div>
+        <div class="field"><label>대상 학년</label><input class="input" name="targetGrades" value="${escapeHtml(lecture.targetGrades || "")}" /></div>
+        <div class="field"><label>모집인원</label><input class="input" name="capacity" type="number" min="0" value="${Number(lecture.capacity || 0)}" /></div>
+        <div class="field"><label>신청인원(기본)</label><input class="input" name="baseApplicationCount" type="number" min="0" value="${Number(lecture.baseApplicationCount || 0)}" /></div>
+        <div class="field"><label>진행상태</label><select class="select" name="status">${lectureStatusOptions.map((item) => `<option value="${item}" ${lecture.status === item ? "selected" : ""}>${item}</option>`).join("")}</select></div>
+        <div class="field"><label>비고</label><input class="input" name="notes" value="${escapeHtml(lecture.notes || "")}" /></div>
+        <div class="field span-two"><label>특강 내용</label><textarea class="textarea" name="description" required>${escapeHtml(lecture.description || "")}</textarea></div>
+        <button class="button primary" type="submit">수정 저장</button>
+      </form>
+    </div>
+  `;
+}
+
 export function adminLecturesView() {
+  const editing = state.editingLectureId ? state.adminLectures.find((item) => item.id === state.editingLectureId) : null;
   return `
     <section class="grid">
-      ${adminGuide("비교과 특강 사용 가이드", "특강 정보를 등록하면 학생 화면에 리스트가 표시됩니다. 모집중 상태인 특강은 학생이 직접 신청할 수 있고, 결과는 CSV로 내려받아 엑셀에서 열 수 있습니다.")}
+      ${adminGuide("비교과 특강 사용 가이드", "특강을 등록하면 학생 화면에 리스트가 표시됩니다. 리스트의 ‘수정’으로 내용을 고치고, ‘삭제’로 특강과 신청 내역을 함께 제거할 수 있습니다. 결과는 CSV로 내려받을 수 있습니다.")}
+      ${editing ? lectureEditForm(editing) : ""}
       <div class="card">
         <h2 class="card-title">특강 등록</h2>
         <form class="grid two" data-form="lecture-add">
@@ -489,7 +518,11 @@ export function adminLectureTable(lectures) {
               <td>${capacity ? `${count}/${capacity}` : count}</td>
               <td><select class="select compact-select" data-lecture-status="${lecture.id}">${lectureStatusOptions.map((item) => `<option value="${item}" ${lecture.status === item ? "selected" : ""}>${item}</option>`).join("")}</select></td>
               <td>
-                <button class="button compact" data-lecture-update="${lecture.id}">상태 저장</button>
+                <div class="row-actions">
+                  <button class="button compact" data-lecture-update="${lecture.id}">상태 저장</button>
+                  <button class="button compact" data-lecture-edit="${lecture.id}">수정</button>
+                  <button class="button danger compact" data-lecture-delete="${lecture.id}" data-lecture-title="${escapeHtml(lecture.title || "")}">삭제</button>
+                </div>
                 <div class="muted">${escapeHtml((lecture.applications || []).map((app) => `${app.userName || app.name || ""} ${app.studentId || ""}`).filter(Boolean).join(", ") || "신청자 없음")}</div>
               </td>
             </tr>

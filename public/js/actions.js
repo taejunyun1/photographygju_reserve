@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260616-feat4";
-import { api } from "./api.js?v=20260616-feat4";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat4";
-import { render, toast } from "./renderer.js?v=20260616-feat4";
+import { state } from "./state.js?v=20260616-feat5";
+import { api } from "./api.js?v=20260616-feat5";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat5";
+import { render, toast } from "./renderer.js?v=20260616-feat5";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -19,7 +19,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260616-feat4";
+} from "./utils.js?v=20260616-feat5";
 
 export async function login(form) {
   const data = formData(form);

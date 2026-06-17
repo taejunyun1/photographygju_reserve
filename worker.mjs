@@ -11,11 +11,11 @@ const ALLOWED_ORIGINS = new Set([
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' https://www.googletagmanager.com",
   "style-src 'self'",
-  "img-src 'self' data:",
+  "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com",
   "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",

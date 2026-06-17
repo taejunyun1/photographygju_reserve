@@ -30,6 +30,7 @@ export const state = {
   adminReservationTab: "equipment",
   adminReservationSearch: "",
   warningPopupDismissed: false,
+  editingLectureId: "",
   adminEquipmentTab: "department",
   adminEquipmentCategoryTab: "all",
   selectedAdminEquipmentIds: [],
