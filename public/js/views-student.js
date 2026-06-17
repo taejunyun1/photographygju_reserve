@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260616-feat2";
-import { statusLabel, typeLabel } from "./constants.js?v=20260616-feat2";
+import { state } from "./state.js?v=20260616-feat3";
+import { statusLabel, typeLabel } from "./constants.js?v=20260616-feat3";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -24,7 +24,7 @@ import {
   tag,
   timeToMinutes,
   todayKey
-} from "./utils.js?v=20260616-feat2";
+} from "./utils.js?v=20260616-feat3";
 
 export function authView() {
   const isLogin = state.authMode === "login";

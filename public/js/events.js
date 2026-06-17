@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260616-feat2";
-import { api } from "./api.js?v=20260616-feat2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat2";
+import { state } from "./state.js?v=20260616-feat3";
+import { api } from "./api.js?v=20260616-feat3";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat3";
 import {
   changePassword,
   downloadAdminBackup,
@@ -10,20 +10,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260616-feat2";
-import { render, toast } from "./renderer.js?v=20260616-feat2";
+} from "./actions.js?v=20260616-feat3";
+import { render, toast } from "./renderer.js?v=20260616-feat3";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260616-feat2";
+} from "./admin-equipment.js?v=20260616-feat3";
 import {
   equipmentCategories,
   formData,
   parseCsv
-} from "./utils.js?v=20260616-feat2";
+} from "./utils.js?v=20260616-feat3";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -380,17 +380,31 @@ export function setupEventHandlers() {
     }
   });
 
+  function rerenderReservationSearch() {
+    render();
+    const next = document.querySelector("[data-admin-reservation-search]");
+    if (next) {
+      next.focus();
+      const end = next.value.length;
+      try { next.setSelectionRange(end, end); } catch (error) { /* noop */ }
+    }
+  }
+
   document.addEventListener("input", (event) => {
     const target = event.target;
     if (target.dataset && target.dataset.adminReservationSearch !== undefined) {
       state.adminReservationSearch = target.value;
-      const caret = target.selectionStart;
-      render();
-      const next = document.querySelector("[data-admin-reservation-search]");
-      if (next) {
-        next.focus();
-        try { next.setSelectionRange(caret, caret); } catch (error) { /* noop */ }
-      }
+      // 한글 등 IME 조합 중에는 재렌더하지 않는다(입력창이 새로 생성되면 조합이 깨져 자모가 분리됨).
+      if (event.isComposing) return;
+      rerenderReservationSearch();
+    }
+  });
+
+  document.addEventListener("compositionend", (event) => {
+    const target = event.target;
+    if (target.dataset && target.dataset.adminReservationSearch !== undefined) {
+      state.adminReservationSearch = target.value;
+      rerenderReservationSearch();
     }
   });
 
