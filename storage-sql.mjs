@@ -344,7 +344,7 @@ export function createSqlAppStore(sql, options = {}) {
     lastSingletonSnapshot = singletonSnapshot(db);
     for (const collection of COLLECTIONS) {
       const rows = collectionRows(collection, db);
-      lastCollectionSnapshots.set(collection.key, JSON.stringify(rows.map((row) => row.data)));
+      lastCollectionSnapshots.set(collection.key, new Map(rows.map((row) => [row.item.id, row.data])));
     }
   }
 
@@ -367,13 +367,22 @@ export function createSqlAppStore(sql, options = {}) {
   function saveCollections(db) {
     for (const collection of COLLECTIONS) {
       const rows = collectionRows(collection, db);
-      const snapshot = JSON.stringify(rows.map((row) => row.data));
-      if (snapshot === lastCollectionSnapshots.get(collection.key)) continue;
-      exec(`DELETE FROM ${collection.table}`);
+      const previousRows = lastCollectionSnapshots.get(collection.key) || new Map();
+      const nextRows = new Map(rows.map((row) => [row.item.id, row.data]));
+      let changed = false;
+      for (const id of previousRows.keys()) {
+        if (!nextRows.has(id)) {
+          exec(`DELETE FROM ${collection.table} WHERE id = ?`, id);
+          changed = true;
+        }
+      }
       rows.forEach((row) => {
-        exec(collection.insert, ...collection.params(row.item, row.data));
+        if (previousRows.get(row.item.id) !== row.data) {
+          exec(collection.insert, ...collection.params(row.item, row.data));
+          changed = true;
+        }
       });
-      lastCollectionSnapshots.set(collection.key, snapshot);
+      if (changed) lastCollectionSnapshots.set(collection.key, nextRows);
     }
   }
 

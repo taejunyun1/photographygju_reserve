@@ -52,6 +52,12 @@ class FakeSql {
       return new FakeCursor(rows);
     }
 
+    const deleteByIdMatch = compactSql.match(/^DELETE FROM ([a-z_]+) WHERE id = \?/i);
+    if (deleteByIdMatch) {
+      this.records[deleteByIdMatch[1]]?.delete(params[0]);
+      return new FakeCursor();
+    }
+
     const deleteMatch = compactSql.match(/^DELETE FROM ([a-z_]+)/i);
     if (deleteMatch) {
       this.records[deleteMatch[1]]?.clear();
@@ -128,6 +134,18 @@ const deleteCountBeforeNoopSave = sql.statements.filter((item) => item.sql.start
 await store.saveDb(loaded);
 const deleteCountAfterNoopSave = sql.statements.filter((item) => item.sql.startsWith("DELETE FROM")).length;
 assert.equal(deleteCountAfterNoopSave, deleteCountBeforeNoopSave, "unchanged saves should not rewrite SQL tables");
+
+const reservationTableClearCountBeforeUpdate = sql.statements.filter((item) => item.sql === "DELETE FROM reservations").length;
+loaded.reservations[0].status = "completed";
+loaded.reservations[0].updatedAt = "2026-06-24T02:00:00.000Z";
+await store.saveDb(loaded);
+const reservationTableClearCountAfterUpdate = sql.statements.filter((item) => item.sql === "DELETE FROM reservations").length;
+assert.equal(
+  reservationTableClearCountAfterUpdate,
+  reservationTableClearCountBeforeUpdate,
+  "changed reservation saves should upsert rows without clearing the reservations table"
+);
+assert.equal(sql.records.reservations.get("res_sql_1").data.includes("\"status\":\"completed\""), true);
 
 const migrationSql = new FakeSql();
 const migrationStore = createSqlAppStore(migrationSql, { initialDb: () => initialDb("admin-pass") });

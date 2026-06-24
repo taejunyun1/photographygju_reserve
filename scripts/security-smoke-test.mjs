@@ -1,6 +1,20 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { adminExportData, cleanupExpiredData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
+
+const indexHtml = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+const workerSource = fs.readFileSync(new URL("../worker.mjs", import.meta.url), "utf8");
+const gtagInit = fs.readFileSync(new URL("../public/gtag-init.js", import.meta.url), "utf8");
+for (const origin of [
+  "https://analytics.google.com",
+  "https://www.google.com"
+]) {
+  assert.ok(indexHtml.includes(origin), `web CSP should allow GA collection origin ${origin}`);
+  assert.ok(workerSource.includes(origin), `Worker CSP should allow GA collection origin ${origin}`);
+}
+assert.match(gtagInit, /allow_google_signals:\s*false/, "GA should not request advertising signal endpoints");
+assert.match(gtagInit, /allow_ad_personalization_signals:\s*false/, "GA should not request ad personalization endpoints");
 
 const db = await initialDb("production-admin-password");
 db.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";

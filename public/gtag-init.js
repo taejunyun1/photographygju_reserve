@@ -6,4 +6,7 @@ function gtag() {
   dataLayer.push(arguments);
 }
 gtag("js", new Date());
-gtag("config", "G-EB21LZ7VB0");
+gtag("config", "G-EB21LZ7VB0", {
+  allow_google_signals: false,
+  allow_ad_personalization_signals: false
+});

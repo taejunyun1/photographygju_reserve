@@ -18,7 +18,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self'",
-  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com",
+  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev https://www.googletagmanager.com https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com",
   "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",
