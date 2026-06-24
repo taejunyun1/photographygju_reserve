@@ -30,6 +30,7 @@ import {
   card,
   emptyState,
   icon,
+  pagination,
   propertyList,
   searchField,
   statCard,
@@ -102,6 +103,29 @@ export function adminTitle() {
     settings: "설정",
     account: "내 정보"
   }[state.adminView];
+}
+
+function adminPageScopeNote(page, loadedCount, filteredCount, query) {
+  const total = Number(page?.total || loadedCount || 0);
+  if (!total) return "";
+  const shown = Math.min(Number(loadedCount || 0), total);
+  const filtered = Number(filteredCount || 0);
+  const scope = `현재 ${shown}건 표시 / 전체 ${total}건`;
+  const queryText = query ? ` · 검색 결과 ${filtered}건(현재 표시 데이터 기준)` : "";
+  const moreText = page?.hasMore ? " · 다음 페이지에 기록이 더 있습니다" : "";
+  return `<p class="muted list-page-summary">${scope}${queryText}${moreText}</p>`;
+}
+
+function adminTotalPages(page) {
+  const total = Number(page?.total || 0);
+  const pageSize = Number(page?.pageSize || 100) || 100;
+  return Math.max(1, Math.ceil(total / pageSize));
+}
+
+function adminPager(page, dataset) {
+  const totalPages = adminTotalPages(page);
+  if (totalPages <= 1) return "";
+  return pagination({ page: Number(page?.page || 1), totalPages, dataset, className: "admin-list-pagination" });
 }
 
 export function adminContent() {
@@ -229,10 +253,10 @@ export function adminUsersView() {
         ${searchField({ value: state.adminUserSearch || "", placeholder: "이름·학번·연락처·이메일·메모 검색", dataset: "data-admin-user-search", label: "학생 검색" })}
         ${tabs(statusFilters.map(([key, label]) => ({
           key,
-          label,
-          count: key === "all" ? nonAdminUsers.length : nonAdminUsers.filter((user) => user.approvalStatus === key).length
+          label
         })), { active: state.adminUserStatusFilter, dataset: "admin-user-status-filter", ariaLabel: "학생 승인 상태 필터" })}
       </div>
+      ${adminPageScopeNote(state.adminUsersPage, nonAdminUsers.length, users.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminUserSearch)}" 검색 결과 ${users.length}건</p>` : ""}
       <div class="table-wrap admin-user-table-wrap">
         <table class="admin-user-table">
@@ -273,6 +297,7 @@ export function adminUsersView() {
           </tbody>
         </table>
       </div>
+      ${adminPager(state.adminUsersPage, "admin-users-page")}
       ${adminGuide("학생 승인 사용 가이드", "가입 학생의 이름·학번·연락처를 확인하고 승인/반려를 처리합니다. 대여금지는 드롭다운에서 기간을 선택하면 바로 적용됩니다. 경고는 학생 상태를 바꾸지 않고 관리자용 메모 기록으로 남습니다.")}
     </section>
   `;
@@ -354,21 +379,21 @@ export function adminReservationsView() {
       <div ${query ? "hidden" : ""}>
         ${tabs(reservationTabs.map(([key, label]) => ({
           key,
-          label,
-          count: key === "all" ? state.adminReservations.length : state.adminReservations.filter((item) => item.type === key).length
+          label
         })), { active: state.adminReservationTab, dataset: "admin-reservation-tab", className: "", ariaLabel: "예약 종류 필터" })}
       </div>
       ${!query && isEquipmentTab ? `
         ${tabs(equipmentStatusFilters.map(([key, label]) => ({
           key,
-          label,
-          count: key === "all" ? equipmentReservations.length : equipmentReservations.filter((item) => item.status === key).length
+          label
         })), { active: equipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
       ` : ""}
+      ${adminPageScopeNote(state.adminReservationsPage, state.adminReservations.length, reservations.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${reservations.length}건 · 전체 예약 대상</p>` : ""}
       <div class="admin-reservation-grid">
         ${reservations.length ? reservations.map(adminReservationCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "해당 탭의 예약이 없습니다." })}
       </div>
+      ${adminPager(state.adminReservationsPage, "admin-reservations-page")}
       ${adminGuide("예약관리 사용 가이드", "최신 예약이 위에 표시됩니다. 검색창에 이름·학번·날짜(YYYY-MM-DD)·기자재 코드·스튜디오를 입력하면 전체 예약에서 찾을 수 있습니다. 기자재는 승인→대여→반납 순으로 처리합니다.")}
     </section>
   `;
@@ -626,6 +651,7 @@ export function adminReportsView() {
     <section class="grid">
       ${searchField({ value: state.adminReportSearch || "", placeholder: "전체 검색 (이름·학번·날짜·스튜디오·예약ID)", dataset: "data-admin-report-search" })}
       ${tabs(reportSortOptions, { active: state.adminReportSort.field, dataset: "admin-report-sort", ariaLabel: "보고서 정렬" })}
+      ${adminPageScopeNote(state.adminReportsPage, state.adminReports.length, reports.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReportSearch)}" 검색 결과 ${reports.length}건</p>` : ""}
       ${reports.length ? reports.map((report) => `
         <article class="card ui-card">
@@ -642,6 +668,7 @@ export function adminReportsView() {
             ["제출일", formatDateTime(report.submittedAt)]
           ])}
         </article>`).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "제출된 보고서가 없습니다." })}
+      ${adminPager(state.adminReportsPage, "admin-reports-page")}
       ${adminGuide("보고서 사용 가이드", "스튜디오 사용 후 학생이 제출한 보고서를 확인하는 화면입니다. 결과 사진 링크를 확인하고, 미제출 및 이상 내용은 기존 자체 패널티 기준으로 처리합니다.")}
     </section>
   `;

@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
+import { createSqlAppStore } from "./storage-sql.mjs";
 
 // Browser JS may only read API responses from these origins. The API itself is
 // bearer-token authenticated (no cookies), so this is defense-in-depth.
@@ -72,19 +73,34 @@ export class GjuReserveDb extends DurableObject {
     this.ctx = ctx;
     this.env = env;
     this.db = null;
-  }
-
-  async loadDb() {
-    if (!this.db) {
-      this.db = await this.ctx.storage.get("db");
-      if (!this.db) {
+    this.store = createSqlAppStore(this.ctx.storage.sql, {
+      transactionSync: (callback) => this.ctx.storage.transactionSync(callback),
+      initialDb: async () => {
         if (!this.env.ADMIN_PASSWORD) {
           throw Object.assign(new Error("ADMIN_PASSWORD must be configured before initializing production data."), { status: 500 });
         }
-        this.db = await initialDb(this.env.ADMIN_PASSWORD);
-        await this.saveDb();
+        return initialDb(this.env.ADMIN_PASSWORD);
+      }
+    });
+    this.initialized = false;
+  }
+
+  async ensureInitialized() {
+    if (this.initialized) return;
+    await this.store.initialize();
+    if (!this.store.hasSqlData()) {
+      const legacyDb = await this.ctx.storage.get("db");
+      if (legacyDb) {
+        await this.store.migrateLegacyDb(legacyDb);
+        await this.ctx.storage.delete("db");
       }
     }
+    this.initialized = true;
+  }
+
+  async loadDb() {
+    await this.ensureInitialized();
+    if (!this.db) this.db = await this.store.loadDb();
     const beforeStatuses = JSON.stringify((this.db.reservations || []).map((item) => [item.id, item.type, item.status]));
     normalizeDb(this.db);
     const afterStatuses = JSON.stringify((this.db.reservations || []).map((item) => [item.id, item.type, item.status]));
@@ -94,7 +110,7 @@ export class GjuReserveDb extends DurableObject {
 
   async saveDb() {
     capLogs(this.db);
-    await this.ctx.storage.put("db", this.db);
+    await this.store.saveDb(this.db);
   }
 
   async fetch(request) {
@@ -129,6 +145,7 @@ export class GjuReserveDb extends DurableObject {
     const result = await handleApiRequest({
       method: request.method || "GET",
       pathname: url.pathname,
+      searchParams: url.searchParams,
       authorization: request.headers.get("authorization") || "",
       readText: () => request.text(),
       db,

@@ -86,13 +86,14 @@ function readRawBody(req) {
   });
 }
 
-async function handleApi(req, res, pathname) {
+async function handleApi(req, res, url) {
   let result;
   try {
     const db = readDb();
     result = await handleApiRequest({
       method: req.method || "GET",
-      pathname,
+      pathname: url.pathname,
+      searchParams: url.searchParams,
       authorization: req.headers.authorization || "",
       readText: () => readRawBody(req),
       db,
@@ -111,8 +112,8 @@ async function handleApi(req, res, pathname) {
 // The dev server reads/writes a single JSON file per request. Serialize API
 // handling so concurrent reservations cannot race on read-modify-write.
 let apiChain = Promise.resolve();
-function handleApiSerialized(req, res, pathname) {
-  const run = apiChain.then(() => handleApi(req, res, pathname));
+function handleApiSerialized(req, res, url) {
+  const run = apiChain.then(() => handleApi(req, res, url));
   apiChain = run.catch(() => {});
   return run;
 }
@@ -135,7 +136,7 @@ function serveStatic(req, res, pathname) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
   if (url.pathname.startsWith("/api/")) {
-    handleApiSerialized(req, res, url.pathname).catch((error) => {
+    handleApiSerialized(req, res, url).catch((error) => {
       if (!res.headersSent) {
         res.writeHead(error.status || 500, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ ok: false, error: error.message || "서버 오류가 발생했습니다." }));

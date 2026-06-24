@@ -26,13 +26,71 @@ export async function loadLectures() {
   state.lectures = await api("/api/lectures");
 }
 
+function pagedItems(result) {
+  return Array.isArray(result) ? result : (result?.items || []);
+}
+
+function pageMeta(result) {
+  return Array.isArray(result)
+    ? { total: result.length, page: 1, pageSize: result.length, hasMore: false }
+    : {
+      total: Number(result?.total || 0),
+      page: Number(result?.page || 1),
+      pageSize: Number(result?.pageSize || 0),
+      hasMore: Boolean(result?.hasMore)
+    };
+}
+
+function queryString(params) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "" && value !== "all") search.set(key, String(value));
+  }
+  return search.toString();
+}
+
+function pageNumber(page) {
+  return Math.max(1, Number(page?.page || 1));
+}
+
+function adminUsersPath() {
+  return `/api/admin/users?${queryString({
+    page: pageNumber(state.adminUsersPage),
+    pageSize: 100,
+    role: "student",
+    status: state.adminUserStatusFilter,
+    q: state.adminUserSearch
+  })}`;
+}
+
+function adminReservationsPath() {
+  const query = String(state.adminReservationSearch || "").trim();
+  const type = query ? "" : state.adminReservationTab;
+  const status = !query && state.adminReservationTab === "equipment" ? state.adminEquipmentReservationStatusFilter : "";
+  return `/api/admin/reservations?${queryString({
+    page: pageNumber(state.adminReservationsPage),
+    pageSize: 100,
+    type,
+    status,
+    q: query
+  })}`;
+}
+
+function adminReportsPath() {
+  return `/api/admin/reports?${queryString({
+    page: pageNumber(state.adminReportsPage),
+    pageSize: 100,
+    q: state.adminReportSearch
+  })}`;
+}
+
 export async function loadAdminData() {
   const [summary, users, reservations, equipment, reports, notices, lectures, sessions, logs] = await Promise.all([
     api("/api/admin/summary"),
-    api("/api/admin/users"),
-    api("/api/admin/reservations"),
+    api(adminUsersPath()),
+    api(adminReservationsPath()),
     api("/api/admin/equipment"),
-    api("/api/admin/reports"),
+    api(adminReportsPath()),
     api("/api/admin/notices"),
     api("/api/admin/lectures"),
     api("/api/admin/sessions"),
@@ -40,10 +98,13 @@ export async function loadAdminData() {
   ]);
   Object.assign(state, {
     summary,
-    adminUsers: users,
-    adminReservations: reservations,
+    adminUsers: pagedItems(users),
+    adminUsersPage: pageMeta(users),
+    adminReservations: pagedItems(reservations),
+    adminReservationsPage: pageMeta(reservations),
     adminEquipment: equipment,
-    adminReports: reports,
+    adminReports: pagedItems(reports),
+    adminReportsPage: pageMeta(reports),
     adminNotices: notices,
     adminLectures: lectures,
     adminSessions: sessions,

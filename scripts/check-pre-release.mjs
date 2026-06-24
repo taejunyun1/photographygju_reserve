@@ -107,6 +107,8 @@ assert(indexHtml.includes(productionApiBase), "public/index.html CSP connect-src
 assert(fileExists("public/.htaccess"), "Dothome web root must include Apache security headers and SPA fallback");
 assert(worker.includes("permissions-policy"), "worker.mjs must set Permissions-Policy");
 assert(worker.includes(productionApiBase), "worker.mjs CSP connect-src must include the production Worker API");
+assert(worker.includes("createSqlAppStore"), "worker.mjs must use the SQL app store for production database storage");
+assert(!worker.includes('ctx.storage.put("db"'), 'worker.mjs must not persist production data as one Durable Object "db" blob');
 ok("web security headers and production API origin are configured");
 
 const cacheVersions = [...indexHtml.matchAll(/\?v=([0-9A-Za-z-]+)/g)].map((match) => match[1]);

@@ -55,6 +55,14 @@ function renderAtTop() {
   scrollToPageTop();
 }
 
+function resetAdminPage(key) {
+  state[key] = { ...(state[key] || {}), page: 1 };
+}
+
+function setAdminPage(key, page) {
+  state[key] = { ...(state[key] || {}), page: Math.max(1, Number(page) || 1) };
+}
+
 function setReservationFlowStep(type, step) {
   if (!state.reservationFlowStep) state.reservationFlowStep = { equipment: "date", studio: "date", darkroom: "date", print: "date" };
   state.reservationFlowStep[type] = step;
@@ -393,24 +401,52 @@ export function setupEventHandlers() {
         return;
       }
       if (target.dataset.adminView) {
-        if (target.dataset.adminReservationTab) state.adminReservationTab = target.dataset.adminReservationTab;
+        if (target.dataset.adminReservationTab) {
+          state.adminReservationTab = target.dataset.adminReservationTab;
+          resetAdminPage("adminReservationsPage");
+          await loadAdminData();
+        }
         state.adminView = target.dataset.adminView;
         renderAtTop();
         return;
       }
       if (target.dataset.adminReservationTab && !target.dataset.adminView) {
         state.adminReservationTab = target.dataset.adminReservationTab;
+        resetAdminPage("adminReservationsPage");
+        await loadAdminData();
         renderAtTop();
         return;
       }
       if (target.dataset.adminEquipmentReservationStatus) {
         state.adminEquipmentReservationStatusFilter = target.dataset.adminEquipmentReservationStatus;
+        resetAdminPage("adminReservationsPage");
+        await loadAdminData();
         render();
         return;
       }
       if (target.dataset.adminUserStatusFilter) {
         state.adminUserStatusFilter = target.dataset.adminUserStatusFilter;
+        resetAdminPage("adminUsersPage");
+        await loadAdminData();
         render();
+        return;
+      }
+      if (target.dataset.adminUsersPage) {
+        setAdminPage("adminUsersPage", target.dataset.adminUsersPage);
+        await loadAdminData();
+        renderAtTop();
+        return;
+      }
+      if (target.dataset.adminReservationsPage) {
+        setAdminPage("adminReservationsPage", target.dataset.adminReservationsPage);
+        await loadAdminData();
+        renderAtTop();
+        return;
+      }
+      if (target.dataset.adminReportsPage) {
+        setAdminPage("adminReportsPage", target.dataset.adminReportsPage);
+        await loadAdminData();
+        renderAtTop();
         return;
       }
       if (target.dataset.adminSessionSort) {
@@ -753,6 +789,7 @@ export function setupEventHandlers() {
     ["adminLogSearch", "adminLogSearch", "[data-admin-log-search]"],
     ["adminBlockedSearch", "adminBlockedScheduleSearch", "[data-admin-blocked-search]"]
   ].map(([datasetKey, stateKey, selector]) => ({ datasetKey, stateKey, selector }));
+  const adminServerSearchStateKeys = new Set(["adminUserSearch", "adminReservationSearch", "adminReportSearch"]);
 
   function searchBindingForTarget(target) {
     if (!target.dataset) return null;
@@ -812,12 +849,24 @@ export function setupEventHandlers() {
     }, delay);
   }
 
-  function commitSearchInput(target, binding, { restoreFocus = true } = {}) {
+  function resetAdminSearchPage(stateKey) {
+    if (stateKey === "adminUserSearch") resetAdminPage("adminUsersPage");
+    if (stateKey === "adminReservationSearch") resetAdminPage("adminReservationsPage");
+    if (stateKey === "adminReportSearch") resetAdminPage("adminReportsPage");
+  }
+
+  async function commitSearchInput(target, binding, { restoreFocus = true } = {}) {
     unmarkSearchComposition(target);
     const normalized = normalizedSearchInputValue(target);
     state[binding.stateKey] = normalized;
     if (target && target.value !== normalized) target.value = normalized;
     clearSearchRenderTimer();
+    if (adminServerSearchStateKeys.has(binding.stateKey)) {
+      resetAdminSearchPage(binding.stateKey);
+      await loadAdminData();
+      rerenderSearch(binding.selector, { restoreFocus });
+      return;
+    }
     rerenderSearch(binding.selector, { restoreFocus });
   }
 
@@ -858,27 +907,27 @@ export function setupEventHandlers() {
     if (!hasHangulSearchInput(target)) scheduleSearchRender(binding.selector, 0);
   });
 
-  document.addEventListener("keydown", (event) => {
+  document.addEventListener("keydown", async (event) => {
     const target = event.target;
     const binding = searchBindingForTarget(target);
     if (!binding) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      commitSearchInput(target, binding);
+      await commitSearchInput(target, binding);
     }
     if (event.key === "Escape") {
       event.preventDefault();
       target.value = "";
-      commitSearchInput(target, binding);
+      await commitSearchInput(target, binding);
     }
   });
 
-  document.addEventListener("focusout", (event) => {
+  document.addEventListener("focusout", async (event) => {
     const target = event.target;
     const binding = searchBindingForTarget(target);
     if (!binding) return;
     if (searchRenderInProgress) return;
-    commitSearchInput(target, binding, { restoreFocus: false });
+    await commitSearchInput(target, binding, { restoreFocus: false });
   });
 
   document.addEventListener("change", async (event) => {
