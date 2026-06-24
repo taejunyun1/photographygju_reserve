@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <path d="M18 24h28a6 6 0 0 1 6 6v16a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6V30a6 6 0 0 1 6-6Z" fill="#2563eb"/>
-  <path d="M23 18h18l4 6H19l4-6Z" fill="#93c5fd"/>
-  <circle cx="32" cy="38" r="9" fill="#f8fafc"/>
-  <circle cx="32" cy="38" r="5" fill="#0f172a"/>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect x="11" y="18" width="42" height="37" rx="9" fill="#1558b0"/>
+  <rect x="18" y="11" width="28" height="10" rx="3" fill="#dcebff"/>
+  <rect x="22" y="49" width="20" height="3" rx="1.5" fill="#93c5fd"/>
+  <circle cx="32" cy="35" r="12" fill="#f8fafc"/>
+  <circle cx="32" cy="35" r="7" fill="#111827"/>
+  <circle cx="35.5" cy="31.5" r="2" fill="#dcebff"/>
 </svg>

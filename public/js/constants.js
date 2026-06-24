@@ -21,7 +21,7 @@ export const statusLabel = {
   approval_pending: "승인 대기",
   approved: "승인 완료",
   rejected: "반려",
-  blocked: "이용 제한",
+  blocked: "대여금지",
   pending_approval: "승인 대기",
   auto_confirmed: "자동 확정",
   cancelled: "취소",
@@ -83,8 +83,8 @@ export const weekdayIndex = {
 };
 
 export const userLimitOptions = {
-  week1: "1주일",
-  week2: "2주일",
-  month1: "1달",
-  semester: "1학기"
+  week1: "대여금지 · 1주일",
+  week2: "대여금지 · 2주일",
+  month1: "대여금지 · 1달",
+  semester: "대여금지 · 1학기"
 };

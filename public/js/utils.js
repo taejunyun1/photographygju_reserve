@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260616-feat6";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260616-feat6";
+import { state } from "./state.js?v=20260623-notify-ui2";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260623-notify-ui2";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -8,6 +8,97 @@ export function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+const HANGUL_INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+const HANGUL_MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
+const HANGUL_FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+const HANGUL_COMPOUND_MEDIALS = new Map([
+  ["ㅗㅏ", "ㅘ"], ["ㅗㅐ", "ㅙ"], ["ㅗㅣ", "ㅚ"],
+  ["ㅜㅓ", "ㅝ"], ["ㅜㅔ", "ㅞ"], ["ㅜㅣ", "ㅟ"],
+  ["ㅡㅣ", "ㅢ"]
+]);
+const HANGUL_COMPOUND_FINALS = new Map([
+  ["ㄱㅅ", "ㄳ"], ["ㄴㅈ", "ㄵ"], ["ㄴㅎ", "ㄶ"],
+  ["ㄹㄱ", "ㄺ"], ["ㄹㅁ", "ㄻ"], ["ㄹㅂ", "ㄼ"],
+  ["ㄹㅅ", "ㄽ"], ["ㄹㅌ", "ㄾ"], ["ㄹㅍ", "ㄿ"],
+  ["ㄹㅎ", "ㅀ"], ["ㅂㅅ", "ㅄ"]
+]);
+const HANGUL_INITIAL_INDEX = new Map(HANGUL_INITIALS.map((item, index) => [item, index]));
+const HANGUL_MEDIAL_INDEX = new Map(HANGUL_MEDIALS.map((item, index) => [item, index]));
+const HANGUL_FINAL_INDEX = new Map(HANGUL_FINALS.map((item, index) => [item, index]));
+
+function isCompatibilityConsonant(value) {
+  return HANGUL_INITIAL_INDEX.has(value);
+}
+
+function readCompatibilityMedial(chars, index) {
+  const single = chars[index];
+  if (!HANGUL_MEDIAL_INDEX.has(single)) return null;
+  const compound = HANGUL_COMPOUND_MEDIALS.get(`${single}${chars[index + 1] || ""}`);
+  return compound ? { value: compound, length: 2 } : { value: single, length: 1 };
+}
+
+function composeCompatibilityHangul(value = "") {
+  const chars = Array.from(String(value ?? ""));
+  const output = [];
+  let index = 0;
+
+  while (index < chars.length) {
+    const initial = chars[index];
+    const medial = readCompatibilityMedial(chars, index + 1);
+    if (!isCompatibilityConsonant(initial) || !medial) {
+      output.push(initial);
+      index += 1;
+      continue;
+    }
+
+    index += 1 + medial.length;
+    let final = "";
+    const firstFinal = chars[index];
+    const nextMedial = readCompatibilityMedial(chars, index + 1);
+
+    if (HANGUL_FINAL_INDEX.has(firstFinal) && !nextMedial) {
+      const secondFinal = chars[index + 1];
+      const compoundFinal = HANGUL_COMPOUND_FINALS.get(`${firstFinal}${secondFinal || ""}`);
+      const afterCompoundMedial = readCompatibilityMedial(chars, index + 2);
+      if (compoundFinal && !afterCompoundMedial) {
+        final = compoundFinal;
+        index += 2;
+      } else {
+        final = firstFinal;
+        index += 1;
+      }
+    }
+
+    const code = 0xac00
+      + ((HANGUL_INITIAL_INDEX.get(initial) * HANGUL_MEDIALS.length) + HANGUL_MEDIAL_INDEX.get(medial.value)) * HANGUL_FINALS.length
+      + HANGUL_FINAL_INDEX.get(final);
+    output.push(String.fromCharCode(code));
+  }
+
+  return output.join("");
+}
+
+export function normalizeUnicodeText(value = "") {
+  try {
+    return composeCompatibilityHangul(value).normalize("NFC");
+  } catch {
+    return String(value ?? "");
+  }
+}
+
+export function normalizeSearchText(value = "") {
+  return normalizeUnicodeText(value).toLowerCase();
+}
+
+export function searchableText(values = []) {
+  const flatten = (value) => {
+    if (Array.isArray(value)) return value.flatMap(flatten);
+    if (value && typeof value === "object") return Object.values(value).flatMap(flatten);
+    return value === undefined || value === null ? [] : [value];
+  };
+  return normalizeSearchText(flatten(values).filter(Boolean).join(" "));
 }
 
 export function tag(value, color = "") {
@@ -22,7 +113,7 @@ export function formatDateTime(value) {
 }
 
 export function userStatusCell(user) {
-  const blockedUntil = user.approvalStatus === "blocked" && user.blockedUntil ? `<small class="status-note">제한 종료 ${escapeHtml(formatDateTime(user.blockedUntil))}</small>` : "";
+  const blockedUntil = user.approvalStatus === "blocked" && user.blockedUntil ? `<small class="status-note">대여금지 해제 ${escapeHtml(formatDateTime(user.blockedUntil))}</small>` : "";
   return `<div class="status-cell">${tag(user.approvalStatus)}${blockedUntil}</div>`;
 }
 
@@ -36,9 +127,11 @@ export function userSortValue(user, field) {
 
 export function sortedAdminUsers() {
   const { field, direction } = state.adminUserSort;
+  const statusFilter = state.adminUserStatusFilter || "all";
   const multiplier = direction === "desc" ? -1 : 1;
   return state.adminUsers
     .filter((user) => user.role !== "admin")
+    .filter((user) => statusFilter === "all" || user.approvalStatus === statusFilter)
     .sort((a, b) => {
       const aValue = String(userSortValue(a, field)).toLocaleLowerCase();
       const bValue = String(userSortValue(b, field)).toLocaleLowerCase();
@@ -66,12 +159,33 @@ export function equipmentCategories() {
   return [...new Set([...fromSettings, ...fromEquipment])];
 }
 
+export function equipmentBrand(item = {}) {
+  const haystack = [item.brand, item.name, item.model, item.code, item.notes]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .join(" ");
+  if (/소니|sony/.test(haystack)) return "sony";
+  if (/캐논|canon|eos|ef[\s-]?|rf[\s-]?/.test(haystack)) return "canon";
+  if (/니콘|nikon|nikkor/.test(haystack)) return "nikon";
+  return "";
+}
+
+export function equipmentBrandLabel(brand = "") {
+  return {
+    sony: "소니",
+    canon: "캐논",
+    nikon: "니콘"
+  }[brand] || "";
+}
+
 export function adminGuide(title, body) {
   return `
-    <section class="guide-card">
-      <strong>${escapeHtml(title)}</strong>
+    <details class="guide-card auxiliary-guide">
+      <summary>
+        <strong>${escapeHtml(title)}</strong>
+        <span>보기</span>
+      </summary>
       <p>${escapeHtml(body)}</p>
-    </section>
+    </details>
   `;
 }
 
@@ -167,6 +281,21 @@ export function equipmentItemReservedInRange(itemId, reservedDate, period) {
   return Boolean(equipmentItemReservationConflict(itemId, reservedDate, period));
 }
 
+export function relatedLensItemsForSelection(selectedItems = [], { reservedDate = "", period = "" } = {}) {
+  const bodyBrands = [...new Set(selectedItems
+    .filter((item) => String(item?.category || "").trim().toLowerCase() === "body")
+    .map(equipmentBrand)
+    .filter(Boolean))];
+  if (!bodyBrands.length) return [];
+  const selectedIds = new Set(selectedItems.map((item) => item.id));
+  return (state.bootstrap?.equipment || [])
+    .filter((item) => item.active !== false && item.reservable && item.status === "가능")
+    .filter((item) => String(item.category || "").trim().toLowerCase() === "lens")
+    .filter((item) => bodyBrands.includes(equipmentBrand(item)))
+    .filter((item) => !selectedIds.has(item.id))
+    .filter((item) => !reservedDate || !equipmentItemReservedInRange(item.id, reservedDate, period));
+}
+
 export function equipmentItemReservedOnDate(itemId, key) {
   return equipmentItemReservedInRange(itemId, key, "당일");
 }
@@ -194,6 +323,53 @@ export function sharedReservations(type, key) {
 
 export function isPastDate(key) {
   return Boolean(key && key < todayKey());
+}
+
+export function requiresPreviousDayReservation(type) {
+  return type === "equipment" || type === "studio";
+}
+
+export function isReservationDateClosed(type, key) {
+  if (!key) return false;
+  return requiresPreviousDayReservation(type)
+    ? key <= todayKey()
+    : key < todayKey();
+}
+
+export function reservationClosedMessage(type) {
+  if (requiresPreviousDayReservation(type)) {
+    return `${typeLabel[type]} 예약은 사용일 전날 23:59까지만 가능합니다. 당일 예약은 시스템에서 접수할 수 없습니다.`;
+  }
+  return "오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다.";
+}
+
+export function printDateOutsideUploadWindow(key) {
+  if (!key) return false;
+  const settings = state.bootstrap?.settings || {};
+  return Boolean((settings.printUploadStartDate && key < settings.printUploadStartDate) ||
+    (settings.printUploadEndDate && key > settings.printUploadEndDate));
+}
+
+export function printUploadWindowLabel() {
+  const settings = state.bootstrap?.settings || {};
+  if (!settings.printUploadStartDate && !settings.printUploadEndDate) return "상시 가능";
+  return `${settings.printUploadStartDate || "제한 없음"} ~ ${settings.printUploadEndDate || "제한 없음"}`;
+}
+
+export function equipmentIsHighValue(item) {
+  const categories = state.bootstrap?.settings?.equipmentHighValueCategories || ["Body", "Lens"];
+  return categories.map((category) => String(category || "").trim().toLowerCase()).includes(String(item?.category || "").trim().toLowerCase());
+}
+
+export function equipmentIsCameraBag(item) {
+  const keywords = state.bootstrap?.settings?.equipmentBagKeywords || ["펠리컨", "Pelican"];
+  const haystack = [item?.name, item?.code, item?.category, item?.notes, item?.model, item?.brand]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .join(" ");
+  return keywords
+    .map((keyword) => String(keyword || "").trim().toLowerCase())
+    .filter(Boolean)
+    .some((keyword) => haystack.includes(keyword));
 }
 
 export function timeToMinutes(value) {
@@ -436,6 +612,7 @@ export function calendar(type) {
     const otherCount = reservations.length - ownCount;
     const blocked = reservationBlockedItemsForDate(type, key);
     const past = key < today;
+    const closed = isReservationDateClosed(type, key);
     return {
       key,
       day: day.getDate(),
@@ -443,6 +620,7 @@ export function calendar(type) {
       selected: key === selected,
       today: key === today,
       past,
+      closed,
       ownCount,
       otherCount,
       blocked
@@ -457,10 +635,10 @@ export function calendar(type) {
           <p class="eyebrow">예약 일자</p>
           <h2>${monthTitle(monthKey)}</h2>
         </div>
-        <div class="row-actions">
-          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, -1)}">이전</button>
+        <div class="row-actions calendar-month-actions">
+          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, -1)}" aria-label="이전 달">‹</button>
           <button class="button compact" type="button" data-calendar-month="${today.slice(0, 7)}">오늘</button>
-          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, 1)}">다음</button>
+          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, 1)}" aria-label="다음 달">›</button>
         </div>
       </div>
       <div class="calendar-weekdays">
@@ -473,11 +651,12 @@ export function calendar(type) {
       </div>
       <div class="calendar-grid-large">
         ${days.map((day) => `
-          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.past ? "past" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
+          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.past ? "past" : ""} ${day.closed ? "closed" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
             <span>${day.day}</span>
             <div class="calendar-markers">
               ${day.ownCount ? `<small class="calendar-marker mine">내 ${day.ownCount}</small>` : ""}
               ${day.otherCount ? `<small class="calendar-marker other">타인 ${day.otherCount}</small>` : ""}
+              ${day.closed && !day.past && !day.blocked.length ? `<small class="calendar-marker blocked">마감</small>` : ""}
               ${day.blocked.length ? `<small class="calendar-marker blocked">차단</small>` : ""}
             </div>
           </button>

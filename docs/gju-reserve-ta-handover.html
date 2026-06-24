@@ -424,13 +424,14 @@
           <div class="meta"><span>학생 서비스</span><strong>https://photographygju.dothome.co.kr/</strong></div>
           <div class="meta"><span>관리자 접근</span><strong>관리자 계정으로 로그인</strong></div>
           <div class="meta"><span>알림 채널</span><strong>#예약_현황automatic</strong></div>
-          <div class="meta"><span>최종 갱신</span><strong>2026-06-13</strong></div>
+          <div class="meta"><span>최종 갱신</span><strong>2026-06-18</strong></div>
         </div>
       </header>
 
       <div class="layout">
         <nav class="toc" aria-label="문서 목차">
           <strong>목차</strong>
+          <a href="#principles">0. 운영 원칙</a>
           <a href="#daily">1. 매일 운영 순서</a>
           <a href="#roles">2. 계정과 권한</a>
           <a href="#dashboard">3. 대시보드</a>
@@ -443,11 +444,36 @@
           <a href="#settings">10. 설정과 차단 일정</a>
           <a href="#student">11. 학생 화면 안내</a>
           <a href="#slack">12. Slack 알림</a>
-          <a href="#trouble">13. 문제 발생 시</a>
-          <a href="#handover">14. 다음 조교에게 넘길 것</a>
+          <a href="#logs">13. 로그/세션</a>
+          <a href="#deploy">14. 배포와 백업</a>
+          <a href="#trouble">15. 문제 발생 시</a>
+          <a href="#handover">16. 다음 조교에게 넘길 것</a>
         </nav>
 
         <main>
+          <section id="principles">
+            <h2>0. 운영 원칙</h2>
+            <p class="muted">GJU-reserve는 학생 예약을 빠르게 받되, 학과 장비와 공간의 실제 운영 기록을 남기는 것이 목적입니다.</p>
+            <div class="card-grid">
+              <div class="card">
+                <h3>시스템 기록 우선</h3>
+                <p>예약, 승인, 반납, 보고서, 특강 신청은 Admin 화면의 기록을 기준으로 처리합니다. 구두로 처리한 예외도 공지, Slack, Admin 상태 중 하나로 남깁니다.</p>
+              </div>
+              <div class="card">
+                <h3>개인정보 최소 공유</h3>
+                <p>연락처와 학번은 예약 처리에 필요한 경우에만 사용합니다. 화면 캡처를 공유할 때는 비밀번호, Webhook, FTP 정보가 보이지 않게 합니다.</p>
+              </div>
+              <div class="card">
+                <h3>삭제보다 비활성화</h3>
+                <p>학생 계정 삭제는 신중히 처리하고, 장비는 가능한 <strong>기자재 제거</strong>로 숨깁니다. 과거 예약 내역을 추적할 수 있어야 합니다.</p>
+              </div>
+              <div class="card">
+                <h3>운영 전 점검</h3>
+                <p>학기 시작 전에는 수업 차단 일정, 기자재 상태, 출력비 계좌, 특강 모집 상태, 조교 계정 비밀번호를 확인합니다.</p>
+              </div>
+            </div>
+          </section>
+
           <section id="daily">
             <h2>1. 매일 운영 순서</h2>
             <p class="muted">학기 중에는 아래 순서대로 보면 대부분의 업무가 처리됩니다.</p>
@@ -460,8 +486,8 @@
             <div class="checklist">
               <label><input type="checkbox" /> 오전 10시 전후: 대시보드에서 가입 승인 대기, 기자재 승인 대기, 오늘 예약 수를 확인합니다.</label>
               <label><input type="checkbox" /> 대여 시간 전: 기자재 예약의 장비 목록과 학생 연락처를 확인합니다.</label>
-              <label><input type="checkbox" /> 반납 시간 후: 기자재 상태를 확인하고 예약 상태를 <strong>반납 완료</strong> 또는 <strong>관리자 취소</strong>로 정리합니다.</label>
-              <label><input type="checkbox" /> 스튜디오 사용 다음날: 보고서 제출 여부를 확인하고 미제출 학생에게 연락합니다.</label>
+              <label><input type="checkbox" /> 반납 시간 후: 예약 관리의 기자재 탭에서 <strong>대여완료</strong>, <strong>반납완료</strong> 필터로 미처리 항목을 확인합니다.</label>
+              <label><input type="checkbox" /> 스튜디오 사용 다음날: 보고서 화면에서 이름, 학번, 날짜, 스튜디오, 예약ID로 검색해 제출 여부를 확인합니다.</label>
               <label><input type="checkbox" /> 특강/공지 변경이 있으면 Admin에서 게시 후 학생 홈에 잘 보이는지 확인합니다.</label>
             </div>
           </section>
@@ -517,7 +543,7 @@
 
           <section id="users">
             <h2>4. 학생 승인</h2>
-            <p class="muted">학생 가입 신청을 승인, 반려, 제한할 수 있습니다. 이름, 학번, 신분, 상태 기준으로 정렬할 수 있습니다.</p>
+            <p class="muted">학생 가입 신청을 승인, 반려, 대여금지 처리할 수 있습니다. 상단 필터로 전체, 승인대기, 승인완료, 반려, 대여금지 상태를 나눠 보고, 이름, 학번, 신분, 상태 기준으로 정렬할 수 있습니다.</p>
             <table>
               <thead>
                 <tr><th>버튼</th><th>의미</th><th>언제 사용하나</th></tr>
@@ -525,13 +551,18 @@
               <tbody>
                 <tr><td><span class="badge green">승인</span></td><td>학생 예약 가능</td><td>학과 학생 또는 허용 대상임을 확인했을 때</td></tr>
                 <tr><td><span class="badge red">반려</span></td><td>예약 불가</td><td>정보가 틀렸거나 학과 대상자가 아닐 때</td></tr>
-                <tr><td><span class="badge yellow">제한</span></td><td>기간 동안 예약 불가</td><td>규칙 위반, 경고 누적, 관리자 판단으로 일정 기간 막아야 할 때</td></tr>
+                <tr><td><span class="badge yellow">대여금지</span></td><td>기간 동안 예약 불가</td><td>규칙 위반 또는 관리자 판단으로 일정 기간 막아야 할 때. 경고 메모 자체는 상태를 바꾸지 않습니다.</td></tr>
                 <tr><td>비번 리셋</td><td>임시 또는 지정 비밀번호 발급</td><td>학생이 비밀번호를 잊었을 때</td></tr>
+                <tr><td>경고 메모</td><td>관리자용 기록 저장</td><td>학생 상태 변경 없이 사유를 남겨 조교끼리 공유해야 할 때</td></tr>
               </tbody>
             </table>
             <div class="note">
-              <strong>제한 기간</strong>
-              <p>제한은 1주일, 2주일, 1달, 1학기 중 선택합니다. 제한 중인 학생은 공지는 볼 수 있지만 예약은 할 수 없습니다.</p>
+              <strong>대여금지 기간</strong>
+              <p>대여금지는 학생 행의 드롭다운에서 1주일, 2주일, 1달, 1학기 중 선택하면 즉시 적용됩니다. 대여금지 중인 학생은 공지는 볼 수 있지만 예약은 할 수 없습니다.</p>
+            </div>
+            <div class="note">
+              <strong>상태 필터와 정렬</strong>
+              <p>새 가입자는 <strong>승인대기</strong>에서 먼저 확인합니다. 처리 결과를 점검할 때는 <strong>승인완료</strong>, <strong>반려</strong>, <strong>대여금지</strong> 필터를 사용하고, 학번순 확인이 필요하면 테이블의 학번 헤더를 누릅니다.</p>
             </div>
           </section>
 
@@ -571,7 +602,11 @@
             </table>
             <div class="warning">
               <strong>취소 처리 기준</strong>
-              <p>학생이 연락 없이 오지 않았거나, 파일/장비 준비가 규정과 맞지 않거나, 수업/공휴일/현장 상황으로 사용이 불가하면 관리자 취소로 정리하고 필요하면 학생 제한 또는 경고를 별도 처리합니다.</p>
+              <p>학생이 연락 없이 오지 않았거나, 파일/장비 준비가 규정과 맞지 않거나, 수업/공휴일/현장 상황으로 사용이 불가하면 관리자 취소로 정리하고 필요하면 대여금지를 적용하거나 경고 메모를 남깁니다.</p>
+            </div>
+            <div class="note">
+              <strong>기자재 상태 필터</strong>
+              <p>기자재 탭에서는 예약 종류 탭 아래에 <strong>전체</strong>, <strong>대여완료</strong>, <strong>반납완료</strong> 필터가 표시됩니다. 대여 완료는 아직 학생이 장비를 가지고 있는 상태이고, 반납 완료는 장비 회수가 끝난 상태입니다.</p>
             </div>
           </section>
 
@@ -622,7 +657,11 @@
             </div>
             <div class="danger card">
               <strong>보고서 미제출</strong>
-              <p>사용 후 48시간이 지나도 보고서가 없으면 학생에게 연락합니다. 반복 미제출이나 부적절 사용은 경고/제한 정책에 따라 처리합니다.</p>
+              <p>사용 후 48시간이 지나도 보고서가 없으면 학생에게 연락합니다. 반복 미제출이나 부적절 사용은 경고 메모로 기록하고, 실제 예약을 막아야 하면 대여금지를 별도로 적용합니다.</p>
+            </div>
+            <div class="note">
+              <strong>검색과 정렬</strong>
+              <p>보고서 화면에서는 이름, 학번, 날짜, 스튜디오, 예약ID로 검색할 수 있습니다. 제출일, 사용일, 이름, 파손 여부 정렬을 사용하면 학기 말 정산이나 파손 확인이 쉬워집니다.</p>
             </div>
           </section>
 
@@ -644,6 +683,10 @@
             <div class="ok">
               <strong>CSV 내보내기</strong>
               <p>특강 결과는 Admin의 <strong>CSV 내보내기</strong>로 엑셀에서 열 수 있습니다. 신청자 이름, 학번, 신분, 연락처, 신청일이 포함됩니다.</p>
+            </div>
+            <div class="note">
+              <strong>수정 화면</strong>
+              <p>특강 리스트에서 <strong>수정</strong>을 누르면 등록 폼 대신 수정 폼만 표시됩니다. 수정을 저장하거나 닫은 뒤 새 특강을 등록합니다.</p>
             </div>
           </section>
 
@@ -702,7 +745,7 @@
               </thead>
               <tbody>
                 <tr><td>홈</td><td>공지, 모집중 특강, 다음 예약 확인</td><td>중요 안내는 공지로 올렸는지 확인합니다.</td></tr>
-                <tr><td>예약</td><td>기자재, 스튜디오, 출력실, 암실 예약</td><td>승인 대기/이용 제한 상태면 예약이 막힙니다.</td></tr>
+                <tr><td>예약</td><td>기자재, 스튜디오, 출력실, 암실 예약</td><td>승인 대기/대여금지 상태면 예약이 막힙니다.</td></tr>
                 <tr><td>내 예약</td><td>본인 예약 확인/취소</td><td>취소 가능 여부와 조교 연락 필요 여부를 안내합니다.</td></tr>
                 <tr><td>보고서</td><td>스튜디오 사용 후 보고서 제출</td><td>사용일 이후 보고서 작성 항목이 뜹니다.</td></tr>
                 <tr><td>특강</td><td>모집중 특강 신청</td><td>진행완료/취소 상태는 신청 버튼이 없습니다.</td></tr>
@@ -736,8 +779,68 @@
             </div>
           </section>
 
+          <section id="logs">
+            <h2>13. 로그/세션</h2>
+            <p class="muted">로그/세션 화면은 계정 접속, 예약 처리, 학생 상태 변경 같은 운영 기록을 확인하는 곳입니다. 삭제보다 확인과 원격 로그아웃을 우선합니다.</p>
+            <table>
+              <thead>
+                <tr><th>영역</th><th>정렬/필터</th><th>언제 쓰나</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>현재 로그인 세션</td><td>최근 로그인</td><td>방금 접속한 학생 또는 조교 계정을 확인할 때 기본으로 봅니다.</td></tr>
+                <tr><td>현재 로그인 세션</td><td>만료 임박</td><td>공용 PC, 오래된 접속, 의심 세션을 정리할 때 사용합니다.</td></tr>
+                <tr><td>현재 로그인 세션</td><td>사용자명</td><td>특정 학생이나 조교의 접속 기기를 찾을 때 사용합니다.</td></tr>
+                <tr><td>활동 로그</td><td>작업 분류 필터</td><td>로그인, 예약, 학생, 기자재, 특강, 보고서, 공지, 설정 중 필요한 기록만 좁혀 봅니다.</td></tr>
+                <tr><td>활동 로그</td><td>최신순/오래된순</td><td>일반 확인은 최신순, 문제가 발생한 과정을 시간대로 따라갈 때는 오래된순을 사용합니다.</td></tr>
+              </tbody>
+            </table>
+            <div class="warning">
+              <strong>의심 세션 처리</strong>
+              <p>낯선 IP나 기기가 보이면 먼저 학생 또는 조교에게 확인하고, 필요한 경우 해당 세션을 원격 로그아웃합니다. 비밀번호가 공유됐다고 판단되면 계정 비밀번호도 변경합니다.</p>
+            </div>
+          </section>
+
+          <section id="deploy">
+            <h2>14. 배포와 백업</h2>
+            <p class="muted">조교가 직접 배포할 일은 많지 않지만, 운영자가 알아야 할 구조와 백업 원칙은 아래와 같습니다.</p>
+            <div class="card-grid">
+              <div class="card">
+                <h3>서비스 구조</h3>
+                <ul>
+                  <li>Dothome: 학생과 Admin이 보는 정적 화면을 제공합니다.</li>
+                  <li>Cloudflare Worker: API와 운영 DB 역할을 합니다.</li>
+                  <li>Dothome의 <code>/api/*</code> 요청은 PHP 프록시를 통해 Worker로 전달됩니다.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>배포 확인</h3>
+                <ul>
+                  <li>화면 파일이 바뀌면 Dothome에 <code>index.html</code>, <code>app.js</code>, <code>styles.css</code>, <code>js/*</code>, <code>api/*</code>를 업로드합니다.</li>
+                  <li>브라우저 캐시 때문에 버전 문자열이 바뀌어야 새 JS가 확실히 로드됩니다.</li>
+                  <li>업로드 후 학생 서비스 주소에서 새 화면이 보이는지 확인합니다.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>백업 JSON</h3>
+                <ul>
+                  <li>Admin 설정 화면의 <strong>백업 JSON</strong> 버튼으로 운영 데이터를 내려받을 수 있습니다.</li>
+                  <li>백업에는 사용자, 예약, 보고서, 특강, 공지, 로그가 포함될 수 있으므로 외부에 공유하지 않습니다.</li>
+                  <li>학기 종료, 조교 교체, 큰 장비 정리 전에는 백업을 남깁니다.</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>민감정보</h3>
+                <ul>
+                  <li>FTP 비밀번호, Admin 비밀번호, Slack Webhook은 문서에 적지 않습니다.</li>
+                  <li>일반 FTP는 암호화되지 않으므로 사용 후 비밀번호 변경을 권장합니다.</li>
+                  <li>운영 DB 초기화 기능은 없습니다. 실수로 전체 데이터를 지우는 방식의 운영은 금지합니다.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
           <section id="trouble">
-            <h2>13. 문제 발생 시</h2>
+            <h2>15. 문제 발생 시</h2>
             <table>
               <thead>
                 <tr><th>상황</th><th>먼저 확인할 것</th><th>처리</th></tr>
@@ -750,7 +853,7 @@
                 </tr>
                 <tr>
                   <td>예약 버튼이 안 보임</td>
-                  <td>학생 승인 상태, 이용 제한 상태, 특강 진행상태 확인</td>
+                  <td>학생 승인 상태, 대여금지 상태, 특강 진행상태 확인</td>
                   <td>승인 또는 제한 해제 후 다시 접속 안내</td>
                 </tr>
                 <tr>
@@ -768,12 +871,27 @@
                   <td>브라우저 새로고침, 다른 브라우저, 네트워크 상태 확인</td>
                   <td>지속되면 화면 캡처와 발생 시간을 기록해 개발 담당자에게 전달</td>
                 </tr>
+                <tr>
+                  <td>개발자는 수정됐다고 하는데 실제 사이트는 그대로임</td>
+                  <td>Dothome 정적 파일이 최신인지, <code>index.html</code>의 버전 문자열이 바뀌었는지 확인</td>
+                  <td>Dothome 업로드 후 새로고침하고, 필요하면 브라우저 캐시를 지웁니다.</td>
+                </tr>
+                <tr>
+                  <td>보고서나 예약을 찾기 어려움</td>
+                  <td>검색어가 이름, 학번, 날짜, 스튜디오, 예약ID 중 하나인지 확인</td>
+                  <td>예약 관리 검색 또는 보고서 검색/정렬을 사용하고, 기자재는 대여완료/반납완료 필터로 좁힙니다.</td>
+                </tr>
+                <tr>
+                  <td>누가 상태를 바꿨는지 확인해야 함</td>
+                  <td>로그/세션의 활동 로그에서 학생, 예약, 기자재 등 작업 분류를 선택</td>
+                  <td>최신순으로 최근 변경을 보고, 흐름을 따라가야 하면 오래된순으로 전환합니다.</td>
+                </tr>
               </tbody>
             </table>
           </section>
 
           <section id="handover">
-            <h2>14. 다음 조교에게 넘길 것</h2>
+            <h2>16. 다음 조교에게 넘길 것</h2>
             <p class="muted">조교는 1년 단위로 바뀌므로, 계정과 운영 규칙을 문서화해 넘기는 것이 중요합니다.</p>
             <div class="checklist">
               <label><input type="checkbox" /> Admin 계정 목록과 각 계정의 담당 역할을 최신화합니다.</label>
@@ -782,6 +900,8 @@
               <label><input type="checkbox" /> 기자재 리스트에서 수리 중/분실/신규 장비를 반영합니다.</label>
               <label><input type="checkbox" /> 출력비 계좌 안내와 특강 담당교수 정보를 최신화합니다.</label>
               <label><input type="checkbox" /> Slack 채널 담당자와 알림 확인 방식을 공유합니다.</label>
+              <label><input type="checkbox" /> 최신 백업 JSON을 안전한 내부 저장소에 보관합니다.</label>
+              <label><input type="checkbox" /> FTP/호스팅 계정 인계는 비밀번호를 문서에 남기지 않고 별도 보안 채널로 처리합니다.</label>
               <label><input type="checkbox" /> 이 문서와 최신 운영 규칙 파일의 위치를 다음 조교에게 전달합니다.</label>
             </div>
             <div class="ok">

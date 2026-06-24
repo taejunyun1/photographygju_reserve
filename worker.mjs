@@ -6,7 +6,9 @@ import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest }
 const ALLOWED_ORIGINS = new Set([
   "https://photographygju.dothome.co.kr",
   "https://admin.photographygju.dothome.co.kr",
-  "https://photographygju-reserve.taejunyun.workers.dev"
+  "https://photographygju-reserve.taejunyun.workers.dev",
+  "capacitor://localhost",
+  "ionic://localhost"
 ]);
 
 const CONTENT_SECURITY_POLICY = [
@@ -15,7 +17,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
   "font-src 'self'",
-  "connect-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com",
+  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com",
   "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",
@@ -83,7 +85,10 @@ export class GjuReserveDb extends DurableObject {
         await this.saveDb();
       }
     }
+    const beforeStatuses = JSON.stringify((this.db.reservations || []).map((item) => [item.id, item.type, item.status]));
     normalizeDb(this.db);
+    const afterStatuses = JSON.stringify((this.db.reservations || []).map((item) => [item.id, item.type, item.status]));
+    if (beforeStatuses !== afterStatuses) await this.saveDb();
     return this.db;
   }
 

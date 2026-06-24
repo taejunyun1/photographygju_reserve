@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">사진영상미디어학과 예약</string>
+    <string name="title_activity_main">사진영상미디어학과 예약</string>
+    <string name="package_name">kr.ac.gju.photomedia.reserve</string>
+    <string name="custom_url_scheme">kr.ac.gju.photomedia.reserve</string>
+</resources>

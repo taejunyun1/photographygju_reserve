@@ -113,6 +113,17 @@ const rejectedNoticeLink = await api("POST", "/api/admin/notices", {
 }, adminToken);
 assert.equal(rejectedNoticeLink.status, 400);
 
+const rejectedGoogleDriveUrl = await api("PATCH", "/api/admin/settings", {
+  googleDriveUrl: "javascript:alert(1)"
+}, adminToken);
+assert.equal(rejectedGoogleDriveUrl.status, 400);
+
+const acceptedGoogleDriveUrl = await api("PATCH", "/api/admin/settings", {
+  googleDriveUrl: "https://drive.google.com/drive/folders/example"
+}, adminToken);
+assert.equal(acceptedGoogleDriveUrl.status, 200);
+assert.equal(acceptedGoogleDriveUrl.body.data.googleDriveUrl, "https://drive.google.com/drive/folders/example");
+
 const ignoredSettingsKey = await api("PATCH", "/api/admin/settings", {
   adminUrl: "https://evil.example",
   darkroomCapacity: 7
@@ -266,6 +277,146 @@ const studentLogin = await api("POST", "/api/auth/login", {
 assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
+
+const studioReservationForReport = await api("POST", "/api/reservations", {
+  type: "studio",
+  fields: {
+    reservedDate: "2026-07-06",
+    phone: "01039546412",
+    studioSpace: "Studio A Front",
+    studioSpaces: ["Studio A Front"],
+    timeSlots: ["10:30-12:00"],
+    participants: "보안테스트학생",
+    requiredEquipment: "-"
+  }
+}, studentLogin.body.data.token);
+assert.equal(studioReservationForReport.status, 200);
+
+const rejectedReportUrl = await api("POST", "/api/reports/studio", {
+  reservationId: studioReservationForReport.body.data.id,
+  actualTime: "10:30-12:00",
+  participants: "보안테스트학생",
+  cleanupConfirmed: true,
+  resultPhotoUrl: "javascript:alert(1)"
+}, studentLogin.body.data.token);
+assert.equal(rejectedReportUrl.status, 400);
+
+const acceptedReportUrl = await api("POST", "/api/reports/studio", {
+  reservationId: studioReservationForReport.body.data.id,
+  actualTime: "10:30-12:00",
+  participants: "보안테스트학생",
+  cleanupConfirmed: true,
+  resultPhotoUrl: "https://drive.google.com/file/d/example/view"
+}, studentLogin.body.data.token);
+assert.equal(acceptedReportUrl.status, 200);
+assert.equal(acceptedReportUrl.body.data.fields.resultPhotoUrl, "https://drive.google.com/file/d/example/view");
+
+const reportedStudioCancellation = await api("POST", `/api/reservations/${studioReservationForReport.body.data.id}/cancel`, {
+  reason: "중복 보고서 우선순위 테스트"
+}, studentLogin.body.data.token);
+assert.equal(reportedStudioCancellation.status, 200);
+
+const duplicateReportAfterCancellation = await api("POST", "/api/reports/studio", {
+  reservationId: studioReservationForReport.body.data.id,
+  actualTime: "10:30-12:00",
+  participants: "보안테스트학생",
+  cleanupConfirmed: true,
+  resultPhotoUrl: "https://drive.google.com/file/d/example/view"
+}, studentLogin.body.data.token);
+assert.equal(duplicateReportAfterCancellation.status, 409);
+
+const cancelledStudioReservation = await api("POST", "/api/reservations", {
+  type: "studio",
+  fields: {
+    reservedDate: "2026-07-07",
+    phone: "01039546412",
+    studioSpace: "Studio B Front",
+    studioSpaces: ["Studio B Front"],
+    timeSlots: ["10:30-12:00"],
+    participants: "보안테스트학생",
+    requiredEquipment: "-"
+  }
+}, studentLogin.body.data.token);
+assert.equal(cancelledStudioReservation.status, 200);
+
+const cancelledStudio = await api("POST", `/api/reservations/${cancelledStudioReservation.body.data.id}/cancel`, {
+  reason: "보고서 차단 테스트"
+}, studentLogin.body.data.token);
+assert.equal(cancelledStudio.status, 200);
+
+const cancelledStudioReport = await api("POST", "/api/reports/studio", {
+  reservationId: cancelledStudioReservation.body.data.id,
+  actualTime: "10:30-12:00",
+  participants: "보안테스트학생",
+  cleanupConfirmed: true,
+  resultPhotoUrl: "https://drive.google.com/file/d/example/view"
+}, studentLogin.body.data.token);
+assert.equal(cancelledStudioReport.status, 400);
+
+const deleteSignup = await api("POST", "/api/auth/signup", {
+  name: "삭제테스트학생",
+  studentStatus: "재학생",
+  phone: "01022223333",
+  email: "delete-student@gju.local",
+  studentId: "20260002",
+  grade: "2",
+  password: "delete1234"
+});
+assert.equal(deleteSignup.status, 200);
+
+const approveDeleteStudent = await api("PATCH", `/api/admin/users/${deleteSignup.body.data.user.id}/approval`, {
+  approvalStatus: "approved"
+}, adminToken);
+assert.equal(approveDeleteStudent.status, 200);
+
+const deleteStudentLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260002",
+  password: "delete1234"
+});
+assert.equal(deleteStudentLogin.status, 200);
+
+const deleteStudentReservation = await api("POST", "/api/reservations", {
+  type: "print",
+  fields: {
+    reservedDate: "2026-07-10",
+    startTime: "10:00",
+    endTime: "11:00",
+    phone: "01022223333",
+    printType: "과제",
+    paper: "글로시",
+    size: "소형"
+  }
+}, deleteStudentLogin.body.data.token);
+assert.equal(deleteStudentReservation.status, 200);
+
+const wrongPasswordDelete = await api("DELETE", "/api/me", {
+  currentPassword: "wrong-password",
+  confirmText: "계정 삭제"
+}, deleteStudentLogin.body.data.token);
+assert.equal(wrongPasswordDelete.status, 401);
+
+const wrongConfirmDelete = await api("DELETE", "/api/me", {
+  currentPassword: "delete1234",
+  confirmText: "삭제"
+}, deleteStudentLogin.body.data.token);
+assert.equal(wrongConfirmDelete.status, 400);
+
+const deletedAccount = await api("DELETE", "/api/me", {
+  currentPassword: "delete1234",
+  confirmText: "계정 삭제"
+}, deleteStudentLogin.body.data.token);
+assert.equal(deletedAccount.status, 200);
+assert.equal(deletedAccount.body.data.removedReservations, 1);
+assert.equal(db.users.some((user) => user.id === deleteSignup.body.data.user.id), false);
+assert.equal(db.reservations.some((reservation) => reservation.userId === deleteSignup.body.data.user.id), false);
+assert.equal(db.sessions.some((session) => session.userId === deleteSignup.body.data.user.id), false);
+assert.equal(db.auditLogs.some((log) => log.action === "user.account_deleted" && log.targetId === deleteSignup.body.data.user.id), true);
+
+const deletedStudentLogin = await api("POST", "/api/auth/login", {
+  loginId: "20260002",
+  password: "delete1234"
+});
+assert.equal(deletedStudentLogin.status, 401);
 
 const invalidDateReservation = await api("POST", "/api/reservations", {
   type: "print",

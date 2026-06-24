@@ -8,6 +8,12 @@ set -euo pipefail
 
 case "${DOTHOME_FTP_SCHEME}" in
   ftps|sftp) ;;
+  ftp)
+    if [[ "${DOTHOME_ALLOW_INSECURE_FTP:-}" != "1" ]]; then
+      echo "Refusing insecure upload protocol 'ftp'. Set DOTHOME_ALLOW_INSECURE_FTP=1 only when the host does not support FTPS/SFTP." >&2
+      exit 1
+    fi
+    ;;
   *)
     echo "Refusing insecure upload protocol '${DOTHOME_FTP_SCHEME}'. Use ftps or sftp." >&2
     exit 1
@@ -31,6 +37,8 @@ while IFS= read -r -d "" file; do
   relative="${file#dist/}"
   curl_args=(
     --fail
+    --silent
+    --show-error
     --ftp-create-dirs
     --connect-timeout 12
     --max-time 60

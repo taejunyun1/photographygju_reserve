@@ -24,10 +24,16 @@ function gju_header_value(string $name): string
     return '';
 }
 
+function gju_safe_header_value(string $value, int $maxLength = 500): string
+{
+    return substr(str_replace(["\r", "\n"], ' ', trim($value)), 0, $maxLength);
+}
+
 if (!function_exists('curl_init')) {
     http_response_code(502);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
     echo json_encode([
         'ok' => false,
         'error' => 'Dothome PHP cURL extension is required for API proxying.'
@@ -36,14 +42,24 @@ if (!function_exists('curl_init')) {
 }
 
 $forwardHeaders = ['Accept: application/json'];
-$contentType = gju_header_value('content-type');
-$authorization = gju_header_value('authorization');
+$contentType = gju_safe_header_value(gju_header_value('content-type'), 200);
+$authorization = gju_safe_header_value(gju_header_value('authorization'), 2000);
+$clientIp = gju_safe_header_value((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 80);
+$userAgent = gju_safe_header_value(gju_header_value('user-agent'), 500);
 if ($contentType !== '') {
     $forwardHeaders[] = 'Content-Type: ' . $contentType;
 }
 if ($authorization !== '') {
     $forwardHeaders[] = 'Authorization: ' . $authorization;
 }
+if ($clientIp !== '') {
+    $forwardHeaders[] = 'X-Forwarded-For: ' . $clientIp;
+}
+if ($userAgent !== '') {
+    $forwardHeaders[] = 'User-Agent: ' . $userAgent;
+}
+$forwardedProto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$forwardHeaders[] = 'X-Forwarded-Proto: ' . $forwardedProto;
 
 $ch = curl_init($target);
 curl_setopt_array($ch, [
@@ -67,6 +83,7 @@ if ($response === false) {
     http_response_code(502);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
     echo json_encode([
         'ok' => false,
         'error' => 'Cloudflare Worker API proxy failed: ' . $error
@@ -82,7 +99,10 @@ curl_close($ch);
 
 http_response_code((int) $status);
 foreach (explode("\r\n", $rawHeaders) as $line) {
-    if (stripos($line, 'content-type:') === 0 || stripos($line, 'cache-control:') === 0) {
+    if (stripos($line, 'content-type:') === 0 ||
+        stripos($line, 'cache-control:') === 0 ||
+        stripos($line, 'x-content-type-options:') === 0 ||
+        stripos($line, 'referrer-policy:') === 0) {
         header($line);
     }
 }

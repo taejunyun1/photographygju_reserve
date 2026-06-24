@@ -1,5 +1,6 @@
-import { state } from "./state.js?v=20260616-feat6";
-import { api } from "./api.js?v=20260616-feat6";
+import { state } from "./state.js?v=20260623-notify-ui2";
+import { api } from "./api.js?v=20260623-notify-ui2";
+import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
@@ -18,6 +19,7 @@ export async function loadMe() {
 
 export async function loadMyReservations() {
   state.myReservations = await api("/api/reservations/my");
+  await syncNativeReservationNotifications({ silent: true });
 }
 
 export async function loadLectures() {
@@ -47,4 +49,5 @@ export async function loadAdminData() {
     adminSessions: sessions,
     adminLogs: logs
   });
+  await syncNativeReservationNotifications({ silent: true });
 }

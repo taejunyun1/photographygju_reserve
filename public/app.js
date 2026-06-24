@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260616-feat6";
+import "./js/main.js?v=20260623-notify-ui2";

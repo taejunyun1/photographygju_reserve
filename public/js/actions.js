@@ -1,25 +1,32 @@
-import { state } from "./state.js?v=20260616-feat6";
-import { api } from "./api.js?v=20260616-feat6";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat6";
-import { render, toast } from "./renderer.js?v=20260616-feat6";
+import { state } from "./state.js?v=20260623-notify-ui2";
+import { api } from "./api.js?v=20260623-notify-ui2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260623-notify-ui2";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260623-notify-ui2";
+import { render, toast } from "./renderer.js?v=20260623-notify-ui2";
 import {
   areSlotsConsecutive,
   csvEscape,
   darkroomSlotBlocked,
   darkroomSlotRemaining,
+  equipmentIsCameraBag,
+  equipmentIsHighValue,
   equipmentRangeBlocked,
   equipmentItemReservedInRange,
   formData,
   formatDateTime,
   getChecked,
   isPastDate,
+  isReservationDateClosed,
   minutesToTime,
+  printDateOutsideUploadWindow,
+  printUploadWindowLabel,
   printSelectionBlocked,
   printSelectionConflicts,
+  reservationClosedMessage,
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260616-feat6";
+} from "./utils.js?v=20260623-notify-ui2";
 
 export async function login(form) {
   const data = formData(form);
@@ -54,6 +61,7 @@ export async function signup(form) {
 }
 
 export async function logout() {
+  await disableNativeReservationNotifications().catch(() => null);
   await api("/api/auth/logout", { method: "POST", body: { token: state.token } }).catch(() => null);
   state.token = "";
   state.user = null;
@@ -68,6 +76,8 @@ export async function logout() {
   state.selectedEquipmentPeriod = "";
   state.selectedEquipmentRentalTime = "";
   state.selectedEquipmentReturnTime = "";
+  state.equipmentSelectionSheetOpen = false;
+  state.equipmentRecommendationOpen = false;
   state.selectedStudioSpace = "";
   state.selectedStudioSlots = [];
   localStorage.removeItem("gju_token");
@@ -138,6 +148,9 @@ export async function submitReservation(form) {
   if (isPastDate(fields.reservedDate)) {
     throw new Error("오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다.");
   }
+  if (isReservationDateClosed(type, fields.reservedDate)) {
+    throw new Error(reservationClosedMessage(type));
+  }
   if (type === "equipment") {
     const visibleChecked = getChecked("equipmentItemIds");
     state.selectedEquipmentItemIds = [...new Set([...state.selectedEquipmentItemIds, ...visibleChecked])];
@@ -146,6 +159,9 @@ export async function submitReservation(form) {
     state.selectedEquipmentReturnTime = fields.returnTime || state.selectedEquipmentReturnTime;
     fields.equipmentItemIds = state.selectedEquipmentItemIds;
     if (!fields.equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
+    const selectedItems = fields.equipmentItemIds
+      .map((itemId) => state.bootstrap.equipment.find((candidate) => candidate.id === itemId))
+      .filter(Boolean);
     const invalidStatusItems = fields.equipmentItemIds.filter((itemId) => {
       const item = state.bootstrap.equipment.find((candidate) => candidate.id === itemId);
       return !item || item.active === false || !item.reservable || item.status !== "가능";
@@ -154,6 +170,14 @@ export async function submitReservation(form) {
     if (equipmentRangeBlocked(fields.reservedDate, fields.period).length) throw new Error("선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다.");
     const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields.reservedDate, fields.period));
     if (unavailableItems.length) throw new Error("선택한 대여 기간에 이미 예약된 기자재가 포함되어 있습니다.");
+    const hasHighValue = selectedItems.some(equipmentIsHighValue);
+    const hasCameraBag = selectedItems.some(equipmentIsCameraBag);
+    fields.pelicanBagReserved = hasHighValue && hasCameraBag;
+    fields.cameraBagConfirmationRequired = hasHighValue;
+    fields.cameraBagConfirmed = hasHighValue ? (hasCameraBag || fields.cameraBagConfirmed === "true") : false;
+    if (hasHighValue && !fields.cameraBagConfirmed) {
+      throw new Error(state.bootstrap.settings.equipmentCameraBagNotice || "고가장비(카메라)를 선택 시 카메라 가방을 지참하겠습니다");
+    }
   }
   if (type === "studio") {
     const selectedSlots = getChecked("studioSlots");
@@ -178,12 +202,16 @@ export async function submitReservation(form) {
     if (conflicts.length) throw new Error(`이미 예약된 스튜디오 조합입니다: ${conflicts.slice(0, 3).join(", ")}`);
   }
   if (type === "darkroom") {
-    fields.timeSlots = getChecked("darkroomSlots");
-    fields.processTypes = getChecked("processTypes");
+    const selectedSlots = getChecked("darkroomSlots");
+    const selectedProcessTypes = getChecked("processTypes");
+    state.selectedDarkroomSlots = [...new Set([...state.selectedDarkroomSlots, ...selectedSlots])];
+    state.selectedDarkroomProcessTypes = [...new Set([...state.selectedDarkroomProcessTypes, ...selectedProcessTypes])];
+    fields.timeSlots = state.selectedDarkroomSlots;
+    fields.processTypes = state.selectedDarkroomProcessTypes;
     fields.chemicals = state.bootstrap.darkroomChemicals.map((chem) => ({
       id: chem.id,
       name: chem.name,
-      amount: data[`chem-${chem.id}`]
+      amount: data[`chem-${chem.id}`] || state.selectedDarkroomChemicals?.[chem.id] || ""
     })).filter((item) => item.amount);
     if (!fields.timeSlots.length) throw new Error("암실 사용 시간을 선택하세요.");
     if (!fields.processTypes.length) throw new Error("암실 작업 유형을 선택하세요.");
@@ -194,12 +222,21 @@ export async function submitReservation(form) {
     if (fullSlots.length) throw new Error(`암실 정원을 초과하는 시간입니다: ${fullSlots.join(", ")}`);
   }
   if (type === "print") {
-    fields.printTypes = getChecked("printTypes");
-    fields.papers = getChecked("papers");
-    fields.sizes = getChecked("sizes");
+    if (printDateOutsideUploadWindow(fields.reservedDate)) {
+      throw new Error(`출력 업로드 가능 기간(${printUploadWindowLabel()}) 밖의 날짜입니다.`);
+    }
+    fields.startTime = fields.startTime || state.selectedPrintStartTime;
+    fields.endTime = fields.endTime || state.selectedPrintEndTime;
+    state.selectedPrintTypes = [...new Set([...state.selectedPrintTypes, ...getChecked("printTypes")])];
+    state.selectedPrintPapers = [...new Set([...state.selectedPrintPapers, ...getChecked("papers")])];
+    state.selectedPrintSizes = [...new Set([...state.selectedPrintSizes, ...getChecked("sizes")])];
+    fields.printTypes = state.selectedPrintTypes;
+    fields.papers = state.selectedPrintPapers;
+    fields.sizes = state.selectedPrintSizes;
     fields.printType = fields.printTypes.join(", ");
     fields.paper = fields.papers.join(", ");
     fields.size = fields.sizes.join(", ");
+    if (!fields.startTime || !fields.endTime) throw new Error("출력실 사용 시간을 선택하세요.");
     if (!fields.printTypes.length) throw new Error("출력 종류를 선택하세요.");
     if (!fields.papers.length) throw new Error("용지를 선택하세요.");
     if (!fields.sizes.length) throw new Error("사이즈를 선택하세요.");
@@ -213,11 +250,29 @@ export async function submitReservation(form) {
   }
   toast("예약을 처리 중입니다.");
   const reservation = await api("/api/reservations", { method: "POST", body: { type, fields } });
+  notifyNativeReservationCreated(reservation).catch(() => null);
   state.reservationType = "";
-  if (type === "equipment") state.selectedEquipmentItemIds = [];
+  if (type === "equipment") {
+    state.selectedEquipmentItemIds = [];
+    state.equipmentSelectionSheetOpen = false;
+    state.equipmentRecommendationOpen = false;
+  }
   if (type === "studio") {
     state.selectedStudioSpace = "";
     state.selectedStudioSlots = [];
+  }
+  if (type === "darkroom") {
+    state.selectedDarkroomSlots = [];
+    state.selectedDarkroomProcessTypes = [];
+    state.selectedDarkroomParticipantCount = "1";
+    state.selectedDarkroomChemicals = {};
+  }
+  if (type === "print") {
+    state.selectedPrintStartTime = "";
+    state.selectedPrintEndTime = "";
+    state.selectedPrintTypes = [];
+    state.selectedPrintPapers = [];
+    state.selectedPrintSizes = [];
   }
   state.view = "mine";
   state.myReservations = [
@@ -266,4 +321,35 @@ export async function changePassword(form) {
   localStorage.removeItem("gju_token");
   sessionStorage.removeItem("gju_token");
   toast("비밀번호가 변경되었습니다. 모든 기기에서 로그아웃되었습니다.");
+}
+
+export async function deleteAccount(form) {
+  const data = formData(form);
+  if (String(data.confirmText || "").trim() !== "계정 삭제") {
+    throw new Error("확인 문구에 '계정 삭제'를 입력하세요.");
+  }
+  if (!confirm("계정을 영구 삭제할까요?\n예약·보고서·특강 신청 기록도 함께 삭제되며 되돌릴 수 없습니다.")) return;
+  await disableNativeReservationNotifications().catch(() => null);
+  const result = await api("/api/me", {
+    method: "DELETE",
+    body: {
+      currentPassword: data.currentPassword,
+      confirmText: data.confirmText
+    }
+  });
+  state.token = "";
+  state.user = null;
+  state.myReservations = [];
+  state.lectures = [];
+  state.adminSessions = [];
+  state.adminLogs = [];
+  state.view = "home";
+  state.authMode = "login";
+  state.reservationType = "";
+  state.activeNoticeId = "";
+  state.activeReportReservationId = "";
+  localStorage.removeItem("gju_token");
+  sessionStorage.removeItem("gju_token");
+  render();
+  toast(`계정이 삭제되었습니다.${result.removedReservations ? ` 예약 ${result.removedReservations}건도 함께 삭제했습니다.` : ""}`);
 }

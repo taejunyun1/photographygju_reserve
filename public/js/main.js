@@ -1,16 +1,20 @@
-import { $app, state } from "./state.js?v=20260616-feat6";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260616-feat6";
-import { setupEventHandlers } from "./events.js?v=20260616-feat6";
-import { render } from "./renderer.js?v=20260616-feat6";
-import { escapeHtml } from "./utils.js?v=20260616-feat6";
+import { $app, state } from "./state.js?v=20260623-notify-ui2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260623-notify-ui2";
+import { setupEventHandlers } from "./events.js?v=20260623-notify-ui2";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
+import { render } from "./renderer.js?v=20260623-notify-ui2";
+import { escapeHtml } from "./utils.js?v=20260623-notify-ui2";
 
 async function init() {
   await loadBootstrap();
   await loadMe();
+  await refreshNativeNotificationState();
+  await setupNativeNotificationListeners(render);
   if (state.user?.role === "admin") await loadAdminData();
   if (state.user?.role === "student") {
     await loadMyReservations();
     await loadLectures();
+    await syncNativeReservationNotifications({ silent: true });
   }
   render();
 }

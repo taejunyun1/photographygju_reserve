@@ -1,0 +1,15 @@
+{
+  "appId": "kr.ac.gju.photomedia.reserve",
+  "appName": "GJU Photography Reservation",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#1558B0",
+      "presentationOptions": ["badge", "sound", "banner", "list"]
+    }
+  }
+}

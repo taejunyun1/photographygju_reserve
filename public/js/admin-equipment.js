@@ -1,16 +1,32 @@
-import { state } from "./state.js?v=20260616-feat6";
-import { api } from "./api.js?v=20260616-feat6";
-import { equipmentStatusOptions } from "./constants.js?v=20260616-feat6";
-import { tag } from "./utils.js?v=20260616-feat6";
+import { state } from "./state.js?v=20260623-notify-ui2";
+import { api } from "./api.js?v=20260623-notify-ui2";
+import { equipmentStatusOptions } from "./constants.js?v=20260623-notify-ui2";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260623-notify-ui2";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);
 }
 
 export function visibleAdminEquipmentItems() {
+  const query = normalizeSearchText(state.adminEquipmentSearch).trim();
   return activeAdminEquipmentItems()
     .filter((item) => state.adminEquipmentTab === "all" || item.source === state.adminEquipmentTab)
-    .filter((item) => state.adminEquipmentCategoryTab === "all" || item.category === state.adminEquipmentCategoryTab);
+    .filter((item) => state.adminEquipmentCategoryTab === "all" || item.category === state.adminEquipmentCategoryTab)
+    .filter((item) => {
+      if (!query) return true;
+      return searchableText([
+        item.code,
+        item.name,
+        item.category,
+        item.source,
+        item.facility,
+        item.brand,
+        item.model,
+        item.status,
+        item.notes,
+        item.reservable ? "예약가능" : "문의전용"
+      ]).includes(query);
+    });
 }
 
 export function normalizeAdminEquipmentSelection() {

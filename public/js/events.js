@@ -1,8 +1,9 @@
-import { state } from "./state.js?v=20260616-feat6";
-import { api } from "./api.js?v=20260616-feat6";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260616-feat6";
+import { state } from "./state.js?v=20260623-notify-ui2";
+import { api } from "./api.js?v=20260623-notify-ui2";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260623-notify-ui2";
 import {
   changePassword,
+  deleteAccount,
   downloadAdminBackup,
   downloadLectureCsv,
   login,
@@ -10,23 +11,39 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260616-feat6";
-import { render, toast } from "./renderer.js?v=20260616-feat6";
+} from "./actions.js?v=20260623-notify-ui2";
+import {
+  disableNativeReservationNotifications,
+  enableNativeReservationNotifications,
+  syncNativeReservationNotifications
+} from "./native-notifications.js?v=20260623-notify-ui2";
+import { render, toast } from "./renderer.js?v=20260623-notify-ui2";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260616-feat6";
+} from "./admin-equipment.js?v=20260623-notify-ui2";
 import {
   equipmentCategories,
+  equipmentRangeBlocked,
   formData,
-  parseCsv
-} from "./utils.js?v=20260616-feat6";
+  isReservationDateClosed,
+  normalizeUnicodeText,
+  parseCsv,
+  printDateOutsideUploadWindow,
+  printSelectionBlocked,
+  printSelectionConflicts,
+  timeToMinutes
+} from "./utils.js?v=20260623-notify-ui2";
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
+    for (const target of document.querySelectorAll(".student-shell, .admin-main, .auth-shell")) {
+      target.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+      target.scrollTop = 0;
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
@@ -36,6 +53,106 @@ function scrollToPageTop() {
 function renderAtTop() {
   render();
   scrollToPageTop();
+}
+
+function setReservationFlowStep(type, step) {
+  if (!state.reservationFlowStep) state.reservationFlowStep = { equipment: "date", studio: "date", darkroom: "date", print: "date" };
+  state.reservationFlowStep[type] = step;
+}
+
+function goReservationFlowStep(type, step) {
+  setReservationFlowStep(type, step);
+  renderAtTop();
+}
+
+function checkedValues(name) {
+  return [...document.querySelectorAll(`[name="${name}"]:checked`)].map((item) => item.value);
+}
+
+function applyPrintTimeSlot(value) {
+  const [startTime = "", endTime = ""] = String(value || "").split("|");
+  state.selectedPrintStartTime = startTime;
+  state.selectedPrintEndTime = endTime;
+}
+
+function syncReservationDraftFromDom(type) {
+  if (type === "darkroom") {
+    state.selectedDarkroomSlots = checkedValues("darkroomSlots");
+    state.selectedDarkroomProcessTypes = checkedValues("processTypes");
+    const participantCount = document.querySelector("[name=\"participantCount\"]")?.value;
+    if (participantCount) state.selectedDarkroomParticipantCount = participantCount;
+    state.selectedDarkroomChemicals = Object.fromEntries((state.bootstrap?.darkroomChemicals || []).map((chem) => [
+      chem.id,
+      document.querySelector(`[name="chem-${chem.id}"]`)?.value || ""
+    ]));
+  }
+  if (type === "print") {
+    const selectedPrintTimeSlot = document.querySelector("[name=\"printTimeSlot\"]:checked")?.value;
+    if (selectedPrintTimeSlot) applyPrintTimeSlot(selectedPrintTimeSlot);
+    state.selectedPrintTypes = checkedValues("printTypes");
+    state.selectedPrintPapers = checkedValues("papers");
+    state.selectedPrintSizes = checkedValues("sizes");
+  }
+}
+
+function canAdvanceReservationFlow(type, nextStep) {
+  syncReservationDraftFromDom(type);
+  const selectedDate = state.selectedDates[type] || "";
+  if (!selectedDate) {
+    toast("먼저 예약 날짜를 선택하세요.");
+    return false;
+  }
+  if (isReservationDateClosed(type, selectedDate)) {
+    toast("선택한 날짜는 예약 마감되어 다음 단계로 이동할 수 없습니다.");
+    return false;
+  }
+  if (type === "equipment" && nextStep === "select" && equipmentRangeBlocked(selectedDate, state.selectedEquipmentPeriod).length) {
+    toast("선택한 대여 기간에 차단 일정이 포함되어 있습니다.");
+    return false;
+  }
+  if (type === "equipment" && nextStep === "details" && !state.selectedEquipmentItemIds.length) {
+    toast("기자재를 1개 이상 선택하세요.");
+    return false;
+  }
+  if (type === "studio" && nextStep === "schedule" && !state.selectedStudioSpace) {
+    toast("스튜디오 공간을 선택하세요.");
+    return false;
+  }
+  if (type === "studio" && nextStep === "details" && !state.selectedStudioSlots.length) {
+    toast("사용 시간을 1개 이상 선택하세요.");
+    return false;
+  }
+  if (type === "darkroom" && nextStep === "process" && !state.selectedDarkroomSlots.length) {
+    toast("암실 사용 시간을 1개 이상 선택하세요.");
+    return false;
+  }
+  if (type === "darkroom" && nextStep === "details" && !state.selectedDarkroomProcessTypes.length) {
+    toast("암실 작업 유형을 선택하세요.");
+    return false;
+  }
+  if (type === "print" && nextStep === "options") {
+    if (printDateOutsideUploadWindow(selectedDate)) {
+      toast("출력 업로드 가능 기간 밖의 날짜입니다.");
+      return false;
+    }
+    if (!state.selectedPrintStartTime || !state.selectedPrintEndTime || timeToMinutes(state.selectedPrintStartTime) >= timeToMinutes(state.selectedPrintEndTime)) {
+      toast("출력실 사용 시작/종료 시간을 확인하세요.");
+      return false;
+    }
+    if (printSelectionBlocked(selectedDate, state.selectedPrintStartTime, state.selectedPrintEndTime).length) {
+      toast("선택한 출력실 시간이 차단 일정과 겹칩니다.");
+      return false;
+    }
+    if (printSelectionConflicts(selectedDate, state.selectedPrintStartTime, state.selectedPrintEndTime).length) {
+      toast("선택한 출력실 시간대는 예약 가능 인원이 가득 찼습니다.");
+      return false;
+    }
+  }
+  if (type === "print" && nextStep === "details" && (!state.selectedPrintTypes.length || !state.selectedPrintPapers.length || !state.selectedPrintSizes.length)) {
+    toast("출력 종류, 용지, 사이즈를 각각 1개 이상 선택하세요.");
+    return false;
+  }
+  return true;
 }
 
 export function setupEventHandlers() {
@@ -76,10 +193,51 @@ export function setupEventHandlers() {
           state.selectedStudioSpace = "";
           state.selectedStudioSlots = [];
         }
+        if (type === "equipment") {
+          state.equipmentSelectionSheetOpen = false;
+          state.equipmentRecommendationOpen = false;
+        }
+        if (type === "darkroom") {
+          state.selectedDarkroomSlots = [];
+          state.selectedDarkroomProcessTypes = [];
+          state.selectedDarkroomParticipantCount = "1";
+          state.selectedDarkroomChemicals = {};
+        }
+        if (type === "print") {
+          state.selectedPrintStartTime = "";
+          state.selectedPrintEndTime = "";
+          state.selectedPrintTypes = [];
+          state.selectedPrintPapers = [];
+          state.selectedPrintSizes = [];
+        }
+        if (["equipment", "studio", "darkroom", "print"].includes(type)) {
+          setReservationFlowStep(type, type === "studio" ? "select" : "schedule");
+          renderAtTop();
+          return;
+        }
         render();
         return;
       }
       if (target.dataset.action === "logout") await logout();
+      if (target.dataset.nativeNotifications === "enable") {
+        toast("알림 권한을 확인합니다.");
+        await enableNativeReservationNotifications();
+        toast("예약 알림을 켰습니다.");
+        render();
+        return;
+      }
+      if (target.dataset.nativeNotifications === "sync") {
+        const result = await syncNativeReservationNotifications({ force: true });
+        toast(`예약 알림 ${result.scheduled || 0}개를 동기화했습니다.`);
+        render();
+        return;
+      }
+      if (target.dataset.nativeNotifications === "disable") {
+        await disableNativeReservationNotifications();
+        toast("예약 알림을 껐습니다.");
+        render();
+        return;
+      }
       if (target.dataset.equipmentCategory) {
         state.equipmentCategoryFilter = target.dataset.equipmentCategory;
         renderAtTop();
@@ -87,6 +245,31 @@ export function setupEventHandlers() {
       }
       if (target.dataset.equipmentRemove) {
         state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.dataset.equipmentRemove);
+        if (!state.selectedEquipmentItemIds.length) {
+          state.equipmentSelectionSheetOpen = false;
+          state.equipmentRecommendationOpen = false;
+        }
+        render();
+        return;
+      }
+      if (target.dataset.equipmentSelectionToggle !== undefined) {
+        state.equipmentSelectionSheetOpen = !state.equipmentSelectionSheetOpen;
+        if (!state.equipmentSelectionSheetOpen) state.equipmentRecommendationOpen = false;
+        render();
+        return;
+      }
+      if (target.dataset.equipmentRecommendToggle !== undefined) {
+        state.equipmentRecommendationOpen = !state.equipmentRecommendationOpen;
+        render();
+        return;
+      }
+      if (target.dataset.equipmentRecommendAdd) {
+        if (!state.selectedEquipmentItemIds.includes(target.dataset.equipmentRecommendAdd)) {
+          state.selectedEquipmentItemIds.push(target.dataset.equipmentRecommendAdd);
+        }
+        state.equipmentSelectionSheetOpen = true;
+        state.equipmentRecommendationOpen = true;
+        setReservationFlowStep("equipment", "select");
         render();
         return;
       }
@@ -124,17 +307,39 @@ export function setupEventHandlers() {
       if (target.dataset.reserveShortcut) {
         state.view = "reserve";
         state.reservationType = target.dataset.reserveShortcut;
+        if (state.reservationType === "equipment") {
+          state.equipmentSelectionSheetOpen = false;
+          state.equipmentRecommendationOpen = false;
+        }
+        if (state.reservationFlowStep?.[state.reservationType]) state.reservationFlowStep[state.reservationType] = "date";
         renderAtTop();
         return;
       }
       if (target.dataset.reserveType) {
         state.reservationType = target.dataset.reserveType;
+        if (state.reservationType === "equipment") {
+          state.equipmentSelectionSheetOpen = false;
+          state.equipmentRecommendationOpen = false;
+        }
+        if (state.reservationFlowStep?.[state.reservationType]) state.reservationFlowStep[state.reservationType] = "date";
         renderAtTop();
         return;
       }
       if (target.dataset.action === "reserve-back") {
         state.reservationType = "";
+        state.equipmentSelectionSheetOpen = false;
+        state.equipmentRecommendationOpen = false;
         renderAtTop();
+        return;
+      }
+      if (target.dataset.reserveStep) {
+        const [type, step] = target.dataset.reserveStep.split(":");
+        if (type && step) goReservationFlowStep(type, step);
+        return;
+      }
+      if (target.dataset.reserveNext) {
+        const [type, step] = target.dataset.reserveNext.split(":");
+        if (type && step && canAdvanceReservationFlow(type, step)) goReservationFlowStep(type, step);
         return;
       }
       if (target.dataset.cancelRes) {
@@ -163,8 +368,27 @@ export function setupEventHandlers() {
       }
       if (target.dataset.lectureApply) {
         await api(`/api/lectures/${target.dataset.lectureApply}/apply`, { method: "POST" });
-        await loadLectures();
+        await Promise.all([loadLectures(), loadMyReservations()]);
         toast("특강 신청이 완료되었습니다.");
+        render();
+        return;
+      }
+      if (target.dataset.lectureCancel) {
+        if (!confirm("특강 신청을 취소할까요?")) return;
+        await api(`/api/lectures/${target.dataset.lectureCancel}/apply`, { method: "DELETE" });
+        await Promise.all([loadLectures(), loadMyReservations()]);
+        toast("특강 신청을 취소했습니다.");
+        render();
+        return;
+      }
+      if (target.dataset.lectureYearFilter) {
+        state.lectureYearFilter = target.dataset.lectureYearFilter;
+        render();
+        return;
+      }
+      if (target.dataset.myReservationCategory) {
+        state.myReservationCategory = target.dataset.myReservationCategory;
+        state.pastReservationsOpen = false;
         render();
         return;
       }
@@ -177,6 +401,31 @@ export function setupEventHandlers() {
       if (target.dataset.adminReservationTab && !target.dataset.adminView) {
         state.adminReservationTab = target.dataset.adminReservationTab;
         renderAtTop();
+        return;
+      }
+      if (target.dataset.adminEquipmentReservationStatus) {
+        state.adminEquipmentReservationStatusFilter = target.dataset.adminEquipmentReservationStatus;
+        render();
+        return;
+      }
+      if (target.dataset.adminUserStatusFilter) {
+        state.adminUserStatusFilter = target.dataset.adminUserStatusFilter;
+        render();
+        return;
+      }
+      if (target.dataset.adminSessionSort) {
+        state.adminSessionSort = target.dataset.adminSessionSort;
+        render();
+        return;
+      }
+      if (target.dataset.adminLogActionFilter) {
+        state.adminLogActionFilter = target.dataset.adminLogActionFilter;
+        render();
+        return;
+      }
+      if (target.dataset.adminLogSort) {
+        state.adminLogSort = target.dataset.adminLogSort;
+        render();
         return;
       }
       if (target.dataset.adminEquipmentTab) {
@@ -230,6 +479,18 @@ export function setupEventHandlers() {
         render();
         return;
       }
+      if (target.dataset.adminReportSort) {
+        const field = target.dataset.adminReportSort;
+        const defaultDirection = field === "name" ? "asc" : "desc";
+        state.adminReportSort = {
+          field,
+          direction: state.adminReportSort.field === field
+            ? (state.adminReportSort.direction === "asc" ? "desc" : "asc")
+            : defaultDirection
+        };
+        render();
+        return;
+      }
       if (target.dataset.userApproval) {
         const body = { approvalStatus: target.dataset.status };
         if (target.dataset.status === "blocked") {
@@ -252,24 +513,18 @@ export function setupEventHandlers() {
         return;
       }
       if (target.dataset.userWarn) {
-        const reason = prompt("경고 사유를 입력하세요. (경고 2회 → 자동 1주일, 3회 → 자동 한 학기 제한)", "");
+        const reason = prompt("관리자용 경고 메모를 입력하세요. 학생 상태는 변경되지 않습니다.", "");
         if (reason === null) return;
         const result = await api(`/api/admin/users/${target.dataset.userWarn}/warning`, { method: "POST", body: { reason: reason.trim() } });
         await loadAdminData();
-        if (result.autoBlock === "semester") {
-          alert(`경고 ${result.user.warningCount}회 누적 → 자동 ‘한 학기’ 예약 제한이 적용되었습니다.`);
-        } else if (result.autoBlock === "week1") {
-          alert(`경고 ${result.user.warningCount}회 누적 → 자동 ‘1주일’ 예약 제한이 적용되었습니다.`);
-        } else {
-          toast(`경고를 부여했습니다. (누적 ${result.user.warningCount}회)`);
-        }
+        toast(`경고 메모를 저장했습니다. (기록 ${result.user.warningCount}건)`);
         return;
       }
       if (target.dataset.userWarnReset) {
-        if (!confirm("이 학생의 경고 누적과 예약 제한을 모두 해제할까요?")) return;
+        if (!confirm("이 학생의 경고 메모 기록을 초기화할까요? 대여금지 상태는 변경되지 않습니다.")) return;
         await api(`/api/admin/users/${target.dataset.userWarnReset}/warning`, { method: "POST", body: { reset: true } });
         await loadAdminData();
-        toast("경고를 초기화했습니다.");
+        toast("경고 메모를 초기화했습니다.");
         return;
       }
       if (target.dataset.userDelete) {
@@ -368,7 +623,8 @@ export function setupEventHandlers() {
     if (target.name === "studioSpace") {
       state.selectedStudioSpace = target.value;
       state.selectedStudioSlots = [];
-      render();
+      setReservationFlowStep("studio", "schedule");
+      renderAtTop();
       return;
     }
     if (target.name === "studioSlots") {
@@ -381,11 +637,73 @@ export function setupEventHandlers() {
       render();
       return;
     }
+    if (target.name === "darkroomSlots") {
+      if (target.checked && !state.selectedDarkroomSlots.includes(target.value)) {
+        state.selectedDarkroomSlots.push(target.value);
+      }
+      if (!target.checked) {
+        state.selectedDarkroomSlots = state.selectedDarkroomSlots.filter((slot) => slot !== target.value);
+      }
+      render();
+      return;
+    }
+    if (target.name === "processTypes") {
+      if (target.checked && !state.selectedDarkroomProcessTypes.includes(target.value)) {
+        state.selectedDarkroomProcessTypes.push(target.value);
+      }
+      if (!target.checked) {
+        state.selectedDarkroomProcessTypes = state.selectedDarkroomProcessTypes.filter((item) => item !== target.value);
+      }
+      render();
+      return;
+    }
+    if (target.name === "participantCount") {
+      state.selectedDarkroomParticipantCount = target.value;
+      return;
+    }
+    if (target.name?.startsWith("chem-")) {
+      state.selectedDarkroomChemicals = {
+        ...state.selectedDarkroomChemicals,
+        [target.name.replace("chem-", "")]: target.value
+      };
+      return;
+    }
+    if (target.name === "printTimeSlot") {
+      if (target.checked) {
+        applyPrintTimeSlot(target.value);
+      } else if (target.value === `${state.selectedPrintStartTime}|${state.selectedPrintEndTime}`) {
+        state.selectedPrintStartTime = "";
+        state.selectedPrintEndTime = "";
+      }
+      render();
+      return;
+    }
+    if (target.name === "printTypes") {
+      if (target.checked && !state.selectedPrintTypes.includes(target.value)) state.selectedPrintTypes.push(target.value);
+      if (!target.checked) state.selectedPrintTypes = state.selectedPrintTypes.filter((item) => item !== target.value);
+      render();
+      return;
+    }
+    if (target.name === "papers") {
+      if (target.checked && !state.selectedPrintPapers.includes(target.value)) state.selectedPrintPapers.push(target.value);
+      if (!target.checked) state.selectedPrintPapers = state.selectedPrintPapers.filter((item) => item !== target.value);
+      render();
+      return;
+    }
+    if (target.name === "sizes") {
+      if (target.checked && !state.selectedPrintSizes.includes(target.value)) state.selectedPrintSizes.push(target.value);
+      if (!target.checked) state.selectedPrintSizes = state.selectedPrintSizes.filter((item) => item !== target.value);
+      render();
+      return;
+    }
     if (["period", "rentalTime", "returnTime"].includes(target.name) && target.closest("[data-type=\"equipment\"]")) {
       // 대여/반납 시간은 가용성에 영향이 없으므로 상태만 저장하고 재렌더하지 않는다(입력 끊김 방지).
       if (target.name === "rentalTime") { state.selectedEquipmentRentalTime = target.value; return; }
       if (target.name === "returnTime") { state.selectedEquipmentReturnTime = target.value; return; }
       state.selectedEquipmentPeriod = target.value; // 기간 변경은 가용 장비가 달라지므로 재렌더
+      state.equipmentSelectionSheetOpen = false;
+      state.equipmentRecommendationOpen = false;
+      setReservationFlowStep("equipment", "schedule");
       render();
       return;
     }
@@ -396,35 +714,195 @@ export function setupEventHandlers() {
       if (!target.checked) {
         state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => itemId !== target.value);
       }
+      if (!state.selectedEquipmentItemIds.length) {
+        state.equipmentSelectionSheetOpen = false;
+        state.equipmentRecommendationOpen = false;
+      }
       render();
     }
   });
 
-  function rerenderReservationSearch() {
-    render();
-    const next = document.querySelector("[data-admin-reservation-search]");
-    if (next) {
-      next.focus();
-      const end = next.value.length;
-      try { next.setSelectionRange(end, end); } catch (error) { /* noop */ }
+  function rerenderSearch(selector, { restoreFocus = true } = {}) {
+    searchRenderInProgress = true;
+    try {
+      render();
+      const next = document.querySelector(selector);
+      if (restoreFocus && next) {
+        next.focus();
+        const end = next.value.length;
+        try { next.setSelectionRange(end, end); } catch (error) { /* noop */ }
+      }
+    } finally {
+      setTimeout(() => { searchRenderInProgress = false; }, 0);
     }
   }
 
+  const searchBindings = [
+    ["myReservationSearch", "myReservationSearch", "[data-my-reservation-search]"],
+    ["reportSearch", "reportSearch", "[data-report-search]"],
+    ["noticeSearch", "noticeSearch", "[data-notice-search]"],
+    ["equipmentSearch", "equipmentSearch", "[data-equipment-search]"],
+    ["lectureSearch", "lectureSearch", "[data-lecture-search]"],
+    ["adminUserSearch", "adminUserSearch", "[data-admin-user-search]"],
+    ["adminReservationSearch", "adminReservationSearch", "[data-admin-reservation-search]"],
+    ["adminEquipmentSearch", "adminEquipmentSearch", "[data-admin-equipment-search]"],
+    ["adminReportSearch", "adminReportSearch", "[data-admin-report-search]"],
+    ["adminLectureSearch", "adminLectureSearch", "[data-admin-lecture-search]"],
+    ["adminNoticeSearch", "adminNoticeSearch", "[data-admin-notice-search]"],
+    ["adminSessionSearch", "adminSessionSearch", "[data-admin-session-search]"],
+    ["adminLogSearch", "adminLogSearch", "[data-admin-log-search]"],
+    ["adminBlockedSearch", "adminBlockedScheduleSearch", "[data-admin-blocked-search]"]
+  ].map(([datasetKey, stateKey, selector]) => ({ datasetKey, stateKey, selector }));
+
+  function searchBindingForTarget(target) {
+    if (!target.dataset) return null;
+    return searchBindings.find((binding) => target.dataset[binding.datasetKey] !== undefined) || null;
+  }
+
+  let activeSearchComposition = false;
+  let activeSearchSelector = "";
+  let searchRenderTimer = null;
+  let searchRenderInProgress = false;
+  const hangulSearchPattern = /[가-힣ㄱ-ㅎㅏ-ㅣ\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/;
+
+  function clearSearchRenderTimer() {
+    if (searchRenderTimer) {
+      clearTimeout(searchRenderTimer);
+      searchRenderTimer = null;
+    }
+  }
+
+  function normalizedSearchInputValue(target, { preserveComposition = false } = {}) {
+    const value = String(target?.value || "");
+    return preserveComposition ? value : normalizeUnicodeText(value);
+  }
+
+  function hasHangulSearchInput(target) {
+    return hangulSearchPattern.test(String(target?.value || ""));
+  }
+
+  function markSearchComposition(target, binding) {
+    activeSearchComposition = true;
+    activeSearchSelector = binding.selector;
+    target.dataset.searchComposing = "true";
+    clearSearchRenderTimer();
+  }
+
+  function unmarkSearchComposition(target) {
+    activeSearchComposition = false;
+    activeSearchSelector = "";
+    if (target?.dataset) delete target.dataset.searchComposing;
+  }
+
+  function isSearchCompositionEvent(event, target) {
+    const inputType = String(event.inputType || "");
+    return Boolean(
+      event.isComposing ||
+      target.dataset.searchComposing === "true" ||
+      (activeSearchComposition && (!activeSearchSelector || document.querySelector(activeSearchSelector) === target)) ||
+      inputType.toLowerCase().includes("composition")
+    );
+  }
+
+  function scheduleSearchRender(selector, delay = 120, options = {}) {
+    clearSearchRenderTimer();
+    searchRenderTimer = setTimeout(() => {
+      searchRenderTimer = null;
+      rerenderSearch(selector, options);
+    }, delay);
+  }
+
+  function commitSearchInput(target, binding, { restoreFocus = true } = {}) {
+    unmarkSearchComposition(target);
+    const normalized = normalizedSearchInputValue(target);
+    state[binding.stateKey] = normalized;
+    if (target && target.value !== normalized) target.value = normalized;
+    clearSearchRenderTimer();
+    rerenderSearch(binding.selector, { restoreFocus });
+  }
+
+  document.addEventListener("beforeinput", (event) => {
+    const target = event.target;
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    if (event.isComposing || String(event.inputType || "").toLowerCase().includes("composition")) {
+      markSearchComposition(target, binding);
+    }
+  });
+
+  document.addEventListener("compositionstart", (event) => {
+    const target = event.target;
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    markSearchComposition(target, binding);
+  });
+
   document.addEventListener("input", (event) => {
     const target = event.target;
-    if (target.dataset && target.dataset.adminReservationSearch !== undefined) {
-      state.adminReservationSearch = target.value;
-      // 한글 등 IME 조합 중에는 재렌더하지 않는다(입력창이 새로 생성되면 조합이 깨져 자모가 분리됨).
-      if (event.isComposing) return;
-      rerenderReservationSearch();
-    }
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    const composing = isSearchCompositionEvent(event, target);
+    state[binding.stateKey] = normalizedSearchInputValue(target, { preserveComposition: composing });
+    // 한글 IME는 iOS/WKWebView에서 isComposing이 누락되는 경우가 있다.
+    // 한글 입력값이 있으면 입력 중 전체 렌더를 막고, Enter/완료/포커스 아웃에서만 검색 결과를 갱신한다.
+    if (composing || hasHangulSearchInput(target)) return;
+    scheduleSearchRender(binding.selector);
   });
 
   document.addEventListener("compositionend", (event) => {
     const target = event.target;
-    if (target.dataset && target.dataset.adminReservationSearch !== undefined) {
-      state.adminReservationSearch = target.value;
-      rerenderReservationSearch();
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    unmarkSearchComposition(target);
+    state[binding.stateKey] = normalizedSearchInputValue(target);
+    if (!hasHangulSearchInput(target)) scheduleSearchRender(binding.selector, 0);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitSearchInput(target, binding);
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      target.value = "";
+      commitSearchInput(target, binding);
+    }
+  });
+
+  document.addEventListener("focusout", (event) => {
+    const target = event.target;
+    const binding = searchBindingForTarget(target);
+    if (!binding) return;
+    if (searchRenderInProgress) return;
+    commitSearchInput(target, binding, { restoreFocus: false });
+  });
+
+  document.addEventListener("change", async (event) => {
+    const target = event.target;
+    if (target.dataset && target.dataset.userLimitDuration !== undefined) {
+      const userId = target.dataset.userLimitDuration;
+      const limitDuration = target.value;
+      if (!limitDuration) return;
+      const body = limitDuration === "unblock"
+        ? { approvalStatus: "approved" }
+        : { approvalStatus: "blocked", limitDuration };
+      try {
+        await api(`/api/admin/users/${userId}/approval`, {
+          method: "PATCH",
+          body
+        });
+        await loadAdminData();
+        toast(limitDuration === "unblock" ? "대여금지를 해제했습니다." : "대여금지를 적용했습니다.");
+        render();
+      } catch (error) {
+        toast(error.message || "대여금지 설정 변경에 실패했습니다.");
+        await loadAdminData();
+        render();
+      }
     }
   });
 
@@ -436,6 +914,10 @@ export function setupEventHandlers() {
       if (form.dataset.form === "signup") await signup(form);
       if (form.dataset.form === "password-change") {
         await changePassword(form);
+        return;
+      }
+      if (form.dataset.form === "account-delete") {
+        await deleteAccount(form);
         return;
       }
       if (form.dataset.form === "profile-edit") {
@@ -479,7 +961,6 @@ export function setupEventHandlers() {
       if (form.dataset.form === "lecture-add") {
         const data = formData(form);
         data.capacity = Number(data.capacity || 0);
-        data.baseApplicationCount = Number(data.baseApplicationCount || 0);
         await api("/api/admin/lectures", { method: "POST", body: data });
         form.reset();
         await loadAdminData();
@@ -488,7 +969,6 @@ export function setupEventHandlers() {
       if (form.dataset.form === "lecture-edit") {
         const data = formData(form);
         data.capacity = Number(data.capacity || 0);
-        data.baseApplicationCount = Number(data.baseApplicationCount || 0);
         await api(`/api/admin/lectures/${form.dataset.lectureId}`, { method: "PATCH", body: data });
         state.editingLectureId = "";
         await loadAdminData();
@@ -511,6 +991,8 @@ export function setupEventHandlers() {
       if (form.dataset.form === "settings-save") {
         const data = formData(form);
         data.darkroomCapacity = Number(data.darkroomCapacity || 6);
+        data.equipmentHighValueCategories = String(data.equipmentHighValueCategories || "").split(",").map((item) => item.trim()).filter(Boolean);
+        data.equipmentBagKeywords = String(data.equipmentBagKeywords || "").split(",").map((item) => item.trim()).filter(Boolean);
         await api("/api/admin/settings", { method: "PATCH", body: data });
         await loadBootstrap();
         toast("설정을 저장했습니다.");

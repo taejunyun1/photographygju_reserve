@@ -58,7 +58,12 @@ async function ensureDbInitialized() {
 }
 
 function readDb() {
-  return normalizeDb(JSON.parse(fs.readFileSync(DB_PATH, "utf8")));
+  const db = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+  const beforeStatuses = JSON.stringify((db.reservations || []).map((item) => [item.id, item.type, item.status]));
+  normalizeDb(db);
+  const afterStatuses = JSON.stringify((db.reservations || []).map((item) => [item.id, item.type, item.status]));
+  if (beforeStatuses !== afterStatuses) writeDb(db);
+  return db;
 }
 
 function writeDb(db) {

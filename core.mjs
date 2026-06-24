@@ -6,6 +6,7 @@
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 const PASSWORD_ITERATIONS = 100000;
 const PASSWORD_MIN_LENGTH = 8;
+const LECTURE_CANCEL_LIMIT_MS = 1000 * 60 * 60 * 6;
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LOCK_MS = 5 * 60 * 1000;
@@ -38,7 +39,7 @@ const TIME_VALUE_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print"]);
 
 const defaultSettings = {
-  appName: "GJU-reserve",
+  appName: "GJU Photography Reservation",
   departmentName: "광주대학교 사진영상미디어학과",
   studentUrl: PRODUCTION_STUDENT_URL,
   adminUrl: PRODUCTION_STUDENT_URL,
@@ -93,6 +94,12 @@ const defaultSettings = {
   printPapers: ["글로시", "매트"],
   printSizes: ["소형", "중형", "대형"],
   printBankAccount: "Admin 설정에서 출력비 계좌를 입력하세요.",
+  printUploadStartDate: "",
+  printUploadEndDate: "",
+  googleDriveUrl: "",
+  equipmentHighValueCategories: ["Body", "Lens"],
+  equipmentBagKeywords: ["펠리컨", "Pelican"],
+  equipmentCameraBagNotice: "고가장비(카메라)를 선택 시 카메라 가방을 지참하겠습니다",
   vacationMode: false,
   vacationRanges: [],
   blockedSchedules: [],
@@ -249,7 +256,7 @@ function normalizeStatusLabel(status) {
     approval_pending: "승인 대기",
     approved: "승인 완료",
     rejected: "반려",
-    blocked: "이용 제한",
+    blocked: "대여금지",
     pending_approval: "승인 대기",
     auto_confirmed: "자동 확정",
     cancelled: "취소",
@@ -432,12 +439,26 @@ export async function initialDb(adminPassword = "admin") {
   };
 }
 
-function publicUser(user) {
+function userWarningRecords(db, userId, limit = 3) {
+  return (db?.warnings || [])
+    .filter((item) => item.userId === userId)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .slice(0, limit)
+    .map((item) => ({
+      id: item.id,
+      reason: item.reason || "",
+      count: Math.max(0, Number(item.count || 0)),
+      createdAt: item.createdAt || ""
+    }));
+}
+
+function publicUser(user, db = null) {
   if (!user) return null;
   const { passwordHash, ...rest } = user;
   return {
     ...rest,
     warningCount: Math.max(0, Number(user.warningCount || 0)),
+    warningRecords: db ? userWarningRecords(db, user.id) : [],
     approvalStatus: effectiveApprovalStatus(user)
   };
 }
@@ -553,7 +574,7 @@ function requireAdmin(authorization, db) {
 function assertApprovedStudentAccess(user) {
   if (user.role !== "admin" && effectiveApprovalStatus(user) !== "approved") {
     const message = user.approvalStatus === "blocked"
-      ? `이용 제한 중입니다.${user.blockedUntil ? ` 제한 종료: ${blockEndLabel(user.blockedUntil)}` : ""}`
+      ? `대여금지 상태입니다.${user.blockedUntil ? ` 해제 예정: ${blockEndLabel(user.blockedUntil)}` : ""}`
       : "관리자 승인 후 예약할 수 있습니다.";
     throw Object.assign(new Error(message), { status: 403 });
   }
@@ -653,6 +674,14 @@ function reservationStatusForType(type) {
   return type === "equipment" ? "pending_approval" : "auto_confirmed";
 }
 
+function normalizeReservationStatus(reservation) {
+  if (reservation?.type === "equipment" && reservation.status === "completed") {
+    reservation.status = "returned";
+    return true;
+  }
+  return false;
+}
+
 function slotSet(value) {
   return new Set(Array.isArray(value) ? value : []);
 }
@@ -699,6 +728,25 @@ function todayKeySeoul() {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+function requiresPreviousDayReservation(type) {
+  return type === "equipment" || type === "studio";
+}
+
+function reservationDateClosed(type, reservedDate) {
+  if (!reservedDate) return false;
+  const today = todayKeySeoul();
+  return requiresPreviousDayReservation(type)
+    ? reservedDate <= today
+    : reservedDate < today;
+}
+
+function reservationDateClosedMessage(type) {
+  if (requiresPreviousDayReservation(type)) {
+    return `${reservationTitle(type)} 예약은 사용일 전날 23:59까지만 가능합니다. 당일 예약은 시스템에서 접수할 수 없습니다.`;
+  }
+  return "오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다.";
+}
+
 function equipmentPeriodDays(period = "") {
   if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
   if (String(period).includes("1박2일")) return 1;
@@ -709,6 +757,37 @@ function equipmentReservationRange(fields = {}) {
   const start = fields.reservedDate || "";
   if (!start) return null;
   return { start, end: addDaysToDateKey(start, equipmentPeriodDays(fields.period)) };
+}
+
+function normalizedText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function equipmentMatchesCategory(item, categories = []) {
+  const category = normalizedText(item?.category);
+  return categories.map(normalizedText).filter(Boolean).includes(category);
+}
+
+function equipmentMatchesAnyKeyword(item, keywords = []) {
+  const haystack = [item?.name, item?.code, item?.category, item?.notes, item?.model, item?.brand]
+    .map(normalizedText)
+    .join(" ");
+  return keywords.map(normalizedText).filter(Boolean).some((keyword) => haystack.includes(keyword));
+}
+
+function isHighValueEquipment(item, settings = defaultSettings) {
+  return equipmentMatchesCategory(item, settings.equipmentHighValueCategories || defaultSettings.equipmentHighValueCategories);
+}
+
+function isCameraBagEquipment(item, settings = defaultSettings) {
+  return equipmentMatchesAnyKeyword(item, settings.equipmentBagKeywords || defaultSettings.equipmentBagKeywords);
+}
+
+function printDateOutsideUploadWindow(settings, reservedDate) {
+  if (!reservedDate) return false;
+  const start = settings.printUploadStartDate || "";
+  const end = settings.printUploadEndDate || "";
+  return Boolean((start && reservedDate < start) || (end && reservedDate > end));
 }
 
 function dateRangesOverlap(a, b) {
@@ -808,10 +887,35 @@ function sanitizeBlockedSchedule(rule = {}) {
   };
 }
 
+function sanitizeStringList(value, maxItems = 80, maxLength = 80) {
+  const source = Array.isArray(value)
+    ? value
+    : String(value || "").split(",");
+  return [...new Set(source
+    .map((item) => String(item || "").trim().slice(0, maxLength))
+    .filter(Boolean))]
+    .slice(0, maxItems);
+}
+
 function sanitizeSettingsPatch(current, body = {}) {
   assertPlainObject(body, "설정");
   const patch = {};
   if (body.printBankAccount !== undefined) patch.printBankAccount = String(body.printBankAccount || "").trim().slice(0, 240);
+  if (body.googleDriveUrl !== undefined) {
+    const googleDriveUrl = sanitizeHttpUrl(body.googleDriveUrl || "", "출력실 구글 드라이브 URL");
+    if (googleDriveUrl.length > 500) {
+      throw Object.assign(new Error("출력실 구글 드라이브 URL은 500자 이하로 입력하세요."), { status: 400 });
+    }
+    patch.googleDriveUrl = googleDriveUrl;
+  }
+  if (body.printUploadStartDate !== undefined) {
+    assertOptionalDateKey(body.printUploadStartDate, "출력 업로드 시작일");
+    patch.printUploadStartDate = String(body.printUploadStartDate || "");
+  }
+  if (body.printUploadEndDate !== undefined) {
+    assertOptionalDateKey(body.printUploadEndDate, "출력 업로드 종료일");
+    patch.printUploadEndDate = String(body.printUploadEndDate || "");
+  }
   if (body.darkroomCapacity !== undefined) {
     const capacity = Number(body.darkroomCapacity);
     if (!Number.isFinite(capacity) || capacity < 1 || capacity > 200) {
@@ -831,11 +935,11 @@ function sanitizeSettingsPatch(current, body = {}) {
     if (!Array.isArray(body.equipmentCategories)) {
       throw Object.assign(new Error("기자재 카테고리는 배열이어야 합니다."), { status: 400 });
     }
-    patch.equipmentCategories = [...new Set(body.equipmentCategories
-      .map((item) => String(item || "").trim().slice(0, 60))
-      .filter(Boolean))]
-      .slice(0, 80);
+    patch.equipmentCategories = sanitizeStringList(body.equipmentCategories, 80, 60);
   }
+  if (body.equipmentHighValueCategories !== undefined) patch.equipmentHighValueCategories = sanitizeStringList(body.equipmentHighValueCategories, 40, 60);
+  if (body.equipmentBagKeywords !== undefined) patch.equipmentBagKeywords = sanitizeStringList(body.equipmentBagKeywords, 40, 60);
+  if (body.equipmentCameraBagNotice !== undefined) patch.equipmentCameraBagNotice = String(body.equipmentCameraBagNotice || "").trim().slice(0, 160) || defaultSettings.equipmentCameraBagNotice;
   if (body.blockedSchedules !== undefined) {
     if (!Array.isArray(body.blockedSchedules) || body.blockedSchedules.length > 400) {
       throw Object.assign(new Error("차단 일정은 400개 이하 배열이어야 합니다."), { status: 400 });
@@ -843,7 +947,11 @@ function sanitizeSettingsPatch(current, body = {}) {
     patch.blockedSchedules = body.blockedSchedules.map(sanitizeBlockedSchedule);
   }
   if (body.vacationMode !== undefined) patch.vacationMode = body.vacationMode === true;
-  return { ...current, ...patch, updatedAt: nowIso() };
+  const next = { ...current, ...patch };
+  if (next.printUploadStartDate && next.printUploadEndDate && next.printUploadStartDate > next.printUploadEndDate) {
+    throw Object.assign(new Error("출력 업로드 종료일은 시작일 이후여야 합니다."), { status: 400 });
+  }
+  return { ...next, updatedAt: nowIso() };
 }
 
 function studioTargetMatches(target, space) {
@@ -898,8 +1006,8 @@ function validateReservation(db, type, fields, editingId = null) {
     throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
   }
   assertOptionalDateKey(fields.reservedDate, "예약일");
-  if (fields.reservedDate && fields.reservedDate < todayKeySeoul()) {
-    throw Object.assign(new Error("오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다."), { status: 400 });
+  if (reservationDateClosed(type, fields.reservedDate)) {
+    throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });
   }
 
   if (type === "equipment") {
@@ -916,11 +1024,13 @@ function validateReservation(db, type, fields, editingId = null) {
     if (blockedDate) {
       throw Object.assign(new Error(`${blockedDate}은 기자재 예약 차단 일정이 있어 예약할 수 없습니다.`), { status: 409 });
     }
+    const selectedEquipmentItems = [];
     for (const itemId of fields.equipmentItemIds) {
       const item = db.equipment.find((eq) => eq.id === itemId);
       if (!item || !item.active || !item.reservable || !equipmentReservableForStatus(item.status)) {
         throw Object.assign(new Error("예약할 수 없는 기자재가 포함되어 있습니다."), { status: 400 });
       }
+      selectedEquipmentItems.push(item);
       const conflict = db.reservations.find((reservation) => {
         if (reservation.id === editingId || reservation.type !== "equipment") return false;
         if (!isBlockingReservation(reservation)) return false;
@@ -931,6 +1041,14 @@ function validateReservation(db, type, fields, editingId = null) {
         throw Object.assign(new Error(`${item.code} 기자재가 해당 기간에 이미 예약되어 있습니다.`), { status: 409 });
       }
     }
+    const hasHighValueEquipment = selectedEquipmentItems.some((item) => isHighValueEquipment(item, db.settings));
+    const hasCameraBagEquipment = selectedEquipmentItems.some((item) => isCameraBagEquipment(item, db.settings));
+    if (hasHighValueEquipment && !hasCameraBagEquipment && fields.cameraBagConfirmed !== true && fields.cameraBagConfirmed !== "true") {
+      throw Object.assign(new Error(db.settings.equipmentCameraBagNotice || defaultSettings.equipmentCameraBagNotice), { status: 400 });
+    }
+    fields.cameraBagConfirmationRequired = hasHighValueEquipment;
+    fields.pelicanBagReserved = hasHighValueEquipment && hasCameraBagEquipment;
+    fields.cameraBagConfirmed = hasHighValueEquipment ? (hasCameraBagEquipment || fields.cameraBagConfirmed === true || fields.cameraBagConfirmed === "true") : false;
   }
 
   if (type === "studio") {
@@ -985,6 +1103,11 @@ function validateReservation(db, type, fields, editingId = null) {
 
   if (type === "print") {
     assertRequired(fields, ["reservedDate", "startTime", "endTime", "phone", "printType", "paper", "size"]);
+    if (printDateOutsideUploadWindow(db.settings, fields.reservedDate)) {
+      const startLabel = db.settings.printUploadStartDate || "제한 없음";
+      const endLabel = db.settings.printUploadEndDate || "제한 없음";
+      throw Object.assign(new Error(`출력 업로드 가능 기간(${startLabel} ~ ${endLabel}) 밖의 날짜입니다.`), { status: 400 });
+    }
     const start = timeToMinutes(fields.startTime);
     const end = timeToMinutes(fields.endTime);
     const availableStart = timeToMinutes(db.settings.printAvailableStart);
@@ -1058,7 +1181,10 @@ function publicReservationSummary(db, reservation) {
       participantCount: fields.participantCount || "",
       printType: fields.printType || "",
       startTime: fields.startTime || "",
-      endTime: fields.endTime || ""
+      endTime: fields.endTime || "",
+      cameraBagConfirmationRequired: Boolean(fields.cameraBagConfirmationRequired),
+      cameraBagConfirmed: Boolean(fields.cameraBagConfirmed),
+      pelicanBagReserved: Boolean(fields.pelicanBagReserved)
     },
     equipmentItems: equipmentItems.map((item) => ({
       id: item.id,
@@ -1074,12 +1200,30 @@ function lectureApplicationCount(db, lecture) {
   return internalCount + Number(lecture.baseApplicationCount || 0);
 }
 
+function lectureStartTimestamp(lecture) {
+  const date = String(lecture?.lectureDate || "").trim();
+  const timeMatch = String(lecture?.time || "").match(/(\d{1,2}):(\d{2})/);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !timeMatch) return null;
+  const hour = String(timeMatch[1]).padStart(2, "0");
+  const minute = String(timeMatch[2]).padStart(2, "0");
+  const timestamp = Date.parse(`${date}T${hour}:${minute}:00+09:00`);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function canCancelLectureApplication(lecture, now = Date.now()) {
+  const startAt = lectureStartTimestamp(lecture);
+  if (!startAt) return true;
+  return startAt - now > LECTURE_CANCEL_LIMIT_MS;
+}
+
 function lectureSummary(db, lecture, user = null) {
   const applications = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id);
+  const applied = user ? applications.some((item) => item.userId === user.id) : false;
   return {
     ...lecture,
     applicationCount: lectureApplicationCount(db, lecture),
-    applied: user ? applications.some((item) => item.userId === user.id) : false
+    applied,
+    canCancelApplication: applied ? canCancelLectureApplication(lecture) : false
   };
 }
 
@@ -1139,7 +1283,7 @@ function formatSlackMessage(db, event, reservation) {
     reservation_cancelled: `[${reservationTitle(reservation.type)} 예약 취소]`,
     reservation_status: `[${reservationTitle(reservation.type)} 상태 변경]`,
     studio_report: "[스튜디오 보고서 제출]"
-  }[event] || "[GJU-reserve]";
+  }[event] || "[GJU Photography Reservation]";
 
   if (event === "student_signup") {
     return `${title}\n이름: ${reservation.name}\n학번: ${reservation.studentId || "-"}\n신분: ${reservation.studentStatus}\n연락처: ${maskPhone(reservation.phone)}\n상태: 승인 대기`;
@@ -1200,6 +1344,33 @@ function audit(db, actor, action, targetId, detail = {}) {
   db.auditLogs.push({ id: id("audit"), actorId: actor ? actor.id : null, action, targetId, detail, createdAt: nowIso() });
 }
 
+function deleteUserAccount(db, user, actor, action = "user.deleted", detail = {}) {
+  if (!user) return null;
+  if (user.role === "admin") {
+    throw Object.assign(new Error("관리자 계정은 삭제할 수 없습니다."), { status: 400 });
+  }
+  const reservationIds = new Set((db.reservations || []).filter((item) => item.userId === user.id).map((item) => item.id));
+  const summary = {
+    id: user.id,
+    removedReservations: reservationIds.size,
+    removedReports: (db.reports || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).length,
+    removedLectureApplications: (db.lectureApplications || []).filter((item) => item.userId === user.id).length,
+    removedWarnings: (db.warnings || []).filter((item) => item.userId === user.id).length,
+    revokedSessions: (db.sessions || []).filter((item) => item.userId === user.id).length
+  };
+  db.reservations = (db.reservations || []).filter((item) => item.userId !== user.id);
+  db.reports = (db.reports || []).filter((item) => item.userId !== user.id && !reservationIds.has(item.reservationId));
+  db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
+  db.lectureApplications = (db.lectureApplications || []).filter((item) => item.userId !== user.id);
+  db.sessions = (db.sessions || []).filter((item) => item.userId !== user.id);
+  db.users = (db.users || []).filter((item) => item.id !== user.id);
+  audit(db, actor, action, user.id, {
+    ...summary,
+    ...detail
+  });
+  return summary;
+}
+
 function loginThrottleKey(loginId) {
   return String(loginId || "").toLowerCase().slice(0, 120);
 }
@@ -1237,6 +1408,16 @@ function routeKey(method, pathname) {
 
 export function normalizeDb(db) {
   db.settings = { ...defaultSettings, ...(db.settings || {}) };
+  if (db.settings.appName === "GJU-reserve") {
+    db.settings.appName = defaultSettings.appName;
+  }
+  if (db.settings.googleDriveUrl) {
+    try {
+      db.settings.googleDriveUrl = sanitizeHttpUrl(db.settings.googleDriveUrl, "출력실 구글 드라이브 URL");
+    } catch {
+      db.settings.googleDriveUrl = "";
+    }
+  }
   if (db.settings.adminUrl === LEGACY_ADMIN_URL) {
     db.settings.adminUrl = db.settings.studentUrl || PRODUCTION_STUDENT_URL;
   }
@@ -1251,6 +1432,7 @@ export function normalizeDb(db) {
   db.sessions = db.sessions || [];
   db.warnings = db.warnings || [];
   db.users = db.users || [];
+  for (const reservation of db.reservations) normalizeReservationStatus(reservation);
   const seededTaUserIds = db.users
     .filter((user) => user.role === "admin" && user.username === "ta" && user.email === "ta@gju.local")
     .map((user) => user.id);
@@ -1463,6 +1645,24 @@ export async function handleApiRequest(ctx) {
         return ok({ user: publicUser(user) });
       }
 
+      if (routeKey(method, pathname) === "DELETE /api/me") {
+        const user = requireUser(authorization, db);
+        const body = await parseBody(readText);
+        if (user.role === "admin") {
+          throw Object.assign(new Error("관리자 계정은 이 화면에서 삭제할 수 없습니다."), { status: 400 });
+        }
+        assertRequired(body, ["currentPassword", "confirmText"]);
+        if (!(await verifyPassword(body.currentPassword, user.passwordHash))) {
+          throw Object.assign(new Error("현재 비밀번호가 올바르지 않습니다."), { status: 401 });
+        }
+        if (String(body.confirmText).trim() !== "계정 삭제") {
+          throw Object.assign(new Error("확인 문구를 정확히 입력하세요."), { status: 400 });
+        }
+        const summary = deleteUserAccount(db, user, user, "user.account_deleted", meta);
+        await saveDb();
+        return ok(summary);
+      }
+
       if (routeKey(method, pathname) === "POST /api/auth/signup") {
         const body = await parseBody(readText);
         assertRequired(body, ["name", "studentStatus", "phone", "email", "password"]);
@@ -1586,6 +1786,21 @@ export async function handleApiRequest(ctx) {
         return ok(lectureSummary(db, lecture, user));
       }
 
+      if (method === "DELETE" && lectureApplyMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const lecture = db.lectures.find((item) => item.id === lectureApplyMatch[1]);
+        if (!lecture) throw Object.assign(new Error("특강을 찾을 수 없습니다."), { status: 404 });
+        const application = (db.lectureApplications || []).find((item) => item.lectureId === lecture.id && item.userId === user.id);
+        if (!application) throw Object.assign(new Error("신청 내역이 없습니다."), { status: 404 });
+        if (!canCancelLectureApplication(lecture)) {
+          throw Object.assign(new Error("특강 시작 6시간 전부터는 신청을 취소할 수 없습니다."), { status: 400 });
+        }
+        db.lectureApplications = (db.lectureApplications || []).filter((item) => item.id !== application.id);
+        audit(db, user, "lecture.cancelled", lecture.id, { applicationId: application.id });
+        await saveDb();
+        return ok(lectureSummary(db, lecture, user));
+      }
+
       if (routeKey(method, pathname) === "POST /api/reservations") {
         const user = requireApprovedStudent(authorization, db);
         const body = await parseBody(readText);
@@ -1657,13 +1872,23 @@ export async function handleApiRequest(ctx) {
         if (db.reports.some((item) => item.reservationId === reservation.id && item.type === "studio")) {
           throw Object.assign(new Error("이미 제출된 스튜디오 보고서입니다."), { status: 409 });
         }
+        if (["cancelled", "admin_cancelled", "rejected"].includes(reservation.status)) {
+          throw Object.assign(new Error("취소되었거나 반려된 스튜디오 예약에는 보고서를 제출할 수 없습니다."), { status: 400 });
+        }
+        const resultPhotoUrl = sanitizeHttpUrl(body.resultPhotoUrl || "", "결과 사진 링크");
+        if (resultPhotoUrl.length > 500) {
+          throw Object.assign(new Error("결과 사진 링크는 500자 이하로 입력하세요."), { status: 400 });
+        }
         const report = {
           id: id("report"),
           type: "studio",
           reservationId: reservation.id,
           userId: user.id,
-          fields: body,
-          htmlSnapshot: `<article><h1>스튜디오 보고서</h1><p>예약: ${escapeHtml(reservation.id)}</p><p>사용 시간: ${escapeHtml(body.actualTime)}</p><p>인원: ${escapeHtml(body.participants)}</p><p>파손/이상: ${escapeHtml(body.damageFound ? body.damageDescription || "있음" : "없음")}</p></article>`,
+          fields: {
+            ...body,
+            resultPhotoUrl
+          },
+          htmlSnapshot: `<article><h1>스튜디오 보고서</h1><p>예약: ${escapeHtml(reservation.id)}</p><p>사용 시간: ${escapeHtml(body.actualTime)}</p><p>인원: ${escapeHtml(body.participants)}</p><p>결과 사진: ${escapeHtml(resultPhotoUrl || "-")}</p><p>파손/이상: ${escapeHtml(body.damageFound ? body.damageDescription || "있음" : "없음")}</p></article>`,
           submittedAt: nowIso(),
           expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 183).toISOString()
         };
@@ -1739,7 +1964,7 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/users") {
         requireAdmin(authorization, db);
-        return ok(db.users.map(publicUser));
+        return ok(db.users.map((user) => publicUser(user, db)));
       }
 
       const userApprovalMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/approval$/);
@@ -1777,16 +2002,10 @@ export async function handleApiRequest(ctx) {
         if (body.reset) {
           user.warningCount = 0;
           db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
-          if (user.approvalStatus === "blocked") {
-            user.approvalStatus = "approved";
-            user.blockDuration = "";
-            user.blockedAt = "";
-            user.blockedUntil = "";
-          }
           user.updatedAt = nowIso();
           audit(db, admin, "user.warning_reset", user.id);
           await saveDb();
-          return ok({ user: publicUser(user), autoBlock: "" });
+          return ok({ user: publicUser(user, db) });
         }
         user.warningCount = Math.max(0, Number(user.warningCount || 0)) + 1;
         const warning = {
@@ -1798,20 +2017,10 @@ export async function handleApiRequest(ctx) {
           createdAt: nowIso()
         };
         db.warnings.push(warning);
-        // 자동 제재: 경고 2회 → 1주일, 3회 이상 → 한 학기 예약 제한
-        let autoBlock = "";
-        if (user.warningCount >= 3) autoBlock = "semester";
-        else if (user.warningCount >= 2) autoBlock = "week1";
-        if (autoBlock) {
-          user.approvalStatus = "blocked";
-          user.blockDuration = autoBlock;
-          user.blockedAt = nowIso();
-          user.blockedUntil = blockUntilForDuration(autoBlock);
-        }
         user.updatedAt = nowIso();
-        audit(db, admin, "user.warning_issued", user.id, { count: user.warningCount, autoBlock });
+        audit(db, admin, "user.warning_issued", user.id, { count: user.warningCount, reason: warning.reason });
         await saveDb();
-        return ok({ user: publicUser(user), warning, autoBlock });
+        return ok({ user: publicUser(user, db), warning });
       }
 
       const userPasswordResetMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/password$/);
@@ -1836,20 +2045,9 @@ export async function handleApiRequest(ctx) {
         const admin = requireAdmin(authorization, db);
         const user = db.users.find((item) => item.id === userDeleteMatch[1]);
         if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
-        if (user.role === "admin") {
-          throw Object.assign(new Error("관리자 계정은 삭제할 수 없습니다."), { status: 400 });
-        }
-        // 학생 1명과 연관 데이터를 함께 정리해 고아 레코드를 남기지 않는다 (전체 DB 초기화 아님).
-        const removedReservations = db.reservations.filter((item) => item.userId === user.id).length;
-        db.reservations = db.reservations.filter((item) => item.userId !== user.id);
-        db.reports = (db.reports || []).filter((item) => item.userId !== user.id);
-        db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
-        db.lectureApplications = (db.lectureApplications || []).filter((item) => item.userId !== user.id);
-        db.sessions = (db.sessions || []).filter((item) => item.userId !== user.id);
-        db.users = db.users.filter((item) => item.id !== user.id);
-        audit(db, admin, "user.deleted", user.id, { name: user.name, studentId: user.studentId || "", removedReservations });
+        const summary = deleteUserAccount(db, user, admin, "user.deleted");
         await saveDb();
-        return ok({ id: user.id, removedReservations });
+        return ok(summary);
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/reservations") {
@@ -1867,11 +2065,11 @@ export async function handleApiRequest(ctx) {
         if (!RESERVATION_STATUSES.has(body.status)) {
           throw Object.assign(new Error("지원하지 않는 예약 상태입니다."), { status: 400 });
         }
-        reservation.status = body.status;
+        reservation.status = reservation.type === "equipment" && body.status === "completed" ? "returned" : body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
         reservation.updatedAt = nowIso();
-        reservation.history.push({ at: nowIso(), actorId: admin.id, action: "status_changed", status: body.status });
-        audit(db, admin, "reservation.status_changed", reservation.id, { status: body.status });
+        reservation.history.push({ at: nowIso(), actorId: admin.id, action: "status_changed", status: reservation.status });
+        audit(db, admin, "reservation.status_changed", reservation.id, { status: reservation.status });
         await postSlack(slackWebhook, db, "reservation_status", reservation);
         await saveDb();
         return ok(withReservationDetails(db, reservation));
