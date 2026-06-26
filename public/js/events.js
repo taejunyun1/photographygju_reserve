@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260627-admin-ux-tabs";
-import { api } from "./api.js?v=20260627-admin-ux-tabs";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-ux-tabs";
+import { state } from "./state.js?v=20260627-admin-topbar-width";
+import { api } from "./api.js?v=20260627-admin-topbar-width";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-topbar-width";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260627-admin-ux-tabs";
+} from "./actions.js?v=20260627-admin-topbar-width";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260627-admin-ux-tabs";
-import { render, toast } from "./renderer.js?v=20260627-admin-ux-tabs";
+} from "./native-notifications.js?v=20260627-admin-topbar-width";
+import { render, toast } from "./renderer.js?v=20260627-admin-topbar-width";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260627-admin-ux-tabs";
+} from "./admin-equipment.js?v=20260627-admin-topbar-width";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260627-admin-ux-tabs";
+} from "./utils.js?v=20260627-admin-topbar-width";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

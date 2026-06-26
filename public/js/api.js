@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-ux-tabs";
+import { state } from "./state.js?v=20260627-admin-topbar-width";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

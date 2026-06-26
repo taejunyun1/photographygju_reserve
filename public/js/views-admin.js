@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-ux-tabs";
+import { state } from "./state.js?v=20260627-admin-topbar-width";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260627-admin-ux-tabs";
+} from "./constants.js?v=20260627-admin-topbar-width";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260627-admin-ux-tabs";
+} from "./utils.js?v=20260627-admin-topbar-width";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260627-admin-ux-tabs";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-ux-tabs";
-import { noticeCard } from "./views-student.js?v=20260627-admin-ux-tabs";
+} from "./ui.js?v=20260627-admin-topbar-width";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-topbar-width";
+import { noticeCard } from "./views-student.js?v=20260627-admin-topbar-width";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260627-admin-ux-tabs";
+} from "./admin-equipment.js?v=20260627-admin-topbar-width";
 
 export function adminShell() {
   return `

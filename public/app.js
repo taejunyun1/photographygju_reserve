@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260627-admin-ux-tabs";
+import "./js/main.js?v=20260627-admin-topbar-width";

@@ -13,9 +13,9 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260627-admin-ux-tabs");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-ux-tabs");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-ux-tabs");
+const { state } = await import("../public/js/state.js?v=20260627-admin-topbar-width");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-topbar-width");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-topbar-width");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -185,6 +185,9 @@ assert(eventSource.includes("target.dataset.adminLecturePanelTab"), "admin lectu
 const adminMobileHeaderRule = cssRule("  .admin-mobile-header");
 assert(!adminMobileHeaderRule.includes("position: sticky;"), "admin mobile header must not be sticky");
 assert(adminMobileHeaderRule.includes("position: relative;"), "admin mobile header must scroll naturally with the page");
+assert(adminMobileHeaderRule.includes("width: 100vw;"), "admin mobile header must fill the full screen width");
+assert(adminMobileHeaderRule.includes("margin-left: calc(50% - 50vw);"), "admin mobile header must align to the left viewport edge");
+assert(adminMobileHeaderRule.includes("margin-right: calc(50% - 50vw);"), "admin mobile header must align to the right viewport edge");
 
 assert(css.includes(".admin-inner-tabs"), "admin inner tab styles must exist");
 assert(css.includes(".admin-equipment-list-card.compact"), "registered equipment card must have compact density styles");

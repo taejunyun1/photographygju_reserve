@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260627-admin-ux-tabs";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260627-admin-ux-tabs";
-import { setupEventHandlers } from "./events.js?v=20260627-admin-ux-tabs";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260627-admin-ux-tabs";
-import { render } from "./renderer.js?v=20260627-admin-ux-tabs";
-import { escapeHtml } from "./utils.js?v=20260627-admin-ux-tabs";
+import { $app, state } from "./state.js?v=20260627-admin-topbar-width";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260627-admin-topbar-width";
+import { setupEventHandlers } from "./events.js?v=20260627-admin-topbar-width";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260627-admin-topbar-width";
+import { render } from "./renderer.js?v=20260627-admin-topbar-width";
+import { escapeHtml } from "./utils.js?v=20260627-admin-topbar-width";
 
 async function init() {
   await loadBootstrap();

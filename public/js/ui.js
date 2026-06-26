@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260627-admin-ux-tabs";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260627-admin-topbar-width";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");
