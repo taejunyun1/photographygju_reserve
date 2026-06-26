@@ -63,11 +63,17 @@ function cssRule(selector) {
 const buttonRule = cssRule(".button");
 const primaryButtonRule = cssRule(".button.primary");
 
+function countOccurrences(source, token) {
+  return source.split(token).length - 1;
+}
+
 assert(!dashboard.includes("운영 네이티브 알림"), "dashboard must not render native notification card");
 assert(dashboard.includes("오늘 처리할 일"), "dashboard must render today's action section");
 assert(dashboard.includes("운영 큐"), "dashboard must render operations queue");
 assert(dashboard.includes("운영 지표"), "dashboard must render quantitative metrics");
 assert(dashboard.includes("대여/반납 처리 필요"), "dashboard must include checkout/return work");
+assert.equal(countOccurrences(dashboard, "admin-queue-item"), 0, "operations queue must not repeat top KPI cards");
+assert(dashboard.includes("admin-queue-detail-grid"), "operations queue must render compact detail panels");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
@@ -75,7 +81,8 @@ assert.equal(metrics.checkoutReturnNeeded, 1, "checkout/return work must only co
 assert.equal(metrics.availableEquipment, 2, "metrics must count active available equipment");
 assert.equal(metrics.repairEquipment, 1, "metrics must count repair equipment");
 assert(css.includes(".admin-dashboard-section"), "dashboard section styles must exist");
-assert(css.includes(".admin-queue-list"), "operations queue styles must exist");
+assert(css.includes(".admin-queue-detail-grid"), "compressed operations queue styles must exist");
+assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
 assert(!primaryButtonRule.includes("inset"), "primary button must not use an inset highlight that reads as a double button");

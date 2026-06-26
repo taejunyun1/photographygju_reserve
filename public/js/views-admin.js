@@ -183,7 +183,7 @@ export function adminDashboardView() {
           ${statCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red" })}
         </div>
       </section>
-      ${adminOperationsQueue(metrics)}
+      ${adminOperationsQueue()}
       ${adminDashboardMetricSection(metrics)}
       ${adminGuide("대시보드 사용 가이드", "오늘 처리해야 할 승인, 예약, 보고서 현황을 빠르게 보는 화면입니다. 카드를 누르면 해당 관리 페이지로 이동합니다.")}
     </section>
@@ -281,51 +281,9 @@ export function adminDashboardMetrics() {
   };
 }
 
-function adminQueueItem({ title, count, meta, attrs, tone = "" }) {
-  return `
-    <button class="admin-queue-item ${tone ? `tone-${tone}` : ""}" type="button" ${attrs}>
-      <span>
-        <strong>${escapeHtml(title)}</strong>
-        <small>${escapeHtml(meta)}</small>
-      </span>
-      <em>${escapeHtml(String(count))}</em>
-    </button>
-  `;
-}
-
-function adminOperationsQueue(metrics) {
+function adminOperationsQueue() {
   const todayReservations = todayAdminReservations().slice(0, 3);
   const checkoutItems = checkoutReturnReservations().slice(0, 3);
-  const queueItems = [
-    adminQueueItem({
-      title: "가입 승인",
-      count: metrics.pendingUsers,
-      meta: "학생 승인 대기",
-      attrs: `data-admin-view="users"`,
-      tone: "blue"
-    }),
-    adminQueueItem({
-      title: "기자재 승인",
-      count: metrics.pendingEquipment,
-      meta: "예약 승인 필요",
-      attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`,
-      tone: "yellow"
-    }),
-    adminQueueItem({
-      title: "대여/반납 처리 필요",
-      count: metrics.checkoutReturnNeeded,
-      meta: "오늘 대여 또는 반납",
-      attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`,
-      tone: "yellow"
-    }),
-    adminQueueItem({
-      title: "보고서 확인",
-      count: metrics.missingReports,
-      meta: "스튜디오/출력 보고서",
-      attrs: `data-admin-view="reports"`,
-      tone: "red"
-    })
-  ].join("");
   const reservationRows = todayReservations.length
     ? todayReservations.map((reservation) => `
       <li>
@@ -346,8 +304,7 @@ function adminOperationsQueue(metrics) {
     : `<li class="empty-inline">오늘 처리할 대여/반납 항목이 없습니다.</li>`;
   return `
     <section class="admin-dashboard-section">
-      ${sectionHeader({ title: "운영 큐", subtitle: "누르면 해당 관리 화면으로 이동합니다." })}
-      <div class="admin-queue-list">${queueItems}</div>
+      ${sectionHeader({ title: "운영 큐", subtitle: "상단 카드에서 처리 대상을 보고, 아래 상세 목록에서 오늘 흐름만 확인합니다." })}
       <div class="admin-queue-detail-grid">
         <div class="admin-queue-detail">
           <h3>오늘 예약 타임라인</h3>
