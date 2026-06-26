@@ -82,7 +82,9 @@ export const state = {
   },
   editingLectureId: "",
   adminEquipmentTab: "department",
+  adminEquipmentPanelTab: "manage",
   adminEquipmentCategoryTab: "all",
+  adminLecturePanelTab: "list",
   selectedAdminEquipmentIds: [],
   adminUserSort: {
     field: "approvalStatus",

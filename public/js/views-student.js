@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-queue-sheet";
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-queue-sheet";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-admin-queue-sheet";
+import { state } from "./state.js?v=20260627-admin-ux-tabs";
+import { statusLabel, typeLabel } from "./constants.js?v=20260627-admin-ux-tabs";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260627-admin-ux-tabs";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -37,7 +37,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260626-admin-queue-sheet";
+} from "./utils.js?v=20260627-admin-ux-tabs";
 import {
   actionRow,
   card,
@@ -47,7 +47,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-queue-sheet";
+} from "./ui.js?v=20260627-admin-ux-tabs";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -1339,6 +1339,29 @@ export function isReportDue(reservation) {
   return String(reservation.fields?.reservedDate || "") <= todayKey();
 }
 
+function dateKeyDiff(fromKey, toKey) {
+  if (!fromKey || !toKey) return 0;
+  const from = new Date(`${fromKey}T00:00:00`);
+  const to = new Date(`${toKey}T00:00:00`);
+  return Math.ceil((to.getTime() - from.getTime()) / 86400000);
+}
+
+function reportDeadlineDateKey(reservation) {
+  const reservedDate = reservation?.fields?.reservedDate || "";
+  if (!reservedDate) return "";
+  const deadlineHours = Math.max(1, Number(state.bootstrap?.settings?.studioReportDeadlineHours || 48));
+  return addDaysToDateKey(reservedDate, Math.ceil(deadlineHours / 24));
+}
+
+function reportDeadlineLabel(reservation) {
+  const deadlineDate = reportDeadlineDateKey(reservation);
+  if (!deadlineDate) return "";
+  const diff = dateKeyDiff(todayKey(), deadlineDate);
+  if (diff > 0) return `D-${diff}`;
+  if (diff === 0) return "D-DAY";
+  return "마감 지남";
+}
+
 export function reportsView() {
   const query = normalizeSearchText(state.reportSearch).trim();
   const reportSearchText = (reservation) => searchableText([
@@ -1384,9 +1407,14 @@ export function reportsView() {
 export function reportRequestCard(reservation) {
   const f = reservation.fields || {};
   const active = state.activeReportReservationId === reservation.id;
+  const deadline = reportDeadlineLabel(reservation);
   return `
     <article class="card ui-card report-card">
-      <div class="chips"><span class="tag blue">스튜디오</span><span class="tag yellow">보고서 필요</span></div>
+      <div class="chips">
+        <span class="tag blue">스튜디오</span>
+        <span class="tag yellow">보고서 필요</span>
+        ${deadline ? `<span class="report-deadline-badge">${escapeHtml(deadline)}</span>` : ""}
+      </div>
       <h3 class="card-title card-title-spaced">${escapeHtml(f.reservedDate || "-")}</h3>
       <p class="muted">${escapeHtml((f.timeSlots || []).join(", "))} · ${escapeHtml((f.studioSpaces || [f.studioSpace]).filter(Boolean).join(", "))}</p>
       ${active ? studioReportForm(reservation) : `<button class="button primary" data-report-open="${reservation.id}">${icon("fileText")}보고서 작성</button>`}

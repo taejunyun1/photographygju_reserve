@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-queue-sheet";
-import { api } from "./api.js?v=20260626-admin-queue-sheet";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-queue-sheet";
+import { state } from "./state.js?v=20260627-admin-ux-tabs";
+import { api } from "./api.js?v=20260627-admin-ux-tabs";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-ux-tabs";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260626-admin-queue-sheet";
+} from "./actions.js?v=20260627-admin-ux-tabs";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260626-admin-queue-sheet";
-import { render, toast } from "./renderer.js?v=20260626-admin-queue-sheet";
+} from "./native-notifications.js?v=20260627-admin-ux-tabs";
+import { render, toast } from "./renderer.js?v=20260627-admin-ux-tabs";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260626-admin-queue-sheet";
+} from "./admin-equipment.js?v=20260627-admin-ux-tabs";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260626-admin-queue-sheet";
+} from "./utils.js?v=20260627-admin-ux-tabs";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -129,7 +129,7 @@ function setReservationFlowStep(type, step) {
 
 function goReservationFlowStep(type, step) {
   setReservationFlowStep(type, step);
-  renderAtTop();
+  renderPreservingScroll();
 }
 
 function checkedValues(name) {
@@ -291,7 +291,7 @@ export function setupEventHandlers() {
         }
         if (["equipment", "studio", "darkroom", "print"].includes(type)) {
           setReservationFlowStep(type, type === "studio" ? "select" : "schedule");
-          renderAtTop();
+          renderPreservingScroll();
           return;
         }
         render();
@@ -380,7 +380,7 @@ export function setupEventHandlers() {
         if (state.view === "mine") await loadMyReservations();
         if (state.view === "reports") await loadMyReservations();
         if (state.view === "lectures") await loadLectures();
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.reserveShortcut) {
@@ -391,7 +391,7 @@ export function setupEventHandlers() {
           state.equipmentRecommendationOpen = false;
         }
         if (state.reservationFlowStep?.[state.reservationType]) state.reservationFlowStep[state.reservationType] = "date";
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.reserveType) {
@@ -401,14 +401,14 @@ export function setupEventHandlers() {
           state.equipmentRecommendationOpen = false;
         }
         if (state.reservationFlowStep?.[state.reservationType]) state.reservationFlowStep[state.reservationType] = "date";
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.action === "reserve-back") {
         state.reservationType = "";
         state.equipmentSelectionSheetOpen = false;
         state.equipmentRecommendationOpen = false;
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.reserveStep) {
@@ -468,7 +468,7 @@ export function setupEventHandlers() {
       if (target.dataset.myReservationCategory) {
         state.myReservationCategory = target.dataset.myReservationCategory;
         state.pastReservationsOpen = false;
-        render();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminView) {
@@ -482,14 +482,14 @@ export function setupEventHandlers() {
           await loadAdminData();
         }
         state.adminView = target.dataset.adminView;
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminReservationTab && !target.dataset.adminView) {
         state.adminReservationTab = target.dataset.adminReservationTab;
         resetAdminPage("adminReservationsPage");
         await loadAdminData();
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminEquipmentReservationStatus) {
@@ -509,19 +509,19 @@ export function setupEventHandlers() {
       if (target.dataset.adminUsersPage) {
         setAdminPage("adminUsersPage", target.dataset.adminUsersPage);
         await loadAdminData();
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminReservationsPage) {
         setAdminPage("adminReservationsPage", target.dataset.adminReservationsPage);
         await loadAdminData();
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminReportsPage) {
         setAdminPage("adminReportsPage", target.dataset.adminReportsPage);
         await loadAdminData();
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminSessionSort) {
@@ -539,14 +539,25 @@ export function setupEventHandlers() {
         render();
         return;
       }
+      if (target.dataset.adminEquipmentPanelTab) {
+        state.adminEquipmentPanelTab = target.dataset.adminEquipmentPanelTab;
+        renderPreservingScroll();
+        return;
+      }
       if (target.dataset.adminEquipmentTab) {
         state.adminEquipmentTab = target.dataset.adminEquipmentTab;
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.adminEquipmentCategoryTab) {
         state.adminEquipmentCategoryTab = target.dataset.adminEquipmentCategoryTab;
-        renderAtTop();
+        renderPreservingScroll();
+        return;
+      }
+      if (target.dataset.adminLecturePanelTab) {
+        state.adminLecturePanelTab = target.dataset.adminLecturePanelTab;
+        state.editingLectureId = "";
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.lectureUpdate) {
@@ -557,7 +568,8 @@ export function setupEventHandlers() {
       }
       if (target.dataset.lectureEdit) {
         state.editingLectureId = target.dataset.lectureEdit;
-        renderAtTop();
+        state.adminLecturePanelTab = "add";
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.lectureEditCancel !== undefined) {
@@ -735,7 +747,7 @@ export function setupEventHandlers() {
       state.selectedStudioSpace = target.value;
       state.selectedStudioSlots = [];
       setReservationFlowStep("studio", "schedule");
-      renderAtTop();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "studioSlots") {
@@ -745,7 +757,7 @@ export function setupEventHandlers() {
       if (!target.checked) {
         state.selectedStudioSlots = state.selectedStudioSlots.filter((slot) => slot !== target.value);
       }
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "darkroomSlots") {
@@ -755,7 +767,7 @@ export function setupEventHandlers() {
       if (!target.checked) {
         state.selectedDarkroomSlots = state.selectedDarkroomSlots.filter((slot) => slot !== target.value);
       }
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "processTypes") {
@@ -765,7 +777,7 @@ export function setupEventHandlers() {
       if (!target.checked) {
         state.selectedDarkroomProcessTypes = state.selectedDarkroomProcessTypes.filter((item) => item !== target.value);
       }
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "participantCount") {
@@ -786,25 +798,25 @@ export function setupEventHandlers() {
         state.selectedPrintStartTime = "";
         state.selectedPrintEndTime = "";
       }
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "printTypes") {
       if (target.checked && !state.selectedPrintTypes.includes(target.value)) state.selectedPrintTypes.push(target.value);
       if (!target.checked) state.selectedPrintTypes = state.selectedPrintTypes.filter((item) => item !== target.value);
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "papers") {
       if (target.checked && !state.selectedPrintPapers.includes(target.value)) state.selectedPrintPapers.push(target.value);
       if (!target.checked) state.selectedPrintPapers = state.selectedPrintPapers.filter((item) => item !== target.value);
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "sizes") {
       if (target.checked && !state.selectedPrintSizes.includes(target.value)) state.selectedPrintSizes.push(target.value);
       if (!target.checked) state.selectedPrintSizes = state.selectedPrintSizes.filter((item) => item !== target.value);
-      render();
+      renderPreservingScroll();
       return;
     }
     if (["period", "rentalTime", "returnTime"].includes(target.name) && target.closest("[data-type=\"equipment\"]")) {
@@ -815,7 +827,7 @@ export function setupEventHandlers() {
       state.equipmentSelectionSheetOpen = false;
       state.equipmentRecommendationOpen = false;
       setReservationFlowStep("equipment", "schedule");
-      render();
+      renderPreservingScroll();
       return;
     }
     if (target.name === "equipmentItemIds") {

@@ -2041,7 +2041,7 @@ export async function handleApiRequest(ctx) {
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
         const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned").length;
         const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && item.status === "cancelled").length;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayKeySeoul();
         const todayReservations = db.reservations.filter((item) => item.fields.reservedDate === today).length;
         const missingReports = db.reservations.filter((item) => item.type === "studio" && item.status !== "cancelled" && item.fields.reportStatus !== "submitted").length;
         return ok({

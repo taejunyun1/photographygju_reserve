@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260626-admin-queue-sheet";
+import "./js/main.js?v=20260627-admin-ux-tabs";

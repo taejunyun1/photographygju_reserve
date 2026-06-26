@@ -13,9 +13,24 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260626-admin-queue-sheet");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260626-admin-queue-sheet");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260626-admin-queue-sheet");
+const { state } = await import("../public/js/state.js?v=20260627-admin-ux-tabs");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-ux-tabs");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-ux-tabs");
+
+function seoulTodayKey() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date()).reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+const today = seoulTodayKey();
 
 state.user = { id: "admin1", role: "admin" };
 state.bootstrap = { settings: {
@@ -34,10 +49,10 @@ state.bootstrap = { settings: {
 state.summary = { pendingUsers: 2, pendingEquipment: 99, equipmentCheckedOut: 1, equipmentReturned: 1, equipmentCancelled: 1, todayReservations: 4, missingReports: 1 };
 state.nativeNotifications = { supported: true, permission: "granted", syncedAt: "2026-06-26T08:00:00.000Z", error: "" };
 state.adminReservations = [
-  { id: "r1", type: "equipment", status: "checked_out", user: { name: "김학생" }, fields: { reservedDate: "2026-06-26", rentalTime: "10:00", returnDate: "2026-06-26" } },
-  { id: "r2", type: "equipment", status: "returned", user: { name: "이학생" }, fields: { reservedDate: "2026-06-26", rentalTime: "13:00", returnDate: "2026-06-26" } },
-  { id: "r3", type: "equipment", status: "cancelled", user: { name: "박학생" }, fields: { reservedDate: "2026-06-26", rentalTime: "15:00", returnDate: "2026-06-26" } },
-  { id: "r4", type: "studio", status: "auto_confirmed", user: { name: "최학생" }, fields: { reservedDate: "2026-06-26", timeSlots: ["16:00-17:00"] } }
+  { id: "r1", type: "equipment", status: "checked_out", user: { name: "김학생" }, fields: { reservedDate: today, rentalTime: "10:00", returnDate: today } },
+  { id: "r2", type: "equipment", status: "returned", user: { name: "이학생" }, fields: { reservedDate: today, rentalTime: "13:00", returnDate: today } },
+  { id: "r3", type: "equipment", status: "cancelled", user: { name: "박학생" }, fields: { reservedDate: today, rentalTime: "15:00", returnDate: today } },
+  { id: "r4", type: "studio", status: "auto_confirmed", user: { name: "최학생" }, fields: { reservedDate: today, timeSlots: ["16:00-17:00"] } }
 ];
 state.adminEquipment = [
   { id: "e1", active: true, status: "가능" },
@@ -61,6 +76,8 @@ const settings = adminSettingsView();
 const metrics = adminDashboardMetrics();
 const notifications = plannedAdminNotifications(new Date("2026-06-26T08:00:00.000Z"));
 const css = fs.readFileSync("public/styles.css", "utf8");
+const coreSource = fs.readFileSync("core.mjs", "utf8");
+const eventSource = fs.readFileSync("public/js/events.js", "utf8");
 
 function cssRule(selector) {
   const start = css.indexOf(`${selector} {`);
@@ -135,5 +152,43 @@ assert(!css.includes(".admin-queue-item"), "duplicated operations queue card sty
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
 assert(!primaryButtonRule.includes("inset"), "primary button must not use an inset highlight that reads as a double button");
+
+assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary must use the Seoul calendar day, not UTC");
+assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
+
+function blockBetween(source, startToken, endToken) {
+  const start = source.indexOf(startToken);
+  assert.notEqual(start, -1, `${startToken} block must exist`);
+  const end = source.indexOf(endToken, start);
+  assert.notEqual(end, -1, `${startToken} block must close before ${endToken}`);
+  return source.slice(start, end);
+}
+
+for (const [token, next] of [
+  ["if (target.dataset.adminView)", "if (target.dataset.adminReservationTab && !target.dataset.adminView)"],
+  ["if (target.dataset.adminReservationTab && !target.dataset.adminView)", "if (target.dataset.adminEquipmentReservationStatus"],
+  ["if (target.dataset.adminEquipmentTab)", "if (target.dataset.adminEquipmentCategoryTab)"],
+  ["if (target.dataset.adminEquipmentCategoryTab)", "if (target.dataset.lectureUpdate)"],
+  ["if (target.dataset.lectureEdit)", "if (target.dataset.lectureEditCancel"],
+  ["if (target.dataset.adminUsersPage)", "if (target.dataset.adminReservationsPage)"],
+  ["if (target.dataset.adminReservationsPage)", "if (target.dataset.adminReportsPage)"],
+  ["if (target.dataset.adminReportsPage)", "if (target.dataset.adminSessionSort)"]
+]) {
+  const block = blockBetween(eventSource, token, next);
+  assert(block.includes("renderPreservingScroll();"), `${token} must preserve scroll`);
+  assert(!block.includes("renderAtTop();"), `${token} must not force top scroll`);
+}
+
+assert(eventSource.includes("target.dataset.adminEquipmentPanelTab"), "admin equipment must support add/manage inner tabs");
+assert(eventSource.includes("target.dataset.adminLecturePanelTab"), "admin lectures must support add/list inner tabs");
+
+const adminMobileHeaderRule = cssRule("  .admin-mobile-header");
+assert(!adminMobileHeaderRule.includes("position: sticky;"), "admin mobile header must not be sticky");
+assert(adminMobileHeaderRule.includes("position: relative;"), "admin mobile header must scroll naturally with the page");
+
+assert(css.includes(".admin-inner-tabs"), "admin inner tab styles must exist");
+assert(css.includes(".admin-equipment-list-card.compact"), "registered equipment card must have compact density styles");
+assert(css.includes(".admin-user-core-group .button.compact"), "student approval action buttons must have compact mobile sizing");
+assert(dashboard.includes("오늘 처리할 일"), "dashboard day work section must stay visible");
 
 console.log("Admin dashboard UX checks passed.");

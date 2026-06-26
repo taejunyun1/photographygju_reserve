@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-admin-queue-sheet";
+import { state } from "./state.js?v=20260627-admin-ux-tabs";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-admin-queue-sheet";
+} from "./constants.js?v=20260627-admin-ux-tabs";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-admin-queue-sheet";
+} from "./utils.js?v=20260627-admin-ux-tabs";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-queue-sheet";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-queue-sheet";
-import { noticeCard } from "./views-student.js?v=20260626-admin-queue-sheet";
+} from "./ui.js?v=20260627-admin-ux-tabs";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-ux-tabs";
+import { noticeCard } from "./views-student.js?v=20260627-admin-ux-tabs";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-admin-queue-sheet";
+} from "./admin-equipment.js?v=20260627-admin-ux-tabs";
 
 export function adminShell() {
   return `
@@ -576,9 +576,9 @@ export function adminUsersView() {
 function userApprovalButton(user) {
   const approvedLike = user.approvalStatus === "approved" || user.approvalStatus === "blocked";
   if (approvedLike) {
-    return `<button class="button danger" data-user-approval="${user.id}" data-status="rejected">${icon("x")}반려</button>`;
+    return `<button class="button danger compact" data-user-approval="${user.id}" data-status="rejected">${icon("x")}반려</button>`;
   }
-  return `<button class="button primary" data-user-approval="${user.id}" data-status="approved">${icon("check")}승인</button>`;
+  return `<button class="button primary compact" data-user-approval="${user.id}" data-status="approved">${icon("check")}승인</button>`;
 }
 
 function userWarningMemo(user) {
@@ -738,9 +738,15 @@ export function adminEquipmentView() {
   const selected = selectedAdminEquipmentSet();
   const visibleSelectedCount = filtered.filter((item) => selected.has(item.id)).length;
   const allVisibleSelected = filtered.length > 0 && visibleSelectedCount === filtered.length;
+  const panelTab = state.adminEquipmentPanelTab || "manage";
   return `
     <section class="grid">
-      <div class="card">
+      <div class="admin-inner-tabs" role="tablist" aria-label="기자재 관리 탭">
+        <button class="tab-button ${panelTab === "add" ? "active" : ""}" type="button" data-admin-equipment-panel-tab="add">장비추가</button>
+        <button class="tab-button ${panelTab === "manage" ? "active" : ""}" type="button" data-admin-equipment-panel-tab="manage">장비관리</button>
+      </div>
+      ${panelTab === "add" ? `
+      <div class="card admin-equipment-add-card">
         <h2 class="card-title">장비 추가</h2>
         <form class="grid two" data-form="equipment-add">
           <div class="field"><label>장비명</label><input class="input" name="name" required /></div>
@@ -753,7 +759,7 @@ export function adminEquipmentView() {
           <button class="button primary" type="submit">${icon("plus")}추가</button>
         </form>
       </div>
-      <div class="card">
+      <div class="card admin-equipment-add-card">
         <h2 class="card-title">카테고리 추가</h2>
         <p class="muted">학생 예약 화면과 Admin 장비 등록 선택지에 같이 반영됩니다.</p>
         <form class="inline-form" data-form="equipment-category-add">
@@ -761,7 +767,7 @@ export function adminEquipmentView() {
           <button class="button primary" type="submit">${icon("plus")}카테고리 추가</button>
         </form>
       </div>
-      <div class="card">
+      <div class="card admin-equipment-add-card">
         <h2 class="card-title">CSV 업로드</h2>
         <p class="muted">컬럼: facility,source,category,name,brand,model,quantity,code_prefix,reservable,inquiry_only,status,notes</p>
         <form data-form="equipment-import">
@@ -773,7 +779,9 @@ export function adminEquipmentView() {
         </form>
         ${state.csvPreviewRows.length ? csvPreviewTable(state.csvPreviewRows) : `<p class="empty">CSV를 붙여넣고 미리보기를 누르면 임시 표가 표시됩니다.</p>`}
       </div>
-      <div class="card">
+      ` : ""}
+      ${panelTab === "manage" ? `
+      <div class="card admin-equipment-list-card compact">
         <div class="form-head">
           <div>
             <h2 class="card-title">등록된 전체 기자재</h2>
@@ -825,6 +833,7 @@ export function adminEquipmentView() {
           </table>
         </div>
       </div>
+      ` : ""}
       ${adminGuide("기자재 사용 가이드", "카테고리와 관리처를 먼저 정리한 뒤 장비를 등록합니다. CSV는 바로 등록하지 말고 미리보기로 행이 제대로 읽혔는지 확인한 다음 등록하세요.")}
     </section>
   `;
@@ -1031,10 +1040,16 @@ export function adminLecturesView() {
   const editing = state.editingLectureId ? state.adminLectures.find((item) => item.id === state.editingLectureId) : null;
   const query = normalizeSearchText(state.adminLectureSearch).trim();
   const lectures = (state.adminLectures || []).filter((lecture) => !query || adminLectureSearchText(lecture).includes(query));
+  const panelTab = editing ? "add" : (state.adminLecturePanelTab || "list");
   return `
     <section class="grid">
-      ${editing ? lectureEditForm(editing) : lectureCreateForm()}
-      <div class="card">
+      <div class="admin-inner-tabs" role="tablist" aria-label="비교과 특강 관리 탭">
+        <button class="tab-button ${panelTab === "add" ? "active" : ""}" type="button" data-admin-lecture-panel-tab="add">특강 등록</button>
+        <button class="tab-button ${panelTab === "list" ? "active" : ""}" type="button" data-admin-lecture-panel-tab="list">특강 리스트</button>
+      </div>
+      ${panelTab === "add" ? (editing ? lectureEditForm(editing) : lectureCreateForm()) : ""}
+      ${panelTab === "list" ? `
+      <div class="card admin-lecture-list-card">
         <div class="form-head">
           <div>
             <h2 class="card-title">특강 리스트</h2>
@@ -1048,6 +1063,7 @@ export function adminLecturesView() {
         ${query ? `<p class="muted">"${escapeHtml(state.adminLectureSearch)}" 검색 결과 ${lectures.length}건</p>` : ""}
         ${lectures.length ? adminLectureTable(lectures) : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 비교과 특강이 없습니다.", body: query ? "검색어를 지우면 전체 특강을 볼 수 있습니다." : "" })}
       </div>
+      ` : ""}
       ${adminGuide("비교과 특강 사용 가이드", "특강을 등록하면 학생 화면에 리스트가 표시됩니다. 리스트의 ‘수정’으로 내용을 고치고, ‘삭제’로 특강과 신청 내역을 함께 제거할 수 있습니다. 결과는 CSV로 내려받을 수 있습니다.")}
     </section>
   `;
@@ -1341,7 +1357,7 @@ export function adminSettingsView() {
   ]).includes(blockedQuery));
   return `
     <section class="grid">
-      <div class="card">
+      <div class="card admin-settings-card admin-settings-card-primary">
         <h2 class="card-title">운영 설정</h2>
         <form data-form="settings-save">
           <div class="field"><label>출력비 계좌 안내</label><input class="input" name="printBankAccount" value="${escapeHtml(settings.printBankAccount)}" /></div>
@@ -1360,7 +1376,7 @@ export function adminSettingsView() {
         </form>
       </div>
       ${adminNotificationSettingsCard()}
-      <div class="card">
+      <div class="card admin-settings-card">
         <h2 class="card-title">수업/학기 차단 일정</h2>
         <form class="grid two" data-form="blocked-schedule-add">
           <div class="field"><label>시설</label><select class="select" name="type">
@@ -1387,8 +1403,8 @@ export function adminSettingsView() {
         ${blockedScheduleList(filteredBlockedSchedules, { emptyTitle: blockedQuery ? "검색 결과가 없습니다." : "등록된 차단 일정이 없습니다." })}
       </div>
       ${adminBlockedCalendar(blockedSchedules)}
-      <div class="card"><h2 class="card-title">Slack</h2><p class="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p></div>
-      <div class="card">
+      <div class="card admin-settings-card admin-settings-note-card"><h2 class="card-title">Slack</h2><p class="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p></div>
+      <div class="card admin-settings-card admin-settings-danger-card">
         <h2 class="card-title">보안 / 데이터 관리</h2>
         <p class="muted">조교 교체 전에는 백업 JSON을 내려받고, 학기 종료 후에는 보관정책 정리를 실행하세요. 정리 작업은 오래된 예약 개인정보를 익명화하고 만료된 보고서 HTML과 세션을 삭제합니다.</p>
         <div class="button-row">

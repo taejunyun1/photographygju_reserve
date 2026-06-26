@@ -2170,6 +2170,61 @@ button:disabled,
   color: var(--green);
 }
 
+.admin-inner-tabs {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(128px, 1fr);
+  gap: 6px;
+  width: min(100%, 360px);
+  padding: 4px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--surface-lowest);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.admin-inner-tabs .tab-button {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 10px;
+}
+
+.admin-equipment-list-card.compact {
+  padding: 16px;
+}
+
+.admin-equipment-list-card.compact .table-wrap.embedded {
+  max-height: 58vh;
+  overflow: auto;
+}
+
+.admin-equipment-list-card.compact table {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.admin-equipment-list-card.compact th,
+.admin-equipment-list-card.compact td {
+  padding: 8px 9px;
+}
+
+.admin-settings-card {
+  border-color: var(--line-soft);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.92));
+}
+
+.admin-settings-card-primary {
+  border-top: 4px solid var(--primary);
+}
+
+.admin-settings-note-card {
+  border-top: 4px solid var(--muted-2);
+}
+
+.admin-settings-danger-card {
+  border-top: 4px solid var(--color-danger);
+}
+
 .admin-queue-sheet-list {
   list-style: none;
   margin: 0;
@@ -2558,6 +2613,23 @@ details.inquiry-equipment-step {
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.report-deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 34%, transparent);
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: var(--color-danger);
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .chip {
@@ -3427,6 +3499,13 @@ tr.selected td {
 .admin-user-core-group .button,
 .admin-user-limit-group .select {
   min-height: 72px;
+}
+
+.admin-user-core-group .button.compact {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .admin-user-secondary-group .button {
@@ -4353,8 +4432,7 @@ tr.selected td {
   }
 
   .admin-mobile-header {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 12;
     margin: -10px -14px 14px;
     padding: calc(8px + var(--safe-area-top)) 14px 8px;

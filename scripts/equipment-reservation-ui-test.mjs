@@ -37,9 +37,43 @@ assert(eventSource.includes('document.addEventListener("pointerdown", captureEqu
 assert(eventSource.includes("lastEquipmentInteractionScrollState || captureScrollState()"), "scroll-preserving render must prefer pre-interaction scroll state");
 assert(changeBlock.includes("renderPreservingScroll();"), "equipment checkbox changes must preserve scroll position");
 assert(!changeBlock.includes("\n      render();"), "equipment checkbox changes must not use a plain render");
+
+function handlerBlock(source, startToken, endToken) {
+  const start = source.indexOf(startToken);
+  assert(start !== -1, `${startToken} handler must exist`);
+  const end = source.indexOf(endToken, start);
+  assert(end !== -1, `${startToken} handler must close before ${endToken}`);
+  return source.slice(start, end);
+}
+
+for (const [startToken, endToken] of [
+  ['if (target.dataset.studentView)', 'if (target.dataset.reserveShortcut)'],
+  ['if (target.dataset.reserveShortcut)', 'if (target.dataset.reserveType)'],
+  ['if (target.dataset.reserveType)', 'if (target.dataset.action === "reserve-back")'],
+  ['if (target.dataset.action === "reserve-back")', 'if (target.dataset.reserveStep)'],
+  ['if (target.dataset.calendarDay)', 'if (target.dataset.action === "logout")'],
+  ['if (target.name === "studioSpace")', 'if (target.name === "studioSlots")'],
+  ['if (target.name === "studioSlots")', 'if (target.name === "darkroomSlots")'],
+  ['if (target.name === "darkroomSlots")', 'if (target.name === "processTypes")'],
+  ['if (target.name === "processTypes")', 'if (target.name === "participantCount")'],
+  ['if (target.name === "printTimeSlot")', 'if (target.name === "printTypes")'],
+  ['if (target.name === "printTypes")', 'if (target.name === "papers")'],
+  ['if (target.name === "papers")', 'if (target.name === "sizes")'],
+  ['if (target.name === "sizes")', 'if (["period", "rentalTime", "returnTime"].includes(target.name)'],
+  ['if (target.dataset.myReservationCategory)', 'if (target.dataset.adminView)']
+]) {
+  const block = handlerBlock(eventSource, startToken, endToken);
+  assert(block.includes("renderPreservingScroll();"), `${startToken} must preserve scroll position`);
+  assert(!block.includes("renderAtTop();"), `${startToken} must not reset to the top`);
+}
+
+assert(eventSource.includes("renderPreservingScroll();\n}"), "reservation flow step changes must preserve scroll");
 assert(viewSource.includes("export function equipmentFloatingSelectionDock()"), "student views must export a floating equipment selection dock");
 assert(viewSource.includes("${equipmentFloatingSelectionDock()}"), "student mobile navigation must mount the floating equipment selection dock");
 assert(!rendererSource.includes("equipmentFloatingSelectionDock()"), "renderer must not mount the floating equipment selection dock at the app root");
+assert(viewSource.includes("function reportDeadlineLabel("), "student reports must calculate a visible report D-day label");
+assert(viewSource.includes("report-deadline-badge"), "student report cards must render a report D-day badge");
+assert(styleSource.includes(".report-deadline-badge"), "report D-day badge must have a visible style");
 
 const mobileInlineRuleStart = styleSource.indexOf("  .equipment-selection-dock-inline {", styleSource.indexOf("@media"));
 const mobileInlineRuleEnd = styleSource.indexOf("  }", mobileInlineRuleStart);

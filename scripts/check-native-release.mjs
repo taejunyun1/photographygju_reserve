@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260626-admin-queue-sheet";
+const requiredCacheVersion = "20260627-admin-ux-tabs";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");
