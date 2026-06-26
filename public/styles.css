@@ -3272,6 +3272,24 @@ tr.selected td {
   padding-left: 12px;
 }
 
+.equipment-selection-dock {
+  position: sticky;
+  bottom: 18px;
+  z-index: 8;
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  overflow-anchor: none;
+}
+
+.equipment-selection-dock:empty {
+  display: none;
+}
+
+.equipment-selection-dock-floating {
+  display: none;
+}
+
 .equipment-selection-panel {
   position: relative;
   border: 1px solid var(--glass-border);
@@ -5161,6 +5179,33 @@ tr.selected td {
     min-height: 36px;
   }
 
+  .equipment-selection-dock-inline {
+    display: none;
+  }
+
+  .mobile-nav {
+    overflow: visible;
+  }
+
+  .equipment-selection-dock-floating {
+    display: grid;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    z-index: 1;
+    margin-top: 0;
+    pointer-events: none;
+  }
+
+  .equipment-selection-dock-floating > * {
+    pointer-events: auto;
+  }
+
+  .app:has(.equipment-selection-dock-floating .equipment-selection-panel.active) .student-shell {
+    padding-bottom: calc(188px + var(--safe-area-bottom));
+  }
+
   .equipment-selection-panel {
     border-radius: 20px;
     padding: 11px;
@@ -5688,7 +5733,15 @@ tr.selected td {
   .admin-mobile-nav {
     min-height: calc(64px + var(--safe-area-bottom));
     max-height: calc(72px + var(--safe-area-bottom));
+  }
+
+  .admin-mobile-nav {
     contain: layout paint;
+  }
+
+  .mobile-nav {
+    contain: layout;
+    overflow: visible;
   }
 }
 

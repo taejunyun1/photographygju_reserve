@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
-import { api } from "./api.js?v=20260623-notify-ui2";
-import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
+import { api } from "./api.js?v=20260626-equipment-navdock";
+import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

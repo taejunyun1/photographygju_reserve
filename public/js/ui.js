@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260623-notify-ui2";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260626-equipment-navdock";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

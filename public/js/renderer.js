@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260623-notify-ui2";
-import { escapeHtml } from "./utils.js?v=20260623-notify-ui2";
-import { adminShell } from "./views-admin.js?v=20260623-notify-ui2";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260623-notify-ui2";
+import { $app, state } from "./state.js?v=20260626-equipment-navdock";
+import { escapeHtml } from "./utils.js?v=20260626-equipment-navdock";
+import { adminShell } from "./views-admin.js?v=20260626-equipment-navdock";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260626-equipment-navdock";
 
 document.addEventListener("gju-loading-change", () => render());
 

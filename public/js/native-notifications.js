@@ -1,5 +1,5 @@
-import { typeLabel } from "./constants.js?v=20260623-notify-ui2";
-import { state } from "./state.js?v=20260623-notify-ui2";
+import { typeLabel } from "./constants.js?v=20260626-equipment-navdock";
+import { state } from "./state.js?v=20260626-equipment-navdock";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

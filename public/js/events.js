@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
-import { api } from "./api.js?v=20260623-notify-ui2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
+import { api } from "./api.js?v=20260626-equipment-navdock";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-equipment-navdock";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260623-notify-ui2";
+} from "./actions.js?v=20260626-equipment-navdock";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260623-notify-ui2";
-import { render, toast } from "./renderer.js?v=20260623-notify-ui2";
+} from "./native-notifications.js?v=20260626-equipment-navdock";
+import { render, toast } from "./renderer.js?v=20260626-equipment-navdock";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260623-notify-ui2";
+} from "./admin-equipment.js?v=20260626-equipment-navdock";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,19 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260623-notify-ui2";
+} from "./utils.js?v=20260626-equipment-navdock";
+
+const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
+  "[data-equipment-category]",
+  "[data-equipment-remove]",
+  "[data-equipment-selection-toggle]",
+  "[data-equipment-recommend-toggle]",
+  "[data-equipment-recommend-add]",
+  ".equipment-choice",
+  "input[name=\"equipmentItemIds\"]"
+].join(",");
+
+let lastEquipmentInteractionScrollState = null;
 
 function scrollToPageTop() {
   requestAnimationFrame(() => {
@@ -53,6 +65,53 @@ function scrollToPageTop() {
 function renderAtTop() {
   render();
   scrollToPageTop();
+}
+
+function captureScrollState() {
+  return {
+    windowX: window.scrollX || 0,
+    windowY: window.scrollY || 0,
+    targets: [...document.querySelectorAll(".student-shell, .admin-main, .auth-shell")].map((target) => ({
+      className: [...target.classList].join("."),
+      scrollTop: target.scrollTop || 0,
+      scrollLeft: target.scrollLeft || 0
+    }))
+  };
+}
+
+function restoreScrollState(snapshot) {
+  const restore = () => {
+    for (const item of snapshot.targets || []) {
+      if (!item.className) continue;
+      const target = document.querySelector(`.${item.className}`);
+      if (!target) continue;
+      target.scrollTo?.({ top: item.scrollTop, left: item.scrollLeft, behavior: "auto" });
+      target.scrollTop = item.scrollTop;
+      target.scrollLeft = item.scrollLeft;
+    }
+    window.scrollTo({ top: snapshot.windowY || 0, left: snapshot.windowX || 0, behavior: "auto" });
+    document.documentElement.scrollTop = snapshot.windowY || 0;
+    document.body.scrollTop = snapshot.windowY || 0;
+  };
+  requestAnimationFrame(() => {
+    restore();
+    requestAnimationFrame(restore);
+  });
+  setTimeout(restore, 0);
+  setTimeout(restore, 80);
+}
+
+function renderPreservingScroll() {
+  const scrollState = lastEquipmentInteractionScrollState || captureScrollState();
+  lastEquipmentInteractionScrollState = null;
+  render();
+  restoreScrollState(scrollState);
+}
+
+function captureEquipmentInteractionScroll(event) {
+  if (!(event.target instanceof Element)) return;
+  if (!event.target.closest(EQUIPMENT_SCROLL_INTERACTION_SELECTOR)) return;
+  lastEquipmentInteractionScrollState = captureScrollState();
 }
 
 function resetAdminPage(key) {
@@ -164,6 +223,8 @@ function canAdvanceReservationFlow(type, nextStep) {
 }
 
 export function setupEventHandlers() {
+  document.addEventListener("pointerdown", captureEquipmentInteractionScroll, { capture: true, passive: true });
+
   document.addEventListener("click", async (event) => {
     const target = event.target.closest("button, a");
     if (!target) return;
@@ -248,7 +309,7 @@ export function setupEventHandlers() {
       }
       if (target.dataset.equipmentCategory) {
         state.equipmentCategoryFilter = target.dataset.equipmentCategory;
-        renderAtTop();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.equipmentRemove) {
@@ -257,18 +318,18 @@ export function setupEventHandlers() {
           state.equipmentSelectionSheetOpen = false;
           state.equipmentRecommendationOpen = false;
         }
-        render();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.equipmentSelectionToggle !== undefined) {
         state.equipmentSelectionSheetOpen = !state.equipmentSelectionSheetOpen;
         if (!state.equipmentSelectionSheetOpen) state.equipmentRecommendationOpen = false;
-        render();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.equipmentRecommendToggle !== undefined) {
         state.equipmentRecommendationOpen = !state.equipmentRecommendationOpen;
-        render();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.equipmentRecommendAdd) {
@@ -278,7 +339,7 @@ export function setupEventHandlers() {
         state.equipmentSelectionSheetOpen = true;
         state.equipmentRecommendationOpen = true;
         setReservationFlowStep("equipment", "select");
-        render();
+        renderPreservingScroll();
         return;
       }
       if (target.dataset.action === "csv-preview") {
@@ -754,7 +815,7 @@ export function setupEventHandlers() {
         state.equipmentSelectionSheetOpen = false;
         state.equipmentRecommendationOpen = false;
       }
-      render();
+      renderPreservingScroll();
     }
   });
 

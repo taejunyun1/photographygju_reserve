@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-equipment-navdock";
 
 export function escapeHtml(value) {
   return String(value ?? "")

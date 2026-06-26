@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260623-notify-ui2";
+} from "./constants.js?v=20260626-equipment-navdock";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260623-notify-ui2";
+} from "./utils.js?v=20260626-equipment-navdock";
 import {
   card,
   emptyState,
@@ -35,15 +35,15 @@ import {
   searchField,
   statCard,
   tabs
-} from "./ui.js?v=20260623-notify-ui2";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
-import { noticeCard } from "./views-student.js?v=20260623-notify-ui2";
+} from "./ui.js?v=20260626-equipment-navdock";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
+import { noticeCard } from "./views-student.js?v=20260626-equipment-navdock";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260623-notify-ui2";
+} from "./admin-equipment.js?v=20260626-equipment-navdock";
 
 export function adminShell() {
   return `

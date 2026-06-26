@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260623-notify-ui2";
+import "./js/main.js?v=20260626-equipment-navdock";

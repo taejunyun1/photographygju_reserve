@@ -8,6 +8,7 @@ const archivePath = process.env.IOS_ARCHIVE_PATH || path.join(buildDir, "AppStor
 const exportPath = process.env.IOS_EXPORT_PATH || path.join(buildDir, "AppStoreExport");
 const exportOptionsPath = process.env.IOS_EXPORT_OPTIONS_PLIST || path.join(buildDir, "exportOptions-appstore.plist");
 const exportMethod = process.env.IOS_EXPORT_METHOD || "app-store-connect";
+const exportDestination = process.env.IOS_EXPORT_DESTINATION || "";
 const signingStyle = process.env.IOS_SIGNING_STYLE || "automatic";
 const teamId = process.env.IOS_TEAM_ID || "";
 const allowProvisioningUpdates = process.env.IOS_ALLOW_PROVISIONING_UPDATES !== "0";
@@ -35,7 +36,7 @@ function writeExportOptions() {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-${plistValue("method", exportMethod)}${plistValue("signingStyle", signingStyle)}${plistValue("teamID", teamId)}\t<key>stripSwiftSymbols</key>
+${plistValue("method", exportMethod)}${plistValue("destination", exportDestination)}${plistValue("signingStyle", signingStyle)}${plistValue("teamID", teamId)}\t<key>stripSwiftSymbols</key>
 \t<true/>
 \t<key>uploadSymbols</key>
 \t<true/>
@@ -74,5 +75,5 @@ const exportArgs = [
 ];
 if (allowProvisioningUpdates) exportArgs.push("-allowProvisioningUpdates");
 
-run("Export iOS App Store archive", "xcodebuild", exportArgs);
-console.log(`\nApp Store export created at ${exportPath}`);
+run(exportDestination === "upload" ? "Upload iOS archive to App Store Connect" : "Export iOS App Store archive", "xcodebuild", exportArgs);
+console.log(exportDestination === "upload" ? "\nApp Store Connect upload finished." : `\nApp Store export created at ${exportPath}`);

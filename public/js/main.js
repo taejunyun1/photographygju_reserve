@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260623-notify-ui2";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260623-notify-ui2";
-import { setupEventHandlers } from "./events.js?v=20260623-notify-ui2";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
-import { render } from "./renderer.js?v=20260623-notify-ui2";
-import { escapeHtml } from "./utils.js?v=20260623-notify-ui2";
+import { $app, state } from "./state.js?v=20260626-equipment-navdock";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260626-equipment-navdock";
+import { setupEventHandlers } from "./events.js?v=20260626-equipment-navdock";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
+import { render } from "./renderer.js?v=20260626-equipment-navdock";
+import { escapeHtml } from "./utils.js?v=20260626-equipment-navdock";
 
 async function init() {
   await loadBootstrap();

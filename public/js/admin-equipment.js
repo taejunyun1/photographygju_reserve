@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
-import { api } from "./api.js?v=20260623-notify-ui2";
-import { equipmentStatusOptions } from "./constants.js?v=20260623-notify-ui2";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
+import { api } from "./api.js?v=20260626-equipment-navdock";
+import { equipmentStatusOptions } from "./constants.js?v=20260626-equipment-navdock";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-equipment-navdock";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

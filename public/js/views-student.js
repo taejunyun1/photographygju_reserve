@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260623-notify-ui2";
-import { statusLabel, typeLabel } from "./constants.js?v=20260623-notify-ui2";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260623-notify-ui2";
+import { state } from "./state.js?v=20260626-equipment-navdock";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-equipment-navdock";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -36,7 +36,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260623-notify-ui2";
+} from "./utils.js?v=20260626-equipment-navdock";
 import {
   actionRow,
   card,
@@ -46,7 +46,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260623-notify-ui2";
+} from "./ui.js?v=20260626-equipment-navdock";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -139,6 +139,7 @@ export function studentShell() {
       </section>
       ${studentContent()}
       <nav class="mobile-nav">
+        ${equipmentFloatingSelectionDock()}
         ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}"><span>${label}</span></button>`).join("")}
       </nav>
     </main>
@@ -546,7 +547,6 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
       <strong>${escapeHtml(state.equipmentCategoryFilter)}</strong>
       <span>${visibleItems.length}개 중 ${selectedItems.filter((item) => item.category === state.equipmentCategoryFilter).length}개 선택</span>
     </div>
-    ${equipmentSelectionSheet(selectedItems)}
     <div class="choice-grid equipment-choice-grid">
       ${visibleItems.length ? visibleItems.map((item) => {
         const unavailable = equipmentItemReservedInRange(item.id, selectedDate, period);
@@ -561,6 +561,7 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
         `;
       }).join("") : emptyState({ title: "검색 결과가 없습니다.", body: "검색어를 지우거나 다른 카테고리를 선택하세요." })}
     </div>
+    ${equipmentSelectionDock(selectedItems, "inline")}
     <div class="reserve-bottom-cta">
       <button class="button primary full" type="button" data-reserve-next="equipment:details" ${selectedItems.length ? "" : "disabled"}>${icon("check")}선택 완료</button>
     </div>
@@ -770,15 +771,32 @@ export function equipmentSelectionSheet(items) {
   `;
 }
 
+function equipmentSelectionDock(items, mode = "inline") {
+  return `
+    <div class="equipment-selection-dock equipment-selection-dock-${mode}">
+      ${equipmentSelectionSheet(items)}
+    </div>
+  `;
+}
+
 export function currentSelectedEquipmentItems() {
   const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.status === "가능");
   return state.selectedEquipmentItemIds.map((itemId) => reservable.find((item) => item.id === itemId)).filter(Boolean);
 }
 
+export function equipmentFloatingSelectionDock() {
+  if (state.view !== "reserve" || state.reservationType !== "equipment") return "";
+  const items = currentSelectedEquipmentItems();
+  if (!items.length) return "";
+  return equipmentSelectionDock(items, "floating");
+}
+
 export function syncEquipmentSelectionSheet() {
-  const sheet = document.querySelector(".equipment-selection-panel");
-  if (!sheet) return;
-  sheet.outerHTML = equipmentSelectionSheet(currentSelectedEquipmentItems());
+  const sheets = document.querySelectorAll(".equipment-selection-panel");
+  if (!sheets.length) return;
+  for (const sheet of sheets) {
+    sheet.outerHTML = equipmentSelectionSheet(currentSelectedEquipmentItems());
+  }
 }
 
 function reservationStep(index, title, body, options = {}) {
