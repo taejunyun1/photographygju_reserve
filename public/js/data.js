@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-privacy-policy";
-import { api } from "./api.js?v=20260626-privacy-policy";
-import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-privacy-policy";
+import { state } from "./state.js?v=20260626-watch-release";
+import { api } from "./api.js?v=20260626-watch-release";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260626-watch-release";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
@@ -19,7 +19,10 @@ export async function loadMe() {
 
 export async function loadMyReservations() {
   state.myReservations = await api("/api/reservations/my");
-  await syncNativeReservationNotifications({ silent: true });
+  await Promise.all([
+    syncNativeReservationNotifications({ silent: true }),
+    syncWatchReservationSnapshot({ silent: true })
+  ]);
 }
 
 export async function loadLectures() {

@@ -97,11 +97,21 @@ GJU_NATIVE_API_BASE=https://example.com npm run native:sync
 네이티브 앱에서는 `@capacitor/local-notifications`로 예약 리마인더를 제공한다.
 
 - 학생이 마이 화면의 `네이티브 예약 알림` 카드에서 `알림 켜기`를 누르면 iOS/Android 권한 요청이 뜬다.
-- 권한이 허용되면 예정 예약마다 `24시간 전`, `1시간 전` 로컬 알림을 예약한다.
+- 권한이 허용되면 예정 예약마다 `24시간 전`, `1시간 전`, `10분 전`, `시작 시점` 로컬 알림을 예약한다.
 - 내 예약 로드, 예약 생성, 예약 취소, 특강 신청/취소 후에는 알림 목록을 다시 동기화한다.
 - 로그아웃하면 이 기기에 예약된 알림을 취소하고 로컬 알림 설정을 끈다.
 - Android 13 이상은 알림 권한이 필요하며, 플러그인 Manifest가 `POST_NOTIFICATIONS`를 포함한다.
 - Android 정확 알람 권한(`SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`)은 현재 넣지 않았다. 학과 예약 리마인더는 일반 로컬 알림으로 충분하고, Google Play 심사에서 정확 알람 사용 목적을 추가 설명해야 하는 부담을 피하기 위해서다.
+
+## Apple Watch
+
+Apple Watch 범위는 심사용 리스크를 낮추기 위해 읽기 전용으로 제한한다.
+
+- Watch 앱은 `내 예약` 목록만 표시한다. 예약 생성, 취소, 관리자 기능은 iPhone 앱에서만 제공한다.
+- iPhone 앱이 `/api/reservations/my`를 로드하면 `GJUWatchReservations` Capacitor 플러그인이 최대 10개의 활성 예약 요약을 WatchConnectivity application context로 동기화한다.
+- Watch에 전달하는 값은 예약 ID, 유형, 상태, 제목, 날짜, 간단한 설명으로 제한한다.
+- 예약 알림은 iPhone의 로컬 알림을 사용한다. 사용자가 iOS Watch 앱에서 알림 미러링을 켜면 Apple Watch에서도 같은 예약 리마인더를 받을 수 있다.
+- Watch 소스는 `ios/App/GJUWatchApp/`에 있으며, Xcode에서 watchOS App 타깃을 추가할 때 이 파일들을 연결한다.
 
 관련 파일:
 
@@ -109,6 +119,9 @@ GJU_NATIVE_API_BASE=https://example.com npm run native:sync
 - `public/js/views-student.js`
 - `capacitor.config.json`
 - `android/app/src/main/res/drawable/ic_stat_notify.xml`
+- `ios/App/App/GJUWatchReservationsPlugin.swift`
+- `ios/App/GJUWatchApp/GJUWatchApp.swift`
+- `ios/App/GJUWatchApp/ReservationListView.swift`
 
 ## Store Release Checklist
 
@@ -137,6 +150,7 @@ GJU_NATIVE_API_BASE=https://example.com npm run native:sync
 6. App Store Connect에 앱 개인정보 세부사항을 작성한다. Apple은 앱과 통합된 타사 코드가 수집하는 데이터까지 포함해 개인정보 관행을 제출해야 한다고 안내한다.
 7. 스크린샷은 iPhone 기준으로 준비한다.
 8. 심사 메모에 내부 학과 시스템, 테스트 계정, 알림 권한 목적, 로그인 후 주요 플로우, 계정 삭제 경로를 적는다.
+9. Apple Watch를 함께 제출할 경우 Watch 앱 설명은 “내 예약 확인 및 iPhone 예약 알림 수신”으로 제한한다.
 
 #### 2026-06-22 iOS 제출 가능성 점검 결과
 
@@ -177,7 +191,8 @@ npm run native:ios:export
 4. `GJU_ANDROID_KEYSTORE_PATH`, `GJU_ANDROID_KEYSTORE_PASSWORD`, `GJU_ANDROID_KEY_ALIAS`, `GJU_ANDROID_KEY_PASSWORD`를 설정한 뒤 Gradle로 release App Bundle을 만든다.
 5. Play Console Data safety에 이름, 이메일, 전화번호, 사용자 ID/학번, 앱 활동/예약 내역, 진단/로그 여부를 실제 수집 기준에 맞춰 신고한다.
 6. 알림 권한은 `POST_NOTIFICATIONS`만 사용한다. 정확 알람 권한은 현재 사용하지 않으므로 정책 신고 대상에서 제외한다.
-7. 내부 테스트 트랙에 먼저 올려 Android 13+ 권한 프롬프트, 알림 예약, 알림 탭 이동, WebView 로그인 유지 상태를 확인한다.
+7. Wear OS 앱은 현재 제출 범위가 아니다. Android는 휴대폰 앱과 로컬 예약 리마인더만 검증한다.
+8. 내부 테스트 트랙에 먼저 올려 Android 13+ 권한 프롬프트, 알림 예약, 알림 탭 이동, WebView 로그인 유지 상태를 확인한다.
 
 #### 2026-06-22 Android 제출 가능성 점검 결과
 

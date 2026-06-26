@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260626-privacy-policy";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260626-watch-release";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

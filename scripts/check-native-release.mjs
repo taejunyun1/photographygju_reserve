@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260626-privacy-policy";
+const requiredCacheVersion = "20260626-watch-release";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");
@@ -55,7 +55,12 @@ const checks = [
   ["web cache version", contains("public/index.html", requiredCacheVersion) && contains("public/app.js", requiredCacheVersion)],
   ["student account deletion", contains("core.mjs", "DELETE /api/me") && contains("public/js/views-student.js", "account-delete")],
   ["privacy policy page", fileExists("public/privacy.html") && contains("public/privacy.html", "개인정보 처리방침") && contains("public/privacy.html", "https://photographygju.dothome.co.kr/account-deletion.html")],
-  ["privacy policy in app", contains("public/js/views-student.js", "/privacy.html") && contains("public/js/views-student.js", "개인정보 처리방침")]
+  ["privacy policy in app", contains("public/js/views-student.js", "/privacy.html") && contains("public/js/views-student.js", "개인정보 처리방침")],
+  ["watch reservation bridge", fileExists("ios/App/App/GJUWatchReservationsPlugin.swift") && contains("ios/App/App/GJUWatchReservationsPlugin.swift", "WatchConnectivity") && contains("ios/App/App/GJUWatchReservationsPlugin.swift", "GJUWatchReservations") && contains("public/js/native-notifications.js", "syncWatchReservationSnapshot")],
+  ["watch reservation data sync", contains("public/js/data.js", "syncWatchReservationSnapshot") && contains("public/js/native-notifications.js", "watchReservationSnapshot")],
+  ["watch app scaffold", fileExists("ios/App/GJUWatchApp/GJUWatchApp.swift") && fileExists("ios/App/GJUWatchApp/ReservationListView.swift") && fileExists("ios/App/GJUWatchApp/Info.plist")],
+  ["watch plugin in xcode sources", contains("ios/App/App.xcodeproj/project.pbxproj", "GJUWatchReservationsPlugin.swift in Sources")],
+  ["store docs include watch scope", contains("docs/store-submission-materials.md", "Apple Watch") && contains("docs/native-app-build.md", "Apple Watch")]
 ];
 
 for (const [label, passed] of checks) {

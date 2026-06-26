@@ -1,5 +1,5 @@
-import { typeLabel } from "./constants.js?v=20260626-privacy-policy";
-import { state } from "./state.js?v=20260626-privacy-policy";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-watch-release";
+import { state } from "./state.js?v=20260626-watch-release";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";
@@ -29,6 +29,10 @@ function baseStatus(overrides = {}) {
 
 function localNotificationsPlugin() {
   return window.Capacitor?.Plugins?.LocalNotifications || null;
+}
+
+function watchReservationsPlugin() {
+  return window.Capacitor?.Plugins?.GJUWatchReservations || null;
 }
 
 function nativePlatform() {
@@ -178,6 +182,57 @@ function reservationDateLabel(date) {
 function activeReservationsForNotifications() {
   const terminal = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
   return (state.myReservations || []).filter((reservation) => !terminal.has(reservation.status));
+}
+
+function watchText(value, fallback = "") {
+  return String(value || fallback).replace(/\s+/g, " ").trim().slice(0, 90);
+}
+
+function reservationSortTime(reservation) {
+  const startAt = reservationStartDate(reservation);
+  return startAt?.getTime?.() || Number.MAX_SAFE_INTEGER;
+}
+
+export function watchReservationSnapshot(reservations = state.myReservations || []) {
+  const terminal = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
+  return (Array.isArray(reservations) ? reservations : [])
+    .filter((reservation) => reservation && !terminal.has(reservation.status))
+    .sort((a, b) => reservationSortTime(a) - reservationSortTime(b))
+    .slice(0, 10)
+    .map((reservation, index) => {
+      const type = typeLabel[reservation.type] || "예약";
+      const status = statusLabel[reservation.status] || reservation.status || "진행 중";
+      const startAt = reservationStartDate(reservation);
+      return {
+        id: watchText(reservation.id, `${reservation.type || "reservation"}-${index}`),
+        type: watchText(type),
+        status: watchText(status),
+        title: watchText(`${type} · ${status}`),
+        subtitle: watchText(reservationMeta(reservation), type),
+        dateLabel: watchText(startAt ? reservationDateLabel(startAt) : reservation.fields?.reservedDate || "")
+      };
+    });
+}
+
+export async function syncWatchReservationSnapshot({ silent = false } = {}) {
+  const reservations = watchReservationSnapshot();
+  const plugin = watchReservationsPlugin();
+  if (!window.GJU_NATIVE_APP || nativePlatform() !== "ios" || !plugin?.sync) {
+    return { supported: false, reservations: reservations.length };
+  }
+  try {
+    return await plugin.sync({
+      reservations,
+      syncedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    if (!silent) throw error;
+    return {
+      supported: true,
+      reservations: reservations.length,
+      error: error.message || "Apple Watch 예약 정보를 동기화하지 못했습니다."
+    };
+  }
 }
 
 function reportReservationsForNotifications() {

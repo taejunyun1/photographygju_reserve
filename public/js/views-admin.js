@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-privacy-policy";
+import { state } from "./state.js?v=20260626-watch-release";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-privacy-policy";
+} from "./constants.js?v=20260626-watch-release";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-privacy-policy";
+} from "./utils.js?v=20260626-watch-release";
 import {
   card,
   emptyState,
@@ -35,15 +35,15 @@ import {
   searchField,
   statCard,
   tabs
-} from "./ui.js?v=20260626-privacy-policy";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-privacy-policy";
-import { noticeCard } from "./views-student.js?v=20260626-privacy-policy";
+} from "./ui.js?v=20260626-watch-release";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-watch-release";
+import { noticeCard } from "./views-student.js?v=20260626-watch-release";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-privacy-policy";
+} from "./admin-equipment.js?v=20260626-watch-release";
 
 export function adminShell() {
   return `

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-privacy-policy";
-import { api } from "./api.js?v=20260626-privacy-policy";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-privacy-policy";
+import { state } from "./state.js?v=20260626-watch-release";
+import { api } from "./api.js?v=20260626-watch-release";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-watch-release";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260626-privacy-policy";
+} from "./actions.js?v=20260626-watch-release";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260626-privacy-policy";
-import { render, toast } from "./renderer.js?v=20260626-privacy-policy";
+} from "./native-notifications.js?v=20260626-watch-release";
+import { render, toast } from "./renderer.js?v=20260626-watch-release";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260626-privacy-policy";
+} from "./admin-equipment.js?v=20260626-watch-release";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260626-privacy-policy";
+} from "./utils.js?v=20260626-watch-release";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
