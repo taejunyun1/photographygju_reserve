@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-admin-dashboard-visual-grid";
+import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-admin-dashboard-compact-cards";
 
 export function escapeHtml(value) {
   return String(value ?? "")

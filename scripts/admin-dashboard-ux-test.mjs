@@ -13,8 +13,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-visual-grid");
-const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-visual-grid");
+const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-compact-cards");
+const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-compact-cards");
 
 state.bootstrap = { settings: {
   printBankAccount: "광주은행 000",
@@ -85,6 +85,9 @@ assert.equal(metrics.repairEquipment, 1, "metrics must count repair equipment");
 assert(css.includes(".admin-dashboard-section"), "dashboard section styles must exist");
 assert(css.includes(".admin-action-card"), "admin action card styles must exist");
 assert(css.includes(".admin-action-icon"), "admin action icon styles must exist");
+assert(css.includes(".admin-action-card {\n  min-height: 112px;"), "admin action cards must be more compact");
+assert(css.includes(".admin-action-top {\n  display: flex;\n  align-items: center;"), "admin action card label and icon must use a compact inline header");
+assert(css.includes(".admin-action-card strong {\n    font-size: 36px;"), "mobile admin action numbers must be larger than the shared stat size");
 assert(!css.includes(".stat-grid.admin-dashboard-grid {\n    grid-template-columns: 1fr;"), "mobile admin action cards must stay in a two-column grid");
 assert(css.includes(".admin-queue-detail-grid"), "compressed operations queue styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");

@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
-import { api } from "./api.js?v=20260626-admin-dashboard-visual-grid";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-visual-grid";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-admin-dashboard-visual-grid";
-import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-visual-grid";
+import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
+import { api } from "./api.js?v=20260626-admin-dashboard-compact-cards";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-compact-cards";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
+import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-compact-cards";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -26,7 +26,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260626-admin-dashboard-visual-grid";
+} from "./utils.js?v=20260626-admin-dashboard-compact-cards";
 
 export async function login(form) {
   const data = formData(form);

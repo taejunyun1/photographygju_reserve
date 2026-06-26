@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
-import { api } from "./api.js?v=20260626-admin-dashboard-visual-grid";
-import { equipmentStatusOptions } from "./constants.js?v=20260626-admin-dashboard-visual-grid";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-admin-dashboard-visual-grid";
+import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
+import { api } from "./api.js?v=20260626-admin-dashboard-compact-cards";
+import { equipmentStatusOptions } from "./constants.js?v=20260626-admin-dashboard-compact-cards";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-admin-dashboard-compact-cards";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-visual-grid";
-import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-compact-cards";
+import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

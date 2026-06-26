@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
+import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-admin-dashboard-visual-grid";
+} from "./constants.js?v=20260626-admin-dashboard-compact-cards";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-admin-dashboard-visual-grid";
+} from "./utils.js?v=20260626-admin-dashboard-compact-cards";
 import {
   card,
   emptyState,
@@ -35,15 +35,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-dashboard-visual-grid";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-visual-grid";
-import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-visual-grid";
+} from "./ui.js?v=20260626-admin-dashboard-compact-cards";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
+import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-compact-cards";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-admin-dashboard-visual-grid";
+} from "./admin-equipment.js?v=20260626-admin-dashboard-compact-cards";
 
 export function adminShell() {
   return `
