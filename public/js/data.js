@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
-import { api } from "./api.js?v=20260626-admin-dashboard-compact-cards";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
+import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
+import { api } from "./api.js?v=20260626-admin-dashboard-status-tags";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

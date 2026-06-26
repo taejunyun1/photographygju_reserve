@@ -13,8 +13,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-compact-cards");
-const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-compact-cards");
+const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-status-tags");
+const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-status-tags");
 
 state.bootstrap = { settings: {
   printBankAccount: "광주은행 000",
@@ -35,7 +35,7 @@ state.adminReservations = [
   { id: "r1", type: "equipment", status: "pending_approval", user: { name: "김학생" }, fields: { reservedDate: "2026-06-26", rentalTime: "10:00", returnDate: "2026-06-26" } },
   { id: "r2", type: "studio", status: "approved", user: { name: "이학생" }, fields: { reservedDate: "2026-06-26", timeSlots: ["13:00-14:00"] } },
   { id: "r3", type: "equipment", status: "checked_out", user: { name: "박학생" }, fields: { reservedDate: "2026-06-25", returnDate: "2026-06-26", rentalTime: "09:00" } },
-  { id: "r4", type: "print", status: "cancelled", user: { name: "최학생" }, fields: { reservedDate: "2026-06-27", startTime: "15:00" } }
+  { id: "r4", type: "print", status: "cancelled", user: { name: "최학생" }, fields: { reservedDate: "2026-06-26", startTime: "15:00" } }
 ];
 state.adminEquipment = [
   { id: "e1", active: true, status: "가능" },
@@ -76,6 +76,9 @@ assert.equal(countOccurrences(dashboard, "admin-action-card"), 5, "top action ca
 assert.equal(countOccurrences(dashboard, "admin-action-icon"), 5, "top action cards must show visible icon badges");
 assert.equal(countOccurrences(dashboard, "admin-queue-item"), 0, "operations queue must not repeat top KPI cards");
 assert(dashboard.includes("admin-queue-detail-grid"), "operations queue must render compact detail panels");
+assert(dashboard.includes('<span class="tag green">승인 완료</span>'), "dashboard approved status must use the shared green status tag");
+assert(dashboard.includes('<span class="tag gray">취소</span>'), "dashboard cancelled status must use the shared gray status tag");
+assert(dashboard.includes('<span class="tag purple">대여 완료</span>'), "dashboard checkout status must use the shared purple status tag");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");

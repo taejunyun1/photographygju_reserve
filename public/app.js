@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260626-admin-dashboard-compact-cards";
+import "./js/main.js?v=20260626-admin-dashboard-status-tags";

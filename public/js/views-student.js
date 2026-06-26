@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-compact-cards";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
+import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-status-tags";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -36,7 +36,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260626-admin-dashboard-compact-cards";
+} from "./utils.js?v=20260626-admin-dashboard-status-tags";
 import {
   actionRow,
   card,
@@ -46,7 +46,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-dashboard-compact-cards";
+} from "./ui.js?v=20260626-admin-dashboard-status-tags";
 
 export function authView() {
   const isLogin = state.authMode === "login";

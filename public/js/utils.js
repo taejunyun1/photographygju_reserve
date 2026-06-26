@@ -1,5 +1,5 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-admin-dashboard-compact-cards";
+import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
+import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-admin-dashboard-status-tags";
 
 export function escapeHtml(value) {
   return String(value ?? "")

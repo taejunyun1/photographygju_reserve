@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-compact-cards";
-import { setupEventHandlers } from "./events.js?v=20260626-admin-dashboard-compact-cards";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
-import { render } from "./renderer.js?v=20260626-admin-dashboard-compact-cards";
-import { escapeHtml } from "./utils.js?v=20260626-admin-dashboard-compact-cards";
+import { $app, state } from "./state.js?v=20260626-admin-dashboard-status-tags";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-status-tags";
+import { setupEventHandlers } from "./events.js?v=20260626-admin-dashboard-status-tags";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
+import { render } from "./renderer.js?v=20260626-admin-dashboard-status-tags";
+import { escapeHtml } from "./utils.js?v=20260626-admin-dashboard-status-tags";
 
 async function init() {
   await loadBootstrap();

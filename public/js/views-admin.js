@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-compact-cards";
+import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-admin-dashboard-compact-cards";
+} from "./constants.js?v=20260626-admin-dashboard-status-tags";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-admin-dashboard-compact-cards";
+} from "./utils.js?v=20260626-admin-dashboard-status-tags";
 import {
   card,
   emptyState,
@@ -35,15 +35,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-dashboard-compact-cards";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-compact-cards";
-import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-compact-cards";
+} from "./ui.js?v=20260626-admin-dashboard-status-tags";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
+import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-status-tags";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-admin-dashboard-compact-cards";
+} from "./admin-equipment.js?v=20260626-admin-dashboard-status-tags";
 
 export function adminShell() {
   return `
@@ -302,7 +302,7 @@ function adminOperationsQueue() {
       <li>
         <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
         <strong>${escapeHtml(reservation.user?.name || "학생")} · ${escapeHtml(adminReservationTime(reservation) || "시간 미정")}</strong>
-        <em>${escapeHtml(statusLabel[reservation.status] || reservation.status || "상태 없음")}</em>
+        ${tag(reservation.status || "상태 없음")}
       </li>
     `).join("")
     : `<li class="empty-inline">오늘 예약 상세 데이터가 없습니다.</li>`;
@@ -311,7 +311,7 @@ function adminOperationsQueue() {
       <li>
         <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
         <strong>${escapeHtml(reservation.user?.name || "학생")}</strong>
-        <em>${escapeHtml(statusLabel[reservation.status] || reservation.status || "상태 없음")}</em>
+        ${tag(reservation.status || "상태 없음")}
       </li>
     `).join("")
     : `<li class="empty-inline">오늘 처리할 대여/반납 항목이 없습니다.</li>`;
