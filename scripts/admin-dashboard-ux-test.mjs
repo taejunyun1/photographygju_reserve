@@ -13,9 +13,9 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260627-admin-topbar-width");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-topbar-width");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-topbar-width");
+const { state } = await import("../public/js/state.js?v=20260627-admin-scroll-blur");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-scroll-blur");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-scroll-blur");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -188,6 +188,18 @@ assert(adminMobileHeaderRule.includes("position: relative;"), "admin mobile head
 assert(adminMobileHeaderRule.includes("width: 100vw;"), "admin mobile header must fill the full screen width");
 assert(adminMobileHeaderRule.includes("margin-left: calc(50% - 50vw);"), "admin mobile header must align to the left viewport edge");
 assert(adminMobileHeaderRule.includes("margin-right: calc(50% - 50vw);"), "admin mobile header must align to the right viewport edge");
+assert(adminMobileHeaderRule.includes("overflow: hidden;"), "admin mobile header must clip its scroll-away blur layer");
+assert(adminMobileHeaderRule.includes("isolation: isolate;"), "admin mobile header must isolate its blur layer behind controls");
+
+const studentTopAppbarRule = cssRule(".top-appbar");
+assert(!studentTopAppbarRule.includes("position: sticky;"), "student top appbar must not be sticky");
+assert(!studentTopAppbarRule.includes("position: fixed;"), "student top appbar must not be fixed");
+assert(studentTopAppbarRule.includes("position: relative;"), "student top appbar must scroll naturally with the page");
+assert(studentTopAppbarRule.includes("overflow: hidden;"), "student top appbar must clip its scroll-away blur layer");
+assert(studentTopAppbarRule.includes("isolation: isolate;"), "student top appbar must isolate its blur layer behind controls");
+assert(css.includes(".top-appbar::before,\n.admin-mobile-header::before"), "student/admin top bars must share a scroll-away blur layer");
+assert(css.includes("-webkit-mask-image: linear-gradient"), "scroll-away blur layer must fade like a native app header");
+assert(css.includes("backdrop-filter: var(--blur-strong);"), "scroll-away blur layer must use the strong backdrop blur token");
 
 assert(css.includes(".admin-inner-tabs"), "admin inner tab styles must exist");
 assert(css.includes(".admin-equipment-list-card.compact"), "registered equipment card must have compact density styles");

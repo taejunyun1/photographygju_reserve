@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260627-admin-topbar-width";
-import { api } from "./api.js?v=20260627-admin-topbar-width";
-import { equipmentStatusOptions } from "./constants.js?v=20260627-admin-topbar-width";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260627-admin-topbar-width";
+import { state } from "./state.js?v=20260627-admin-scroll-blur";
+import { api } from "./api.js?v=20260627-admin-scroll-blur";
+import { equipmentStatusOptions } from "./constants.js?v=20260627-admin-scroll-blur";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260627-admin-scroll-blur";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

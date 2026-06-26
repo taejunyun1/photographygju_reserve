@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260627-admin-topbar-width";
-import { state } from "./state.js?v=20260627-admin-topbar-width";
+import { statusLabel, typeLabel } from "./constants.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-scroll-blur";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";
