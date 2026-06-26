@@ -48,6 +48,9 @@ GJU-reserve는 광주대학교 사진영상미디어학과 전용 예약 관리 
 계정 삭제:
 사용자는 마이 화면에서 현재 비밀번호와 확인 문구를 입력해 앱 안에서 계정 삭제를 시작하고 완료할 수 있습니다.
 
+개인정보 처리방침 URL:
+https://photographygju.dothome.co.kr/privacy.html
+
 계정/데이터 삭제 안내 URL:
 https://photographygju.dothome.co.kr/account-deletion.html
 
@@ -85,6 +88,8 @@ The app uses notification permission only for local reservation reminders before
 | 광고 식별자 | 아니오 | 해당 없음 | 사용 안 함 |
 
 사용자는 앱 내부 `마이 > 계정 삭제`에서 계정 삭제를 완료할 수 있다. 삭제 시 사용자 계정, 세션, 예약, 보고서, 특강 신청, 경고 기록이 함께 정리된다.
+
+App Store Connect의 개인정보 처리방침 URL에는 `https://photographygju.dothome.co.kr/privacy.html`을 사용한다.
 
 Google Play Console의 계정 삭제 웹 리소스에는 `https://photographygju.dothome.co.kr/account-deletion.html`을 사용한다.
 

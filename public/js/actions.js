@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260626-equipment-navdock";
-import { api } from "./api.js?v=20260626-equipment-navdock";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-equipment-navdock";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-equipment-navdock";
-import { render, toast } from "./renderer.js?v=20260626-equipment-navdock";
+import { state } from "./state.js?v=20260626-privacy-policy";
+import { api } from "./api.js?v=20260626-privacy-policy";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-privacy-policy";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-privacy-policy";
+import { render, toast } from "./renderer.js?v=20260626-privacy-policy";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -26,7 +26,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260626-equipment-navdock";
+} from "./utils.js?v=20260626-privacy-policy";
 
 export async function login(form) {
   const data = formData(form);

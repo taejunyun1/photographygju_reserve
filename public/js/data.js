@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-equipment-navdock";
-import { api } from "./api.js?v=20260626-equipment-navdock";
-import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
+import { state } from "./state.js?v=20260626-privacy-policy";
+import { api } from "./api.js?v=20260626-privacy-policy";
+import { syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-privacy-policy";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

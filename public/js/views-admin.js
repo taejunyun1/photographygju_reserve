@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-equipment-navdock";
+import { state } from "./state.js?v=20260626-privacy-policy";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-equipment-navdock";
+} from "./constants.js?v=20260626-privacy-policy";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-equipment-navdock";
+} from "./utils.js?v=20260626-privacy-policy";
 import {
   card,
   emptyState,
@@ -35,15 +35,15 @@ import {
   searchField,
   statCard,
   tabs
-} from "./ui.js?v=20260626-equipment-navdock";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
-import { noticeCard } from "./views-student.js?v=20260626-equipment-navdock";
+} from "./ui.js?v=20260626-privacy-policy";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-privacy-policy";
+import { noticeCard } from "./views-student.js?v=20260626-privacy-policy";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-equipment-navdock";
+} from "./admin-equipment.js?v=20260626-privacy-policy";
 
 export function adminShell() {
   return `

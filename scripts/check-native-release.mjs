@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260626-equipment-navdock";
+const requiredCacheVersion = "20260626-privacy-policy";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");
@@ -53,7 +53,9 @@ const checks = [
   ["Android plugin generated settings", contains("android/capacitor.settings.gradle", "capacitor-local-notifications")],
   ["Android release signing hook", contains("android/app/build.gradle", "GJU_ANDROID_KEYSTORE_PATH")],
   ["web cache version", contains("public/index.html", requiredCacheVersion) && contains("public/app.js", requiredCacheVersion)],
-  ["student account deletion", contains("core.mjs", "DELETE /api/me") && contains("public/js/views-student.js", "account-delete")]
+  ["student account deletion", contains("core.mjs", "DELETE /api/me") && contains("public/js/views-student.js", "account-delete")],
+  ["privacy policy page", fileExists("public/privacy.html") && contains("public/privacy.html", "개인정보 처리방침") && contains("public/privacy.html", "https://photographygju.dothome.co.kr/account-deletion.html")],
+  ["privacy policy in app", contains("public/js/views-student.js", "/privacy.html") && contains("public/js/views-student.js", "개인정보 처리방침")]
 ];
 
 for (const [label, passed] of checks) {

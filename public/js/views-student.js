@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-equipment-navdock";
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-equipment-navdock";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-equipment-navdock";
+import { state } from "./state.js?v=20260626-privacy-policy";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-privacy-policy";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-privacy-policy";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -36,7 +36,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260626-equipment-navdock";
+} from "./utils.js?v=20260626-privacy-policy";
 import {
   actionRow,
   card,
@@ -46,7 +46,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-equipment-navdock";
+} from "./ui.js?v=20260626-privacy-policy";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -1640,6 +1640,13 @@ export function myPageView() {
           <button class="button danger full" type="submit">${icon("trash")}계정 삭제</button>
         </form>`,
         className: "account-delete-card"
+      })}
+      ${card({
+        title: "개인정보 및 데이터",
+        body: `<div class="action-row">
+          <a class="button ghost full" href="/privacy.html" target="_blank" rel="noopener noreferrer">${icon("external")}개인정보 처리방침</a>
+          <a class="button ghost full" href="/account-deletion.html" target="_blank" rel="noopener noreferrer">${icon("external")}계정 및 데이터 삭제 안내</a>
+        </div>`
       })}
       <button class="button danger full" data-action="logout">${icon("logOut")}로그아웃</button>
     </section>

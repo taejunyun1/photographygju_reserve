@@ -11,7 +11,7 @@
 | Cloudflare Worker API | https://photographygju-reserve.taejunyun.workers.dev |
 | Cloudflare Worker 버전 | `23876a11-fb8d-4a33-9f4b-e1cad7386c03` |
 | Dothome 업로드 | 2026-06-22, FTP 일반 업로드 완료 |
-| 캐시 버전 | `20260626-equipment-navdock` |
+| 캐시 버전 | `20260626-privacy-policy` |
 | iOS 빌드 | `1.0 (1)` |
 | Android 빌드 | `versionName 1.0`, `versionCode 1` |
 

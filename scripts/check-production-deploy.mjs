@@ -41,6 +41,12 @@ ok("production account deletion action is deployed");
 const { text: studentViewsJs } = await fetchText(`/js/views-student.js?v=${cacheVersion}`);
 assert(studentViewsJs.includes('data-form="account-delete"'), "production student views must include account deletion form");
 ok("production account deletion UI is deployed");
+assert(studentViewsJs.includes("/privacy.html") && studentViewsJs.includes("개인정보 처리방침"), "production student views must link to the privacy policy");
+ok("production privacy policy link is deployed in the student UI");
+
+const { text: privacyHtml } = await fetchText("/privacy.html");
+assert(privacyHtml.includes("개인정보 처리방침") && privacyHtml.includes("https://photographygju.dothome.co.kr/account-deletion.html"), "production privacy policy page must be deployed");
+ok("production privacy policy page is deployed");
 
 const { response: optionsResponse } = await fetchText("/api/me", 204, {
   method: "OPTIONS",
