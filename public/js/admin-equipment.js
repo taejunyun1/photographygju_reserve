@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260626-watch-release";
-import { api } from "./api.js?v=20260626-watch-release";
-import { equipmentStatusOptions } from "./constants.js?v=20260626-watch-release";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-watch-release";
+import { state } from "./state.js?v=20260626-admin-dashboard-ux";
+import { api } from "./api.js?v=20260626-admin-dashboard-ux";
+import { equipmentStatusOptions } from "./constants.js?v=20260626-admin-dashboard-ux";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-admin-dashboard-ux";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

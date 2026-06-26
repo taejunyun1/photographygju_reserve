@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-watch-release";
+import { state } from "./state.js?v=20260626-admin-dashboard-ux";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-watch-release";
+} from "./constants.js?v=20260626-admin-dashboard-ux";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-watch-release";
+} from "./utils.js?v=20260626-admin-dashboard-ux";
 import {
   card,
   emptyState,
@@ -33,17 +33,18 @@ import {
   pagination,
   propertyList,
   searchField,
+  sectionHeader,
   statCard,
   tabs
-} from "./ui.js?v=20260626-watch-release";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-watch-release";
-import { noticeCard } from "./views-student.js?v=20260626-watch-release";
+} from "./ui.js?v=20260626-admin-dashboard-ux";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-ux";
+import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-ux";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-watch-release";
+} from "./admin-equipment.js?v=20260626-admin-dashboard-ux";
 
 export function adminShell() {
   return `
@@ -169,26 +170,264 @@ export function adminAccountView() {
 }
 
 export function adminDashboardView() {
-  const s = state.summary || {};
+  const metrics = adminDashboardMetrics();
   return `
     <section class="grid">
-      <div class="stat-grid">
-        ${statCard({ label: "가입 승인 대기", value: s.pendingUsers || 0, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue" })}
-        ${statCard({ label: "기자재 승인 대기", value: s.pendingEquipment || 0, caption: "기자재 예약 확인", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow" })}
-        ${statCard({ label: "오늘 예약", value: s.todayReservations || 0, caption: "전체 예약 보기", attrs: `data-admin-view="reservations" data-admin-reservation-tab="all"`, tone: "green" })}
-        ${statCard({ label: "보고서 확인 필요", value: s.missingReports || 0, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red" })}
-      </div>
-      ${adminNativeNotificationCard()}
-      ${card({ title: "운영 순서", body: `<p class="muted">신규 가입 승인 → 기자재 승인 → 오늘 대여/반납 → 스튜디오 보고서 확인 → 공지 관리</p>`, className: "ui-card-compact" })}
+      <section class="admin-dashboard-section">
+        ${sectionHeader({ title: "오늘 처리할 일", subtitle: "승인, 대여/반납, 보고서 확인을 우선순위대로 처리합니다." })}
+        <div class="stat-grid admin-dashboard-grid">
+          ${statCard({ label: "가입 승인 대기", value: metrics.pendingUsers, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue" })}
+          ${statCard({ label: "기자재 승인 대기", value: metrics.pendingEquipment, caption: "기자재 예약 확인", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow" })}
+          ${statCard({ label: "오늘 예약", value: metrics.todayReservations, caption: "전체 예약 보기", attrs: `data-admin-view="reservations" data-admin-reservation-tab="all"`, tone: "green" })}
+          ${statCard({ label: "대여/반납 처리 필요", value: metrics.checkoutReturnNeeded, caption: "오늘 처리 큐", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow" })}
+          ${statCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red" })}
+        </div>
+      </section>
+      ${adminOperationsQueue(metrics)}
+      ${adminDashboardMetricSection(metrics)}
       ${adminGuide("대시보드 사용 가이드", "오늘 처리해야 할 승인, 예약, 보고서 현황을 빠르게 보는 화면입니다. 카드를 누르면 해당 관리 페이지로 이동합니다.")}
     </section>
   `;
 }
 
-function adminNativeNotificationCard() {
+function adminReservationDate(reservation) {
+  const fields = reservation?.fields || {};
+  return fields.reservedDate || fields.date || fields.returnDate || "";
+}
+
+function adminReservationTime(reservation) {
+  const fields = reservation?.fields || {};
+  if (fields.rentalTime) return fields.rentalTime;
+  if (fields.startTime) return fields.startTime;
+  if (Array.isArray(fields.timeSlots) && fields.timeSlots.length) return fields.timeSlots[0];
+  return "";
+}
+
+function activeAdminEquipment() {
+  return (state.adminEquipment || []).filter((item) => item.active !== false);
+}
+
+function reservationStatusIn(reservation, statuses) {
+  return statuses.includes(reservation?.status);
+}
+
+function todayAdminReservations() {
+  const today = todayKey();
+  return (state.adminReservations || []).filter((reservation) => adminReservationDate(reservation) === today);
+}
+
+function checkoutReturnReservations() {
+  const today = todayKey();
+  return (state.adminReservations || []).filter((reservation) => {
+    if (reservation.type !== "equipment") return false;
+    const fields = reservation.fields || {};
+    const dueToday = fields.returnDate === today || fields.reservedDate === today;
+    return dueToday && reservationStatusIn(reservation, ["approved", "checked_out"]);
+  });
+}
+
+function adminReservationTypeCounts(reservations) {
+  return reservations.reduce((acc, reservation) => {
+    const key = reservation.type || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function adminPopularEquipmentNames(reservations) {
+  const counts = new Map();
+  for (const reservation of reservations) {
+    const fields = reservation.fields || {};
+    const names = [
+      ...(Array.isArray(fields.equipmentItems) ? fields.equipmentItems : []),
+      ...(Array.isArray(fields.equipmentItemNames) ? fields.equipmentItemNames : []),
+      ...(Array.isArray(fields.selectedEquipmentNames) ? fields.selectedEquipmentNames : [])
+    ].map((item) => typeof item === "string" ? item : item?.name || item?.label || "").filter(Boolean);
+    for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+}
+
+export function adminDashboardMetrics() {
+  const s = state.summary || {};
+  const reservations = state.adminReservations || [];
+  const equipment = activeAdminEquipment();
+  const availableEquipment = equipment.filter((item) => item.status === "가능").length;
+  const repairEquipment = equipment.filter((item) => item.status === "수리중").length;
+  const cancelledReservations = reservations.filter((reservation) => reservationStatusIn(reservation, ["cancelled", "admin_cancelled", "rejected"])).length;
+  const checkoutReturnNeeded = checkoutReturnReservations().length;
+  const typeCounts = adminReservationTypeCounts(reservations);
+  const latestNotice = [...(state.adminNotices || [])].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
+  return {
+    pendingUsers: Number(s.pendingUsers || 0),
+    pendingEquipment: Number(s.pendingEquipment || 0),
+    todayReservations: Number(s.todayReservations || todayAdminReservations().length || 0),
+    missingReports: Number(s.missingReports || 0),
+    checkoutReturnNeeded,
+    weekReservations: reservations.length,
+    activeEquipment: equipment.length,
+    availableEquipment,
+    repairEquipment,
+    equipmentAvailableRate: equipment.length ? Math.round((availableEquipment / equipment.length) * 100) : 0,
+    cancelledReservations,
+    reportQueueCount: (state.adminReports || []).filter((report) => !["completed", "approved"].includes(report.status)).length,
+    openLectures: (state.adminLectures || []).filter((lecture) => lecture.status === "모집중").length,
+    latestNotice,
+    typeCounts,
+    popularEquipment: adminPopularEquipmentNames(reservations)
+  };
+}
+
+function adminQueueItem({ title, count, meta, attrs, tone = "" }) {
+  return `
+    <button class="admin-queue-item ${tone ? `tone-${tone}` : ""}" type="button" ${attrs}>
+      <span>
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(meta)}</small>
+      </span>
+      <em>${escapeHtml(String(count))}</em>
+    </button>
+  `;
+}
+
+function adminOperationsQueue(metrics) {
+  const todayReservations = todayAdminReservations().slice(0, 3);
+  const checkoutItems = checkoutReturnReservations().slice(0, 3);
+  const queueItems = [
+    adminQueueItem({
+      title: "가입 승인",
+      count: metrics.pendingUsers,
+      meta: "학생 승인 대기",
+      attrs: `data-admin-view="users"`,
+      tone: "blue"
+    }),
+    adminQueueItem({
+      title: "기자재 승인",
+      count: metrics.pendingEquipment,
+      meta: "예약 승인 필요",
+      attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`,
+      tone: "yellow"
+    }),
+    adminQueueItem({
+      title: "대여/반납 처리 필요",
+      count: metrics.checkoutReturnNeeded,
+      meta: "오늘 대여 또는 반납",
+      attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`,
+      tone: "yellow"
+    }),
+    adminQueueItem({
+      title: "보고서 확인",
+      count: metrics.missingReports,
+      meta: "스튜디오/출력 보고서",
+      attrs: `data-admin-view="reports"`,
+      tone: "red"
+    })
+  ].join("");
+  const reservationRows = todayReservations.length
+    ? todayReservations.map((reservation) => `
+      <li>
+        <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
+        <strong>${escapeHtml(reservation.user?.name || "학생")} · ${escapeHtml(adminReservationTime(reservation) || "시간 미정")}</strong>
+        <em>${escapeHtml(statusLabel[reservation.status] || reservation.status || "상태 없음")}</em>
+      </li>
+    `).join("")
+    : `<li class="empty-inline">오늘 예약 상세 데이터가 없습니다.</li>`;
+  const checkoutRows = checkoutItems.length
+    ? checkoutItems.map((reservation) => `
+      <li>
+        <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
+        <strong>${escapeHtml(reservation.user?.name || "학생")}</strong>
+        <em>${escapeHtml(statusLabel[reservation.status] || reservation.status || "상태 없음")}</em>
+      </li>
+    `).join("")
+    : `<li class="empty-inline">오늘 처리할 대여/반납 항목이 없습니다.</li>`;
+  return `
+    <section class="admin-dashboard-section">
+      ${sectionHeader({ title: "운영 큐", subtitle: "누르면 해당 관리 화면으로 이동합니다." })}
+      <div class="admin-queue-list">${queueItems}</div>
+      <div class="admin-queue-detail-grid">
+        <div class="admin-queue-detail">
+          <h3>오늘 예약 타임라인</h3>
+          <ul>${reservationRows}</ul>
+        </div>
+        <div class="admin-queue-detail">
+          <h3>대여/반납 큐</h3>
+          <ul>${checkoutRows}</ul>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function adminDashboardMetricSection(metrics) {
+  const typeTotal = Object.values(metrics.typeCounts).reduce((sum, value) => sum + value, 0);
+  const typeRows = typeTotal
+    ? Object.entries(metrics.typeCounts).map(([type, count]) => {
+      const percent = Math.round((count / typeTotal) * 100);
+      return `
+        <div class="admin-type-share">
+          <span>${escapeHtml(typeLabel[type] || type)}</span>
+          <strong>${percent}%</strong>
+          <i style="--share:${percent}%"></i>
+        </div>
+      `;
+    }).join("")
+    : `<p class="muted">최근 예약 데이터가 없습니다.</p>`;
+  const popularRows = metrics.popularEquipment.length
+    ? metrics.popularEquipment.map((item) => `<li><span>${escapeHtml(item.name)}</span><strong>${escapeHtml(String(item.count))}회</strong></li>`).join("")
+    : `<li class="empty-inline">선택 기자재 데이터 없음</li>`;
+  return `
+    <section class="admin-dashboard-section">
+      ${sectionHeader({ title: "운영 지표", subtitle: "현재 로드된 관리자 데이터 기준입니다." })}
+      <div class="admin-metric-grid">
+        <div class="admin-metric-card">
+          <span>이번 주 예약 수</span>
+          <strong>${escapeHtml(String(metrics.weekReservations))}</strong>
+          <small>최근 로드 예약 기준</small>
+        </div>
+        <div class="admin-metric-card">
+          <span>기자재 가용률</span>
+          <strong>${escapeHtml(String(metrics.equipmentAvailableRate))}%</strong>
+          <small>가능 ${escapeHtml(String(metrics.availableEquipment))} / 전체 ${escapeHtml(String(metrics.activeEquipment))}</small>
+        </div>
+        <div class="admin-metric-card">
+          <span>수리중 기자재</span>
+          <strong>${escapeHtml(String(metrics.repairEquipment))}</strong>
+          <small>예약 가능 목록에서 제외</small>
+        </div>
+        <div class="admin-metric-card">
+          <span>취소/반려 예약</span>
+          <strong>${escapeHtml(String(metrics.cancelledReservations))}</strong>
+          <small>최근 로드 예약 기준</small>
+        </div>
+      </div>
+      <div class="admin-dashboard-insight-grid">
+        <div class="admin-insight-panel">
+          <h3>예약 유형별 비중</h3>
+          ${typeRows}
+        </div>
+        <div class="admin-insight-panel">
+          <h3>인기 기자재 Top 5</h3>
+          <ul>${popularRows}</ul>
+        </div>
+        <div class="admin-insight-panel">
+          <h3>공지/특강 상태</h3>
+          <p><strong>${escapeHtml(String(metrics.openLectures))}</strong>개 특강 모집중</p>
+          <p>${metrics.latestNotice ? `최근 공지 · ${escapeHtml(metrics.latestNotice.title || "제목 없음")}` : "최근 공지 없음"}</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function adminNotificationSettingsCard() {
   const status = state.nativeNotifications || {};
   const enabled = nativeNotificationPreferenceEnabled();
   const planned = status.supported ? plannedAdminNotifications().length : 0;
+  const syncedLabel = status.syncedAt ? formatDateTime(status.syncedAt) : "동기화 전";
   const permissionLabel = {
     granted: "허용됨",
     denied: "거부됨",
@@ -207,7 +446,7 @@ function adminNativeNotificationCard() {
       : `<button class="button primary compact" type="button" data-native-notifications="enable">${icon("check")}알림 켜기</button>`
     : "";
   return card({
-    title: "운영 네이티브 알림",
+    title: "운영 알림",
     subtitle: status.supported
       ? "승인 대기, 오늘 예약, 보고서 확인 필요 건을 오전/오후 운영 체크 알림으로 보냅니다."
       : "iOS/Android 앱에서 설치 후 사용할 수 있습니다.",
@@ -217,6 +456,7 @@ function adminNativeNotificationCard() {
         <div><span>권한</span><strong>${escapeHtml(permissionLabel)}</strong></div>
         <div><span>상태</span><strong>${enabled ? "켜짐" : "꺼짐"}</strong></div>
         <div><span>예정 알림</span><strong>${escapeHtml(String(planned))}개</strong></div>
+        <div><span>마지막 동기화</span><strong>${escapeHtml(syncedLabel)}</strong></div>
       </div>
       ${status.error ? `<p class="muted warning-text">${escapeHtml(status.error)}</p>` : ""}
       <p class="muted">관리자 데이터 새로고침, 로그아웃, 알림 동기화 시 기존 운영 알림은 다시 정리됩니다.</p>
@@ -1090,6 +1330,7 @@ export function adminSettingsView() {
           <button class="button primary" type="submit">${icon("check")}저장</button>
         </form>
       </div>
+      ${adminNotificationSettingsCard()}
       <div class="card">
         <h2 class="card-title">수업/학기 차단 일정</h2>
         <form class="grid two" data-form="blocked-schedule-add">

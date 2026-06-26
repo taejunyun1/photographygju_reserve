@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-watch-release";
+import { state } from "./state.js?v=20260626-admin-dashboard-ux";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

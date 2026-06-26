@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260626-watch-release";
-import { api } from "./api.js?v=20260626-watch-release";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-watch-release";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-watch-release";
-import { render, toast } from "./renderer.js?v=20260626-watch-release";
+import { state } from "./state.js?v=20260626-admin-dashboard-ux";
+import { api } from "./api.js?v=20260626-admin-dashboard-ux";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-ux";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260626-admin-dashboard-ux";
+import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-ux";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -26,7 +26,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260626-watch-release";
+} from "./utils.js?v=20260626-admin-dashboard-ux";
 
 export async function login(form) {
   const data = formData(form);

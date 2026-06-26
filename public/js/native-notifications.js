@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-watch-release";
-import { state } from "./state.js?v=20260626-watch-release";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-ux";
+import { state } from "./state.js?v=20260626-admin-dashboard-ux";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

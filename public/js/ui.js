@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260626-watch-release";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260626-admin-dashboard-ux";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");
