@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-status-tags";
-import { setupEventHandlers } from "./events.js?v=20260626-admin-dashboard-status-tags";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
-import { render } from "./renderer.js?v=20260626-admin-dashboard-status-tags";
-import { escapeHtml } from "./utils.js?v=20260626-admin-dashboard-status-tags";
+import { $app, state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260626-equipment-reservation-status-3";
+import { setupEventHandlers } from "./events.js?v=20260626-equipment-reservation-status-3";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
+import { render } from "./renderer.js?v=20260626-equipment-reservation-status-3";
+import { escapeHtml } from "./utils.js?v=20260626-equipment-reservation-status-3";
 
 async function init() {
   await loadBootstrap();

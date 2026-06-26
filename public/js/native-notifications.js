@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-status-tags";
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-equipment-reservation-status-3";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";
@@ -280,7 +280,9 @@ export function plannedAdminNotifications(now = new Date()) {
   const summary = state.summary || {};
   const counts = [
     ["가입 승인", Number(summary.pendingUsers || 0)],
-    ["기자재 승인", Number(summary.pendingEquipment || 0)],
+    ["대여완료", Number(summary.equipmentCheckedOut ?? summary.pendingEquipment ?? 0)],
+    ["반납완료", Number(summary.equipmentReturned || 0)],
+    ["대여취소", Number(summary.equipmentCancelled || 0)],
     ["오늘 예약", Number(summary.todayReservations || 0)],
     ["보고서 확인", Number(summary.missingReports || 0)]
   ].filter(([, count]) => count > 0);

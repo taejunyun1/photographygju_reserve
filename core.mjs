@@ -23,6 +23,7 @@ const LIMIT_DURATION_DAYS = {
 };
 const APPROVAL_STATUSES = new Set(["approval_pending", "approved", "rejected", "blocked"]);
 const RESERVATION_STATUSES = new Set(["pending_approval", "auto_confirmed", "approved", "cancelled", "admin_cancelled", "checked_out", "returned", "completed", "rejected"]);
+const EQUIPMENT_RESERVATION_STATUSES = new Set(["checked_out", "returned", "cancelled"]);
 const EQUIPMENT_STATUSES = new Set(["가능", "수리중", "파손", "available", "rented", "maintenance", "repair", "lost", "사용 가능", "대여 중", "점검 중", "수리 중", "분실", "damaged", "broken"]);
 const FANTASY_LAB_INQUIRY_NOTE = "온라인 예약불가. 판타지랩 조교에게 직접 문의";
 const WEEKDAY_INDEX = {
@@ -261,8 +262,8 @@ function normalizeStatusLabel(status) {
     auto_confirmed: "자동 확정",
     cancelled: "취소",
     admin_cancelled: "관리자 취소",
-    checked_out: "대여 완료",
-    returned: "반납 완료",
+    checked_out: "대여완료",
+    returned: "반납완료",
     completed: "사용 완료",
     warning: "경고"
   };
@@ -722,13 +723,22 @@ function reservationTitle(type) {
 }
 
 function reservationStatusForType(type) {
-  return type === "equipment" ? "pending_approval" : "auto_confirmed";
+  return type === "equipment" ? "checked_out" : "auto_confirmed";
+}
+
+function normalizeEquipmentReservationStatus(status) {
+  if (status === "returned" || status === "completed") return "returned";
+  if (status === "cancelled" || status === "admin_cancelled" || status === "rejected") return "cancelled";
+  if (status === "checked_out" || status === "pending_approval" || status === "approved" || status === "auto_confirmed") return "checked_out";
+  return EQUIPMENT_RESERVATION_STATUSES.has(status) ? status : "checked_out";
 }
 
 function normalizeReservationStatus(reservation) {
-  if (reservation?.type === "equipment" && reservation.status === "completed") {
-    reservation.status = "returned";
-    return true;
+  if (reservation?.type === "equipment") {
+    const nextStatus = normalizeEquipmentReservationStatus(reservation.status);
+    const changed = reservation.status !== nextStatus;
+    reservation.status = nextStatus;
+    return changed;
   }
   return false;
 }
@@ -1954,7 +1964,7 @@ export async function handleApiRequest(ctx) {
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약만 취소할 수 있습니다."), { status: 403 });
         const body = await parseBody(readText);
-        reservation.status = user.role === "admin" ? "admin_cancelled" : "cancelled";
+        reservation.status = reservation.type === "equipment" ? "cancelled" : (user.role === "admin" ? "admin_cancelled" : "cancelled");
         reservation.cancelReason = body.reason || "";
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: user.id, action: "cancelled", reason: body.reason || "" });
@@ -2028,11 +2038,21 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/admin/summary") {
         requireAdmin(authorization, db);
         const pendingUsers = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approval_pending").length;
-        const pendingEquipment = db.reservations.filter((item) => item.type === "equipment" && item.status === "pending_approval").length;
+        const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
+        const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned").length;
+        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && item.status === "cancelled").length;
         const today = new Date().toISOString().slice(0, 10);
         const todayReservations = db.reservations.filter((item) => item.fields.reservedDate === today).length;
         const missingReports = db.reservations.filter((item) => item.type === "studio" && item.status !== "cancelled" && item.fields.reportStatus !== "submitted").length;
-        return ok({ pendingUsers, pendingEquipment, todayReservations, missingReports });
+        return ok({
+          pendingUsers,
+          pendingEquipment: equipmentCheckedOut,
+          equipmentCheckedOut,
+          equipmentReturned,
+          equipmentCancelled,
+          todayReservations,
+          missingReports
+        });
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/export") {
@@ -2190,7 +2210,7 @@ export async function handleApiRequest(ctx) {
         if (!RESERVATION_STATUSES.has(body.status)) {
           throw Object.assign(new Error("지원하지 않는 예약 상태입니다."), { status: 400 });
         }
-        reservation.status = reservation.type === "equipment" && body.status === "completed" ? "returned" : body.status;
+        reservation.status = reservation.type === "equipment" ? normalizeEquipmentReservationStatus(body.status) : body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: admin.id, action: "status_changed", status: reservation.status });

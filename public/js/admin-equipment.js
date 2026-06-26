@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { api } from "./api.js?v=20260626-admin-dashboard-status-tags";
-import { equipmentStatusOptions } from "./constants.js?v=20260626-admin-dashboard-status-tags";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-admin-dashboard-status-tags";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { api } from "./api.js?v=20260626-equipment-reservation-status-3";
+import { equipmentStatusOptions } from "./constants.js?v=20260626-equipment-reservation-status-3";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260626-equipment-reservation-status-3";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

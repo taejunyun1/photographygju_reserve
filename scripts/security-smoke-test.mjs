@@ -25,6 +25,22 @@ assert.ok(fantasyLabItems.length > 0);
 assert.equal(fantasyLabItems.every((item) => item.facility === "판타지랩" && item.reservable === false && item.inquiryOnly === true), true);
 assert.equal(db.users.some((user) => user.username === "ta" && user.email === "ta@gju.local"), false);
 
+const equipmentStatusDb = await initialDb("status-admin-password");
+equipmentStatusDb.reservations.push(
+  { id: "eq_pending", type: "equipment", status: "pending_approval", userId: "user_admin", fields: {}, history: [] },
+  { id: "eq_approved", type: "equipment", status: "approved", userId: "user_admin", fields: {}, history: [] },
+  { id: "eq_admin_cancelled", type: "equipment", status: "admin_cancelled", userId: "user_admin", fields: {}, history: [] },
+  { id: "eq_completed", type: "equipment", status: "completed", userId: "user_admin", fields: {}, history: [] },
+  { id: "studio_approved", type: "studio", status: "approved", userId: "user_admin", fields: {}, history: [] }
+);
+normalizeDb(equipmentStatusDb);
+const normalizedEquipmentStatuses = Object.fromEntries(equipmentStatusDb.reservations.map((item) => [item.id, item.status]));
+assert.equal(normalizedEquipmentStatuses.eq_pending, "checked_out");
+assert.equal(normalizedEquipmentStatuses.eq_approved, "checked_out");
+assert.equal(normalizedEquipmentStatuses.eq_admin_cancelled, "cancelled");
+assert.equal(normalizedEquipmentStatuses.eq_completed, "returned");
+assert.equal(normalizedEquipmentStatuses.studio_approved, "approved");
+
 db.users.push({
   id: "user_seeded_ta",
   role: "admin",

@@ -41,6 +41,20 @@ export const typeLabel = {
   lecture: "특강"
 };
 
+export const equipmentReservationStatuses = ["checked_out", "returned", "cancelled"];
+
+export const equipmentReservationStatusLabel = {
+  checked_out: "대여완료",
+  returned: "반납완료",
+  cancelled: "대여취소"
+};
+
+export const equipmentReservationStatusColor = {
+  checked_out: "purple",
+  returned: "green",
+  cancelled: "gray"
+};
+
 export const adminNavItems = [
   ["dashboard", "대시보드"],
   ["users", "학생 승인"],

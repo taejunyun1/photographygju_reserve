@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { api } from "./api.js?v=20260626-admin-dashboard-status-tags";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-status-tags";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { api } from "./api.js?v=20260626-equipment-reservation-status-3";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-equipment-reservation-status-3";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260626-admin-dashboard-status-tags";
+} from "./actions.js?v=20260626-equipment-reservation-status-3";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
-import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-status-tags";
+} from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
+import { render, toast } from "./renderer.js?v=20260626-equipment-reservation-status-3";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260626-admin-dashboard-status-tags";
+} from "./admin-equipment.js?v=20260626-equipment-reservation-status-3";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260626-admin-dashboard-status-tags";
+} from "./utils.js?v=20260626-equipment-reservation-status-3";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -464,6 +464,9 @@ export function setupEventHandlers() {
       if (target.dataset.adminView) {
         if (target.dataset.adminReservationTab) {
           state.adminReservationTab = target.dataset.adminReservationTab;
+          if (target.dataset.adminEquipmentReservationStatus) {
+            state.adminEquipmentReservationStatusFilter = target.dataset.adminEquipmentReservationStatus;
+          }
           resetAdminPage("adminReservationsPage");
           await loadAdminData();
         }

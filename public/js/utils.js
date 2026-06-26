@@ -1,5 +1,12 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { statusColor, statusLabel, typeLabel, weekdayIndex } from "./constants.js?v=20260626-admin-dashboard-status-tags";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import {
+  equipmentReservationStatusColor,
+  equipmentReservationStatusLabel,
+  statusColor,
+  statusLabel,
+  typeLabel,
+  weekdayIndex
+} from "./constants.js?v=20260626-equipment-reservation-status-3";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -103,6 +110,14 @@ export function searchableText(values = []) {
 
 export function tag(value, color = "") {
   return `<span class="tag ${color || statusColor[value] || "gray"}">${escapeHtml(statusLabel[value] || value)}</span>`;
+}
+
+export function reservationStatusTag(reservation) {
+  if (reservation?.type === "equipment") {
+    const status = reservation.status || "checked_out";
+    return `<span class="tag ${equipmentReservationStatusColor[status] || statusColor[status] || "gray"}">${escapeHtml(equipmentReservationStatusLabel[status] || statusLabel[status] || status)}</span>`;
+  }
+  return tag(reservation?.status || "상태 없음");
 }
 
 export function formatDateTime(value) {

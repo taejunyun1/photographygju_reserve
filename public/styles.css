@@ -1934,6 +1934,8 @@ button:disabled,
 .ui-stat-card.tone-green::before { background: var(--green); }
 .ui-stat-card.tone-yellow::before { background: var(--color-warning); }
 .ui-stat-card.tone-red::before { background: var(--red); }
+.ui-stat-card.tone-purple::before { background: var(--purple); }
+.ui-stat-card.tone-gray::before { background: var(--muted); }
 
 .stat strong {
   display: block;
@@ -2033,6 +2035,16 @@ button:disabled,
 .admin-action-card.tone-red .admin-action-icon {
   background: var(--red-soft);
   color: var(--red);
+}
+
+.admin-action-card.tone-purple .admin-action-icon {
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+.admin-action-card.tone-gray .admin-action-icon {
+  background: var(--surface-container);
+  color: var(--muted);
 }
 
 .admin-queue-detail-grid,

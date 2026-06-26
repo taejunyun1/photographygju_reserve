@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-dashboard-status-tags";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-equipment-reservation-status-3";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -32,11 +32,12 @@ import {
   studioPairReservedOnDate,
   sortedNotices,
   tag,
+  reservationStatusTag,
   timeToMinutes,
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260626-admin-dashboard-status-tags";
+} from "./utils.js?v=20260626-equipment-reservation-status-3";
 import {
   actionRow,
   card,
@@ -46,7 +47,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-admin-dashboard-status-tags";
+} from "./ui.js?v=20260626-equipment-reservation-status-3";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -1178,10 +1179,10 @@ export function reservationCard(reservation) {
       ? `${f.rentalTime} 대여 · ${(reservation.equipmentItems || []).map((item) => item.code).join(", ")}`
       : reservation.type === "darkroom"
         ? `${(f.timeSlots || []).join(", ")} · ${(f.processTypes || []).join(", ")}`
-        : `${f.startTime}-${f.endTime} · ${f.printType}`;
+    : `${f.startTime}-${f.endTime} · ${f.printType}`;
   return `
     <article class="card ui-card reservation-summary-card">
-      <div class="chips">${tag(reservation.status)}<span class="tag">${title}</span></div>
+      <div class="chips">${reservationStatusTag(reservation)}<span class="tag">${title}</span></div>
       <h3 class="card-title card-title-spaced">${escapeHtml(date)}</h3>
       <p class="muted">${escapeHtml(meta)}</p>
       ${actionRow(`

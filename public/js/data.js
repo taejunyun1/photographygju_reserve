@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-status-tags";
-import { api } from "./api.js?v=20260626-admin-dashboard-status-tags";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260626-admin-dashboard-status-tags";
+import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { api } from "./api.js?v=20260626-equipment-reservation-status-3";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
