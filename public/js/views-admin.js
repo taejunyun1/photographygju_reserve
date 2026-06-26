@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-ux";
+import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
 import {
   adminNavItems,
   equipmentStatusOptions,
@@ -8,7 +8,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-admin-dashboard-ux";
+} from "./constants.js?v=20260626-admin-dashboard-visual-grid";
 import {
   addMonths,
   adminGuide,
@@ -25,7 +25,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-admin-dashboard-ux";
+} from "./utils.js?v=20260626-admin-dashboard-visual-grid";
 import {
   card,
   emptyState,
@@ -34,17 +34,16 @@ import {
   propertyList,
   searchField,
   sectionHeader,
-  statCard,
   tabs
-} from "./ui.js?v=20260626-admin-dashboard-ux";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-ux";
-import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-ux";
+} from "./ui.js?v=20260626-admin-dashboard-visual-grid";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-dashboard-visual-grid";
+import { noticeCard } from "./views-student.js?v=20260626-admin-dashboard-visual-grid";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-admin-dashboard-ux";
+} from "./admin-equipment.js?v=20260626-admin-dashboard-visual-grid";
 
 export function adminShell() {
   return `
@@ -176,17 +175,31 @@ export function adminDashboardView() {
       <section class="admin-dashboard-section">
         ${sectionHeader({ title: "오늘 처리할 일", subtitle: "승인, 대여/반납, 보고서 확인을 우선순위대로 처리합니다." })}
         <div class="stat-grid admin-dashboard-grid">
-          ${statCard({ label: "가입 승인 대기", value: metrics.pendingUsers, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue" })}
-          ${statCard({ label: "기자재 승인 대기", value: metrics.pendingEquipment, caption: "기자재 예약 확인", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow" })}
-          ${statCard({ label: "오늘 예약", value: metrics.todayReservations, caption: "전체 예약 보기", attrs: `data-admin-view="reservations" data-admin-reservation-tab="all"`, tone: "green" })}
-          ${statCard({ label: "대여/반납 처리 필요", value: metrics.checkoutReturnNeeded, caption: "오늘 처리 큐", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow" })}
-          ${statCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red" })}
+          ${adminActionCard({ label: "가입 승인 대기", value: metrics.pendingUsers, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue", iconName: "userPlus" })}
+          ${adminActionCard({ label: "기자재 승인 대기", value: metrics.pendingEquipment, caption: "기자재 예약 확인", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow", iconName: "camera" })}
+          ${adminActionCard({ label: "오늘 예약", value: metrics.todayReservations, caption: "전체 예약 보기", attrs: `data-admin-view="reservations" data-admin-reservation-tab="all"`, tone: "green", iconName: "calendar" })}
+          ${adminActionCard({ label: "대여/반납 처리 필요", value: metrics.checkoutReturnNeeded, caption: "오늘 처리 큐", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment"`, tone: "yellow", iconName: "arrowUpRight" })}
+          ${adminActionCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red", iconName: "fileText" })}
         </div>
       </section>
       ${adminOperationsQueue()}
       ${adminDashboardMetricSection(metrics)}
       ${adminGuide("대시보드 사용 가이드", "오늘 처리해야 할 승인, 예약, 보고서 현황을 빠르게 보는 화면입니다. 카드를 누르면 해당 관리 페이지로 이동합니다.")}
     </section>
+  `;
+}
+
+function adminActionCard({ label, value, caption = "", attrs = "", tone = "blue", iconName = "spark" }) {
+  const toneClass = tone ? ` tone-${tone}` : "";
+  return `
+    <button class="stat stat-button ui-stat-card admin-action-card${toneClass}" type="button" ${attrs}>
+      <span class="admin-action-top">
+        <span class="admin-action-icon" aria-hidden="true">${icon(iconName, "action-icon-svg")}</span>
+        <span class="muted">${escapeHtml(label)}</span>
+      </span>
+      <strong>${escapeHtml(String(value))}</strong>
+      ${caption ? `<em>${escapeHtml(caption)}</em>` : ""}
+    </button>
   `;
 }
 

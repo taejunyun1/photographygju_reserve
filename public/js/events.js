@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-admin-dashboard-ux";
-import { api } from "./api.js?v=20260626-admin-dashboard-ux";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-ux";
+import { state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
+import { api } from "./api.js?v=20260626-admin-dashboard-visual-grid";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-dashboard-visual-grid";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260626-admin-dashboard-ux";
+} from "./actions.js?v=20260626-admin-dashboard-visual-grid";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260626-admin-dashboard-ux";
-import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-ux";
+} from "./native-notifications.js?v=20260626-admin-dashboard-visual-grid";
+import { render, toast } from "./renderer.js?v=20260626-admin-dashboard-visual-grid";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260626-admin-dashboard-ux";
+} from "./admin-equipment.js?v=20260626-admin-dashboard-visual-grid";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260626-admin-dashboard-ux";
+} from "./utils.js?v=20260626-admin-dashboard-visual-grid";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

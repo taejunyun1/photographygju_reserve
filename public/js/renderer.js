@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260626-admin-dashboard-ux";
-import { escapeHtml } from "./utils.js?v=20260626-admin-dashboard-ux";
-import { adminShell } from "./views-admin.js?v=20260626-admin-dashboard-ux";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260626-admin-dashboard-ux";
+import { $app, state } from "./state.js?v=20260626-admin-dashboard-visual-grid";
+import { escapeHtml } from "./utils.js?v=20260626-admin-dashboard-visual-grid";
+import { adminShell } from "./views-admin.js?v=20260626-admin-dashboard-visual-grid";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260626-admin-dashboard-visual-grid";
 
 document.addEventListener("gju-loading-change", () => render());
 

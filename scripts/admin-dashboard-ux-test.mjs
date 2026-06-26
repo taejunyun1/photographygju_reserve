@@ -13,8 +13,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-ux");
-const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-ux");
+const { state } = await import("../public/js/state.js?v=20260626-admin-dashboard-visual-grid");
+const { adminDashboardView, adminSettingsView, adminDashboardMetrics } = await import("../public/js/views-admin.js?v=20260626-admin-dashboard-visual-grid");
 
 state.bootstrap = { settings: {
   printBankAccount: "광주은행 000",
@@ -72,6 +72,8 @@ assert(dashboard.includes("오늘 처리할 일"), "dashboard must render today'
 assert(dashboard.includes("운영 큐"), "dashboard must render operations queue");
 assert(dashboard.includes("운영 지표"), "dashboard must render quantitative metrics");
 assert(dashboard.includes("대여/반납 처리 필요"), "dashboard must include checkout/return work");
+assert.equal(countOccurrences(dashboard, "admin-action-card"), 5, "top action cards must use the visual admin card treatment");
+assert.equal(countOccurrences(dashboard, "admin-action-icon"), 5, "top action cards must show visible icon badges");
 assert.equal(countOccurrences(dashboard, "admin-queue-item"), 0, "operations queue must not repeat top KPI cards");
 assert(dashboard.includes("admin-queue-detail-grid"), "operations queue must render compact detail panels");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
@@ -81,6 +83,9 @@ assert.equal(metrics.checkoutReturnNeeded, 1, "checkout/return work must only co
 assert.equal(metrics.availableEquipment, 2, "metrics must count active available equipment");
 assert.equal(metrics.repairEquipment, 1, "metrics must count repair equipment");
 assert(css.includes(".admin-dashboard-section"), "dashboard section styles must exist");
+assert(css.includes(".admin-action-card"), "admin action card styles must exist");
+assert(css.includes(".admin-action-icon"), "admin action icon styles must exist");
+assert(!css.includes(".stat-grid.admin-dashboard-grid {\n    grid-template-columns: 1fr;"), "mobile admin action cards must stay in a two-column grid");
 assert(css.includes(".admin-queue-detail-grid"), "compressed operations queue styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");

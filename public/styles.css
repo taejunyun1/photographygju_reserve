@@ -1968,6 +1968,74 @@ button:disabled,
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.admin-action-card {
+  min-height: 132px;
+  align-content: space-between;
+  gap: 8px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.92));
+}
+
+.admin-action-card::before {
+  height: 4px;
+}
+
+.admin-action-card strong {
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.admin-action-card em {
+  color: var(--text);
+}
+
+.admin-action-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-action-top .muted {
+  font-weight: 800;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.admin-action-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-container);
+  color: var(--primary);
+}
+
+.admin-action-icon .button-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.3;
+}
+
+.admin-action-card.tone-yellow .admin-action-icon {
+  background: var(--yellow-soft);
+  color: var(--yellow);
+}
+
+.admin-action-card.tone-green .admin-action-icon {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.admin-action-card.tone-red .admin-action-icon {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .admin-queue-detail-grid,
 .admin-dashboard-insight-grid {
   display: grid;
@@ -4119,7 +4187,10 @@ tr.selected td {
     text-align: left;
   }
 
-  .admin-dashboard-grid,
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-queue-detail-grid,
   .admin-metric-grid {
     grid-template-columns: 1fr;
@@ -4909,13 +4980,26 @@ tr.selected td {
     gap: 8px;
   }
 
-  .stat-grid.admin-dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
   .stat {
     padding: 12px;
     border-radius: 16px;
+  }
+
+  .admin-action-card {
+    min-height: 124px;
+    padding: 12px;
+    gap: 7px;
+  }
+
+  .admin-action-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+
+  .admin-action-icon .button-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .stat strong {
@@ -5641,10 +5725,6 @@ tr.selected td {
 
   .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .stat-grid.admin-dashboard-grid {
-    grid-template-columns: 1fr;
   }
 
   .student-shell {
