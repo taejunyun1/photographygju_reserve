@@ -13,9 +13,9 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260626-equipment-reservation-status-3");
-const { adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260626-equipment-reservation-status-3");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260626-equipment-reservation-status-3");
+const { state } = await import("../public/js/state.js?v=20260626-admin-queue-sheet");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260626-admin-queue-sheet");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260626-admin-queue-sheet");
 
 state.user = { id: "admin1", role: "admin" };
 state.bootstrap = { settings: {
@@ -54,6 +54,9 @@ state.adminReservationTab = "equipment";
 state.adminEquipmentReservationStatusFilter = "all";
 state.adminReservationSearch = "";
 const reservationsView = adminReservationsView();
+state.activeAdminQueueSheet = "today";
+const dashboardWithQueueSheet = adminShell();
+state.activeAdminQueueSheet = "";
 const settings = adminSettingsView();
 const metrics = adminDashboardMetrics();
 const notifications = plannedAdminNotifications(new Date("2026-06-26T08:00:00.000Z"));
@@ -84,10 +87,16 @@ assert(dashboard.includes("대여취소"), "dashboard must include equipment can
 assert.equal(countOccurrences(dashboard, "admin-action-card"), 5, "top action cards must use the visual admin card treatment");
 assert.equal(countOccurrences(dashboard, "admin-action-icon"), 5, "top action cards must show visible icon badges");
 assert.equal(countOccurrences(dashboard, "admin-queue-item"), 0, "operations queue must not repeat top KPI cards");
-assert(dashboard.includes("admin-queue-detail-grid"), "operations queue must render compact detail panels");
-assert(dashboard.includes('<span class="tag purple">대여완료</span>'), "dashboard checked-out equipment status must use the shared purple status tag");
-assert(dashboard.includes('<span class="tag green">반납완료</span>'), "dashboard returned equipment status must use the shared green status tag");
-assert(dashboard.includes('<span class="tag gray">대여취소</span>'), "dashboard cancelled equipment status must use the shared gray status tag");
+assert(dashboard.includes("admin-queue-sheet-grid"), "operations queue must render clickable sheet entry cards");
+assert(dashboard.includes('data-admin-queue-sheet="today"'), "today timeline queue must open a bottom sheet");
+assert(dashboard.includes('data-admin-queue-sheet="checkout"'), "checkout queue must open a bottom sheet");
+assert(!dashboard.includes("admin-queue-detail-grid"), "operations queue must not inline duplicate detail panels");
+assert(dashboard.includes('admin-action-card tone-yellow'), "dashboard checked-out equipment action must use the yellow tone");
+assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "operations queue click must render a bottom sheet");
+assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
+assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
+assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
+assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
 assert(!dashboard.includes("승인 완료"), "equipment dashboard must not show legacy approval status");
 assert(!dashboard.includes("기자재 승인 대기"), "equipment dashboard must not show legacy pending equipment status");
 assert(reservationsView.includes("대여완료"), "equipment reservation filter/action must include checked-out status");
@@ -115,11 +124,13 @@ assert(!notifications[0].body.includes("기자재 승인"), "admin digest must n
 assert(css.includes(".admin-dashboard-section"), "dashboard section styles must exist");
 assert(css.includes(".admin-action-card"), "admin action card styles must exist");
 assert(css.includes(".admin-action-icon"), "admin action icon styles must exist");
+assert(css.includes(".admin-action-card.tone-yellow .admin-action-icon"), "yellow dashboard action icon tone must exist");
 assert(css.includes(".admin-action-card {\n  min-height: 112px;"), "admin action cards must be more compact");
 assert(css.includes(".admin-action-top {\n  display: flex;\n  align-items: center;"), "admin action card label and icon must use a compact inline header");
 assert(css.includes(".admin-action-card strong {\n    font-size: 36px;"), "mobile admin action numbers must be larger than the shared stat size");
 assert(!css.includes(".stat-grid.admin-dashboard-grid {\n    grid-template-columns: 1fr;"), "mobile admin action cards must stay in a two-column grid");
-assert(css.includes(".admin-queue-detail-grid"), "compressed operations queue styles must exist");
+assert(css.includes(".admin-queue-sheet-grid"), "operations queue sheet trigger styles must exist");
+assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet list styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");

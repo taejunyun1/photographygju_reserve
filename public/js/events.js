@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
-import { api } from "./api.js?v=20260626-equipment-reservation-status-3";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-equipment-reservation-status-3";
+import { state } from "./state.js?v=20260626-admin-queue-sheet";
+import { api } from "./api.js?v=20260626-admin-queue-sheet";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260626-admin-queue-sheet";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260626-equipment-reservation-status-3";
+} from "./actions.js?v=20260626-admin-queue-sheet";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
-import { render, toast } from "./renderer.js?v=20260626-equipment-reservation-status-3";
+} from "./native-notifications.js?v=20260626-admin-queue-sheet";
+import { render, toast } from "./renderer.js?v=20260626-admin-queue-sheet";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260626-equipment-reservation-status-3";
+} from "./admin-equipment.js?v=20260626-admin-queue-sheet";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260626-equipment-reservation-status-3";
+} from "./utils.js?v=20260626-admin-queue-sheet";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -241,6 +241,16 @@ export function setupEventHandlers() {
       }
       if (target.dataset.noticeClose !== undefined) {
         state.activeNoticeId = "";
+        render();
+        return;
+      }
+      if (target.dataset.adminQueueSheet) {
+        state.activeAdminQueueSheet = target.dataset.adminQueueSheet;
+        render();
+        return;
+      }
+      if (target.dataset.adminQueueSheetClose !== undefined) {
+        state.activeAdminQueueSheet = "";
         render();
         return;
       }
@@ -462,6 +472,7 @@ export function setupEventHandlers() {
         return;
       }
       if (target.dataset.adminView) {
+        state.activeAdminQueueSheet = "";
         if (target.dataset.adminReservationTab) {
           state.adminReservationTab = target.dataset.adminReservationTab;
           if (target.dataset.adminEquipmentReservationStatus) {

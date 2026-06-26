@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260626-equipment-reservation-status-3";
-import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { statusLabel, typeLabel } from "./constants.js?v=20260626-admin-queue-sheet";
+import { state } from "./state.js?v=20260626-admin-queue-sheet";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

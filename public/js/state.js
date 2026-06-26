@@ -51,6 +51,7 @@ export const state = {
   lectureSearch: "",
   lectureYearFilter: "all",
   adminView: "dashboard",
+  activeAdminQueueSheet: "",
   adminReservationTab: "equipment",
   adminReservationSearch: "",
   adminEquipmentReservationStatusFilter: "all",

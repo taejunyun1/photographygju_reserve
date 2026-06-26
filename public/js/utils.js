@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { state } from "./state.js?v=20260626-admin-queue-sheet";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260626-equipment-reservation-status-3";
+} from "./constants.js?v=20260626-admin-queue-sheet";
 
 export function escapeHtml(value) {
   return String(value ?? "")

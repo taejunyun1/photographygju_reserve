@@ -6,7 +6,7 @@ export const statusColor = {
   rejected: "red",
   cancelled: "gray",
   admin_cancelled: "gray",
-  checked_out: "purple",
+  checked_out: "yellow",
   returned: "green",
   completed: "green",
   lecture_applied: "blue",
@@ -50,7 +50,7 @@ export const equipmentReservationStatusLabel = {
 };
 
 export const equipmentReservationStatusColor = {
-  checked_out: "purple",
+  checked_out: "yellow",
   returned: "green",
   cancelled: "gray"
 };

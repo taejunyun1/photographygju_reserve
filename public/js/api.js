@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { state } from "./state.js?v=20260626-admin-queue-sheet";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

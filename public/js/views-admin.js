@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260626-equipment-reservation-status-3";
+import { state } from "./state.js?v=20260626-admin-queue-sheet";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260626-equipment-reservation-status-3";
+} from "./constants.js?v=20260626-admin-queue-sheet";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260626-equipment-reservation-status-3";
+} from "./utils.js?v=20260626-admin-queue-sheet";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260626-equipment-reservation-status-3";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-equipment-reservation-status-3";
-import { noticeCard } from "./views-student.js?v=20260626-equipment-reservation-status-3";
+} from "./ui.js?v=20260626-admin-queue-sheet";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260626-admin-queue-sheet";
+import { noticeCard } from "./views-student.js?v=20260626-admin-queue-sheet";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260626-equipment-reservation-status-3";
+} from "./admin-equipment.js?v=20260626-admin-queue-sheet";
 
 export function adminShell() {
   return `
@@ -89,6 +89,7 @@ export function adminShell() {
       <nav class="admin-mobile-nav">
         ${adminNavItems.map(([key, label]) => `<button class="${state.adminView === key ? "active" : ""}" data-admin-view="${key}">${label}</button>`).join("")}
       </nav>
+      ${adminQueueBottomSheet()}
     </main>
   `;
 }
@@ -179,7 +180,7 @@ export function adminDashboardView() {
         ${sectionHeader({ title: "오늘 처리할 일", subtitle: "학생 승인과 기자재 3상태를 우선 확인합니다." })}
         <div class="stat-grid admin-dashboard-grid">
           ${adminActionCard({ label: "가입 승인 대기", value: metrics.pendingUsers, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue", iconName: "userPlus" })}
-          ${adminActionCard({ label: "대여완료", value: metrics.equipmentCheckedOut, caption: "기자재 대여 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="checked_out"`, tone: "purple", iconName: "camera" })}
+          ${adminActionCard({ label: "대여완료", value: metrics.equipmentCheckedOut, caption: "기자재 대여 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="checked_out"`, tone: "yellow", iconName: "camera" })}
           ${adminActionCard({ label: "반납완료", value: metrics.equipmentReturned, caption: "기자재 반납 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="returned"`, tone: "green", iconName: "check" })}
           ${adminActionCard({ label: "대여취소", value: metrics.equipmentCancelled, caption: "기자재 취소 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="cancelled"`, tone: "gray", iconName: "x" })}
           ${adminActionCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red", iconName: "fileText" })}
@@ -304,40 +305,90 @@ export function adminDashboardMetrics() {
 }
 
 function adminOperationsQueue() {
-  const todayReservations = todayAdminReservations().slice(0, 3);
-  const checkoutItems = checkoutReturnReservations().slice(0, 3);
-  const reservationRows = todayReservations.length
-    ? todayReservations.map((reservation) => `
-      <li>
-        <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
-        <strong>${escapeHtml(reservation.user?.name || "학생")} · ${escapeHtml(adminReservationTime(reservation) || "시간 미정")}</strong>
-        ${reservationStatusTag(reservation)}
-      </li>
-    `).join("")
-    : `<li class="empty-inline">오늘 예약 상세 데이터가 없습니다.</li>`;
-  const checkoutRows = checkoutItems.length
-    ? checkoutItems.map((reservation) => `
-      <li>
-        <span>${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</span>
-        <strong>${escapeHtml(reservation.user?.name || "학생")}</strong>
-        ${reservationStatusTag(reservation)}
-      </li>
-    `).join("")
-    : `<li class="empty-inline">오늘 처리할 대여/반납 항목이 없습니다.</li>`;
+  const todayReservations = todayAdminReservations();
+  const checkoutItems = checkoutReturnReservations();
+  const nextToday = todayReservations[0];
+  const nextCheckout = checkoutItems[0];
   return `
     <section class="admin-dashboard-section">
-      ${sectionHeader({ title: "운영 큐", subtitle: "상단 카드에서 처리 대상을 보고, 아래 상세 목록에서 오늘 흐름만 확인합니다." })}
-      <div class="admin-queue-detail-grid">
-        <div class="admin-queue-detail">
-          <h3>오늘 예약 타임라인</h3>
-          <ul>${reservationRows}</ul>
-        </div>
-        <div class="admin-queue-detail">
-          <h3>대여/반납 큐</h3>
-          <ul>${checkoutRows}</ul>
-        </div>
+      ${sectionHeader({ title: "운영 큐", subtitle: "오늘 흐름은 눌러서 내역으로 확인합니다." })}
+      <div class="admin-queue-sheet-grid">
+        ${adminQueueSheetCard({
+          key: "today",
+          title: "오늘 예약 타임라인",
+          count: todayReservations.length,
+          caption: nextToday ? `${typeLabel[nextToday.type] || "예약"} · ${nextToday.user?.name || "학생"} · ${adminReservationTime(nextToday) || "시간 미정"}` : "오늘 예약 상세 데이터가 없습니다.",
+          tone: "green"
+        })}
+        ${adminQueueSheetCard({
+          key: "checkout",
+          title: "대여/반납 큐",
+          count: checkoutItems.length,
+          caption: nextCheckout ? `${nextCheckout.user?.name || "학생"} · ${adminReservationTime(nextCheckout) || "시간 미정"}` : "오늘 처리할 대여/반납 항목이 없습니다.",
+          tone: "yellow"
+        })}
       </div>
     </section>
+  `;
+}
+
+function adminQueueSheetCard({ key, title, count, caption, tone = "blue" }) {
+  return `
+    <button class="admin-queue-sheet-card tone-${tone}" type="button" data-admin-queue-sheet="${key}" aria-haspopup="dialog">
+      <span>
+        <strong>${escapeHtml(title)}</strong>
+        <em>${escapeHtml(caption)}</em>
+      </span>
+      <b>${escapeHtml(String(count))}</b>
+    </button>
+  `;
+}
+
+function adminQueueSheetItems(kind) {
+  return kind === "checkout" ? checkoutReturnReservations() : todayAdminReservations();
+}
+
+function adminQueueSheetTitle(kind) {
+  return kind === "checkout" ? "대여/반납 큐" : "오늘 예약 타임라인";
+}
+
+function adminQueueBottomSheet() {
+  const kind = state.activeAdminQueueSheet;
+  if (!kind) return "";
+  const reservations = adminQueueSheetItems(kind);
+  const rows = reservations.length
+    ? reservations.map((reservation) => {
+      const detail = adminReservationDetail(reservation)
+        .slice(0, 3)
+        .map(([key, value]) => `<span>${escapeHtml(key)} ${escapeHtml(value)}</span>`)
+        .join("");
+      return `
+        <li>
+          <div>
+            <strong>${escapeHtml(reservation.user?.name || "학생")} · ${escapeHtml(typeLabel[reservation.type] || reservation.type || "예약")}</strong>
+            <p>${escapeHtml(adminReservationDate(reservation) || "-")} · ${escapeHtml(adminReservationTime(reservation) || "시간 미정")}</p>
+            <div class="admin-queue-sheet-meta">${detail}</div>
+          </div>
+          ${reservationStatusTag(reservation)}
+        </li>
+      `;
+    }).join("")
+    : `<li class="empty-inline">${kind === "checkout" ? "오늘 처리할 대여/반납 항목이 없습니다." : "오늘 예약 상세 데이터가 없습니다."}</li>`;
+  return `
+    <div class="bottom-sheet-layer" role="presentation">
+      <button class="sheet-backdrop" type="button" data-admin-queue-sheet-close aria-label="운영 큐 닫기"></button>
+      <section class="bottom-sheet admin-queue-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(adminQueueSheetTitle(kind))}">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <div>
+            <div class="chips"><span class="tag blue">운영 큐</span><span class="tag">${escapeHtml(String(reservations.length))}건</span></div>
+            <h2 class="card-title card-title-spaced">${escapeHtml(adminQueueSheetTitle(kind))}</h2>
+          </div>
+          <button class="button ghost compact" type="button" data-admin-queue-sheet-close>${icon("x")}닫기</button>
+        </div>
+        <ul class="admin-queue-sheet-list">${rows}</ul>
+      </section>
+    </div>
   `;
 }
 
