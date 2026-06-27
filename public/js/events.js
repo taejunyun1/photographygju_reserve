@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260627-admin-scroll-blur";
-import { api } from "./api.js?v=20260627-admin-scroll-blur";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-lecture-nav";
+import { api } from "./api.js?v=20260627-admin-lecture-nav";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-lecture-nav";
 import {
   changePassword,
   deleteAccount,
@@ -11,20 +11,20 @@ import {
   openReport,
   signup,
   submitReservation
-} from "./actions.js?v=20260627-admin-scroll-blur";
+} from "./actions.js?v=20260627-admin-lecture-nav";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260627-admin-scroll-blur";
-import { render, toast } from "./renderer.js?v=20260627-admin-scroll-blur";
+} from "./native-notifications.js?v=20260627-admin-lecture-nav";
+import { render, toast } from "./renderer.js?v=20260627-admin-lecture-nav";
 import {
   patchAdminEquipment,
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentDom,
   syncAdminEquipmentSelectionDom
-} from "./admin-equipment.js?v=20260627-admin-scroll-blur";
+} from "./admin-equipment.js?v=20260627-admin-lecture-nav";
 import {
   equipmentCategories,
   equipmentRangeBlocked,
@@ -36,7 +36,7 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "./utils.js?v=20260627-admin-scroll-blur";
+} from "./utils.js?v=20260627-admin-lecture-nav";
 
 const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -47,6 +47,8 @@ const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   ".equipment-choice",
   "input[name=\"equipmentItemIds\"]"
 ].join(",");
+
+const SCROLL_RESTORE_TARGET_SELECTOR = ".student-shell, .admin-main, .auth-shell, .mobile-nav, .admin-mobile-nav, .desktop-nav, .side-nav, .admin-inner-tabs, .lecture-year-tabs";
 
 let lastEquipmentInteractionScrollState = null;
 
@@ -71,7 +73,7 @@ function captureScrollState() {
   return {
     windowX: window.scrollX || 0,
     windowY: window.scrollY || 0,
-    targets: [...document.querySelectorAll(".student-shell, .admin-main, .auth-shell")].map((target) => ({
+    targets: [...document.querySelectorAll(SCROLL_RESTORE_TARGET_SELECTOR)].map((target) => ({
       className: [...target.classList].join("."),
       scrollTop: target.scrollTop || 0,
       scrollLeft: target.scrollLeft || 0

@@ -1,7 +1,7 @@
-import { $app, state } from "./state.js?v=20260627-admin-scroll-blur";
-import { escapeHtml } from "./utils.js?v=20260627-admin-scroll-blur";
-import { adminShell } from "./views-admin.js?v=20260627-admin-scroll-blur";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260627-admin-scroll-blur";
+import { $app, state } from "./state.js?v=20260627-admin-lecture-nav";
+import { escapeHtml } from "./utils.js?v=20260627-admin-lecture-nav";
+import { adminShell } from "./views-admin.js?v=20260627-admin-lecture-nav";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260627-admin-lecture-nav";
 
 document.addEventListener("gju-loading-change", () => render());
 

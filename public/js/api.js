@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-lecture-nav";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-lecture-nav";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260627-admin-scroll-blur";
+} from "./constants.js?v=20260627-admin-lecture-nav";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260627-admin-scroll-blur";
+} from "./utils.js?v=20260627-admin-lecture-nav";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260627-admin-scroll-blur";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-scroll-blur";
-import { noticeCard } from "./views-student.js?v=20260627-admin-scroll-blur";
+} from "./ui.js?v=20260627-admin-lecture-nav";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-lecture-nav";
+import { noticeCard } from "./views-student.js?v=20260627-admin-lecture-nav";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260627-admin-scroll-blur";
+} from "./admin-equipment.js?v=20260627-admin-lecture-nav";
 
 export function adminShell() {
   return `
@@ -1014,6 +1014,12 @@ function adminLectureSearchText(lecture) {
   ]);
 }
 
+function lectureStatusTone(status = "") {
+  if (status === "진행완료") return "green";
+  if (status === "취소") return "gray";
+  return "blue";
+}
+
 function lectureCreateForm() {
   return `
       <div class="card">
@@ -1092,7 +1098,13 @@ export function adminLectureTable(lectures) {
                 <div><span>강사명</span><strong>${escapeHtml(lecture.instructorName || "-")}</strong>${lecture.instructorAffiliation ? `<small>${escapeHtml(lecture.instructorAffiliation)}</small>` : ""}</div>
                 <div><span>장소</span><strong>${escapeHtml(lecture.location || "-")}</strong></div>
                 <div><span>신청인원</span><strong>${capacity ? `${count}/${capacity}` : count}</strong></div>
-                <div><span>진행상태</span><strong>${escapeHtml(lecture.status || "-")}</strong></div>
+                <div>
+                  <span>진행상태</span>
+                  <strong class="admin-lecture-status-chip ${lectureStatusTone(lecture.status)}">
+                    <i class="admin-lecture-status-dot" aria-hidden="true"></i>
+                    ${escapeHtml(lecture.status || "-")}
+                  </strong>
+                </div>
               </div>
             </div>
             <div class="admin-lecture-action-bar">

@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260627-admin-scroll-blur";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260627-admin-lecture-nav";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

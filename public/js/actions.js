@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260627-admin-scroll-blur";
-import { api } from "./api.js?v=20260627-admin-scroll-blur";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-scroll-blur";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260627-admin-scroll-blur";
-import { render, toast } from "./renderer.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-lecture-nav";
+import { api } from "./api.js?v=20260627-admin-lecture-nav";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260627-admin-lecture-nav";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260627-admin-lecture-nav";
+import { render, toast } from "./renderer.js?v=20260627-admin-lecture-nav";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -26,7 +26,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260627-admin-scroll-blur";
+} from "./utils.js?v=20260627-admin-lecture-nav";
 
 export async function login(form) {
   const data = formData(form);

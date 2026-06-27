@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-scroll-blur";
+import { state } from "./state.js?v=20260627-admin-lecture-nav";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260627-admin-scroll-blur";
+} from "./constants.js?v=20260627-admin-lecture-nav";
 
 export function escapeHtml(value) {
   return String(value ?? "")

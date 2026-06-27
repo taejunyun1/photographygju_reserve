@@ -13,9 +13,9 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260627-admin-scroll-blur");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView } = await import("../public/js/views-admin.js?v=20260627-admin-scroll-blur");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-scroll-blur");
+const { state } = await import("../public/js/state.js?v=20260627-admin-lecture-nav");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminLecturesView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-lecture-nav");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -69,6 +69,10 @@ state.adminReservationTab = "equipment";
 state.adminEquipmentReservationStatusFilter = "all";
 state.adminReservationSearch = "";
 const reservationsView = adminReservationsView();
+state.adminView = "lectures";
+state.adminLecturePanelTab = "list";
+const lecturesView = adminLecturesView();
+state.adminView = "dashboard";
 state.activeAdminQueueSheet = "today";
 const dashboardWithQueueSheet = adminShell();
 state.activeAdminQueueSheet = "";
@@ -124,6 +128,9 @@ assert(reservationsView.includes('data-status="returned"'), "equipment reservati
 assert(reservationsView.includes('data-status="cancelled"'), "equipment reservations must expose cancelled action");
 assert(!reservationsView.includes('data-status="approved"'), "equipment reservations must not expose legacy approval action");
 assert(!reservationsView.includes('data-status="admin_cancelled"'), "equipment reservations must not expose legacy admin cancellation action");
+assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
+assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status must use a small dot indicator");
+assert(!lecturesView.includes("<div><span>진행상태</span><strong>모집중</strong></div>"), "admin lecture status must not render as a large strong meta value");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
@@ -149,12 +156,17 @@ assert(!css.includes(".stat-grid.admin-dashboard-grid {\n    grid-template-colum
 assert(css.includes(".admin-queue-sheet-grid"), "operations queue sheet trigger styles must exist");
 assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet list styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
+assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
+assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
 assert(!primaryButtonRule.includes("inset"), "primary button must not use an inset highlight that reads as a double button");
 
 assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary must use the Seoul calendar day, not UTC");
 assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
+assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
+assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
+assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
 
 function blockBetween(source, startToken, endToken) {
   const start = source.indexOf(startToken);
