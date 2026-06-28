@@ -126,6 +126,9 @@ assert(reservationsView.includes("대여취소"), "equipment reservation filter/
 assert(reservationsView.includes('data-status="checked_out"'), "equipment reservations must expose checked-out action");
 assert(reservationsView.includes('data-status="returned"'), "equipment reservations must expose returned action");
 assert(reservationsView.includes('data-status="cancelled"'), "equipment reservations must expose cancelled action");
+assert.match(reservationsView, /data-status="checked_out"[^>]*disabled[^>]*aria-current="true"/, "current checked-out equipment status action must be disabled and programmatically marked current");
+assert.match(reservationsView, /data-status="returned"[^>]*disabled[^>]*aria-current="true"/, "current returned equipment status action must be disabled and programmatically marked current");
+assert.match(reservationsView, /data-status="cancelled"[^>]*disabled[^>]*aria-current="true"/, "current cancelled equipment status action must be disabled and programmatically marked current");
 assert(!reservationsView.includes('data-status="approved"'), "equipment reservations must not expose legacy approval action");
 assert(!reservationsView.includes('data-status="admin_cancelled"'), "equipment reservations must not expose legacy admin cancellation action");
 assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
@@ -149,6 +152,7 @@ assert(css.includes(".admin-dashboard-section"), "dashboard section styles must 
 assert(css.includes(".admin-action-card"), "admin action card styles must exist");
 assert(css.includes(".admin-action-icon"), "admin action icon styles must exist");
 assert(css.includes(".admin-action-card.tone-yellow .admin-action-icon"), "yellow dashboard action icon tone must exist");
+assert(css.includes(".admin-dashboard-grid {\n  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));\n}"), "desktop admin dashboard action cards must wrap before they risk clipping at narrower desktop widths");
 assert(css.includes(".admin-action-card {\n  min-height: 112px;"), "admin action cards must be more compact");
 assert(css.includes(".admin-action-top {\n  display: flex;\n  align-items: center;"), "admin action card label and icon must use a compact inline header");
 assert(css.includes(".admin-action-card strong {\n    font-size: 36px;"), "mobile admin action numbers must be larger than the shared stat size");
@@ -167,6 +171,14 @@ assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10)
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
 assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
+
+const resStatusStart = eventSource.indexOf("if (target.dataset.resStatus)");
+const resStatusEnd = eventSource.indexOf("if (target.dataset.equipmentStatusAction)", resStatusStart);
+assert.notEqual(resStatusStart, -1, "reservation status handler must exist");
+assert.notEqual(resStatusEnd, -1, "reservation status handler must close before equipment status actions");
+const resStatusBlock = eventSource.slice(resStatusStart, resStatusEnd);
+assert(resStatusBlock.includes('target.dataset.status === "cancelled"'), "reservation status handler must detect destructive equipment cancellation");
+assert(resStatusBlock.includes('confirm("예약을 대여취소로 변경할까요?")'), "reservation status handler must confirm before destructive equipment cancellation");
 
 function blockBetween(source, startToken, endToken) {
   const start = source.indexOf(startToken);

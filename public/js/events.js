@@ -27,6 +27,7 @@ import {
 } from "./admin-equipment.js?v=20260627-admin-lecture-nav";
 import {
   equipmentCategories,
+  equipmentPeriodDays,
   equipmentRangeBlocked,
   formData,
   isReservationDateClosed,
@@ -144,6 +145,14 @@ function applyPrintTimeSlot(value) {
   state.selectedPrintEndTime = endTime;
 }
 
+function equipmentTimeRangeValid(period, rentalTime, returnTime) {
+  if (!rentalTime || !returnTime) return false;
+  if (equipmentPeriodDays(period) > 0) return true;
+  const rentalMinutes = timeToMinutes(rentalTime);
+  const returnMinutes = timeToMinutes(returnTime);
+  return rentalMinutes !== null && returnMinutes !== null && returnMinutes > rentalMinutes;
+}
+
 function syncReservationDraftFromDom(type) {
   if (type === "darkroom") {
     state.selectedDarkroomSlots = checkedValues("darkroomSlots");
@@ -177,6 +186,10 @@ function canAdvanceReservationFlow(type, nextStep) {
   }
   if (type === "equipment" && nextStep === "select" && equipmentRangeBlocked(selectedDate, state.selectedEquipmentPeriod).length) {
     toast("선택한 대여 기간에 차단 일정이 포함되어 있습니다.");
+    return false;
+  }
+  if (type === "equipment" && nextStep === "select" && !equipmentTimeRangeValid(state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime)) {
+    toast("반납 시간은 대여 시간보다 늦어야 합니다.");
     return false;
   }
   if (type === "equipment" && nextStep === "details" && !state.selectedEquipmentItemIds.length) {
@@ -675,6 +688,7 @@ export function setupEventHandlers() {
         return;
       }
       if (target.dataset.resStatus) {
+        if (target.dataset.status === "cancelled" && !confirm("예약을 대여취소로 변경할까요?")) return;
         toast("예약 상태를 처리 중입니다.");
         const updated = await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
         state.adminReservations = state.adminReservations.map((reservation) => reservation.id === updated.id ? updated : reservation);
@@ -822,10 +836,9 @@ export function setupEventHandlers() {
       return;
     }
     if (["period", "rentalTime", "returnTime"].includes(target.name) && target.closest("[data-type=\"equipment\"]")) {
-      // 대여/반납 시간은 가용성에 영향이 없으므로 상태만 저장하고 재렌더하지 않는다(입력 끊김 방지).
-      if (target.name === "rentalTime") { state.selectedEquipmentRentalTime = target.value; return; }
-      if (target.name === "returnTime") { state.selectedEquipmentReturnTime = target.value; return; }
-      state.selectedEquipmentPeriod = target.value; // 기간 변경은 가용 장비가 달라지므로 재렌더
+      if (target.name === "rentalTime") state.selectedEquipmentRentalTime = target.value;
+      if (target.name === "returnTime") state.selectedEquipmentReturnTime = target.value;
+      if (target.name === "period") state.selectedEquipmentPeriod = target.value;
       state.equipmentSelectionSheetOpen = false;
       state.equipmentRecommendationOpen = false;
       setReservationFlowStep("equipment", "schedule");

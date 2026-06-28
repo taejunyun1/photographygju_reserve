@@ -11,7 +11,7 @@
     "build:native": "node scripts/build-native.js",
     "check": "node --check core.mjs && node --check storage-sql.mjs && node --check server.mjs && node --check worker.mjs",
     "check:js": "node scripts/check-js-syntax.mjs",
-    "test:equipment-ui": "node scripts/equipment-reservation-ui-test.mjs",
+    "test:equipment-ui": "node --no-warnings scripts/equipment-reservation-ui-test.mjs",
     "test:admin-ui": "node --no-warnings scripts/admin-dashboard-ux-test.mjs",
     "test:security": "node scripts/security-smoke-test.mjs",
     "test:storage": "node scripts/sql-storage-smoke-test.mjs",

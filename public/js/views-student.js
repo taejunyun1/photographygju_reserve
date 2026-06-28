@@ -13,6 +13,7 @@ import {
   equipmentIsHighValue,
   equipmentCategories,
   equipmentItemReservedInRange,
+  equipmentPeriodDays,
   equipmentRangeBlocked,
   equipmentRangeLabel,
   equipmentReservationRange,
@@ -254,10 +255,10 @@ export function homeView() {
           ${facilityCard("darkroom", "암실", "현상·인화", "DR", "자동", "green")}
         </div>
       </section>
-      <section class="surface-stack next-reservation-section">
+      ${next ? `<section class="surface-stack next-reservation-section">
         ${sectionHeader({ title: "다음 예약" })}
-        ${next ? reservationCard(next) : emptyState({ title: "예정된 예약이 없습니다." })}
-      </section>
+        ${reservationCard(next)}
+      </section>` : ""}
       ${homeLecturesCard(recruitingLectures)}
     </section>
   `;
@@ -326,6 +327,42 @@ function selectedEquipmentTime(stateKey, settingKey) {
     state[stateKey] = options[0] || "";
   }
   return state[stateKey];
+}
+
+function equipmentTimeRangeValid(period, rentalTime, returnTime) {
+  if (!rentalTime || !returnTime) return false;
+  if (equipmentPeriodDays(period) > 0) return true;
+  const rentalMinutes = timeToMinutes(rentalTime);
+  const returnMinutes = timeToMinutes(returnTime);
+  return rentalMinutes !== null && returnMinutes !== null && returnMinutes > rentalMinutes;
+}
+
+function nextEquipmentReturnTime(period, rentalTime) {
+  const options = state.bootstrap.settings.equipmentReturnTimes || [];
+  if (!options.length) return "";
+  if (equipmentPeriodDays(period) > 0) return options[0] || "";
+  const rentalMinutes = timeToMinutes(rentalTime);
+  if (rentalMinutes === null) return options[0] || "";
+  return options.find((item) => {
+    const returnMinutes = timeToMinutes(item);
+    return returnMinutes !== null && returnMinutes > rentalMinutes;
+  }) || "";
+}
+
+function selectedEquipmentReturnTime(rentalTime, period) {
+  const options = state.bootstrap.settings.equipmentReturnTimes || [];
+  if (!options.length) {
+    state.selectedEquipmentReturnTime = "";
+    return "";
+  }
+  if (!state.selectedEquipmentReturnTime || !options.includes(state.selectedEquipmentReturnTime)) {
+    state.selectedEquipmentReturnTime = nextEquipmentReturnTime(period, rentalTime) || options[0] || "";
+  }
+  if (!equipmentTimeRangeValid(period, rentalTime, state.selectedEquipmentReturnTime)) {
+    const nextReturnTime = nextEquipmentReturnTime(period, rentalTime);
+    if (nextReturnTime) state.selectedEquipmentReturnTime = nextReturnTime;
+  }
+  return state.selectedEquipmentReturnTime;
 }
 
 function pastDateMessage(type = "") {
@@ -507,6 +544,8 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, close
   if (closedDate) {
     return reservationStep(2, "대여 기간/시간 선택", pastDateMessage("equipment"), flowStepOptions("equipment", "schedule", activeStep, { locked: true }));
   }
+  const validTimeRange = equipmentTimeRangeValid(period, rentalTime, returnTime);
+  const scheduleBlocked = rangeBlocked || !validTimeRange;
   return reservationStep(2, "대여 기간/시간 선택", `
     <div class="studio-time-summary">
       <strong>${escapeHtml(equipmentRangeLabel(selectedDate, period))}</strong>
@@ -517,10 +556,11 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, close
       <div class="field"><label>대여 시간</label><select class="select" name="rentalTime">${state.bootstrap.settings.equipmentRentalTimes.map((item) => `<option ${item === rentalTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
       <div class="field"><label>반납 시간</label><select class="select" name="returnTime">${state.bootstrap.settings.equipmentReturnTimes.map((item) => `<option ${item === returnTime ? "selected" : ""}>${escapeHtml(item)}</option>`).join("")}</select></div>
     </div>
+    ${validTimeRange ? "" : `<p class="muted warning-text">반납 시간은 대여 시간보다 늦어야 합니다.</p>`}
     <div class="reserve-bottom-cta">
-      <button class="button primary full" type="button" data-reserve-next="equipment:select" ${rangeBlocked ? "disabled" : ""}>기자재 선택${icon("arrowRight")}</button>
+      <button class="button primary full" type="button" data-reserve-next="equipment:select" ${scheduleBlocked ? "disabled" : ""}>기자재 선택${icon("arrowRight")}</button>
     </div>
-  `, flowStepOptions("equipment", "schedule", activeStep, rangeBlocked ? { note: "기간을 변경하거나 다른 날짜를 선택하세요." } : {}));
+  `, flowStepOptions("equipment", "schedule", activeStep, scheduleBlocked ? { note: rangeBlocked ? "기간을 변경하거나 다른 날짜를 선택하세요." : "대여/반납 시간을 확인하세요." } : {}));
 }
 
 function equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, closedDate, rangeBlocked, activeStep) {
@@ -676,7 +716,7 @@ export function equipmentForm() {
   const closedDate = isReservationDateClosed("equipment", selectedDate);
   const period = selectedEquipmentPeriod(selectedDate);
   const rentalTime = selectedEquipmentTime("selectedEquipmentRentalTime", "equipmentRentalTimes");
-  const returnTime = selectedEquipmentTime("selectedEquipmentReturnTime", "equipmentReturnTimes");
+  const returnTime = selectedEquipmentReturnTime(rentalTime, period);
   const rangeBlocked = Boolean(selectedDate && !closedDate && equipmentRangeBlocked(selectedDate, period).length);
   if (closedDate) {
     state.selectedEquipmentItemIds = [];
@@ -748,18 +788,18 @@ export function equipmentSelectionSheet(items) {
   return `
     <aside class="equipment-selection-panel ${items.length ? "active" : ""} ${isOpen ? "is-open" : "is-collapsed"}">
       <button class="selection-sheet-toggle" type="button" data-equipment-selection-toggle aria-expanded="${isOpen ? "true" : "false"}">
-        <span>
+        <span class="selection-sheet-copy">
           <strong>선택한 기자재 ${items.length}개</strong>
           <small>${escapeHtml(`${selectedLabel} · ${rangeLabel}${recommendationSummary}`)}</small>
         </span>
-        <em>${isOpen ? "간단히" : "자세히"}</em>
+        <em class="selection-sheet-action">${isOpen ? "접기" : "펼치기"}</em>
       </button>
       <div class="selection-sheet-body">
-        <p>선택 목록과 같은 브랜드 추천 렌즈를 확인할 수 있습니다.</p>
+        <p>선택한 장비와 같은 브랜드의 추천 렌즈를 함께 확인하세요.</p>
         <dl class="equipment-selection-record">
-          <div><dt>기간</dt><dd>${escapeHtml(rangeLabel)}</dd></div>
-          <div><dt>선택</dt><dd>${escapeHtml(selectedLabel)}</dd></div>
-          ${brandLabels.length ? `<div><dt>추천</dt><dd>${escapeHtml(brandLabels.join(" · "))} 렌즈</dd></div>` : ""}
+          <div><dt>대여 기간</dt><dd>${escapeHtml(rangeLabel)}</dd></div>
+          <div><dt>선택 장비</dt><dd>${escapeHtml(selectedLabel)}</dd></div>
+          ${brandLabels.length ? `<div><dt>추천 렌즈</dt><dd>${escapeHtml(brandLabels.join(" · "))} 렌즈</dd></div>` : ""}
         </dl>
         <div class="selected-equipment-list">
           ${items.map((item) => `
@@ -1287,7 +1327,11 @@ function myReservationGroups(reservations = state.myReservations) {
 
 export function myReservationsView() {
   if (!state.myReservations.length) {
-    return `<section class="grid">${emptyState({ title: "예약 내역이 없습니다." })}</section>`;
+    return `<section class="grid">${emptyState({
+      title: "예약 내역이 없습니다.",
+      body: "예약이 만들어지면 이 화면에서 일정과 상태를 확인할 수 있습니다.",
+      action: `<button class="button primary compact" type="button" data-reserve-shortcut="equipment">${icon("calendar")}예약하러 가기</button>`
+    })}</section>`;
   }
   const activeCategory = activeMyReservationCategory();
   const categoryLabel = myReservationCategoryLabel(activeCategory);

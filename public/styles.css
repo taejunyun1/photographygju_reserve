@@ -68,7 +68,9 @@
   --shadow-strong: 0 22px 52px rgba(20, 31, 49, 0.16);
   --shadow-glass: 0 18px 42px rgba(20, 31, 49, 0.12), inset 0 1px 0 var(--glass-highlight);
   --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
 html[data-native-app="true"] {
@@ -449,6 +451,13 @@ button:disabled,
   cursor: not-allowed;
   opacity: 0.48;
   transform: none;
+}
+
+.button.is-current:disabled {
+  opacity: 0.72;
+  border-color: var(--control-active-border);
+  background: var(--control-active-bg);
+  color: var(--primary);
 }
 
 @media (hover: hover) {
@@ -1988,7 +1997,7 @@ button:disabled,
 }
 
 .admin-dashboard-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .admin-action-card {
@@ -3750,28 +3759,37 @@ tr.selected td {
   text-align: left;
 }
 
-.selection-sheet-toggle span {
+.selection-sheet-copy {
+  display: grid;
+  gap: 2px;
   min-width: 0;
+  color: var(--text);
 }
 
-.selection-sheet-toggle small {
+.selection-sheet-copy small {
   display: block;
-  margin-top: 1px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 15px;
-  font-weight: 800;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.selection-sheet-toggle em {
+.selection-sheet-action {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--glass-surface-soft);
   color: var(--primary);
   font-style: normal;
   font-size: 12px;
   line-height: 16px;
   font-weight: 900;
+  padding: 5px 9px;
   white-space: nowrap;
 }
 
@@ -3815,7 +3833,7 @@ tr.selected td {
 
 .equipment-selection-record div {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 62px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
 }
@@ -5700,10 +5718,10 @@ tr.selected td {
   .equipment-selection-dock-floating {
     display: grid;
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    z-index: 1;
+    left: max(12px, var(--safe-area-left));
+    right: max(12px, var(--safe-area-right));
+    bottom: calc(100% + 12px);
+    z-index: 2;
     margin-top: 0;
     pointer-events: none;
   }
@@ -5716,11 +5734,75 @@ tr.selected td {
     padding-bottom: calc(188px + var(--safe-area-bottom));
   }
 
+  .app:has(.equipment-selection-dock-floating .equipment-selection-panel.is-open) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app:has(.equipment-selection-dock-floating .equipment-selection-panel.is-open) .student-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
   .equipment-selection-panel {
-    border-radius: 20px;
-    padding: 11px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--shadow-glass);
+    padding: 12px;
+    max-height: 80dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .equipment-selection-panel.is-open {
+    min-height: 70dvh;
+    height: 76dvh;
+    max-height: 80dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .equipment-selection-panel.is-open .selection-sheet-body {
+    min-height: 0;
+    overflow: auto;
+    align-content: start;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+
+  .equipment-selection-panel.is-open .selection-sheet-body:has(.equipment-recommendation-rail) {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    align-content: stretch;
+  }
+
+  .equipment-selection-panel.is-open .selection-sheet-body:has(.equipment-recommendation-rail) .equipment-recommendation-rail {
+    align-self: stretch;
+    min-height: 0;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .equipment-selection-panel.is-open .selection-sheet-body:has(.equipment-recommendation-rail) .equipment-recommendation-list {
+    min-height: 0;
+    max-height: none;
+  }
+
+  .equipment-selection-panel.is-open .selected-equipment-list {
+    display: grid;
+    gap: 8px;
     max-height: none;
     overflow: visible;
+  }
+
+  .equipment-selection-panel.is-open .selected-pill {
+    width: 100%;
+    min-height: 44px;
+    justify-content: space-between;
+    border-radius: 14px;
+    padding: 10px 12px;
+    text-align: left;
   }
 
   .equipment-selection-panel.is-collapsed {

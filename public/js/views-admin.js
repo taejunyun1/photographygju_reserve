@@ -709,6 +709,10 @@ export function adminReservationCard(reservation) {
   const f = reservation.fields || {};
   const rows = adminReservationDetail(reservation);
   const completionButton = reservation.type === "equipment" ? "" : `<button class="button" data-res-status="${reservation.id}" data-status="completed">${icon("check")}완료</button>`;
+  const equipmentStatusAction = (status, label, iconName, danger = false) => {
+    const current = reservation.status === status;
+    return `<button class="button${danger ? " danger" : ""}${current ? " is-current" : ""}" data-res-status="${reservation.id}" data-status="${status}" ${current ? 'disabled aria-current="true"' : ""}>${icon(iconName)}${label}</button>`;
+  };
   return `
     <article class="admin-reservation-card">
       <div class="reservation-card-head">
@@ -722,7 +726,7 @@ export function adminReservationCard(reservation) {
         ${rows.map(([key, value]) => `<div class="prop"><span class="key">${escapeHtml(key)}</span><span>${escapeHtml(value)}</span></div>`).join("")}
       </div>
       <div class="row-actions">
-        ${reservation.type === "equipment" ? `<button class="button" data-res-status="${reservation.id}" data-status="checked_out">${icon("arrowUpRight")}대여완료</button><button class="button" data-res-status="${reservation.id}" data-status="returned">${icon("check")}반납완료</button><button class="button danger" data-res-status="${reservation.id}" data-status="cancelled">${icon("x")}대여취소</button>` : ""}
+        ${reservation.type === "equipment" ? `${equipmentStatusAction("checked_out", "대여완료", "arrowUpRight")}${equipmentStatusAction("returned", "반납완료", "check")}${equipmentStatusAction("cancelled", "대여취소", "x", true)}` : ""}
         ${completionButton}
         ${reservation.type === "equipment" ? "" : `<button class="button danger" data-res-status="${reservation.id}" data-status="admin_cancelled">${icon("x")}취소</button>`}
       </div>
