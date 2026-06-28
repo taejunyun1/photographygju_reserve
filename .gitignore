@@ -6,6 +6,10 @@ data/
 .env
 .env.*
 *.log
+*.jks
+*.keystore
+*.p12
+android/release-signing.properties
 References/
 .wrangler/
 .claude/

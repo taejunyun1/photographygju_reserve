@@ -51,7 +51,20 @@ Google Play 업로드용 Android App Bundle을 만들려면:
 npm run native:android:bundle
 ```
 
-Play Console 업로드 키가 준비되어 있으면 아래 환경변수로 release bundle에 서명한다.
+처음 Android 제출용 upload key가 없다면 아래 명령으로 로컬 키스토어와 서명 properties를 만든다. 생성되는 파일은 git에서 무시된다.
+
+```bash
+JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:key
+```
+
+생성 파일:
+
+- `android/gju-upload-key.p12`
+- `android/release-signing.properties`
+
+이 두 파일은 Play 업데이트에 계속 필요하므로 별도 보관한다. Play Console에서 이미 다른 upload key를 등록했다면 새로 만들지 말고 기존 키 정보를 아래 환경변수 또는 `android/release-signing.properties`에 넣는다.
+
+Play Console 업로드 키가 별도로 준비되어 있으면 아래 환경변수로 release bundle에 서명할 수도 있다.
 
 ```bash
 export GJU_ANDROID_KEYSTORE_PATH=/absolute/path/gju-upload-key.jks
@@ -60,6 +73,8 @@ export GJU_ANDROID_KEY_ALIAS=gju-upload
 export GJU_ANDROID_KEY_PASSWORD='...'
 JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:bundle
 ```
+
+`native:android:bundle`은 `android/app/build/outputs/bundle/release/app-release.aab`를 만든 뒤 `jarsigner`로 서명 여부를 검증한다. unsigned bundle이면 실패한다.
 
 macOS에서 `java`가 잡히지 않지만 Android Studio가 설치되어 있으면:
 
@@ -199,7 +214,13 @@ npm run native:ios:export
 - `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:debug`: 통과.
 - Android Studio 내장 JBR로 debug APK 빌드는 가능하다.
 - 시스템 기본 `java`는 잡히지 않으므로 터미널 빌드 시 `JAVA_HOME`을 명시한다.
-- Google Play 제출용 `.aab`는 업로드 키 환경변수 4개가 준비된 뒤 `npm run native:android:bundle`로 다시 확인해야 한다.
+- Google Play 제출용 `.aab`는 업로드 키 환경변수 4개 또는 `android/release-signing.properties`가 준비된 뒤 `npm run native:android:bundle`로 만든다.
+
+#### 2026-06-28 Android 제출 가능성 점검 결과
+
+- `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:key`: 로컬 upload key 생성 가능.
+- `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:bundle`: release AAB 생성 및 서명 검증 가능.
+- 출력 파일: `android/app/build/outputs/bundle/release/app-release.aab`
 
 참고 공식 문서:
 

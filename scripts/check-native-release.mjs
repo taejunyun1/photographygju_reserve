@@ -32,6 +32,8 @@ const variables = read("android/variables.gradle");
 const targetSdk = Number((variables.match(/targetSdkVersion\s*=\s*(\d+)/) || [])[1] || 0);
 const infoPlist = read("ios/App/App/Info.plist");
 const xcodeProject = read("ios/App/App.xcodeproj/project.pbxproj");
+const rootGitignore = read(".gitignore");
+const androidGitignore = read("android/.gitignore");
 
 const checks = [
   ["app id", cap.appId === "kr.ac.gju.photomedia.reserve"],
@@ -39,7 +41,10 @@ const checks = [
   ["native api build script", pkg.scripts?.["build:native"] === "node scripts/build-native.js"],
   ["iOS archive script", pkg.scripts?.["native:ios:archive"]?.includes("ios-appstore-export.mjs") && fileExists("scripts/ios-appstore-export.mjs")],
   ["iOS export script", pkg.scripts?.["native:ios:export"]?.includes("ios-appstore-export.mjs")],
-  ["android bundle script", Boolean(pkg.scripts?.["native:android:bundle"])],
+  ["android bundle script", Boolean(pkg.scripts?.["native:android:bundle"]?.includes("native:android:verify"))],
+  ["android upload key script", pkg.scripts?.["native:android:key"] === "node scripts/create-android-upload-key.mjs" && fileExists("scripts/create-android-upload-key.mjs")],
+  ["android signed bundle verifier", pkg.scripts?.["native:android:verify"] === "node scripts/check-android-release.mjs" && fileExists("scripts/check-android-release.mjs")],
+  ["android signing secrets ignored", rootGitignore.includes("*.p12") && rootGitignore.includes("android/release-signing.properties") && androidGitignore.includes("release-signing.properties")],
   ["local notifications dependency", Boolean(pkg.dependencies?.["@capacitor/local-notifications"])],
   ["local notifications config", Boolean(cap.plugins?.LocalNotifications?.smallIcon)],
   ["android target sdk >= 35", targetSdk >= 35],
@@ -76,6 +81,8 @@ const signingEnv = [
   "GJU_ANDROID_KEY_ALIAS",
   "GJU_ANDROID_KEY_PASSWORD"
 ];
-if (!signingEnv.every((key) => process.env[key])) {
-  console.log("note - Android upload-key env vars are not all set; bundleRelease can compile, but Play upload should use a real upload key.");
+if (fileExists("android/release-signing.properties")) {
+  console.log("note - Android release signing will use ignored android/release-signing.properties.");
+} else if (!signingEnv.every((key) => process.env[key])) {
+  console.log("note - Android upload-key env vars are not all set; run npm run native:android:key or provide Play upload-key env vars before building a Play AAB.");
 }

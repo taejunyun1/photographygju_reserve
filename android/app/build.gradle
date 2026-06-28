@@ -1,10 +1,20 @@
 apply plugin: 'com.android.application'
 
+def gjuAndroidSigningProperties = new Properties()
+def gjuAndroidSigningPropertiesFile = rootProject.file("release-signing.properties")
+if (gjuAndroidSigningPropertiesFile.exists()) {
+    gjuAndroidSigningPropertiesFile.withInputStream { stream ->
+        gjuAndroidSigningProperties.load(stream)
+    }
+}
+def gjuAndroidSigningValue = { key ->
+    System.getenv(key) ?: project.findProperty(key) ?: gjuAndroidSigningProperties.getProperty(key)
+}
 def gjuAndroidSigning = [
-    storeFile: System.getenv("GJU_ANDROID_KEYSTORE_PATH") ?: project.findProperty("GJU_ANDROID_KEYSTORE_PATH"),
-    storePassword: System.getenv("GJU_ANDROID_KEYSTORE_PASSWORD") ?: project.findProperty("GJU_ANDROID_KEYSTORE_PASSWORD"),
-    keyAlias: System.getenv("GJU_ANDROID_KEY_ALIAS") ?: project.findProperty("GJU_ANDROID_KEY_ALIAS"),
-    keyPassword: System.getenv("GJU_ANDROID_KEY_PASSWORD") ?: project.findProperty("GJU_ANDROID_KEY_PASSWORD")
+    storeFile: gjuAndroidSigningValue("GJU_ANDROID_KEYSTORE_PATH"),
+    storePassword: gjuAndroidSigningValue("GJU_ANDROID_KEYSTORE_PASSWORD"),
+    keyAlias: gjuAndroidSigningValue("GJU_ANDROID_KEY_ALIAS"),
+    keyPassword: gjuAndroidSigningValue("GJU_ANDROID_KEY_PASSWORD")
 ]
 def hasGjuAndroidSigning = gjuAndroidSigning.storeFile && gjuAndroidSigning.storePassword && gjuAndroidSigning.keyAlias && gjuAndroidSigning.keyPassword
 
