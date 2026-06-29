@@ -301,6 +301,27 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function collectionCounts(db) {
+  return Object.fromEntries(COLLECTIONS.map((collection) => [
+    collection.key,
+    Array.isArray(db[collection.key]) ? db[collection.key].length : 0
+  ]));
+}
+
+function markLegacyMigration(db, detail = {}) {
+  db.meta = {
+    ...(db.meta || {}),
+    storageMigration: {
+      from: detail.from || "legacy-durable-object-db",
+      legacyKey: detail.legacyKey || "db",
+      migratedAt: nowIso(),
+      preservedLegacyDb: detail.preservedLegacyDb !== false,
+      collectionCounts: collectionCounts(db)
+    }
+  };
+  return db;
+}
+
 export function createSqlAppStore(sql, options = {}) {
   const makeInitialDb = options.initialDb || (() => defaultInitialDb(options.adminPassword || "admin"));
   let lastSingletonSnapshot = "";
@@ -404,7 +425,8 @@ export function createSqlAppStore(sql, options = {}) {
     writeAll();
   }
 
-  async function migrateLegacyDb(db) {
+  async function migrateLegacyDb(db, detail = {}) {
+    markLegacyMigration(db, detail);
     await saveDb(db);
   }
 

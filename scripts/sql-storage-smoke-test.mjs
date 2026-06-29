@@ -68,8 +68,9 @@ class FakeSql {
     if (insertMatch) {
       const table = insertMatch[1];
       const key = params[0];
+      const dataIndex = table === "app_singletons" ? 1 : params.length - 1;
       if (!this.records[table]) this.records[table] = new Map();
-      this.records[table].set(key, { data: params[params.length - 1] });
+      this.records[table].set(key, { data: params[dataIndex] });
       return new FakeCursor();
     }
     return new FakeCursor();
@@ -163,6 +164,14 @@ legacyDb.reservations.push({
 });
 
 await migrationStore.migrateLegacyDb(legacyDb);
+const migrationMeta = JSON.parse(migrationSql.records.app_singletons.get("meta").data);
+assert.equal(migrationMeta.storageMigration.from, "legacy-durable-object-db");
+assert.equal(migrationMeta.storageMigration.preservedLegacyDb, true);
+assert.equal(typeof migrationMeta.storageMigration.migratedAt, "string");
+assert.equal(migrationMeta.storageMigration.collectionCounts.reservations, 1);
+assert.equal(migrationMeta.storageMigration.collectionCounts.users > 0, true);
+assert.equal("passwordHash" in migrationMeta.storageMigration, false);
+assert.equal("phone" in migrationMeta.storageMigration, false);
 const migrated = await migrationStore.loadDb();
 assert.equal(migrationSql.records.reservations.has("res_legacy_1"), true);
 assert.equal(migrated.reservations.some((item) => item.id === "res_legacy_1"), true);
@@ -236,6 +245,28 @@ assert.equal(sqlInit.source, "sql");
 assert.equal(sqlInit.migrated, false);
 assert.deepEqual(authoritativeSqlStorage.getCalls, [], "legacy db must not be read when SQL already has data");
 assert.deepEqual(authoritativeSqlStorage.deleteCalls, [], "legacy db must not be deleted when SQL already has data");
+
+const overwriteGuardStorage = new FakeDurableStorage({
+  db: {
+    users: [],
+    reservations: [{ id: "res_should_not_overwrite_sql", type: "print", status: "cancelled", fields: {}, history: [] }]
+  }
+});
+let overwriteGuardMigrated = false;
+const overwriteGuardStore = fakeInitStore({
+  hasSqlData: true,
+  onMigrate: async () => {
+    overwriteGuardMigrated = true;
+  }
+});
+const overwriteGuardInit = await ensureSqlStoreInitialized({
+  storage: overwriteGuardStorage,
+  store: overwriteGuardStore
+});
+assert.equal(overwriteGuardInit.source, "sql");
+assert.equal(overwriteGuardMigrated, false);
+assert.deepEqual(overwriteGuardStorage.getCalls, []);
+assert.deepEqual(overwriteGuardStorage.deleteCalls, []);
 
 const emptyStorage = new FakeDurableStorage();
 const emptyStore = fakeInitStore({ hasSqlData: false });
