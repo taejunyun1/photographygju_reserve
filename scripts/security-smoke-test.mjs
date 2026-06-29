@@ -133,6 +133,85 @@ const adminLogin = await api("POST", "/api/auth/login", {
 assert.equal(adminLogin.status, 200);
 const adminToken = adminLogin.body.data.token;
 
+db.reservations.push(
+  {
+    id: "res_page_equipment_1",
+    type: "equipment",
+    status: "checked_out",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-07-01", rentalTime: "10:00", returnTime: "12:00", equipmentItemIds: [] },
+    history: [],
+    createdAt: "2026-06-30T00:00:00.000Z",
+    updatedAt: "2026-06-30T00:00:00.000Z"
+  },
+  {
+    id: "res_page_print_1",
+    type: "print",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-07-02", startTime: "10:00", endTime: "11:00" },
+    history: [],
+    createdAt: "2026-06-30T00:01:00.000Z",
+    updatedAt: "2026-06-30T00:01:00.000Z"
+  },
+  {
+    id: "res_page_print_2",
+    type: "print",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-07-03", startTime: "12:00", endTime: "13:00" },
+    history: [],
+    createdAt: "2026-06-30T00:02:00.000Z",
+    updatedAt: "2026-06-30T00:02:00.000Z"
+  }
+);
+
+const pagedReservations = await api("GET", "/api/admin/reservations?page=1&pageSize=1&type=print", {}, adminToken);
+assert.equal(pagedReservations.status, 200);
+assert.equal(Array.isArray(pagedReservations.body.data.items), true);
+assert.equal(pagedReservations.body.data.page, 1);
+assert.equal(pagedReservations.body.data.pageSize, 1);
+assert.equal(pagedReservations.body.data.total >= 2, true);
+assert.equal(pagedReservations.body.data.hasMore, true);
+assert.equal(pagedReservations.body.data.items.length, 1);
+assert.equal(pagedReservations.body.data.items.every((item) => item.type === "print"), true);
+
+const legacyReservations = await api("GET", "/api/admin/reservations", {}, adminToken);
+assert.equal(legacyReservations.status, 200);
+assert.equal(Array.isArray(legacyReservations.body.data), true);
+
+db.reports.push({
+  id: "report_page_1",
+  type: "studio",
+  reservationId: "res_page_print_1",
+  userId: "user_admin",
+  fields: { actualTime: "1시간", participants: "1", cleanupConfirmed: true, damageFound: false },
+  htmlSnapshot: "<article>report</article>",
+  submittedAt: "2026-06-30T00:03:00.000Z",
+  expiresAt: "2026-12-30T00:03:00.000Z"
+});
+
+const pagedUsers = await api("GET", "/api/admin/users?page=1&pageSize=1&role=student", {}, adminToken);
+assert.equal(pagedUsers.status, 200);
+assert.equal(Array.isArray(pagedUsers.body.data.items), true);
+assert.equal(pagedUsers.body.data.pageSize, 1);
+assert.equal(pagedUsers.body.data.items.every((user) => user.role === "student"), true);
+
+const legacyUsers = await api("GET", "/api/admin/users", {}, adminToken);
+assert.equal(legacyUsers.status, 200);
+assert.equal(Array.isArray(legacyUsers.body.data), true);
+
+const pagedReports = await api("GET", "/api/admin/reports?page=1&pageSize=1&q=report_page_1", {}, adminToken);
+assert.equal(pagedReports.status, 200);
+assert.equal(Array.isArray(pagedReports.body.data.items), true);
+assert.equal(pagedReports.body.data.pageSize, 1);
+assert.equal(pagedReports.body.data.items.length, 1);
+assert.equal(pagedReports.body.data.items[0].id, "report_page_1");
+
+const legacyReports = await api("GET", "/api/admin/reports", {}, adminToken);
+assert.equal(legacyReports.status, 200);
+assert.equal(Array.isArray(legacyReports.body.data), true);
+
 const removedTaLogin = await api("POST", "/api/auth/login", {
   loginId: "ta",
   password: "ta1234"
@@ -344,13 +423,13 @@ const acceptedReportUrl = await api("POST", "/api/reports/studio", {
 assert.equal(acceptedReportUrl.status, 200);
 assert.equal(acceptedReportUrl.body.data.fields.resultPhotoUrl, "https://drive.google.com/file/d/example/view");
 
-const pagedReports = await api("GET", "/api/admin/reports?page=1&pageSize=1&q=보안테스트학생", {}, adminToken);
-assert.equal(pagedReports.status, 200);
-assert.equal(Array.isArray(pagedReports.body.data.items), true);
-assert.equal(pagedReports.body.data.page, 1);
-assert.equal(pagedReports.body.data.pageSize, 1);
-assert.equal(pagedReports.body.data.total >= 1, true);
-assert.equal(pagedReports.body.data.items[0].user.email, "security-student@gju.local");
+const pagedReportsWithStudentQuery = await api("GET", "/api/admin/reports?page=1&pageSize=1&q=보안테스트학생", {}, adminToken);
+assert.equal(pagedReportsWithStudentQuery.status, 200);
+assert.equal(Array.isArray(pagedReportsWithStudentQuery.body.data.items), true);
+assert.equal(pagedReportsWithStudentQuery.body.data.page, 1);
+assert.equal(pagedReportsWithStudentQuery.body.data.pageSize, 1);
+assert.equal(pagedReportsWithStudentQuery.body.data.total >= 1, true);
+assert.equal(pagedReportsWithStudentQuery.body.data.items[0].user.email, "security-student@gju.local");
 
 const nonStudioReports = await api("GET", "/api/admin/reports?type=print", {}, adminToken);
 assert.equal(nonStudioReports.status, 200);
@@ -358,9 +437,9 @@ assert.equal(Array.isArray(nonStudioReports.body.data.items), true);
 assert.equal(nonStudioReports.body.data.pageSize, 100);
 assert.equal(nonStudioReports.body.data.total, 0);
 
-const legacyReports = await api("GET", "/api/admin/reports", {}, adminToken);
-assert.equal(legacyReports.status, 200);
-assert.equal(Array.isArray(legacyReports.body.data), true);
+const legacyReportsAfterStudentFlow = await api("GET", "/api/admin/reports", {}, adminToken);
+assert.equal(legacyReportsAfterStudentFlow.status, 200);
+assert.equal(Array.isArray(legacyReportsAfterStudentFlow.body.data), true);
 
 const reportedStudioCancellation = await api("POST", `/api/reservations/${studioReservationForReport.body.data.id}/cancel`, {
   reason: "중복 보고서 우선순위 테스트"
@@ -524,14 +603,14 @@ const secondPrintReservation = await api("POST", "/api/reservations", {
 }, studentLogin.body.data.token);
 assert.equal(secondPrintReservation.status, 200);
 
-const pagedReservations = await api("GET", "/api/admin/reservations?page=1&pageSize=1&type=print&from=2026-07-03&to=2026-07-04", {}, adminToken);
-assert.equal(pagedReservations.status, 200);
-assert.equal(Array.isArray(pagedReservations.body.data.items), true);
-assert.equal(pagedReservations.body.data.page, 1);
-assert.equal(pagedReservations.body.data.pageSize, 1);
-assert.equal(pagedReservations.body.data.total >= 2, true);
-assert.equal(pagedReservations.body.data.hasMore, true);
-assert.equal(pagedReservations.body.data.items.every((item) => item.type === "print"), true);
+const pagedReservationsWithDateFilters = await api("GET", "/api/admin/reservations?page=1&pageSize=1&type=print&from=2026-07-03&to=2026-07-04", {}, adminToken);
+assert.equal(pagedReservationsWithDateFilters.status, 200);
+assert.equal(Array.isArray(pagedReservationsWithDateFilters.body.data.items), true);
+assert.equal(pagedReservationsWithDateFilters.body.data.page, 1);
+assert.equal(pagedReservationsWithDateFilters.body.data.pageSize, 1);
+assert.equal(pagedReservationsWithDateFilters.body.data.total >= 2, true);
+assert.equal(pagedReservationsWithDateFilters.body.data.hasMore, true);
+assert.equal(pagedReservationsWithDateFilters.body.data.items.every((item) => item.type === "print"), true);
 
 const filterOnlyReservations = await api("GET", "/api/admin/reservations?type=print&from=2026-07-03&to=2026-07-04", {}, adminToken);
 assert.equal(filterOnlyReservations.status, 200);
@@ -539,15 +618,15 @@ assert.equal(filterOnlyReservations.body.data.pageSize, 100);
 assert.equal(filterOnlyReservations.body.data.total >= 2, true);
 assert.equal(filterOnlyReservations.body.data.items.length >= 2, true);
 
-const legacyReservations = await api("GET", "/api/admin/reservations", {}, adminToken);
-assert.equal(legacyReservations.status, 200);
-assert.equal(Array.isArray(legacyReservations.body.data), true);
+const legacyReservationsAfterStudentFlow = await api("GET", "/api/admin/reservations", {}, adminToken);
+assert.equal(legacyReservationsAfterStudentFlow.status, 200);
+assert.equal(Array.isArray(legacyReservationsAfterStudentFlow.body.data), true);
 
-const pagedUsers = await api("GET", "/api/admin/users?page=1&pageSize=1&role=student&q=보안테스트학생", {}, adminToken);
-assert.equal(pagedUsers.status, 200);
-assert.equal(Array.isArray(pagedUsers.body.data.items), true);
-assert.equal(pagedUsers.body.data.items.length, 1);
-assert.equal(pagedUsers.body.data.items[0].email, "security-student@gju.local");
+const pagedUsersWithStudentQuery = await api("GET", "/api/admin/users?page=1&pageSize=1&role=student&q=보안테스트학생", {}, adminToken);
+assert.equal(pagedUsersWithStudentQuery.status, 200);
+assert.equal(Array.isArray(pagedUsersWithStudentQuery.body.data.items), true);
+assert.equal(pagedUsersWithStudentQuery.body.data.items.length, 1);
+assert.equal(pagedUsersWithStudentQuery.body.data.items[0].email, "security-student@gju.local");
 
 const blockStudent = await api("PATCH", `/api/admin/users/${studentLogin.body.data.user.id}/approval`, {
   approvalStatus: "blocked",
