@@ -34,6 +34,17 @@ const eventSource = fs.readFileSync("public/js/events.js", "utf8");
 const styleSource = fs.readFileSync("public/styles.css", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 
+function futureDateKey(daysFromNow = 7) {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() + daysFromNow);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
 const pickerStart = viewSource.indexOf("function equipmentPickerStep");
 const pickerEnd = viewSource.indexOf("function cameraBagConsent", pickerStart);
 assert(pickerStart !== -1 && pickerEnd !== -1, "equipmentPickerStep block must exist");
@@ -134,7 +145,7 @@ function resetStudentState() {
   state.view = "home";
   state.reservationType = "equipment";
   state.reservationFlowStep = { equipment: "schedule", studio: "date", darkroom: "date", print: "date" };
-  state.selectedDates = { equipment: "2026-06-29", studio: "", darkroom: "", print: "" };
+  state.selectedDates = { equipment: futureDateKey(), studio: "", darkroom: "", print: "" };
   state.selectedEquipmentPeriod = "";
   state.selectedEquipmentRentalTime = "";
   state.selectedEquipmentReturnTime = "";

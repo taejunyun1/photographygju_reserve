@@ -41,7 +41,9 @@ npm run native:ios:export
 - 관리자 계정 1개와 조교 계정 1개를 실제 운영 권한으로 확인한다.
 - App Store/Play 심사용 테스트 계정을 만든다.
 - 테스트 계정은 `승인 완료` 상태여야 한다.
+- 테스트 계정은 스튜디오/출력실/기자재 예약과 비교과 특강 신청이 사전 생성되어 있어야 한다.
 - 테스트 계정 비밀번호는 문서 저장소나 코드에 넣지 말고 제출 메모에만 입력한다.
+- 운영 API에 심사용 계정을 준비할 때는 `npm run review:prepare-account`를 사용한다.
 - 학생 승인, 대여금지, 경고 메모, 예약 취소, 보고서 확인이 실제 DB에 기록되는지 확인한다.
 - `마이 > 계정 삭제`에서 학생 본인이 현재 비밀번호와 확인 문구로 계정 삭제를 완료할 수 있는지 확인한다.
 
@@ -52,6 +54,9 @@ npm run native:ios:export
 - Play Console Data safety는 실제 수집 데이터 기준으로 입력한다.
 - 수집 데이터: 이름, 이메일, 연락처, 학번/신분, 예약 내역, 특강 신청 내역, 보고서/사용자 제출 내용, 사용 로그.
 - 추적 목적 수집은 현재 없음으로 유지한다.
+- App Store Connect의 “앱에서 추적을 사용합니까?”는 `아니오`로 답한다.
+- 전화번호, 이메일, 사용자 ID/학번, 예약/보고서 데이터는 `앱 기능` 목적이며 `추적 목적 아님`으로 답한다.
+- Google Analytics, 광고 식별자, 타사 광고 네트워크, 데이터 브로커 제공은 사용하지 않는다.
 - Slack Webhook, FTP 비밀번호, Android keystore, Apple 인증서, 테스트 계정 비밀번호가 코드/문서/스크린샷에 들어가지 않았는지 확인한다.
 - `SESSION_SECRET`, `SLACK_WEBHOOK_URL`, `ADMIN_BOOTSTRAP_TOKEN`은 Cloudflare/Dothome 환경변수나 서버 비밀값으로만 관리한다.
 - Android는 `allowBackup=false`, `usesCleartextTraffic=false` 상태로 배포한다.
@@ -67,7 +72,7 @@ npm run native:ios:export
 - Dothome FTP 업로드 후 실제 도메인에서 새 버전이 보이는지 확인한다.
 - Dothome FTP 업로드 후 `GJU_PRODUCTION_URL=https://photographygju.dothome.co.kr npm run deploy:check`로 같은 출처 PHP 프록시와 정적 파일 버전을 확인한다.
 - 로그인, 내 예약, 특강, 공지, 보고서, 관리자 진입을 실제 도메인에서 점검한다.
-- Google Analytics가 필요한 경우만 유지하고, 내부 서비스 정책상 불필요하면 제거 여부를 결정한다.
+- 외부 분석 스크립트가 다시 들어가지 않았는지 `npm run test:security`로 확인한다.
 
 ## 5. iOS 제출 체크
 
@@ -84,6 +89,7 @@ npm run native:ios:export
 - TestFlight 내부 테스트를 먼저 통과시킨다.
 - 스크린샷은 iPhone 기준 핵심 화면을 준비한다: 홈, 예약, 내 예약, 특강, 마이.
 - App Review Notes에는 내부 학과 예약 시스템임을 적고, 테스트 계정과 확인 가능한 플로우를 제공한다.
+- App Review Information의 로그인 정보에는 승인 완료 학생 계정과 사전 생성된 심사용 데이터 설명을 함께 넣는다.
 - 알림 권한 설명은 “예약 시작 전 리마인더 제공”으로 한정한다.
 - 서명 준비 후 `npm run native:ios:export`로 App Store 제출용 `.ipa` export를 확인한다.
 

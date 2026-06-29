@@ -84,9 +84,11 @@ assert(pkg.scripts?.["native:release:check"], "package.json must include npm run
 assert(pkg.scripts?.["native:android:bundle"], "package.json must include npm run native:android:bundle");
 assert(pkg.scripts?.["native:ios:archive"], "package.json must include npm run native:ios:archive");
 assert(pkg.scripts?.["native:ios:export"], "package.json must include npm run native:ios:export");
+assert(pkg.scripts?.["review:prepare-account"] === "node scripts/prepare-review-account.mjs", "package.json must include npm run review:prepare-account");
 assert(pkg.scripts?.["deploy:check"], "package.json must include npm run deploy:check");
 assert(fileExists("scripts/ios-appstore-export.mjs"), "iOS App Store export script must exist");
 assert(fileExists("scripts/check-production-deploy.mjs"), "production deploy check script must exist");
+assert(fileExists("scripts/prepare-review-account.mjs"), "App Review demo account preparation script must exist");
 ok("required npm scripts are present");
 
 assert(fileExists("docs/pre-release-checklist.md"), "docs/pre-release-checklist.md must exist");
@@ -104,6 +106,8 @@ ok("Capacitor release identity is stable");
 
 assert(indexHtml.includes("Content-Security-Policy"), "public/index.html must define a CSP");
 assert(indexHtml.includes(productionApiBase), "public/index.html CSP connect-src must include the production Worker API");
+assert(!/googletagmanager|google-analytics|analytics\.google|gtag\(/i.test(indexHtml), "App Store release HTML must not load third-party analytics/tracking scripts");
+assert(!/googletagmanager|google-analytics|analytics\.google/i.test(worker), "Worker CSP must not allow third-party analytics/tracking endpoints");
 assert(fileExists("public/.htaccess"), "Dothome web root must include Apache security headers and SPA fallback");
 assert(worker.includes("permissions-policy"), "worker.mjs must set Permissions-Policy");
 assert(worker.includes(productionApiBase), "worker.mjs CSP connect-src must include the production Worker API");
@@ -174,6 +178,10 @@ const preReleaseChecklist = read("docs/pre-release-checklist.md");
 for (const phrase of releaseRequiredDocs) {
   assert(preReleaseChecklist.includes(phrase), `pre-release checklist must include "${phrase}"`);
 }
+const storeMaterials = read("docs/store-submission-materials.md");
+assert(storeMaterials.includes("앱에서 추적을 사용합니까? 아니오"), "store submission materials must specify that App Store tracking is disabled");
+assert(storeMaterials.includes("사전 생성된 심사용 데이터"), "store submission materials must tell reviewers that the demo account has pre-populated content");
+assert(storeMaterials.includes("scripts/prepare-review-account.mjs"), "store submission materials must reference the review account preparation script");
 ok("manual store submission tasks are documented");
 
 console.log("Pre-release checks passed.");

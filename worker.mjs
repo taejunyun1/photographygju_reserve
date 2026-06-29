@@ -14,11 +14,11 @@ const ALLOWED_ORIGINS = new Set([
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' https://www.googletagmanager.com",
+  "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com",
+  "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev https://www.googletagmanager.com https://analytics.google.com https://www.google.com https://*.google-analytics.com https://*.analytics.google.com",
+  "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev",
   "base-uri 'none'",
   "object-src 'none'",
   "frame-ancestors 'none'",

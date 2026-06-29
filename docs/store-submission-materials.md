@@ -36,13 +36,16 @@ Apple Watch 앱은 iPhone 앱의 내 예약 목록을 읽기 전용으로 확인
 - ID:
 - Password:
 - 계정 상태: 승인 완료
+- 사전 생성된 심사용 데이터: 스튜디오 예약 1건, 출력실 예약 1건, 기자재 예약 1건, 비교과 특강 신청 1건
 
 확인 경로:
 1. 로그인
-2. 홈에서 기자재/스튜디오/비교과 예약 화면 진입
-3. 내 예약에서 예약 카테고리 확인
-4. 마이 화면에서 네이티브 예약 알림 권한 요청 확인
-5. 마이 화면에서 계정 삭제 기능 확인 가능
+2. 내 예약에서 사전 생성된 심사용 데이터 확인
+3. 홈에서 기자재/스튜디오/출력실/암실/비교과 예약 화면 진입
+4. 기자재 예약에서 카메라 바디 선택 후 렌즈 추천 하단 시트 확인
+5. 비교과 특강에서 신청 완료 상태 확인
+6. 마이 화면에서 네이티브 예약 알림 권한 요청 확인
+7. 마이 화면에서 계정 삭제 기능 확인 가능
 
 알림 권한 사용 목적:
 예약 시작 전 24시간/1시간/10분/시작 시점 리마인더를 제공하기 위해 사용합니다. Apple Watch에서는 iPhone 알림 미러링을 통해 같은 예약 알림을 받을 수 있습니다.
@@ -71,6 +74,7 @@ Reviewer test account:
 - ID:
 - Password:
 - Account status: approved
+- Pre-populated review data: studio reservation, print room reservation, equipment reservation, and one lecture application
 
 The app uses notification permission only for local reservation reminders before scheduled reservations. The app does not request exact alarm permissions.
 ```
@@ -93,13 +97,37 @@ The app uses notification permission only for local reservation reminders before
 | 결제 정보 | 아니오 | 해당 없음 | 사용 안 함 |
 | 광고 식별자 | 아니오 | 해당 없음 | 사용 안 함 |
 
+App Store Connect 개인정보 세부사항:
+
+- 앱에서 추적을 사용합니까? 아니오
+- 타사 광고 목적으로 수집하는 데이터: 없음
+- 개발자의 광고 또는 마케팅 목적으로 수집하는 데이터: 없음
+- 데이터 브로커와 공유하는 데이터: 없음
+- 연락처 정보의 전화번호: 수집함, 사용자에게 연결됨, 앱 기능 목적, 추적 목적 아님
+- 연락처 정보의 이메일 주소: 수집함, 사용자에게 연결됨, 앱 기능 목적, 추적 목적 아님
+- 사용자 ID/학번: 수집함, 사용자에게 연결됨, 앱 기능 목적, 추적 목적 아님
+- 사용자 콘텐츠/예약 및 보고서 입력: 수집함, 사용자에게 연결됨, 앱 기능 목적, 추적 목적 아님
+- 제품 상호작용/감사 로그: 수집함, 사용자에게 연결됨, 앱 기능/보안 목적, 추적 목적 아님
+
 사용자는 앱 내부 `마이 > 계정 삭제`에서 계정 삭제를 완료할 수 있다. 삭제 시 사용자 계정, 세션, 예약, 보고서, 특강 신청, 경고 기록이 함께 정리된다.
 
 App Store Connect의 개인정보 처리방침 URL에는 `https://photographygju.dothome.co.kr/privacy.html`을 사용한다.
 
 Google Play Console의 계정 삭제 웹 리소스에는 `https://photographygju.dothome.co.kr/account-deletion.html`을 사용한다.
 
-추적 목적 수집은 `아니오`로 유지한다. Google Analytics를 계속 사용할 경우 Play Console Data safety와 개인정보 안내에 분석 목적 사용 여부를 운영 기준에 맞춰 반영한다.
+추적 목적 수집은 `아니오`로 유지한다. 앱과 웹 배포본은 Google Analytics, 광고 식별자, 타사 광고 네트워크, 데이터 브로커 제공을 사용하지 않는다.
+
+## 심사용 계정 준비
+
+App Review 또는 Play 리뷰용 학생 계정은 `scripts/prepare-review-account.mjs`로 운영 API에 준비한다. 비밀번호는 코드, 문서, 터미널 출력에 남기지 않고 환경변수와 스토어 제출 메모에만 입력한다.
+
+```bash
+GJU_REVIEW_ADMIN_PASSWORD='운영 관리자 비밀번호' \
+GJU_REVIEW_STUDENT_PASSWORD='심사용 학생 비밀번호' \
+npm run review:prepare-account
+```
+
+기본 계정 ID는 `appreview-student@gju.local`, 기본 학번은 `APPREVIEW2026`이다. 다른 값을 쓰려면 `GJU_REVIEW_STUDENT_EMAIL`, `GJU_REVIEW_STUDENT_ID`, `GJU_REVIEW_STUDENT_NAME` 환경변수로 바꾼다.
 
 ## 스크린샷 준비 목록
 
