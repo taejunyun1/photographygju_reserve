@@ -132,9 +132,12 @@ assert.equal(loaded.reports.length, 1);
 assert.equal(loaded.reports[0].id, "report_sql_1");
 
 const deleteCountBeforeNoopSave = sql.statements.filter((item) => item.sql.startsWith("DELETE FROM")).length;
+const insertCountBeforeNoopSave = sql.statements.filter((item) => item.sql.startsWith("INSERT OR REPLACE")).length;
 await store.saveDb(loaded);
 const deleteCountAfterNoopSave = sql.statements.filter((item) => item.sql.startsWith("DELETE FROM")).length;
-assert.equal(deleteCountAfterNoopSave, deleteCountBeforeNoopSave, "unchanged saves should not rewrite SQL tables");
+const insertCountAfterNoopSave = sql.statements.filter((item) => item.sql.startsWith("INSERT OR REPLACE")).length;
+assert.equal(deleteCountAfterNoopSave, deleteCountBeforeNoopSave, "unchanged saves should not delete SQL rows");
+assert.equal(insertCountAfterNoopSave, insertCountBeforeNoopSave, "unchanged saves should not upsert SQL rows");
 
 const reservationTableClearCountBeforeUpdate = sql.statements.filter((item) => item.sql === "DELETE FROM reservations").length;
 loaded.reservations[0].status = "completed";
@@ -147,6 +150,16 @@ assert.equal(
   "changed reservation saves should upsert rows without clearing the reservations table"
 );
 assert.equal(sql.records.reservations.get("res_sql_1").data.includes("\"status\":\"completed\""), true);
+
+const reservationInsertCountBeforeSettingsChange = sql.statements.filter((item) => item.sql.startsWith("INSERT OR REPLACE INTO reservations")).length;
+loaded.settings.appName = "GJU Reserve 운영";
+await store.saveDb(loaded);
+const reservationInsertCountAfterSettingsChange = sql.statements.filter((item) => item.sql.startsWith("INSERT OR REPLACE INTO reservations")).length;
+assert.equal(
+  reservationInsertCountAfterSettingsChange,
+  reservationInsertCountBeforeSettingsChange,
+  "settings-only saves should not upsert reservation rows"
+);
 
 const migrationSql = new FakeSql();
 const migrationStore = createSqlAppStore(migrationSql, { initialDb: () => initialDb("admin-pass") });
