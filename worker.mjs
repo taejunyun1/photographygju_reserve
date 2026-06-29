@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
 import { createSqlAppStore } from "./storage-sql.mjs";
+import { ensureSqlStoreInitialized } from "./worker-storage.mjs";
 
 // Browser JS may only read API responses from these origins. The API itself is
 // bearer-token authenticated (no cookies), so this is defense-in-depth.
@@ -87,14 +88,10 @@ export class GjuReserveDb extends DurableObject {
 
   async ensureInitialized() {
     if (this.initialized) return;
-    await this.store.initialize();
-    if (!this.store.hasSqlData()) {
-      const legacyDb = await this.ctx.storage.get("db");
-      if (legacyDb) {
-        await this.store.migrateLegacyDb(legacyDb);
-        await this.ctx.storage.delete("db");
-      }
-    }
+    await ensureSqlStoreInitialized({
+      storage: this.ctx.storage,
+      store: this.store
+    });
     this.initialized = true;
   }
 

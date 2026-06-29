@@ -166,3 +166,80 @@ await migrationStore.migrateLegacyDb(legacyDb);
 const migrated = await migrationStore.loadDb();
 assert.equal(migrationSql.records.reservations.has("res_legacy_1"), true);
 assert.equal(migrated.reservations.some((item) => item.id === "res_legacy_1"), true);
+
+const { ensureSqlStoreInitialized } = await import("../worker-storage.mjs");
+
+class FakeDurableStorage {
+  constructor(entries = {}) {
+    this.entries = new Map(Object.entries(entries));
+    this.getCalls = [];
+    this.deleteCalls = [];
+  }
+
+  async get(key) {
+    this.getCalls.push(key);
+    return this.entries.get(key);
+  }
+
+  async delete(key) {
+    this.deleteCalls.push(key);
+    this.entries.delete(key);
+  }
+}
+
+function fakeInitStore({ hasSqlData, onMigrate = async () => {} }) {
+  return {
+    initialized: false,
+    migrated: [],
+    async initialize() {
+      this.initialized = true;
+    },
+    hasSqlData() {
+      return hasSqlData;
+    },
+    async migrateLegacyDb(db, detail) {
+      this.migrated.push({ db, detail });
+      await onMigrate(db, detail);
+    }
+  };
+}
+
+const preservedLegacyDb = await initialDb("admin-pass");
+preservedLegacyDb.reservations.push({
+  id: "res_preserved_legacy",
+  type: "studio",
+  status: "approved",
+  userId: "user_admin",
+  fields: { reservedDate: "2026-07-10", timeSlots: ["10:00-12:00"], studioSpaces: ["Studio A"] },
+  history: [],
+  createdAt: "2026-06-30T00:00:00.000Z",
+  updatedAt: "2026-06-30T00:00:00.000Z"
+});
+
+const legacyStorage = new FakeDurableStorage({ db: preservedLegacyDb });
+const legacyStore = fakeInitStore({ hasSqlData: false });
+const legacyInit = await ensureSqlStoreInitialized({ storage: legacyStorage, store: legacyStore });
+assert.equal(legacyInit.source, "legacy");
+assert.equal(legacyInit.migrated, true);
+assert.equal(legacyInit.preservedLegacyDb, true);
+assert.equal(legacyStore.initialized, true);
+assert.equal(legacyStore.migrated.length, 1);
+assert.equal(legacyStore.migrated[0].db.reservations.some((item) => item.id === "res_preserved_legacy"), true);
+assert.equal(legacyStore.migrated[0].detail.from, "legacy-durable-object-db");
+assert.equal(legacyStore.migrated[0].detail.preservedLegacyDb, true);
+assert.deepEqual(legacyStorage.deleteCalls, [], "legacy Durable Object db must not be deleted during migration");
+
+const authoritativeSqlStorage = new FakeDurableStorage({ db: preservedLegacyDb });
+const authoritativeSqlStore = fakeInitStore({ hasSqlData: true });
+const sqlInit = await ensureSqlStoreInitialized({ storage: authoritativeSqlStorage, store: authoritativeSqlStore });
+assert.equal(sqlInit.source, "sql");
+assert.equal(sqlInit.migrated, false);
+assert.deepEqual(authoritativeSqlStorage.getCalls, [], "legacy db must not be read when SQL already has data");
+assert.deepEqual(authoritativeSqlStorage.deleteCalls, [], "legacy db must not be deleted when SQL already has data");
+
+const emptyStorage = new FakeDurableStorage();
+const emptyStore = fakeInitStore({ hasSqlData: false });
+const emptyInit = await ensureSqlStoreInitialized({ storage: emptyStorage, store: emptyStore });
+assert.equal(emptyInit.source, "initial");
+assert.equal(emptyInit.migrated, false);
+assert.deepEqual(emptyStorage.deleteCalls, [], "empty initialization must not delete any Durable Object keys");
