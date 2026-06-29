@@ -191,10 +191,34 @@ db.reports.push({
   expiresAt: "2026-12-30T00:03:00.000Z"
 });
 
+db.users.push(
+  {
+    id: "user_page_student_1",
+    role: "student",
+    username: "page-student-1",
+    name: "페이지학생1",
+    email: "page-student-1@gju.local",
+    approvalStatus: "approved",
+    passwordHash: "pbkdf2:test:test"
+  },
+  {
+    id: "user_page_student_2",
+    role: "student",
+    username: "page-student-2",
+    name: "페이지학생2",
+    email: "page-student-2@gju.local",
+    approvalStatus: "approved",
+    passwordHash: "pbkdf2:test:test"
+  }
+);
+
 const pagedUsers = await api("GET", "/api/admin/users?page=1&pageSize=1&role=student", {}, adminToken);
 assert.equal(pagedUsers.status, 200);
 assert.equal(Array.isArray(pagedUsers.body.data.items), true);
+assert.equal(pagedUsers.body.data.page, 1);
 assert.equal(pagedUsers.body.data.pageSize, 1);
+assert.equal(pagedUsers.body.data.total >= 2, true);
+assert.equal(pagedUsers.body.data.hasMore, true);
 assert.equal(pagedUsers.body.data.items.every((user) => user.role === "student"), true);
 
 const legacyUsers = await api("GET", "/api/admin/users", {}, adminToken);
@@ -204,7 +228,10 @@ assert.equal(Array.isArray(legacyUsers.body.data), true);
 const pagedReports = await api("GET", "/api/admin/reports?page=1&pageSize=1&q=report_page_1", {}, adminToken);
 assert.equal(pagedReports.status, 200);
 assert.equal(Array.isArray(pagedReports.body.data.items), true);
+assert.equal(pagedReports.body.data.page, 1);
 assert.equal(pagedReports.body.data.pageSize, 1);
+assert.equal(pagedReports.body.data.total >= 1, true);
+assert.equal(pagedReports.body.data.hasMore, false);
 assert.equal(pagedReports.body.data.items.length, 1);
 assert.equal(pagedReports.body.data.items[0].id, "report_page_1");
 
