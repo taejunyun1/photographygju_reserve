@@ -263,6 +263,82 @@ const legacyReports = await api("GET", "/api/admin/reports", {}, adminToken);
 assert.equal(legacyReports.status, 200);
 assert.equal(Array.isArray(legacyReports.body.data), true);
 
+db.reservations.push(
+  {
+    id: "res_semester_s1",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-03-10", studioSpaces: ["Studio A Front"], timeSlots: ["10:30-12:00"], reportStatus: "required" },
+    history: [],
+    createdAt: "2026-03-01T00:00:00.000Z",
+    updatedAt: "2026-03-01T00:00:00.000Z"
+  },
+  {
+    id: "res_semester_s2_jan",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2027-01-10", studioSpaces: ["Studio A Front"], timeSlots: ["13:00-14:00"], reportStatus: "submitted" },
+    history: [],
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z"
+  }
+);
+db.reports.push({
+  id: "report_semester_s2_jan",
+  type: "studio",
+  reservationId: "res_semester_s2_jan",
+  userId: "user_admin",
+  fields: { actualTime: "13:00-14:00", participants: "1" },
+  htmlSnapshot: "<article>semester</article>",
+  submittedAt: "2027-01-10T05:00:00.000Z",
+  expiresAt: "2027-07-10T00:00:00.000Z"
+});
+db.lectures.push(
+  {
+    id: "lecture_semester_s1",
+    title: "1학기 특강",
+    lectureDate: "2026-05-01",
+    time: "14:00-16:00",
+    location: "강의실",
+    instructorName: "강사",
+    description: "봄 특강",
+    status: "모집중",
+    createdAt: "2026-04-01T00:00:00.000Z",
+    updatedAt: "2026-04-01T00:00:00.000Z"
+  },
+  {
+    id: "lecture_semester_s2",
+    title: "2학기 특강",
+    lectureDate: "2026-10-01",
+    time: "14:00-16:00",
+    location: "강의실",
+    instructorName: "강사",
+    description: "가을 특강",
+    status: "모집중",
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z"
+  }
+);
+
+const semesterReservations = await api("GET", "/api/admin/reservations?semester=2026-S2&pageSize=200", {}, adminToken);
+assert.equal(semesterReservations.status, 200);
+assert.equal(semesterReservations.body.data.items.some((item) => item.id === "res_semester_s2_jan"), true);
+assert.equal(semesterReservations.body.data.items.some((item) => item.id === "res_semester_s1"), false);
+assert.equal(semesterReservations.body.data.semesterOptions.some((item) => item.key === "2026-S2" && item.label === "2026년 2학기"), true);
+
+const semesterReports = await api("GET", "/api/admin/reports?semester=2026-S2&pageSize=200", {}, adminToken);
+assert.equal(semesterReports.status, 200);
+assert.equal(semesterReports.body.data.items.some((item) => item.id === "report_semester_s2_jan"), true);
+assert.equal(semesterReports.body.data.semesterOptions.some((item) => item.key === "2026-S2"), true);
+
+const semesterLectures = await api("GET", "/api/admin/lectures?semester=2026-S1", {}, adminToken);
+assert.equal(semesterLectures.status, 200);
+assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s1"), true);
+assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s2"), false);
+assert.equal(semesterLectures.body.data.semesterOptions.some((item) => item.key === "2026-S1" && item.label === "2026년 1학기"), true);
+
 const removedTaLogin = await api("POST", "/api/auth/login", {
   loginId: "ta",
   password: "ta1234"

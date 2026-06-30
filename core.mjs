@@ -1194,11 +1194,13 @@ const {
   hasListQuery,
   adminReservationList,
   adminReportList,
-  adminUserList
+  adminUserList,
+  adminLectureList
 } = createAdminListHelpers({
   withReservationDetails,
   reportWithDetails,
-  publicUser
+  publicUser,
+  lectureDetail
 });
 
 function publicReservationSummary(db, reservation) {
@@ -2137,6 +2139,7 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/lectures") {
         requireAdmin(authorization, db);
+        if (hasListQuery(searchParams)) return ok(adminLectureList(db, searchParams));
         const lectures = db.lectures
           .map((lecture) => lectureDetail(db, lecture))
           .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")));
