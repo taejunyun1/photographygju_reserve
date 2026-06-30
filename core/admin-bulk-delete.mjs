@@ -28,25 +28,13 @@ function selectionFromScope(scope, filters, allItems, filteredItems) {
     : { filters, items: filteredItems };
 }
 
-function narrowBroadReservationSelection(scope, filters, items) {
-  if (scope !== "filtered") return items;
-  if (filters.q || filters.from || filters.to || filters.status) return items;
-  if (items.length <= 1) return items;
-  const latestCreatedAt = items.reduce((latest, item) => {
-    const createdAt = String(item?.createdAt || "");
-    return createdAt > latest ? createdAt : latest;
-  }, "");
-  return items.filter((item) => String(item?.createdAt || "") === latestCreatedAt);
-}
-
 export function deleteAdminReservations(db, { scope, filters = {}, confirmText, admin, filterAdminReservations }) {
   assertBulkScope({ scope, confirmText });
   const safeFilters = allowedFilters(filters, ["q", "type", "status", "semester", "from", "to"]);
   const allItems = filterAdminReservations(db, {});
   const filteredItems = filterAdminReservations(db, safeFilters);
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
-  const narrowedItems = narrowBroadReservationSelection(scope, safeFilters, selected.items);
-  const reservationIds = new Set(narrowedItems.map((item) => item.id));
+  const reservationIds = new Set(selected.items.map((item) => item.id));
   const reportIds = new Set((db.reports || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));
   db.reservations = (db.reservations || []).filter((item) => !reservationIds.has(item.id));
   db.reports = (db.reports || []).filter((item) => !reportIds.has(item.id));

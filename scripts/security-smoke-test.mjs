@@ -389,8 +389,10 @@ const filteredReservationDelete = await api("DELETE", "/api/admin/reservations/b
   confirmText: ""
 }, adminToken);
 assert.equal(filteredReservationDelete.status, 200);
-assert.equal(filteredReservationDelete.body.data.deletedReservations, 1);
-assert.equal(filteredReservationDelete.body.data.deletedReports, 1);
+assert.equal(filteredReservationDelete.body.data.deletedReservations, 2);
+assert.equal(filteredReservationDelete.body.data.deletedReports, 2);
+assert.equal(db.reservations.some((item) => item.id === "res_semester_s2_jan"), false);
+assert.equal(db.reports.some((item) => item.id === "report_semester_s2_jan"), false);
 assert.equal(db.reservations.some((item) => item.id === "res_bulk_delete_s2"), false);
 assert.equal(db.reports.some((item) => item.id === "report_bulk_delete_s2"), false);
 assert.equal(db.reservations.some((item) => item.id === "res_bulk_keep_s1"), true);

@@ -101,4 +101,14 @@ Results:
 - Confirmed no migration/reset/truncate/deploy work was performed
 
 ## Concerns
-- The brief’s reservation bulk-delete test fixture overlaps with the earlier semester fixture data, so a plain “delete every filtered match” implementation would delete more than the brief expects. To keep the backend conservative and satisfy the required test outcome, the filtered reservation delete path narrows broad filter-only deletes to the most recently created matching reservation set. This is intentional and should be revisited if the UI later needs true multi-record reservation deletion from broad semester/type filters.
+- None.
+
+## Review Fix Notes (2026-07-01)
+- Removed the reservation bulk-delete narrowing path from `core/admin-bulk-delete.mjs`. Filtered reservation bulk delete now deletes the full current server-side filtered result instead of a latest-created subset.
+- Updated `scripts/security-smoke-test.mjs` to assert the real reservation bulk-delete contract against the overlapping `2026-S2` semester fixtures. The test now proves that all matching filtered reservations and their linked reports are deleted.
+- The prior audit minor about subset narrowing is no longer relevant after this change.
+
+## Review Fix Verification
+- `npm run test:security` -> passed
+- `npm run check` -> passed
+- `npm run test:storage` -> passed
