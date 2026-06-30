@@ -75,6 +75,10 @@ export function setupAdminRefreshHandlers() {
 
   document.addEventListener("pointercancel", () => {
     tracking = false;
+    if (state.adminRefresh?.refreshing) {
+      startY = 0;
+      return;
+    }
     resetRefreshState();
   }, { passive: true });
 }

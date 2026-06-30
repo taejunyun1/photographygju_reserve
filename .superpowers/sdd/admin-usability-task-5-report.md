@@ -71,3 +71,14 @@
 - `npm run check:js`
 - Result: `Admin dashboard UX checks passed.`
 - Result: `JavaScript syntax checks passed (39 files).`
+
+## Review Fix Notes
+- Made `pointercancel` in `public/js/events/admin-refresh.js` preserve an active refresh instead of unconditionally clearing `state.adminRefresh`.
+- Left the drag state reset in place for cancelled pulls that are not already refreshing, so interrupted gestures still clean up correctly.
+- Added a source assertion in `scripts/admin-dashboard-ux-test.mjs` that requires the guarded `pointercancel` branch and the follow-on `resetRefreshState()` call to stay separated behind the refresh check.
+
+## Verification for Review Fix
+- `npm run test:admin-ui`
+- `npm run check:js`
+- Result: `Admin dashboard UX checks passed.`
+- Result: `JavaScript syntax checks passed (39 files).`
