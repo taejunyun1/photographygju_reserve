@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { createNotificationHelpers } from "../core/notifications.mjs";
 import { adminExportData, cleanupExpiredData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const indexHtml = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
@@ -19,70 +18,6 @@ for (const [label, source] of [
 ]) {
   assert.doesNotMatch(source, thirdPartyAnalyticsPattern, `${label} must not reference third-party analytics/tracking resources for App Review`);
 }
-
-const { formatSlackMessage, postSlack } = createNotificationHelpers({
-  id: (scope) => `${scope}_test`,
-  maskPhone: (phone) => phone ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : "-",
-  normalizeStatusLabel: (status) => status === "pending_approval" ? "승인 대기" : status,
-  reservationTitle: (type) => ({
-    equipment: "기자재",
-    studio: "스튜디오",
-    darkroom: "암실",
-    print: "출력"
-  }[type] || "예약"),
-  studioSpaces: (fields = {}) => fields.studioSpaces || [],
-  nowIso: () => "2026-06-30T00:00:00.000Z"
-});
-
-const notificationDb = {
-  users: [{ id: "user_notification", name: "보안테스트학생", phone: "01039546412", studentStatus: "재학생" }],
-  equipment: [{ id: "eq_notification", code: "C-001" }],
-  settings: { adminUrl: "https://photographygju.dothome.co.kr" },
-  slackLogs: []
-};
-
-const slackMessage = formatSlackMessage(notificationDb, "reservation_created", {
-  id: "res_notification",
-  type: "equipment",
-  status: "pending_approval",
-  userId: "user_notification",
-  fields: {
-    reservedDate: "2026-07-06",
-    phone: "01039546412",
-    studentStatus: "재학생",
-    rentalTime: "10:15",
-    returnTime: "12:00",
-    equipmentItemIds: ["eq_notification"]
-  }
-});
-assert.equal(
-  slackMessage,
-  "[기자재 예약 승인 요청]\n예약자: 보안테스트학생 / 010****6412\n신분: 재학생\n사용일: 2026-07-06\n대여시간: 10:15\n반납시간: 12:00\n품목: C-001\n상태: 승인 대기\n상세: https://photographygju.dothome.co.kr/reservations/res_notification"
-);
-
-const slackLog = await postSlack("", notificationDb, "reservation_created", {
-  id: "res_notification",
-  type: "equipment",
-  status: "pending_approval",
-  userId: "user_notification",
-  fields: {
-    reservedDate: "2026-07-06",
-    phone: "01039546412",
-    studentStatus: "재학생",
-    rentalTime: "10:15",
-    returnTime: "12:00",
-    equipmentItemIds: ["eq_notification"]
-  }
-});
-assert.deepEqual(slackLog, {
-  id: "slack_test",
-  event: "reservation_created",
-  status: "skipped",
-  message: slackMessage,
-  createdAt: "2026-06-30T00:00:00.000Z"
-});
-assert.equal(notificationDb.slackLogs.length, 1);
-assert.deepEqual(notificationDb.slackLogs[0], slackLog);
 
 const db = await initialDb("production-admin-password");
 db.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";
@@ -189,6 +124,17 @@ async function api(method, pathname, body = {}, token = "", meta = {}) {
     clientIp: meta.ip || "203.0.113.10",
     userAgent: meta.userAgent || "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36"
   });
+}
+
+async function withMockedRandomUuids(uuids, fn) {
+  const originalRandomUUID = crypto.randomUUID;
+  let index = 0;
+  crypto.randomUUID = () => uuids[Math.min(index++, uuids.length - 1)];
+  try {
+    return await fn();
+  } finally {
+    crypto.randomUUID = originalRandomUUID;
+  }
 }
 
 const adminLogin = await api("POST", "/api/auth/login", {
@@ -482,7 +428,10 @@ assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
 
-const studioReservationForReport = await api("POST", "/api/reservations", {
+const studioReservationForReport = await withMockedRandomUuids([
+  "11111111-2222-3333-4444-555555555555",
+  "66666666-7777-8888-9999-aaaaaaaaaaaa"
+], () => api("POST", "/api/reservations", {
   type: "studio",
   fields: {
     reservedDate: "2026-07-06",
@@ -493,8 +442,18 @@ const studioReservationForReport = await api("POST", "/api/reservations", {
     participants: "보안테스트학생",
     requiredEquipment: "-"
   }
-}, studentLogin.body.data.token);
+}, studentLogin.body.data.token));
 assert.equal(studioReservationForReport.status, 200);
+assert.equal(studioReservationForReport.body.data.id, "res_11111111222233");
+const studioReservationSlackLog = db.slackLogs.at(-1);
+assert.deepEqual(studioReservationSlackLog, {
+  id: "slack_66666666777788",
+  event: "reservation_created",
+  status: "skipped",
+  message: "[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: 2026-07-06\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://photographygju.dothome.co.kr/reservations/res_11111111222233",
+  createdAt: studioReservationSlackLog.createdAt
+});
+assert.match(studioReservationSlackLog.createdAt, /^\d{4}-\d{2}-\d{2}T/);
 
 const rejectedReportUrl = await api("POST", "/api/reports/studio", {
   reservationId: studioReservationForReport.body.data.id,
