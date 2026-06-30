@@ -256,6 +256,7 @@ assert.equal(Array.isArray(pagedReports.body.data.items), true);
 assert.equal(pagedReports.body.data.page, 1);
 assert.equal(pagedReports.body.data.pageSize, 1);
 assert.equal(pagedReports.body.data.total >= 1, true);
+assert.equal(pagedReports.body.data.collectionTotal >= pagedReports.body.data.total, true);
 assert.equal(pagedReports.body.data.hasMore, false);
 assert.equal(pagedReports.body.data.items.length, 1);
 assert.equal(pagedReports.body.data.items[0].id, "report_page_1");
@@ -338,18 +339,21 @@ assert.equal(semesterReservations.status, 200);
 assert.equal(semesterReservations.body.data.items.some((item) => item.id === "res_semester_s2_jan"), true);
 assert.equal(semesterReservations.body.data.items.some((item) => item.id === "res_semester_s1"), false);
 assert.equal(semesterReservations.body.data.semesterOptions.some((item) => item.key === "2026-S2" && item.label === "2026년 2학기"), true);
+assert.equal(semesterReservations.body.data.collectionTotal >= semesterReservations.body.data.total, true);
 
 const semesterReports = await api("GET", "/api/admin/reports?semester=2026-S2&pageSize=200", {}, adminToken);
 assert.equal(semesterReports.status, 200);
 assert.equal(semesterReports.body.data.items.some((item) => item.id === "report_semester_s2_jan"), true);
 assert.equal(semesterReports.body.data.items.some((item) => item.id === "report_semester_s1"), false);
 assert.equal(semesterReports.body.data.semesterOptions.some((item) => item.key === "2026-S2"), true);
+assert.equal(semesterReports.body.data.collectionTotal >= semesterReports.body.data.total, true);
 
 const semesterLectures = await api("GET", "/api/admin/lectures?semester=2026-S1", {}, adminToken);
 assert.equal(semesterLectures.status, 200);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s1"), true);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s2"), false);
 assert.equal(semesterLectures.body.data.semesterOptions.some((item) => item.key === "2026-S1" && item.label === "2026년 1학기"), true);
+assert.equal(semesterLectures.body.data.collectionTotal >= semesterLectures.body.data.total, true);
 
 const fullDeleteWithoutPhrase = await api("DELETE", "/api/admin/reservations/bulk", {
   scope: "all",
@@ -369,6 +373,53 @@ const unsupportedBulkFilterKey = await api("DELETE", "/api/admin/reservations/bu
   confirmText: ""
 }, adminToken);
 assert.equal(unsupportedBulkFilterKey.status, 400);
+
+const bulkCountsBeforeRejectedFiltered = {
+  reservations: db.reservations.length,
+  reports: db.reports.length,
+  lectures: db.lectures.length,
+  notices: db.notices.length
+};
+
+const emptyFilteredReservationDelete = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "filtered",
+  filters: {},
+  confirmText: ""
+}, adminToken);
+assert.equal(emptyFilteredReservationDelete.status, 400);
+
+const allEquivalentReservationDelete = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "filtered",
+  filters: { semester: "all", type: "all", status: "all", q: "" },
+  confirmText: ""
+}, adminToken);
+assert.equal(allEquivalentReservationDelete.status, 400);
+
+const emptyFilteredReportDelete = await api("DELETE", "/api/admin/reports/bulk", {
+  scope: "filtered",
+  filters: {},
+  confirmText: ""
+}, adminToken);
+assert.equal(emptyFilteredReportDelete.status, 400);
+
+const emptyFilteredLectureDelete = await api("DELETE", "/api/admin/lectures/bulk", {
+  scope: "filtered",
+  filters: {},
+  confirmText: ""
+}, adminToken);
+assert.equal(emptyFilteredLectureDelete.status, 400);
+
+const emptyFilteredNoticeDelete = await api("DELETE", "/api/admin/notices/bulk", {
+  scope: "filtered",
+  filters: {},
+  confirmText: ""
+}, adminToken);
+assert.equal(emptyFilteredNoticeDelete.status, 400);
+
+assert.equal(db.reservations.length, bulkCountsBeforeRejectedFiltered.reservations);
+assert.equal(db.reports.length, bulkCountsBeforeRejectedFiltered.reports);
+assert.equal(db.lectures.length, bulkCountsBeforeRejectedFiltered.lectures);
+assert.equal(db.notices.length, bulkCountsBeforeRejectedFiltered.notices);
 
 db.reservations.push(
   {
@@ -433,7 +484,10 @@ assert.equal(lectureDelete.body.data.deletedLectures, 1);
 assert.equal(lectureDelete.body.data.deletedApplications, 1);
 assert.equal(db.lectureApplications.some((item) => item.lectureId === "lecture_bulk_delete"), false);
 
-db.notices.push({ id: "notice_bulk_delete", title: "삭제 공지", category: "일반", body: "삭제 테스트", pinned: false, status: "published", createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z" });
+db.notices.push(
+  { id: "notice_bulk_keep", title: "유지 공지", category: "일반", body: "유지 테스트", pinned: false, status: "published", createdAt: "2026-06-01T00:00:00.000Z", updatedAt: "2026-06-01T00:00:00.000Z" },
+  { id: "notice_bulk_delete", title: "삭제 공지", category: "일반", body: "삭제 테스트", pinned: false, status: "published", createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z" }
+);
 const noticeDelete = await api("DELETE", "/api/admin/notices/bulk", {
   scope: "filtered",
   filters: { q: "삭제 공지" },
@@ -442,6 +496,7 @@ const noticeDelete = await api("DELETE", "/api/admin/notices/bulk", {
 assert.equal(noticeDelete.status, 200);
 assert.equal(noticeDelete.body.data.deletedNotices, 1);
 assert.equal(db.notices.some((item) => item.id === "notice_bulk_delete"), false);
+assert.equal(db.notices.some((item) => item.id === "notice_bulk_keep"), true);
 
 assert.equal(dateToAcademicSemesterKey("2028-02-29"), "2027-S2");
 

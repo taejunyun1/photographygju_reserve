@@ -28,11 +28,22 @@ function selectionFromScope(scope, filters, allItems, filteredItems) {
     : { filters, items: filteredItems };
 }
 
+function assertFilteredDeleteSafe({ scope, filters, allItems, filteredItems, confirmText }) {
+  if (scope !== "filtered") return;
+  if (!Object.keys(filters || {}).length) {
+    throw Object.assign(new Error("현재 필터 결과 삭제는 검색어, 학기, 유형, 상태 등 필터 조건이 있을 때만 실행할 수 있습니다."), { status: 400 });
+  }
+  if (allItems.length > 0 && filteredItems.length === allItems.length && confirmText !== FULL_DELETE_PHRASE) {
+    throw Object.assign(new Error("현재 필터 결과가 전체 데이터와 같습니다. 전체 삭제를 실행하려면 확인 문구를 정확히 입력하세요."), { status: 400 });
+  }
+}
+
 export function deleteAdminReservations(db, { scope, filters = {}, confirmText, admin, filterAdminReservations }) {
   assertBulkScope({ scope, confirmText });
   const safeFilters = allowedFilters(filters, ["q", "type", "status", "semester", "from", "to"]);
   const allItems = filterAdminReservations(db, {});
   const filteredItems = filterAdminReservations(db, safeFilters);
+  assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const reservationIds = new Set(selected.items.map((item) => item.id));
   const reportIds = new Set((db.reports || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));
@@ -58,6 +69,7 @@ export function deleteAdminReports(db, { scope, filters = {}, confirmText, admin
   const safeFilters = allowedFilters(filters, ["q", "type", "semester", "from", "to"]);
   const allItems = filterAdminReports(db, {});
   const filteredItems = filterAdminReports(db, safeFilters);
+  assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const reportIds = new Set(selected.items.map((item) => item.id));
   const resetReservationIds = new Set(selected.items.map((item) => item.reservationId).filter(Boolean));
@@ -90,6 +102,7 @@ export function deleteAdminLectures(db, { scope, filters = {}, confirmText, admi
   const safeFilters = allowedFilters(filters, ["q", "semester", "from", "to"]);
   const allItems = filterAdminLectures(db, {});
   const filteredItems = filterAdminLectures(db, safeFilters);
+  assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const lectureIds = new Set(selected.items.map((item) => item.id));
   const deletedApplications = (db.lectureApplications || []).filter((item) => lectureIds.has(item.lectureId)).length;
@@ -115,6 +128,7 @@ export function deleteAdminNotices(db, { scope, filters = {}, confirmText, admin
   const safeFilters = allowedFilters(filters, ["q", "type", "status", "from", "to"]);
   const allItems = filterAdminNotices(db, {});
   const filteredItems = filterAdminNotices(db, safeFilters);
+  assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const noticeIds = new Set(selected.items.map((item) => item.id));
   db.notices = (db.notices || []).filter((item) => !noticeIds.has(item.id));

@@ -49,30 +49,47 @@ function noticeBulkFilterLabel() {
   return String(state.adminNoticeSearch || "").trim() ? "현재 검색 결과" : "전체 공지";
 }
 
+function pageTotal(page, fallback = 0) {
+  return Number(page?.total ?? fallback ?? 0);
+}
+
+function pageCollectionTotal(page, fallback = 0) {
+  return Number(page?.collectionTotal ?? page?.total ?? fallback ?? 0);
+}
+
+function effectiveBulkFilters(filters = {}) {
+  return Object.fromEntries(Object.entries(filters || {}).filter(([, value]) => value !== undefined && value !== null && value !== "" && value !== "all"));
+}
+
 function currentBulkDeleteConfig(kind, scope) {
   if (kind === "reservations") {
     const query = String(state.adminReservationSearch || "").trim();
+    const page = state.adminReservationsPage || {};
+    const filters = {
+      semester: state.adminReservationSemesterFilter,
+      q: query,
+      type: query ? "" : state.adminReservationTab,
+      status: !query && state.adminReservationTab === "equipment" ? state.adminEquipmentReservationStatusFilter : ""
+    };
     return {
       path: "/api/admin/reservations/bulk",
       pageKey: "adminReservationsPage",
       totalCount: scope === "all"
-        ? Number(state.adminReservationsPage?.total || state.adminReservations.length || 0)
-        : Number(state.adminReservationsPage?.total || state.adminReservations.length || 0),
+        ? pageCollectionTotal(page, state.adminReservations.length)
+        : pageTotal(page, state.adminReservations.length),
+      collectionTotal: pageCollectionTotal(page, state.adminReservations.length),
       filterLabel: reservationBulkFilterLabel(),
-      filters: {
-        semester: state.adminReservationSemesterFilter,
-        q: query,
-        type: query ? "" : state.adminReservationTab,
-        status: !query && state.adminReservationTab === "equipment" ? state.adminEquipmentReservationStatusFilter : ""
-      },
+      filters,
       toastMessage: (result) => `예약 ${result.deletedReservations}건과 연결 보고서 ${result.deletedReports}건을 삭제했습니다.`
     };
   }
   if (kind === "reports") {
+    const page = state.adminReportsPage || {};
     return {
       path: "/api/admin/reports/bulk",
       pageKey: "adminReportsPage",
-      totalCount: Number(state.adminReportsPage?.total || state.adminReports.length || 0),
+      totalCount: scope === "all" ? pageCollectionTotal(page, state.adminReports.length) : pageTotal(page, state.adminReports.length),
+      collectionTotal: pageCollectionTotal(page, state.adminReports.length),
       filterLabel: reportBulkFilterLabel(),
       filters: {
         semester: state.adminReportSemesterFilter,
@@ -82,10 +99,12 @@ function currentBulkDeleteConfig(kind, scope) {
     };
   }
   if (kind === "lectures") {
+    const page = state.adminLecturesPage || {};
     return {
       path: "/api/admin/lectures/bulk",
       pageKey: "adminLecturesPage",
-      totalCount: Number(state.adminLecturesPage?.total || state.adminLectures.length || 0),
+      totalCount: scope === "all" ? pageCollectionTotal(page, state.adminLectures.length) : pageTotal(page, state.adminLectures.length),
+      collectionTotal: pageCollectionTotal(page, state.adminLectures.length),
       filterLabel: lectureBulkFilterLabel(),
       filters: {
         semester: state.adminLectureSemesterFilter,
@@ -95,10 +114,12 @@ function currentBulkDeleteConfig(kind, scope) {
     };
   }
   if (kind === "notices") {
+    const page = state.adminNoticesPage || {};
     return {
       path: "/api/admin/notices/bulk",
       pageKey: "adminNoticesPage",
-      totalCount: Number(state.adminNoticesPage?.total || state.adminNotices.length || 0),
+      totalCount: scope === "all" ? pageCollectionTotal(page, state.adminNotices.length) : pageTotal(page, state.adminNotices.length),
+      collectionTotal: pageCollectionTotal(page, state.adminNotices.length),
       filterLabel: noticeBulkFilterLabel(),
       filters: { q: String(state.adminNoticeSearch || "").trim() },
       toastMessage: (result) => `공지 ${result.deletedNotices}건을 삭제했습니다.`
@@ -292,10 +313,20 @@ export function setupAdminFlowClickHandlers() {
       }
       if (target.dataset.adminBulkDelete) {
         const [kind = "", scope = "filtered"] = String(target.dataset.adminBulkDelete || "").split(":");
+        await refreshAdminDataPreservingScroll();
         const config = currentBulkDeleteConfig(kind, scope);
         if (!config) return;
+        const effectiveFilters = effectiveBulkFilters(config.filters);
+        if (scope === "filtered" && !Object.keys(effectiveFilters).length) {
+          toast("검색어, 학기, 유형, 상태 등 필터 조건을 먼저 선택하세요.", { preserveScroll: true });
+          return;
+        }
         if (!config.totalCount) {
-          toast("삭제할 항목이 없습니다.");
+          toast("삭제할 항목이 없습니다.", { preserveScroll: true });
+          return;
+        }
+        if (scope === "filtered" && config.collectionTotal > 0 && config.totalCount === config.collectionTotal) {
+          toast("현재 필터 결과가 전체 데이터와 같습니다. 전체 삭제 버튼을 사용하세요.", { preserveScroll: true });
           return;
         }
         let confirmText = "";
@@ -304,7 +335,7 @@ export function setupAdminFlowClickHandlers() {
           if (input === null) return;
           confirmText = input.trim();
           if (confirmText !== FULL_DELETE_CONFIRM_TEXT) {
-            toast("전체 삭제를 취소했습니다.");
+            toast("전체 삭제를 취소했습니다.", { preserveScroll: true });
             return;
           }
         } else if (!confirm(`${config.filterLabel} 기준 ${config.totalCount}건을 삭제할까요?\n되돌릴 수 없습니다.`)) {

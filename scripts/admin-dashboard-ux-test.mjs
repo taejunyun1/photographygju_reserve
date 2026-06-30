@@ -212,7 +212,9 @@ assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status 
 assert(!lecturesView.includes("<div><span>진행상태</span><strong>모집중</strong></div>"), "admin lecture status must not render as a large strong meta value");
 assert(lecturesView.includes('data-admin-lecture-semester="all"'), "lectures must render all-semester filter");
 assert(lecturesView.includes('data-admin-bulk-delete="lectures:filtered"'), "lectures must expose filtered bulk delete");
+assert.match(lecturesView, /data-admin-bulk-delete="lectures:filtered"[^>]*disabled/, "lectures filtered bulk delete must be disabled when no effective filter is active");
 assert(noticesView.includes('data-admin-bulk-delete="notices:filtered"'), "notices must expose filtered bulk delete");
+assert.match(noticesView, /data-admin-bulk-delete="notices:filtered"[^>]*disabled/, "notices filtered bulk delete must be disabled when no search filter is active");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
@@ -337,6 +339,9 @@ assert(dataSource.includes("function adminNoticesPath()"), "notice admin data mu
 assert(dataSource.includes("q: state.adminNoticeSearch"), "notice admin data path must forward the notice search query");
 assert(dataSource.includes("api(adminNoticesPath())"), "notice admin data load must use the query-aware notices path");
 assert(dataSource.includes("adminNotices: pagedItems(notices)"), "notice admin data must support paged notice payloads");
+assert(dataSource.includes("collectionTotal"), "admin list page metadata must preserve unfiltered collection totals for guarded full delete");
+assert(adminEventSource.includes("effectiveBulkFilters"), "bulk delete click handler must reject all-equivalent filtered deletes before API calls");
+assert(adminEventSource.includes("현재 필터 결과가 전체 데이터와 같습니다"), "bulk delete click handler must stop filtered deletes that equal full collection");
 
 const resStatusStart = eventSource.indexOf("if (target.dataset.resStatus)");
 const resStatusEnd = eventSource.indexOf("if (target.dataset.equipmentStatusAction)", resStatusStart);

@@ -35,9 +35,10 @@ function pagedItems(result) {
 
 function pageMeta(result) {
   return Array.isArray(result)
-    ? { total: result.length, page: 1, pageSize: result.length, hasMore: false }
+    ? { total: result.length, collectionTotal: result.length, page: 1, pageSize: result.length, hasMore: false }
     : {
       total: Number(result?.total || 0),
+      collectionTotal: Number(result?.collectionTotal ?? result?.total ?? 0),
       page: Number(result?.page || 1),
       pageSize: Number(result?.pageSize || 0),
       hasMore: Boolean(result?.hasMore)

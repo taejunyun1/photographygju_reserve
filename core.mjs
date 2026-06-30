@@ -2247,7 +2247,17 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
         requireAdmin(authorization, db);
-        if (hasListQuery(searchParams)) return ok(filterAdminNotices(db, Object.fromEntries(searchParams.entries())).items);
+        if (hasListQuery(searchParams)) {
+          const { items, collectionTotal } = filterAdminNotices(db, Object.fromEntries(searchParams.entries()));
+          return ok({
+            items,
+            total: items.length,
+            page: 1,
+            pageSize: items.length,
+            hasMore: false,
+            collectionTotal
+          });
+        }
         return ok(db.notices);
       }
 

@@ -147,18 +147,41 @@ function semesterTabs(options = [], active = "all", dataset = "") {
   return tabs(items, { active, dataset, className: "wrap admin-semester-tabs", ariaLabel: "학기 필터" });
 }
 
-function bulkDeletePanel(kind, filteredCount, totalCount, filterLabel) {
+function adminCollectionTotal(page, fallback = 0) {
+  if (page?.collectionTotal !== undefined && page?.collectionTotal !== null) return Number(page.collectionTotal || 0);
+  return Number(page?.total || fallback || 0);
+}
+
+function bulkDeletePanel(kind, filteredCount, totalCount, filterLabel, options = {}) {
   const count = Math.max(0, Number(filteredCount || 0));
   const total = Math.max(0, Number(totalCount || 0));
+  const filteredEnabled = Boolean(options.filteredEnabled) && count !== total;
   return `
     <div class="bulk-danger-zone">
       <span class="muted">${escapeHtml(filterLabel)}</span>
       <div class="row-actions">
-        <button class="button danger compact" type="button" data-admin-bulk-delete="${kind}:filtered" ${count ? "" : "disabled"}>${icon("trash")}현재 필터 결과 삭제</button>
+        <button class="button danger compact" type="button" data-admin-bulk-delete="${kind}:filtered" ${filteredEnabled && count ? "" : "disabled"}>${icon("trash")}현재 필터 결과 삭제</button>
         <button class="button ghost danger compact" type="button" data-admin-bulk-delete="${kind}:all" ${total ? "" : "disabled"}>${icon("trash")}전체 삭제</button>
       </div>
     </div>
   `;
+}
+
+function activeReservationBulkFilter(query) {
+  return Boolean(
+    query ||
+    state.adminReservationSemesterFilter !== "all" ||
+    state.adminReservationTab !== "all" ||
+    (state.adminReservationTab === "equipment" && state.adminEquipmentReservationStatusFilter !== "all")
+  );
+}
+
+function activeReportBulkFilter(query) {
+  return Boolean(query || state.adminReportSemesterFilter !== "all");
+}
+
+function activeLectureBulkFilter(query) {
+  return Boolean(query || state.adminLectureSemesterFilter !== "all");
 }
 
 function activeSemesterLabel(options = [], active = "all") {
@@ -697,7 +720,7 @@ export function adminReservationsView() {
     ? state.adminReservations.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
     : statusFilteredReservations.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   const reservationSemesterControls = semesterTabs(state.adminReservationSemesters, state.adminReservationSemesterFilter, "admin-reservation-semester");
-  const reservationTotal = Number(state.adminReservationsPage?.total || state.adminReservations.length || 0);
+  const reservationTotal = adminCollectionTotal(state.adminReservationsPage, state.adminReservations.length);
   const currentReservationTab = query ? "all" : state.adminReservationTab;
   const currentEquipmentStatusFilter = query ? "all" : equipmentStatusFilter;
   return `
@@ -716,7 +739,7 @@ export function adminReservationsView() {
           label
         })), { active: currentEquipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
       ` : ""}
-      ${bulkDeletePanel("reservations", reservations.length, reservationTotal, reservationBulkFilterLabel(query, reservations.length))}
+      ${bulkDeletePanel("reservations", reservations.length, reservationTotal, reservationBulkFilterLabel(query, reservations.length), { filteredEnabled: activeReservationBulkFilter(query) })}
       ${adminPageScopeNote(state.adminReservationsPage, state.adminReservations.length, reservations.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${Number(state.adminReservationsPage?.total || reservations.length || 0)}건 · 현재 표시 ${reservations.length}건</p>` : ""}
       <div class="admin-reservation-grid">
@@ -986,13 +1009,13 @@ export function adminReportsView() {
     label: state.adminReportSort.field === key ? `${label} ${sortDirection}` : label
   }));
   const reportSemesterControls = semesterTabs(state.adminReportSemesters, state.adminReportSemesterFilter, "admin-report-semester");
-  const reportTotal = Number(state.adminReportsPage?.total || state.adminReports.length || 0);
+  const reportTotal = adminCollectionTotal(state.adminReportsPage, state.adminReports.length);
   return `
     <section class="grid">
       ${searchField({ value: state.adminReportSearch || "", placeholder: "전체 검색 (이름·학번·날짜·스튜디오·예약ID)", dataset: "data-admin-report-search" })}
       ${reportSemesterControls}
       ${tabs(reportSortOptions, { active: state.adminReportSort.field, dataset: "admin-report-sort", ariaLabel: "보고서 정렬" })}
-      ${bulkDeletePanel("reports", reports.length, reportTotal, reportBulkFilterLabel(query, reports.length))}
+      ${bulkDeletePanel("reports", reports.length, reportTotal, reportBulkFilterLabel(query, reports.length), { filteredEnabled: activeReportBulkFilter(query) })}
       ${adminPageScopeNote(state.adminReportsPage, state.adminReports.length, reports.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReportSearch)}" 검색 결과 ${Number(state.adminReportsPage?.total || reports.length || 0)}건 · 현재 표시 ${reports.length}건</p>` : ""}
       ${reports.length ? reports.map((report) => `
@@ -1092,7 +1115,7 @@ export function adminLecturesView() {
   const lectures = state.adminLectures || [];
   const panelTab = editing ? "add" : (state.adminLecturePanelTab || "list");
   const lectureSemesterControls = semesterTabs(state.adminLectureSemesters, state.adminLectureSemesterFilter, "admin-lecture-semester");
-  const lectureTotal = Number(state.adminLecturesPage?.total || state.adminLectures.length || 0);
+  const lectureTotal = adminCollectionTotal(state.adminLecturesPage, state.adminLectures.length);
   return `
     <section class="grid">
       <div class="admin-inner-tabs" role="tablist" aria-label="비교과 특강 관리 탭">
@@ -1112,7 +1135,7 @@ export function adminLecturesView() {
         <div class="list-control-panel compact">
           ${searchField({ value: state.adminLectureSearch || "", placeholder: "날짜·특강명·강사·장소·신청자 검색", dataset: "data-admin-lecture-search", label: "특강 검색" })}
           ${lectureSemesterControls}
-          ${bulkDeletePanel("lectures", lectures.length, lectureTotal, lectureBulkFilterLabel(query, lectures.length))}
+          ${bulkDeletePanel("lectures", lectures.length, lectureTotal, lectureBulkFilterLabel(query, lectures.length), { filteredEnabled: activeLectureBulkFilter(query) })}
         </div>
         ${query ? `<p class="muted">"${escapeHtml(state.adminLectureSearch)}" 검색 결과 ${lectures.length}건</p>` : ""}
         ${lectures.length ? adminLectureTable(lectures) : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 비교과 특강이 없습니다.", body: query ? "검색어를 지우면 전체 특강을 볼 수 있습니다." : "" })}
@@ -1174,7 +1197,7 @@ export function adminLectureTable(lectures) {
 export function adminNoticesView() {
   const query = normalizeSearchText(state.adminNoticeSearch).trim();
   const notices = state.adminNotices || [];
-  const noticeTotal = Number(state.adminNoticesPage?.total || notices.length || 0);
+  const noticeTotal = adminCollectionTotal(state.adminNoticesPage, notices.length);
   return `
     <section class="grid">
       <div class="card">
@@ -1191,7 +1214,7 @@ export function adminNoticesView() {
       <div class="list-control-panel">
         ${searchField({ value: state.adminNoticeSearch || "", placeholder: "제목·분류·본문 검색", dataset: "data-admin-notice-search", label: "공지 검색" })}
       </div>
-      ${bulkDeletePanel("notices", notices.length, noticeTotal, query ? `현재 검색 결과 ${notices.length}건` : `전체 공지 ${notices.length}건`)}
+      ${bulkDeletePanel("notices", notices.length, noticeTotal, query ? `현재 검색 결과 ${notices.length}건` : `전체 공지 ${notices.length}건`, { filteredEnabled: Boolean(query) })}
       ${query ? `<p class="muted">"${escapeHtml(state.adminNoticeSearch)}" 검색 결과 ${notices.length}건</p>` : ""}
       ${notices.length ? notices.map(noticeCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 공지사항이 없습니다.", body: query ? "검색어를 지우면 전체 공지를 볼 수 있습니다." : "" })}
       ${adminGuide("공지사항 사용 가이드", "비교과, 특강, 장비/시설 안내를 학생 화면에 공지합니다. 중요한 내용은 상단 고정으로 설정하고, 신청은 Slack 링크나 외부 링크를 넣으면 됩니다.")}

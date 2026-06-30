@@ -96,13 +96,13 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
         equipmentItems: item.equipmentItems
       }).includes(params.q))
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-    return { items, semesterOptions };
+    return { items, semesterOptions, collectionTotal: source.length };
   }
 
   function adminReservationList(db, searchParams) {
     const params = listParams(searchParams, 100);
-    const { items, semesterOptions } = filterReservations(db, params);
-    return paginate(items, params, { semesterOptions });
+    const { items, semesterOptions, collectionTotal } = filterReservations(db, params);
+    return paginate(items, params, { semesterOptions, collectionTotal });
   }
 
   function filterReports(db, params) {
@@ -120,13 +120,13 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
         user: item.user
       }).includes(params.q))
       .sort((a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")));
-    return { items, semesterOptions };
+    return { items, semesterOptions, collectionTotal: source.length };
   }
 
   function adminReportList(db, searchParams) {
     const params = listParams(searchParams, 100);
-    const { items, semesterOptions } = filterReports(db, params);
-    return paginate(items, params, { semesterOptions });
+    const { items, semesterOptions, collectionTotal } = filterReports(db, params);
+    return paginate(items, params, { semesterOptions, collectionTotal });
   }
 
   function filterLectures(db, params) {
@@ -137,17 +137,18 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
       .filter((item) => dateInRange(item.lectureDate || "", params.from, params.to))
       .filter((item) => !params.q || searchableRecord(item).includes(params.q))
       .sort((a, b) => String(a.lectureDate || "").localeCompare(String(b.lectureDate || "")));
-    return { items, semesterOptions };
+    return { items, semesterOptions, collectionTotal: source.length };
   }
 
   function adminLectureList(db, searchParams) {
     const params = listParams(searchParams, 100);
-    const { items, semesterOptions } = filterLectures(db, params);
-    return paginate(items, params, { semesterOptions });
+    const { items, semesterOptions, collectionTotal } = filterLectures(db, params);
+    return paginate(items, params, { semesterOptions, collectionTotal });
   }
 
   function filterNotices(db, params) {
-    const items = (db.notices || [])
+    const source = db.notices || [];
+    const items = source
       .filter((item) => !params.type || item.category === params.type)
       .filter((item) => !params.status || item.status === params.status)
       .filter((item) => dateInRange(String(item.createdAt || "").slice(0, 10), params.from, params.to))
@@ -159,7 +160,7 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
         createdAt: item.createdAt
       }).includes(params.q))
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-    return { items };
+    return { items, collectionTotal: source.length };
   }
 
   function adminUserList(db, searchParams) {
