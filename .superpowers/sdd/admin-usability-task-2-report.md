@@ -112,3 +112,12 @@ Results:
 - `npm run test:security` -> passed
 - `npm run check` -> passed
 - `npm run test:storage` -> passed
+
+## Review Fix Notes (2026-07-01)
+- Added smoke-test coverage for the bulk delete request guardrails that were already enforced in production:
+  - invalid `scope` now has an explicit `400` assertion
+  - unsupported delete filter keys now have an explicit `400` assertion
+- Kept the change limited to `scripts/security-smoke-test.mjs`; no production code changes were needed.
+
+## Review Fix Verification (2026-07-01)
+- `npm run test:security` -> passed

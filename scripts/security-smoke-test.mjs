@@ -357,6 +357,19 @@ const fullDeleteWithoutPhrase = await api("DELETE", "/api/admin/reservations/bul
 }, adminToken);
 assert.equal(fullDeleteWithoutPhrase.status, 400);
 
+const invalidBulkScope = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "everything",
+  confirmText: ""
+}, adminToken);
+assert.equal(invalidBulkScope.status, 400);
+
+const unsupportedBulkFilterKey = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "filtered",
+  filters: { semester: "2026-S2", unexpected: "value" },
+  confirmText: ""
+}, adminToken);
+assert.equal(unsupportedBulkFilterKey.status, 400);
+
 db.reservations.push(
   {
     id: "res_bulk_keep_s1",
