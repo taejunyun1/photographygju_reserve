@@ -30,7 +30,22 @@ const { state } = await import("../public/js/state.js?v=20260627-admin-lecture-n
 const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260627-admin-lecture-nav");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
-const eventSource = fs.readFileSync("public/js/events.js", "utf8");
+function readEventSource() {
+  return [
+    "public/js/events.js",
+    "public/js/events/shared.js",
+    "public/js/events/search.js",
+    "public/js/events/student-flow.js",
+    "public/js/events/reservation-inputs.js",
+    "public/js/events/admin-flow.js",
+    "public/js/events/forms.js"
+  ]
+    .filter((file) => fs.existsSync(file))
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
+}
+
+const eventSource = readEventSource();
 const styleSource = fs.readFileSync("public/styles.css", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 
@@ -80,6 +95,27 @@ function handlerBlock(source, startToken, endToken) {
   return source.slice(start, end);
 }
 
+function ifBlock(source, startToken) {
+  const start = source.indexOf(startToken);
+  assert(start !== -1, `${startToken} handler must exist`);
+  const braceStart = source.indexOf("{", start);
+  assert(braceStart !== -1, `${startToken} handler must open a block`);
+
+  let depth = 0;
+  for (let index = braceStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 1);
+      }
+    }
+  }
+
+  throw new Error(`${startToken} handler must close its block`);
+}
+
 for (const [startToken, endToken] of [
   ['if (target.dataset.studentView)', 'if (target.dataset.reserveShortcut)'],
   ['if (target.dataset.reserveShortcut)', 'if (target.dataset.reserveType)'],
@@ -93,12 +129,20 @@ for (const [startToken, endToken] of [
   ['if (target.name === "printTimeSlot")', 'if (target.name === "printTypes")'],
   ['if (target.name === "printTypes")', 'if (target.name === "papers")'],
   ['if (target.name === "papers")', 'if (target.name === "sizes")'],
-  ['if (target.name === "sizes")', 'if (["period", "rentalTime", "returnTime"].includes(target.name)'],
-  ['if (target.dataset.myReservationCategory)', 'if (target.dataset.adminView)']
+  ['if (target.name === "sizes")', 'if (["period", "rentalTime", "returnTime"].includes(target.name)']
 ]) {
   const block = handlerBlock(eventSource, startToken, endToken);
   assert(block.includes("renderPreservingScroll();"), `${startToken} must preserve scroll position`);
   assert(!block.includes("renderAtTop();"), `${startToken} must not reset to the top`);
+}
+
+for (const token of [
+  'if (target.dataset.myReservationCategory)',
+  'if (target.dataset.adminView)'
+]) {
+  const block = ifBlock(eventSource, token);
+  assert(block.includes("renderPreservingScroll();"), `${token} must preserve scroll position`);
+  assert(!block.includes("renderAtTop();"), `${token} must not reset to the top`);
 }
 
 assert(eventSource.includes("renderPreservingScroll();\n}"), "reservation flow step changes must preserve scroll");

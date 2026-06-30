@@ -81,7 +81,22 @@ const metrics = adminDashboardMetrics();
 const notifications = plannedAdminNotifications(new Date("2026-06-26T08:00:00.000Z"));
 const css = fs.readFileSync("public/styles.css", "utf8");
 const coreSource = fs.readFileSync("core.mjs", "utf8");
-const eventSource = fs.readFileSync("public/js/events.js", "utf8");
+function readEventSource() {
+  return [
+    "public/js/events.js",
+    "public/js/events/shared.js",
+    "public/js/events/search.js",
+    "public/js/events/student-flow.js",
+    "public/js/events/reservation-inputs.js",
+    "public/js/events/admin-flow.js",
+    "public/js/events/forms.js"
+  ]
+    .filter((file) => fs.existsSync(file))
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
+}
+
+const eventSource = readEventSource();
 
 function cssRule(selector) {
   const start = css.indexOf(`${selector} {`);
