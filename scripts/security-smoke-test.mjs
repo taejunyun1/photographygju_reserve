@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { adminExportData, cleanupExpiredData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
+import { dateToAcademicSemesterKey } from "../core/academic-semester.mjs";
 
 const indexHtml = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const htaccess = fs.readFileSync(new URL("../public/.htaccess", import.meta.url), "utf8");
@@ -286,6 +287,16 @@ db.reservations.push(
   }
 );
 db.reports.push({
+  id: "report_semester_s1",
+  type: "studio",
+  reservationId: "res_semester_s1",
+  userId: "user_admin",
+  fields: { actualTime: "10:30-12:00", participants: "1" },
+  htmlSnapshot: "<article>semester-s1</article>",
+  submittedAt: "2026-03-10T05:00:00.000Z",
+  expiresAt: "2026-09-10T00:00:00.000Z"
+});
+db.reports.push({
   id: "report_semester_s2_jan",
   type: "studio",
   reservationId: "res_semester_s2_jan",
@@ -331,6 +342,7 @@ assert.equal(semesterReservations.body.data.semesterOptions.some((item) => item.
 const semesterReports = await api("GET", "/api/admin/reports?semester=2026-S2&pageSize=200", {}, adminToken);
 assert.equal(semesterReports.status, 200);
 assert.equal(semesterReports.body.data.items.some((item) => item.id === "report_semester_s2_jan"), true);
+assert.equal(semesterReports.body.data.items.some((item) => item.id === "report_semester_s1"), false);
 assert.equal(semesterReports.body.data.semesterOptions.some((item) => item.key === "2026-S2"), true);
 
 const semesterLectures = await api("GET", "/api/admin/lectures?semester=2026-S1", {}, adminToken);
@@ -338,6 +350,7 @@ assert.equal(semesterLectures.status, 200);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s1"), true);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s2"), false);
 assert.equal(semesterLectures.body.data.semesterOptions.some((item) => item.key === "2026-S1" && item.label === "2026년 1학기"), true);
+assert.equal(dateToAcademicSemesterKey("2028-02-29"), "2027-S2");
 
 const removedTaLogin = await api("POST", "/api/auth/login", {
   loginId: "ta",

@@ -108,3 +108,20 @@ git status --short
 ## Concerns
 
 - None at implementation time. The helper exports `academicSemesterRange` exactly as specified in the brief even though this task does not currently consume it.
+
+## Follow-up Fix
+
+Date: 2026-07-01
+
+Addressed the review notes by extending `scripts/security-smoke-test.mjs` only:
+
+- Added a negative assertion for `/api/admin/reports?semester=2026-S2` to prove non-matching semester reports are filtered out, matching the existing reservation and lecture coverage pattern.
+- Added a focused leap-year assertion that `dateToAcademicSemesterKey("2028-02-29")` returns `2027-S2`.
+
+Verification:
+
+```bash
+npm run test:security
+```
+
+Result: PASS
