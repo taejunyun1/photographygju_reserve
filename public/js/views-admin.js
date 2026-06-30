@@ -64,6 +64,7 @@ export function adminShell() {
         </nav>
       </aside>
       <section class="admin-main">
+        ${adminRefreshIndicator()}
         <header class="admin-mobile-header">
           <div class="appbar-brand">
             <div class="brand-mark">G</div>
@@ -92,6 +93,13 @@ export function adminShell() {
       ${adminQueueBottomSheet()}
     </main>
   `;
+}
+
+function adminRefreshIndicator() {
+  const refresh = state.adminRefresh || {};
+  const visible = refresh.pulling || refresh.refreshing;
+  const distance = Math.min(96, Math.max(0, Number(refresh.distance || 0)));
+  return `<div class="admin-refresh-indicator ${visible ? "visible" : ""} ${refresh.refreshing ? "refreshing" : ""}" style="transform: translateY(${distance ? Math.round(distance / 3) : 0}px)"><span>${escapeHtml(refresh.message || "당겨서 새로고침")}</span></div>`;
 }
 
 export function adminTitle() {

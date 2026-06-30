@@ -106,6 +106,7 @@ const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
 const adminEventSource = [
   "public/js/events/shared.js",
   "public/js/events/scroll-state.js",
+  "public/js/events/admin-refresh.js",
   "public/js/events/admin-flow.js",
   "public/js/events/forms.js"
 ]
@@ -117,6 +118,7 @@ function readEventSource() {
     "public/js/events.js",
     "public/js/events/shared.js",
     "public/js/events/scroll-state.js",
+    "public/js/events/admin-refresh.js",
     "public/js/events/search.js",
     "public/js/events/student-flow.js",
     "public/js/events/reservation-inputs.js",
@@ -163,6 +165,7 @@ assert(dashboard.includes('admin-action-card tone-yellow'), "dashboard checked-o
 assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "operations queue click must render a bottom sheet");
 assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
 assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
+assert(adminShell().includes("admin-refresh-indicator"), "Admin shell must render pull-to-refresh indicator");
 assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
 assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
 assert(!dashboard.includes("승인 완료"), "equipment dashboard must not show legacy approval status");
@@ -222,6 +225,7 @@ assert(css.includes(".admin-queue-sheet-grid"), "operations queue sheet trigger 
 assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet list styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
+assert(css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must exist");
 assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
@@ -234,6 +238,8 @@ assert(rendererSource.includes("options.preserveScroll"), "toast must support pr
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
 assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
+assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler must be wired through events facade");
+assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");

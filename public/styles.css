@@ -3238,6 +3238,32 @@ details.inquiry-equipment-step {
   max-width: 1440px;
 }
 
+.admin-refresh-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.admin-refresh-indicator.visible {
+  height: 36px;
+  opacity: 1;
+}
+
+.admin-refresh-indicator span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 10px;
+  box-shadow: var(--shadow-sm);
+}
+
 .admin-header {
   display: flex;
   justify-content: space-between;
