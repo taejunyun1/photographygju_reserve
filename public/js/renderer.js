@@ -2,6 +2,7 @@ import { $app, state } from "./state.js?v=20260627-admin-lecture-nav";
 import { escapeHtml } from "./utils.js?v=20260627-admin-lecture-nav";
 import { adminShell } from "./views-admin.js?v=20260627-admin-lecture-nav";
 import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260627-admin-lecture-nav";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260627-admin-lecture-nav";
 
 document.addEventListener("gju-loading-change", () => render());
 
@@ -28,13 +29,17 @@ export function render() {
 
 let toastTimer = null;
 
-export function toast(message) {
+export function toast(message, options = {}) {
   if (toastTimer) clearTimeout(toastTimer);
+  const scrollState = options.preserveScroll ? captureScrollState() : null;
   state.toast = message;
   render();
+  if (scrollState) restoreScrollState(scrollState);
   toastTimer = setTimeout(() => {
+    const hideScrollState = options.preserveScroll ? captureScrollState() : null;
     state.toast = "";
     toastTimer = null;
     render();
+    if (hideScrollState) restoreScrollState(hideScrollState);
   }, 2600);
 }

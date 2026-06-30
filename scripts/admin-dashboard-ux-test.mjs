@@ -101,10 +101,21 @@ const viewsSource = fs.readFileSync("public/js/views-admin.js", "utf8");
 const coreSource = fs.readFileSync("core.mjs", "utf8");
 const dataSource = fs.readFileSync("public/js/data.js", "utf8");
 const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
+const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
+const adminEventSource = [
+  "public/js/events/shared.js",
+  "public/js/events/scroll-state.js",
+  "public/js/events/admin-flow.js",
+  "public/js/events/forms.js"
+]
+  .filter((file) => fs.existsSync(file))
+  .map((file) => fs.readFileSync(file, "utf8"))
+  .join("\n");
 function readEventSource() {
   return [
     "public/js/events.js",
     "public/js/events/shared.js",
+    "public/js/events/scroll-state.js",
     "public/js/events/search.js",
     "public/js/events/student-flow.js",
     "public/js/events/reservation-inputs.js",
@@ -217,9 +228,13 @@ assert(!primaryButtonRule.includes("inset"), "primary button must not use an ins
 
 assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary must use the Seoul calendar day, not UTC");
 assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
+assert(rendererSource.includes("export function toast(message, options = {})"), "toast must accept options");
+assert(rendererSource.includes("options.preserveScroll"), "toast must support preserveScroll");
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
 assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
+assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
+assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
 assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");

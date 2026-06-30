@@ -8,7 +8,12 @@ import {
 } from "../admin-equipment.js?v=20260627-admin-lecture-nav";
 import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
 import { formData, parseCsv } from "../utils.js?v=20260627-admin-lecture-nav";
-import { renderPreservingScroll, resetAdminPage, setAdminPage } from "./shared.js?v=20260627-admin-lecture-nav";
+import {
+  refreshAdminDataPreservingScroll,
+  renderPreservingScroll,
+  resetAdminPage,
+  setAdminPage
+} from "./shared.js?v=20260627-admin-lecture-nav";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 
@@ -101,18 +106,17 @@ function currentBulkDeleteConfig(kind, scope) {
   return null;
 }
 
-async function refreshAdminDataPreservingScroll(pageKey = "") {
-  await loadAdminData();
+async function refreshAdminPagePreservingScroll(pageKey = "", options = {}) {
+  await refreshAdminDataPreservingScroll(options);
   if (pageKey) {
     const page = state[pageKey] || {};
     const pageSize = Math.max(1, Number(page.pageSize || 0) || 100);
     const totalPages = Math.max(1, Math.ceil(Number(page.total || 0) / pageSize));
     if (Number(page.page || 1) > totalPages) {
       setAdminPage(pageKey, totalPages);
-      await loadAdminData();
+      await refreshAdminDataPreservingScroll(options);
     }
   }
-  renderPreservingScroll();
 }
 
 export function setupAdminFlowClickHandlers() {
@@ -148,9 +152,8 @@ export function setupAdminFlowClickHandlers() {
       if (target.dataset.action === "admin-cleanup") {
         if (!confirm("만료된 세션을 삭제하고 오래된 개인정보/보고서 HTML을 정리할까요?")) return;
         const result = await api("/api/admin/maintenance/cleanup", { method: "POST" });
-        await loadAdminData();
-        toast(`정리 완료: 예약 익명화 ${result.anonymizedReservations}건, 보고서 HTML 삭제 ${result.deletedReportHtmlSnapshots}건, 세션 삭제 ${result.deletedExpiredSessions}건`);
-        render();
+        await refreshAdminDataPreservingScroll();
+        toast(`정리 완료: 예약 익명화 ${result.anonymizedReservations}건, 보고서 HTML 삭제 ${result.deletedReportHtmlSnapshots}건, 세션 삭제 ${result.deletedExpiredSessions}건`, { preserveScroll: true });
         return;
       }
       if (target.dataset.adminView) {
@@ -184,19 +187,19 @@ export function setupAdminFlowClickHandlers() {
       if (target.dataset.adminReservationSemester !== undefined) {
         state.adminReservationSemesterFilter = target.dataset.adminReservationSemester;
         resetAdminPage("adminReservationsPage");
-        await refreshAdminDataPreservingScroll("adminReservationsPage");
+        await refreshAdminPagePreservingScroll("adminReservationsPage");
         return;
       }
       if (target.dataset.adminReportSemester !== undefined) {
         state.adminReportSemesterFilter = target.dataset.adminReportSemester;
         resetAdminPage("adminReportsPage");
-        await refreshAdminDataPreservingScroll("adminReportsPage");
+        await refreshAdminPagePreservingScroll("adminReportsPage");
         return;
       }
       if (target.dataset.adminLectureSemester !== undefined) {
         state.adminLectureSemesterFilter = target.dataset.adminLectureSemester;
         resetAdminPage("adminLecturesPage");
-        await refreshAdminDataPreservingScroll("adminLecturesPage");
+        await refreshAdminPagePreservingScroll("adminLecturesPage");
         return;
       }
       if (target.dataset.adminUserStatusFilter) {
@@ -263,8 +266,8 @@ export function setupAdminFlowClickHandlers() {
       if (target.dataset.lectureUpdate) {
         const status = document.querySelector(`[data-lecture-status="${target.dataset.lectureUpdate}"]`)?.value || "모집중";
         await api(`/api/admin/lectures/${target.dataset.lectureUpdate}`, { method: "PATCH", body: { status } });
-        await loadAdminData();
-        toast("특강 상태를 저장했습니다.");
+        await refreshAdminDataPreservingScroll();
+        toast("특강 상태를 저장했습니다.", { preserveScroll: true });
       }
       if (target.dataset.lectureEdit) {
         state.editingLectureId = target.dataset.lectureEdit;
@@ -282,8 +285,8 @@ export function setupAdminFlowClickHandlers() {
         if (!confirm(`'${title}' 특강을 삭제할까요?\n신청 내역도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
         const result = await api(`/api/admin/lectures/${target.dataset.lectureDelete}`, { method: "DELETE" });
         if (state.editingLectureId === target.dataset.lectureDelete) state.editingLectureId = "";
-        await loadAdminData();
-        toast(`특강을 삭제했습니다.${result.removedApplications ? ` (신청 ${result.removedApplications}건 포함)` : ""}`);
+        await refreshAdminPagePreservingScroll("adminLecturesPage");
+        toast(`특강을 삭제했습니다.${result.removedApplications ? ` (신청 ${result.removedApplications}건 포함)` : ""}`, { preserveScroll: true });
         return;
       }
       if (target.dataset.adminBulkDelete) {
@@ -314,16 +317,16 @@ export function setupAdminFlowClickHandlers() {
             confirmText
           }
         });
-        await refreshAdminDataPreservingScroll(config.pageKey);
-        toast(config.toastMessage(result));
+        await refreshAdminPagePreservingScroll(config.pageKey);
+        toast(config.toastMessage(result), { preserveScroll: true });
         return;
       }
       if (target.dataset.blockedRemove) {
         const settings = state.bootstrap.settings;
         const blockedSchedules = (settings.blockedSchedules || []).filter((item) => item.id !== target.dataset.blockedRemove);
         await api("/api/admin/settings", { method: "PATCH", body: { blockedSchedules } });
-        await loadBootstrap();
-        toast("차단 일정을 삭제했습니다.");
+        await refreshAdminDataPreservingScroll({ includeBootstrap: true });
+        toast("차단 일정을 삭제했습니다.", { preserveScroll: true });
       }
       if (target.dataset.userSort) {
         const field = target.dataset.userSort;
@@ -352,8 +355,8 @@ export function setupAdminFlowClickHandlers() {
           body.limitDuration = document.querySelector(`[data-user-limit-duration="${target.dataset.userApproval}"]`)?.value || "week1";
         }
         await api(`/api/admin/users/${target.dataset.userApproval}/approval`, { method: "PATCH", body });
-        await loadAdminData();
-        toast("사용자 상태를 변경했습니다.");
+        await refreshAdminDataPreservingScroll();
+        toast("사용자 상태를 변경했습니다.", { preserveScroll: true });
       }
       if (target.dataset.userReset) {
         const input = prompt("새 비밀번호를 입력하세요. 비워두면 임시 비밀번호가 자동 생성됩니다.", "");
@@ -371,24 +374,23 @@ export function setupAdminFlowClickHandlers() {
         const reason = prompt("관리자용 경고 메모를 입력하세요. 학생 상태는 변경되지 않습니다.", "");
         if (reason === null) return;
         const result = await api(`/api/admin/users/${target.dataset.userWarn}/warning`, { method: "POST", body: { reason: reason.trim() } });
-        await loadAdminData();
-        toast(`경고 메모를 저장했습니다. (기록 ${result.user.warningCount}건)`);
+        await refreshAdminDataPreservingScroll();
+        toast(`경고 메모를 저장했습니다. (기록 ${result.user.warningCount}건)`, { preserveScroll: true });
         return;
       }
       if (target.dataset.userWarnReset) {
         if (!confirm("이 학생의 경고 메모 기록을 초기화할까요? 대여금지 상태는 변경되지 않습니다.")) return;
         await api(`/api/admin/users/${target.dataset.userWarnReset}/warning`, { method: "POST", body: { reset: true } });
-        await loadAdminData();
-        toast("경고 메모를 초기화했습니다.");
+        await refreshAdminDataPreservingScroll();
+        toast("경고 메모를 초기화했습니다.", { preserveScroll: true });
         return;
       }
       if (target.dataset.userDelete) {
         const name = target.dataset.userName || "이 학생";
         if (!confirm(`${name} 계정을 삭제할까요?\n해당 학생의 예약·보고서·경고 기록도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
         const result = await api(`/api/admin/users/${target.dataset.userDelete}`, { method: "DELETE" });
-        await loadBootstrap();
-        await loadAdminData();
-        toast(`학생을 삭제했습니다.${result.removedReservations ? ` (예약 ${result.removedReservations}건 포함)` : ""}`);
+        await refreshAdminDataPreservingScroll({ includeBootstrap: true });
+        toast(`학생을 삭제했습니다.${result.removedReservations ? ` (예약 ${result.removedReservations}건 포함)` : ""}`, { preserveScroll: true });
         return;
       }
       if (target.dataset.warningPopupClose !== undefined) {
@@ -400,19 +402,21 @@ export function setupAdminFlowClickHandlers() {
         if (!confirm("이 기기를 원격 로그아웃할까요?")) return;
         await api(`/api/admin/sessions/${target.dataset.sessionRevoke}/revoke`, { method: "POST" });
         state.adminSessions = state.adminSessions.filter((session) => session.id !== target.dataset.sessionRevoke);
-        await loadAdminData();
-        toast("해당 기기를 로그아웃했습니다.");
+        await refreshAdminDataPreservingScroll();
+        toast("해당 기기를 로그아웃했습니다.", { preserveScroll: true });
         return;
       }
       if (target.dataset.resStatus) {
         if (target.dataset.status === "cancelled" && !confirm("예약을 대여취소로 변경할까요?")) return;
-        toast("예약 상태를 처리 중입니다.");
+        toast("예약 상태를 처리 중입니다.", { preserveScroll: true });
         const updated = await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });
         state.adminReservations = state.adminReservations.map((reservation) => reservation.id === updated.id ? updated : reservation);
-        toast("예약 상태를 변경했습니다.");
-        Promise.all([loadBootstrap(), loadAdminData()])
-          .then(() => render())
-          .catch((error) => toast(`상태는 변경됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`));
+        toast("예약 상태를 변경했습니다.", { preserveScroll: true });
+        try {
+          await refreshAdminDataPreservingScroll({ includeBootstrap: true });
+        } catch (error) {
+          toast(`상태는 변경됐지만 최신 목록을 다시 불러오지 못했습니다: ${error.message}`, { preserveScroll: true });
+        }
       }
       if (target.dataset.equipmentStatusAction) {
         const itemId = target.dataset.equipmentStatusAction;

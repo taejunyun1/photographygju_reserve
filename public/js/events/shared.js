@@ -1,5 +1,6 @@
 import { state } from "../state.js?v=20260627-admin-lecture-nav";
 import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260627-admin-lecture-nav";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -9,6 +10,12 @@ import {
   printSelectionConflicts,
   timeToMinutes
 } from "../utils.js?v=20260627-admin-lecture-nav";
+import {
+  captureScrollState,
+  restoreScrollState,
+  scrollToPageTop,
+  SCROLL_RESTORE_TARGET_SELECTOR
+} from "./scroll-state.js?v=20260627-admin-lecture-nav";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -20,64 +27,29 @@ export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "input[name=\"equipmentItemIds\"]"
 ].join(",");
 
-const SCROLL_RESTORE_TARGET_SELECTOR = ".student-shell, .admin-main, .auth-shell, .mobile-nav, .admin-mobile-nav, .desktop-nav, .side-nav, .admin-inner-tabs, .lecture-year-tabs";
-
 let lastEquipmentInteractionScrollState = null;
-
-export function scrollToPageTop() {
-  requestAnimationFrame(() => {
-    for (const target of document.querySelectorAll(".student-shell, .admin-main, .auth-shell")) {
-      target.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
-      target.scrollTop = 0;
-    }
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  });
-}
 
 export function renderAtTop() {
   render();
   scrollToPageTop();
 }
 
-function captureScrollState() {
-  return {
-    windowX: window.scrollX || 0,
-    windowY: window.scrollY || 0,
-    targets: [...document.querySelectorAll(SCROLL_RESTORE_TARGET_SELECTOR)].map((target) => ({
-      className: [...target.classList].join("."),
-      scrollTop: target.scrollTop || 0,
-      scrollLeft: target.scrollLeft || 0
-    }))
-  };
-}
-
-function restoreScrollState(snapshot) {
-  const restore = () => {
-    for (const item of snapshot.targets || []) {
-      if (!item.className) continue;
-      const target = document.querySelector(`.${item.className}`);
-      if (!target) continue;
-      target.scrollTo?.({ top: item.scrollTop, left: item.scrollLeft, behavior: "auto" });
-      target.scrollTop = item.scrollTop;
-      target.scrollLeft = item.scrollLeft;
-    }
-    window.scrollTo({ top: snapshot.windowY || 0, left: snapshot.windowX || 0, behavior: "auto" });
-    document.documentElement.scrollTop = snapshot.windowY || 0;
-    document.body.scrollTop = snapshot.windowY || 0;
-  };
-  requestAnimationFrame(() => {
-    restore();
-    requestAnimationFrame(restore);
-  });
-  setTimeout(restore, 0);
-  setTimeout(restore, 80);
-}
+export { captureScrollState, restoreScrollState, scrollToPageTop, SCROLL_RESTORE_TARGET_SELECTOR };
 
 export function renderPreservingScroll() {
   const scrollState = lastEquipmentInteractionScrollState || captureScrollState();
   lastEquipmentInteractionScrollState = null;
+  render();
+  restoreScrollState(scrollState);
+}
+
+export async function refreshAdminDataPreservingScroll(options = {}) {
+  const { includeBootstrap = false, includeMe = false } = options;
+  const scrollState = captureScrollState();
+  const jobs = [loadAdminData()];
+  if (includeBootstrap) jobs.unshift(loadBootstrap());
+  if (includeMe) jobs.push(loadMe());
+  await Promise.all(jobs);
   render();
   restoreScrollState(scrollState);
 }
