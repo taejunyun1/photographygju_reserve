@@ -251,6 +251,36 @@ assert.equal(legacyStore.migrated[0].detail.from, "legacy-durable-object-db");
 assert.equal(legacyStore.migrated[0].detail.preservedLegacyDb, true);
 assert.deepEqual(legacyStorage.deleteCalls, [], "legacy Durable Object db must not be deleted during migration");
 
+const singletonOnlySql = new FakeSql();
+const singletonOnlyStore = createSqlAppStore(singletonOnlySql, { initialDb: () => initialDb("admin-pass") });
+await singletonOnlyStore.initialize();
+singletonOnlySql.exec(
+  "INSERT OR REPLACE INTO app_singletons (name, data, updated_at) VALUES (?, ?, ?)",
+  "meta",
+  JSON.stringify({ partialWrite: true }),
+  "2026-06-30T00:00:00.000Z"
+);
+const singletonOnlyLegacyDb = await initialDb("admin-pass");
+singletonOnlyLegacyDb.reservations.push({
+  id: "res_singleton_only_legacy",
+  type: "print",
+  status: "auto_confirmed",
+  userId: "user_admin",
+  fields: { reservedDate: "2026-07-11", startTime: "10:00", endTime: "11:00" },
+  history: [],
+  createdAt: "2026-06-30T00:00:00.000Z",
+  updatedAt: "2026-06-30T00:00:00.000Z"
+});
+const singletonOnlyStorage = new FakeDurableStorage({ db: singletonOnlyLegacyDb });
+const singletonOnlyInit = await ensureSqlStoreInitialized({
+  storage: singletonOnlyStorage,
+  store: singletonOnlyStore
+});
+assert.equal(singletonOnlyInit.source, "legacy", "singleton-only SQL data should not block legacy migration");
+assert.equal(singletonOnlyInit.migrated, true);
+assert.equal(singletonOnlySql.records.reservations.has("res_singleton_only_legacy"), true);
+assert.deepEqual(singletonOnlyStorage.deleteCalls, [], "singleton-only recovery must preserve legacy db");
+
 const authoritativeSqlStorage = new FakeDurableStorage({ db: preservedLegacyDb });
 const authoritativeSqlStore = fakeInitStore({ hasSqlData: true });
 const sqlInit = await ensureSqlStoreInitialized({ storage: authoritativeSqlStorage, store: authoritativeSqlStore });

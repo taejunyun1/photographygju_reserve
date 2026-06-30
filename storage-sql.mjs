@@ -344,8 +344,8 @@ export function createSqlAppStore(sql, options = {}) {
   }
 
   function hasSqlData() {
-    const singletonCount = countFrom(exec("SELECT COUNT(*) AS count FROM app_singletons"));
-    if (singletonCount > 0) return true;
+    // Singleton rows alone may be left by an interrupted initialization. The
+    // app is only recoverably initialized once collection rows exist.
     return COLLECTIONS.some((collection) => countFrom(exec(`SELECT COUNT(*) AS count FROM ${collection.table}`)) > 0);
   }
 
