@@ -1,4 +1,4 @@
-export const SCROLL_RESTORE_TARGET_SELECTOR = ".student-shell, .admin-main, .auth-shell, .mobile-nav, .admin-mobile-nav, .desktop-nav, .side-nav, .admin-inner-tabs, .lecture-year-tabs";
+export const SCROLL_RESTORE_TARGET_SELECTOR = ".student-shell, .admin-main, .auth-shell, .mobile-nav, .admin-mobile-nav, .desktop-nav, .side-nav, .admin-inner-tabs, .lecture-year-tabs, .admin-equipment-scroll-region";
 
 export function scrollToPageTop() {
   requestAnimationFrame(() => {

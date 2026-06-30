@@ -1,8 +1,17 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
 
-globalThis.document = { querySelector: () => null };
-globalThis.window = {};
+globalThis.document = {
+  documentElement: { scrollTop: 0 },
+  body: { scrollTop: 0 },
+  querySelector: () => null,
+  querySelectorAll: () => []
+};
+globalThis.window = { scrollX: 0, scrollY: 0, scrollTo: () => {} };
+globalThis.requestAnimationFrame = (callback) => {
+  callback();
+  return 0;
+};
 
 const storage = new Map([["gju_native_notifications_enabled", "true"]]);
 
@@ -14,8 +23,9 @@ globalThis.localStorage = {
 globalThis.sessionStorage = globalThis.localStorage;
 
 const { state } = await import("../public/js/state.js?v=20260627-admin-lecture-nav");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
 const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-lecture-nav");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260627-admin-lecture-nav");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -89,6 +99,9 @@ state.adminLecturePanelTab = "list";
 const lecturesView = adminLecturesView();
 state.adminView = "notices";
 const noticesView = adminNoticesView();
+state.adminView = "equipment";
+state.adminEquipmentPanelTab = "manage";
+const equipmentView = adminEquipmentView();
 state.adminView = "dashboard";
 state.activeAdminQueueSheet = "today";
 const dashboardWithQueueSheet = adminShell();
@@ -237,9 +250,12 @@ assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary mus
 assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
 assert(rendererSource.includes("export function toast(message, options = {})"), "toast must accept options");
 assert(rendererSource.includes("options.preserveScroll"), "toast must support preserveScroll");
+assert(rendererSource.includes("options.scrollState"), "toast must support a pre-action scroll snapshot");
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
 assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
+assert(eventSource.includes(".admin-equipment-scroll-region"), "scroll preservation must include the Admin equipment table's internal scroll region");
+assert(equipmentView.includes("admin-equipment-scroll-region"), "Admin equipment management table must expose a dedicated scroll preservation region");
 assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler must be wired through events facade");
 assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
 assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) return false;"), "pull refresh must block new starts while a refresh is active");
@@ -249,10 +265,10 @@ assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n     
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
-assert(adminEventSource.includes('toast("기자재 상태를 변경했습니다.", { preserveScroll: true })'), "admin equipment status toast must preserve scroll");
-assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true })'), "bulk equipment status toast must preserve scroll");
-assert(adminEventSource.includes('toast("기자재를 제거했습니다.", { preserveScroll: true })'), "admin equipment removal toast must preserve scroll");
-assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true })'), "bulk equipment removal toast must preserve scroll");
+assert(adminEventSource.includes('toast("기자재 상태를 변경했습니다.", { preserveScroll: true, scrollState })'), "admin equipment status toast must preserve pre-action scroll");
+assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true, scrollState })'), "bulk equipment status toast must preserve pre-action scroll");
+assert(adminEventSource.includes('toast("기자재를 제거했습니다.", { preserveScroll: true, scrollState })'), "admin equipment removal toast must preserve pre-action scroll");
+assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true, scrollState })'), "bulk equipment removal toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast(error.message, { preserveScroll: true })'), "admin action errors must preserve scroll");
 assert(!adminEventSource.includes('toast("비밀번호를 변경했습니다.");'), "password reset toast must not be plain");
 assert(!adminEventSource.includes('toast("기자재 상태를 변경했습니다.");'), "equipment status toast must not be plain");
@@ -261,6 +277,51 @@ assert(!adminEventSource.includes('toast("기자재를 제거했습니다.");'),
 assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);'), "bulk equipment removal toast must not be plain");
 assert(formsSource.includes('toast(error.message, { preserveScroll: true })'), "form error toasts must preserve scroll");
 assert(!formsSource.includes('toast(error.message);'), "form error toasts must not use plain toast");
+
+{
+  const previousDocument = globalThis.document;
+  const previousWindow = globalThis.window;
+  const scrollRegion = {
+    classList: ["table-wrap", "embedded", "admin-equipment-scroll-region"],
+    scrollTop: 520,
+    scrollLeft: 24,
+    scrollTo({ top = 0, left = 0 } = {}) {
+      this.scrollTop = top;
+      this.scrollLeft = left;
+    }
+  };
+
+  globalThis.window = {
+    scrollX: 0,
+    scrollY: 0,
+    scrollTo({ top = 0, left = 0 } = {}) {
+      this.scrollY = top;
+      this.scrollX = left;
+    }
+  };
+  globalThis.document = {
+    documentElement: { scrollTop: 0 },
+    body: { scrollTop: 0 },
+    querySelectorAll(selector) {
+      return selector.includes(".admin-equipment-scroll-region") ? [scrollRegion] : [];
+    },
+    querySelector(selector) {
+      return selector === ".table-wrap.embedded.admin-equipment-scroll-region" ? scrollRegion : null;
+    }
+  };
+
+  const snapshot = captureScrollState();
+  scrollRegion.scrollTop = 0;
+  scrollRegion.scrollLeft = 0;
+  restoreScrollState(snapshot);
+  assert.equal(scrollRegion.scrollTop, 520, "Admin equipment action toasts must restore the embedded table scrollTop");
+  assert.equal(scrollRegion.scrollLeft, 24, "Admin equipment action toasts must restore the embedded table scrollLeft");
+
+  await new Promise((resolve) => setTimeout(resolve, 90));
+  globalThis.document = previousDocument;
+  globalThis.window = previousWindow;
+}
+
 assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
 assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");

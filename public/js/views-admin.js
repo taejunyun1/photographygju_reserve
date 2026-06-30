@@ -877,7 +877,7 @@ export function adminEquipmentView() {
             <button class="button danger compact" type="button" data-equipment-bulk-remove ${selected.size ? "" : "disabled"}>선택 기자재 제거</button>
           </div>
         </div>
-        <div class="table-wrap embedded">
+        <div class="table-wrap embedded admin-equipment-scroll-region">
           <table>
             <thead><tr><th class="check-col"><span class="sr-only">선택</span></th><th>코드</th><th>장비</th><th>분류</th><th>관리처</th><th>상태</th><th>예약</th><th>작업</th></tr></thead>
             <tbody>${filtered.length ? filtered.map((item) => `

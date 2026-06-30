@@ -31,7 +31,7 @@ let toastTimer = null;
 
 export function toast(message, options = {}) {
   if (toastTimer) clearTimeout(toastTimer);
-  const scrollState = options.preserveScroll ? captureScrollState() : null;
+  const scrollState = options.scrollState || (options.preserveScroll ? captureScrollState() : null);
   state.toast = message;
   render();
   if (scrollState) restoreScrollState(scrollState);

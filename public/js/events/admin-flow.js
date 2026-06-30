@@ -9,6 +9,7 @@ import {
 import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
 import { formData, parseCsv } from "../utils.js?v=20260627-admin-lecture-nav";
 import {
+  captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
@@ -419,6 +420,7 @@ export function setupAdminFlowClickHandlers() {
         }
       }
       if (target.dataset.equipmentStatusAction) {
+        const scrollState = captureScrollState();
         const itemId = target.dataset.equipmentStatusAction;
         const status = target.dataset.status;
         if (!status) return;
@@ -430,10 +432,11 @@ export function setupAdminFlowClickHandlers() {
           target.disabled = false;
         }
         syncAdminEquipmentDom(updated);
-        toast("기자재 상태를 변경했습니다.", { preserveScroll: true });
+        toast("기자재 상태를 변경했습니다.", { preserveScroll: true, scrollState });
         return;
       }
       if (target.dataset.equipmentBulkStatus) {
+        const scrollState = captureScrollState();
         const ids = [...state.selectedAdminEquipmentIds];
         if (!ids.length) {
           toast("선택된 기자재가 없습니다.");
@@ -441,17 +444,19 @@ export function setupAdminFlowClickHandlers() {
         }
         const updated = await patchAdminEquipment(ids, { status: target.dataset.equipmentBulkStatus });
         syncAdminEquipmentDom(updated);
-        toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true });
+        toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true, scrollState });
         return;
       }
       if (target.dataset.equipmentRemoveAdmin) {
+        const scrollState = captureScrollState();
         if (!confirm("이 기자재를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.")) return;
         const updated = await patchAdminEquipment([target.dataset.equipmentRemoveAdmin], { active: false });
         syncAdminEquipmentDom(updated);
-        toast("기자재를 제거했습니다.", { preserveScroll: true });
+        toast("기자재를 제거했습니다.", { preserveScroll: true, scrollState });
         return;
       }
       if (target.dataset.equipmentBulkRemove !== undefined) {
+        const scrollState = captureScrollState();
         const ids = [...state.selectedAdminEquipmentIds];
         if (!ids.length) {
           toast("선택된 기자재가 없습니다.");
@@ -460,7 +465,7 @@ export function setupAdminFlowClickHandlers() {
         if (!confirm(`선택한 기자재 ${ids.length}개를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.`)) return;
         const updated = await patchAdminEquipment(ids, { active: false });
         syncAdminEquipmentDom(updated);
-        toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true });
+        toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true, scrollState });
         return;
       }
     } catch (error) {
