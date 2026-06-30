@@ -13,3 +13,5 @@ android/release-signing.properties
 References/
 .wrangler/
 .claude/
+
+.superpowers/
