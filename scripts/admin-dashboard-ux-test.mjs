@@ -97,6 +97,7 @@ const settings = adminSettingsView();
 const metrics = adminDashboardMetrics();
 const notifications = plannedAdminNotifications(new Date("2026-06-26T08:00:00.000Z"));
 const css = fs.readFileSync("public/styles.css", "utf8");
+const viewsSource = fs.readFileSync("public/js/views-admin.js", "utf8");
 const coreSource = fs.readFileSync("core.mjs", "utf8");
 const dataSource = fs.readFileSync("public/js/data.js", "utf8");
 const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
@@ -172,6 +173,10 @@ assert(!reservationsView.includes('data-status="approved"'), "equipment reservat
 assert(!reservationsView.includes('data-status="admin_cancelled"'), "equipment reservations must not expose legacy admin cancellation action");
 assert(reportsView.includes('data-admin-report-semester="2026-S2"'), "reports must render semester filters");
 assert(reportsView.includes('data-admin-bulk-delete="reports:filtered"'), "reports must expose filtered bulk delete");
+assert(!viewsSource.includes('state.adminReservations.filter((reservation) => reservationSearchText(reservation).includes(query))'), "reservation view must not re-filter server-backed search results on the client");
+assert(!viewsSource.includes('state.adminReports.filter((report) => reportSearchText(report).includes(query))'), "report view must not re-filter server-backed search results on the client");
+assert(viewsSource.includes('현재 표시 ${reservations.length}건'), "reservation search copy must describe the rendered server result set");
+assert(viewsSource.includes('현재 표시 ${reports.length}건'), "report search copy must describe the rendered server result set");
 assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
 assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status must use a small dot indicator");
 assert(!lecturesView.includes("<div><span>진행상태</span><strong>모집중</strong></div>"), "admin lecture status must not render as a large strong meta value");

@@ -682,13 +682,14 @@ export function adminReservationsView() {
   const statusFilteredReservations = isEquipmentTab && equipmentStatusFilter !== "all"
     ? tabReservations.filter((reservation) => reservation.status === equipmentStatusFilter)
     : tabReservations;
-  const base = query
-    ? state.adminReservations.filter((reservation) => reservationSearchText(reservation).includes(query))
-    : statusFilteredReservations;
   // 최신순(예약 생성일 내림차순)으로 정렬해 최근 예약을 위에 노출
-  const reservations = base.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  const reservations = query
+    ? state.adminReservations.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    : statusFilteredReservations.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   const reservationSemesterControls = semesterTabs(state.adminReservationSemesters, state.adminReservationSemesterFilter, "admin-reservation-semester");
   const reservationTotal = Number(state.adminReservationsPage?.total || state.adminReservations.length || 0);
+  const currentReservationTab = query ? "all" : state.adminReservationTab;
+  const currentEquipmentStatusFilter = query ? "all" : equipmentStatusFilter;
   return `
     <section class="grid">
       ${searchField({ value: state.adminReservationSearch || "", placeholder: "전체 검색 (이름·학번·날짜·기자재·스튜디오)", dataset: "data-admin-reservation-search" })}
@@ -697,17 +698,17 @@ export function adminReservationsView() {
         ${tabs(reservationTabs.map(([key, label]) => ({
           key,
           label
-        })), { active: state.adminReservationTab, dataset: "admin-reservation-tab", className: "", ariaLabel: "예약 종류 필터" })}
+        })), { active: currentReservationTab, dataset: "admin-reservation-tab", className: "", ariaLabel: "예약 종류 필터" })}
       </div>
       ${!query && isEquipmentTab ? `
         ${tabs(equipmentStatusFilters.map(([key, label]) => ({
           key,
           label
-        })), { active: equipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
+        })), { active: currentEquipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
       ` : ""}
       ${bulkDeletePanel("reservations", reservations.length, reservationTotal, reservationBulkFilterLabel(query, reservations.length))}
       ${adminPageScopeNote(state.adminReservationsPage, state.adminReservations.length, reservations.length, query)}
-      ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${reservations.length}건 · 전체 예약 대상</p>` : ""}
+      ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${Number(state.adminReservationsPage?.total || reservations.length || 0)}건 · 현재 표시 ${reservations.length}건</p>` : ""}
       <div class="admin-reservation-grid">
         ${reservations.length ? reservations.map(adminReservationCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "해당 탭의 예약이 없습니다." })}
       </div>
@@ -963,10 +964,7 @@ function sortedAdminReports(reports) {
 
 export function adminReportsView() {
   const query = normalizeSearchText(state.adminReportSearch).trim();
-  const base = query
-    ? state.adminReports.filter((report) => reportSearchText(report).includes(query))
-    : state.adminReports;
-  const reports = sortedAdminReports(base);
+  const reports = sortedAdminReports(state.adminReports);
   const sortDirection = state.adminReportSort.direction === "asc" ? "↑" : "↓";
   const reportSortOptions = [
     ["submittedAt", "제출일"],
@@ -986,7 +984,7 @@ export function adminReportsView() {
       ${tabs(reportSortOptions, { active: state.adminReportSort.field, dataset: "admin-report-sort", ariaLabel: "보고서 정렬" })}
       ${bulkDeletePanel("reports", reports.length, reportTotal, reportBulkFilterLabel(query, reports.length))}
       ${adminPageScopeNote(state.adminReportsPage, state.adminReports.length, reports.length, query)}
-      ${query ? `<p class="muted">"${escapeHtml(state.adminReportSearch)}" 검색 결과 ${reports.length}건</p>` : ""}
+      ${query ? `<p class="muted">"${escapeHtml(state.adminReportSearch)}" 검색 결과 ${Number(state.adminReportsPage?.total || reports.length || 0)}건 · 현재 표시 ${reports.length}건</p>` : ""}
       ${reports.length ? reports.map((report) => `
         <article class="card ui-card">
           <div class="chips"><span class="tag blue">스튜디오 보고서</span><span class="tag green">제출완료</span></div>

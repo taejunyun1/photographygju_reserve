@@ -94,3 +94,24 @@ Completed Task 3 in the existing worktree without reverting prior uncommitted ed
 ### Commit
 
 - `2026-07-01 Admin 일괄 삭제 검색 범위 보정`
+
+---
+
+## 2026-07-01 Follow-up: Server-Backed Admin Search Result Alignment
+
+### Scope
+
+- `public/js/views-admin.js`
+- `scripts/admin-dashboard-ux-test.mjs`
+
+### What Changed
+
+- Removed the extra client-side query filtering from `adminReservationsView()` and `adminReportsView()` so both views render the server-backed result set directly.
+- Kept reservation tab/status filtering active when no global search query is present, preserving the existing non-search navigation behavior.
+- Kept the search-result copy meaningful by reporting the rendered server result count alongside the loaded count.
+- Added regression assertions to the admin UX script so the reservation and report views must not re-filter server-backed search results in the client.
+
+### Verification
+
+- `npm run test:admin-ui` -> passed (`Admin dashboard UX checks passed.`)
+- `npm run check:js` -> passed (`JavaScript syntax checks passed (37 files).`)
