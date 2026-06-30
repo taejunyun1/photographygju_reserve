@@ -13,7 +13,7 @@
 | Dothome 업로드 | 2026-06-22, FTP 일반 업로드 완료 |
 | 캐시 버전 | `20260626-watch-release` |
 | iOS 빌드 | `1.0 (1)` |
-| Android 빌드 | `versionName 1.0`, `versionCode 1` |
+| Android 빌드 | `versionName 1.0`, `versionCode 17` |
 
 ## 자동 점검
 
@@ -27,7 +27,7 @@
 | `npm run native:ios:archive` | 통과 | Release archive 생성 가능 |
 | `npm run native:ios:export` | 보류 | Apple Distribution 인증서와 App Store provisioning profile 필요 |
 | `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:debug` | 통과 | Android debug APK 빌드 성공 |
-| `npm run native:android:bundle` | 보류 | Play 업로드 키 환경변수 필요 |
+| `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:bundle` | 통과 | `android/app/build/outputs/bundle/release/app-release.aab` 생성 및 서명 검증 |
 
 ## 제출 전 필수 보류 항목
 

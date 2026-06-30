@@ -29,9 +29,14 @@ function contains(file, text) {
 const pkg = readJson("package.json");
 const cap = readJson("capacitor.config.json");
 const variables = read("android/variables.gradle");
+const androidBuildGradle = read("android/app/build.gradle");
 const targetSdk = Number((variables.match(/targetSdkVersion\s*=\s*(\d+)/) || [])[1] || 0);
+const androidVersionCode = Number((androidBuildGradle.match(/versionCode\s+(\d+)/) || [])[1] || 0);
+const androidVersionName = (androidBuildGradle.match(/versionName\s+"([^"]+)"/) || [])[1] || "";
 const infoPlist = read("ios/App/App/Info.plist");
 const xcodeProject = read("ios/App/App.xcodeproj/project.pbxproj");
+const iosBuildNumber = Number((xcodeProject.match(/CURRENT_PROJECT_VERSION = (\d+);/) || [])[1] || 0);
+const iosMarketingVersion = (xcodeProject.match(/MARKETING_VERSION = ([^;]+);/) || [])[1] || "";
 const rootGitignore = read(".gitignore");
 const androidGitignore = read("android/.gitignore");
 
@@ -45,6 +50,7 @@ const checks = [
   ["android upload key script", pkg.scripts?.["native:android:key"] === "node scripts/create-android-upload-key.mjs" && fileExists("scripts/create-android-upload-key.mjs")],
   ["android signed bundle verifier", pkg.scripts?.["native:android:verify"] === "node scripts/check-android-release.mjs" && fileExists("scripts/check-android-release.mjs")],
   ["android signing secrets ignored", rootGitignore.includes("*.p12") && rootGitignore.includes("android/release-signing.properties") && androidGitignore.includes("release-signing.properties")],
+  ["Android upload version matches iOS review build", androidVersionName === iosMarketingVersion && androidVersionCode === iosBuildNumber],
   ["local notifications dependency", Boolean(pkg.dependencies?.["@capacitor/local-notifications"])],
   ["local notifications config", Boolean(cap.plugins?.LocalNotifications?.smallIcon)],
   ["android target sdk >= 35", targetSdk >= 35],
