@@ -36,7 +36,7 @@ export function setupSearchEventHandlers() {
     ["adminLogSearch", "adminLogSearch", "[data-admin-log-search]"],
     ["adminBlockedSearch", "adminBlockedScheduleSearch", "[data-admin-blocked-search]"]
   ].map(([datasetKey, stateKey, selector]) => ({ datasetKey, stateKey, selector }));
-  const adminServerSearchStateKeys = new Set(["adminUserSearch", "adminReservationSearch", "adminReportSearch"]);
+  const adminServerSearchStateKeys = new Set(["adminUserSearch", "adminReservationSearch", "adminReportSearch", "adminLectureSearch", "adminNoticeSearch"]);
 
   function searchBindingForTarget(target) {
     if (!target.dataset) return null;
@@ -100,6 +100,8 @@ export function setupSearchEventHandlers() {
     if (stateKey === "adminUserSearch") resetAdminPage("adminUsersPage");
     if (stateKey === "adminReservationSearch") resetAdminPage("adminReservationsPage");
     if (stateKey === "adminReportSearch") resetAdminPage("adminReportsPage");
+    if (stateKey === "adminLectureSearch") resetAdminPage("adminLecturesPage");
+    if (stateKey === "adminNoticeSearch") resetAdminPage("adminNoticesPage");
   }
 
   async function commitSearchInput(target, binding, { restoreFocus = true } = {}) {

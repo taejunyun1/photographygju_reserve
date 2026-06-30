@@ -98,6 +98,12 @@ function adminLecturesPath() {
   })}`;
 }
 
+function adminNoticesPath() {
+  return `/api/admin/notices?${queryString({
+    q: state.adminNoticeSearch
+  })}`;
+}
+
 export async function loadAdminData() {
   const [summary, users, reservations, equipment, reports, notices, lectures, sessions, logs] = await Promise.all([
     api("/api/admin/summary"),
@@ -105,7 +111,7 @@ export async function loadAdminData() {
     api(adminReservationsPath()),
     api("/api/admin/equipment"),
     api(adminReportsPath()),
-    api("/api/admin/notices"),
+    api(adminNoticesPath()),
     api(adminLecturesPath()),
     api("/api/admin/sessions"),
     api("/api/admin/logs")
@@ -121,7 +127,8 @@ export async function loadAdminData() {
     adminReports: pagedItems(reports),
     adminReportSemesters: reports?.semesterOptions || [],
     adminReportsPage: pageMeta(reports),
-    adminNotices: notices,
+    adminNotices: pagedItems(notices),
+    adminNoticesPage: pageMeta(notices),
     adminLectures: pagedItems(lectures),
     adminLectureSemesters: lectures?.semesterOptions || [],
     adminLecturesPage: pageMeta(lectures),

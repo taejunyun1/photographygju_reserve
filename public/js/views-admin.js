@@ -1050,26 +1050,6 @@ function lectureTextPreview(value = "", maxLength = 150) {
   return `${text.slice(0, maxLength)}...`;
 }
 
-function adminLectureSearchText(lecture) {
-  return searchableText([
-    lecture.id,
-    lecture.title,
-    lecture.lectureDate,
-    lecture.time,
-    lecture.location,
-    lecture.instructorName,
-    lecture.instructorAffiliation,
-    lecture.professor,
-    lecture.targetGrades,
-    lecture.status,
-    lecture.capacity,
-    lecture.applicationCount,
-    lecture.description,
-    lecture.notes,
-    lecture.applications
-  ]);
-}
-
 function lectureStatusTone(status = "") {
   if (status === "진행완료") return "green";
   if (status === "취소") return "gray";
@@ -1101,7 +1081,7 @@ function lectureCreateForm() {
 export function adminLecturesView() {
   const editing = state.editingLectureId ? state.adminLectures.find((item) => item.id === state.editingLectureId) : null;
   const query = normalizeSearchText(state.adminLectureSearch).trim();
-  const lectures = (state.adminLectures || []).filter((lecture) => !query || adminLectureSearchText(lecture).includes(query));
+  const lectures = state.adminLectures || [];
   const panelTab = editing ? "add" : (state.adminLecturePanelTab || "list");
   const lectureSemesterControls = semesterTabs(state.adminLectureSemesters, state.adminLectureSemesterFilter, "admin-lecture-semester");
   const lectureTotal = Number(state.adminLecturesPage?.total || state.adminLectures.length || 0);
@@ -1185,13 +1165,8 @@ export function adminLectureTable(lectures) {
 
 export function adminNoticesView() {
   const query = normalizeSearchText(state.adminNoticeSearch).trim();
-  const notices = (state.adminNotices || []).filter((notice) => !query || searchableText([
-    notice.title,
-    notice.category,
-    notice.body,
-    notice.link,
-    notice.createdAt
-  ]).includes(query));
+  const notices = state.adminNotices || [];
+  const noticeTotal = Number(state.adminNoticesPage?.total || notices.length || 0);
   return `
     <section class="grid">
       <div class="card">
@@ -1208,7 +1183,7 @@ export function adminNoticesView() {
       <div class="list-control-panel">
         ${searchField({ value: state.adminNoticeSearch || "", placeholder: "제목·분류·본문 검색", dataset: "data-admin-notice-search", label: "공지 검색" })}
       </div>
-      ${bulkDeletePanel("notices", notices.length, state.adminNotices.length, query ? `현재 검색 결과 ${notices.length}건` : `전체 공지 ${notices.length}건`)}
+      ${bulkDeletePanel("notices", notices.length, noticeTotal, query ? `현재 검색 결과 ${notices.length}건` : `전체 공지 ${notices.length}건`)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminNoticeSearch)}" 검색 결과 ${notices.length}건</p>` : ""}
       ${notices.length ? notices.map(noticeCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 공지사항이 없습니다.", body: query ? "검색어를 지우면 전체 공지를 볼 수 있습니다." : "" })}
       ${adminGuide("공지사항 사용 가이드", "비교과, 특강, 장비/시설 안내를 학생 화면에 공지합니다. 중요한 내용은 상단 고정으로 설정하고, 신청은 Slack 링크나 외부 링크를 넣으면 됩니다.")}

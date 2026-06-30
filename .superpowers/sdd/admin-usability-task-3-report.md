@@ -60,3 +60,37 @@ Completed Task 3 in the existing worktree without reverting prior uncommitted ed
 ## Concerns
 
 - `toast(...)` still performs a plain `render()` in the current codebase, so the destructive-action refresh path preserves scroll first and then the toast render may still move scroll in some environments. That is aligned with the follow-up Task 4 scope rather than this task’s owned-file boundaries.
+
+---
+
+## 2026-07-01 Follow-up: Review Findings Fix
+
+### Scope
+
+- `public/js/data.js`
+- `public/js/views-admin.js`
+- `public/js/events/admin-flow.js`
+- `public/js/events/search.js`
+- `scripts/admin-dashboard-ux-test.mjs`
+
+### What Changed
+
+- Added `adminNoticesPath()` so admin notices load through `/api/admin/notices?q=...` instead of an unfiltered list.
+- Stored notices with `pagedItems(...)` and `pageMeta(...)` compatibility so filtered delete and visible notice rows can share the same server-backed result shape.
+- Moved `adminLectureSearch` and `adminNoticeSearch` into the server-backed admin search path and reset lecture/notice paging state on committed search changes.
+- Removed the remaining local lecture/notice list filtering in admin views so rendered results match the server-backed search result used for filtered bulk delete.
+- Updated notice bulk delete config to use the current server-backed query and page metadata instead of recomputing a local filtered subset.
+- Extended the admin UX regression script with source assertions for:
+  - server-backed `adminLectureSearch`
+  - server-backed `adminNoticeSearch`
+  - notice query forwarding in `adminNoticesPath()`
+  - paged notice payload handling
+
+### Verification
+
+- `npm run test:admin-ui` -> passed (`Admin dashboard UX checks passed.`)
+- `npm run check:js` -> passed (`JavaScript syntax checks passed (37 files).`)
+
+### Commit
+
+- `2026-07-01 Admin 일괄 삭제 검색 범위 보정`

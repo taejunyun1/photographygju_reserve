@@ -98,6 +98,8 @@ const metrics = adminDashboardMetrics();
 const notifications = plannedAdminNotifications(new Date("2026-06-26T08:00:00.000Z"));
 const css = fs.readFileSync("public/styles.css", "utf8");
 const coreSource = fs.readFileSync("core.mjs", "utf8");
+const dataSource = fs.readFileSync("public/js/data.js", "utf8");
+const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
 function readEventSource() {
   return [
     "public/js/events.js",
@@ -215,6 +217,13 @@ assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobil
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
 assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
+assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");
+assert(searchSource.includes('"adminNoticeSearch"') && searchSource.includes("adminServerSearchStateKeys"), "notice admin search must be treated as server-backed search state");
+assert(searchSource.includes('resetAdminPage("adminLecturesPage")'), "lecture server-backed search must reset lecture paging");
+assert(dataSource.includes("function adminNoticesPath()"), "notice admin data must load through a dedicated path helper");
+assert(dataSource.includes("q: state.adminNoticeSearch"), "notice admin data path must forward the notice search query");
+assert(dataSource.includes("api(adminNoticesPath())"), "notice admin data load must use the query-aware notices path");
+assert(dataSource.includes("adminNotices: pagedItems(notices)"), "notice admin data must support paged notice payloads");
 
 const resStatusStart = eventSource.indexOf("if (target.dataset.resStatus)");
 const resStatusEnd = eventSource.indexOf("if (target.dataset.equipmentStatusAction)", resStatusStart);

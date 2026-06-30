@@ -89,19 +89,12 @@ function currentBulkDeleteConfig(kind, scope) {
     };
   }
   if (kind === "notices") {
-    const query = String(state.adminNoticeSearch || "").trim();
-    const filteredCount = query
-      ? state.adminNotices.filter((notice) => {
-        const haystack = [notice.title, notice.category, notice.body].filter(Boolean).join(" ").toLowerCase();
-        return haystack.includes(query.toLowerCase());
-      }).length
-      : state.adminNotices.length;
     return {
       path: "/api/admin/notices/bulk",
-      pageKey: "",
-      totalCount: scope === "all" ? state.adminNotices.length : filteredCount,
+      pageKey: "adminNoticesPage",
+      totalCount: Number(state.adminNoticesPage?.total || state.adminNotices.length || 0),
       filterLabel: noticeBulkFilterLabel(),
-      filters: { q: query },
+      filters: { q: String(state.adminNoticeSearch || "").trim() },
       toastMessage: (result) => `공지 ${result.deletedNotices}건을 삭제했습니다.`
     };
   }
