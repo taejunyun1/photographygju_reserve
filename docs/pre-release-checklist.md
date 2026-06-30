@@ -74,6 +74,13 @@ npm run native:ios:export
 - 로그인, 내 예약, 특강, 공지, 보고서, 관리자 진입을 실제 도메인에서 점검한다.
 - 외부 분석 스크립트가 다시 들어가지 않았는지 `npm run test:security`로 확인한다.
 
+## Cloudflare Pages 전환 준비
+
+- `npm run pages:check`로 Pages 프록시와 스크립트 구성을 확인한다.
+- `npm run pages:preview`로 로컬 Pages 호환 프리뷰를 확인한다.
+- 운영 전환 전에는 `pages:deploy`를 수동으로 실행하고 `/api/bootstrap`, Admin 로그인, 계정 삭제 페이지를 확인한다.
+- Dothome 업로드 경로는 첫 Pages 운영 릴리스가 안정화될 때까지 유지한다.
+
 ## 5. iOS 제출 체크
 
 - Bundle ID: `kr.ac.gju.photomedia.reserve`

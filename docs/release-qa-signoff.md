@@ -8,6 +8,7 @@
 | 담당자 | Codex 자동 점검 + 사용자 실기기 QA 일부 |
 | Git 커밋 | `5b41549` 기준 작업 트리 |
 | Web 배포 URL | https://photographygju.dothome.co.kr |
+| Cloudflare Pages | 준비 완료 / 운영 전환 보류 |
 | Cloudflare Worker API | https://photographygju-reserve.taejunyun.workers.dev |
 | Cloudflare Worker 버전 | `23876a11-fb8d-4a33-9f4b-e1cad7386c03` |
 | Dothome 업로드 | 2026-06-22, FTP 일반 업로드 완료 |
