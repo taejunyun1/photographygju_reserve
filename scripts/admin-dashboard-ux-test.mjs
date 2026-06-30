@@ -14,7 +14,7 @@ globalThis.localStorage = {
 globalThis.sessionStorage = globalThis.localStorage;
 
 const { state } = await import("../public/js/state.js?v=20260627-admin-lecture-nav");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminLecturesView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
 const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-lecture-nav");
 
 function seoulTodayKey() {
@@ -60,18 +60,35 @@ state.adminEquipment = [
   { id: "e3", active: true, status: "수리중" },
   { id: "e4", active: false, status: "가능" }
 ];
-state.adminReports = [{ id: "report1", status: "pending" }];
-state.adminLectures = [{ id: "lecture1", title: "프린트 워크숍", status: "모집중", startsAt: "2026-07-01" }];
+state.adminReports = [{
+  id: "report1",
+  status: "pending",
+  reservationId: "r4",
+  user: { name: "최학생" },
+  fields: { actualTime: "16:00-17:00", participants: "2명", damageFound: false, resultPhotoUrl: "" },
+  reservation: { fields: { reservedDate: today, studioSpace: "A 스튜디오", studioSpaces: ["A 스튜디오"] } },
+  submittedAt: "2026-06-26T09:00:00.000Z"
+}];
+state.adminLectures = [{ id: "lecture1", title: "프린트 워크숍", status: "모집중", lectureDate: "2026-07-01", startsAt: "2026-07-01", applications: [] }];
 state.adminNotices = [{ id: "notice1", title: "하계 운영 안내", createdAt: "2026-06-26T07:00:00.000Z" }];
+state.adminReservationSemesters = [{ key: "2026-S1", label: "2026년 1학기" }, { key: "2026-S2", label: "2026년 2학기" }];
+state.adminReportSemesters = state.adminReservationSemesters;
+state.adminLectureSemesters = state.adminReservationSemesters;
+state.adminReservationSemesterFilter = "2026-S1";
+state.adminReportSemesterFilter = "2026-S2";
+state.adminLectureSemesterFilter = "all";
 
 const dashboard = adminDashboardView();
 state.adminReservationTab = "equipment";
 state.adminEquipmentReservationStatusFilter = "all";
 state.adminReservationSearch = "";
 const reservationsView = adminReservationsView();
+const reportsView = adminReportsView();
 state.adminView = "lectures";
 state.adminLecturePanelTab = "list";
 const lecturesView = adminLecturesView();
+state.adminView = "notices";
+const noticesView = adminNoticesView();
 state.adminView = "dashboard";
 state.activeAdminQueueSheet = "today";
 const dashboardWithQueueSheet = adminShell();
@@ -138,6 +155,11 @@ assert(!dashboard.includes("기자재 승인 대기"), "equipment dashboard must
 assert(reservationsView.includes("대여완료"), "equipment reservation filter/action must include checked-out status");
 assert(reservationsView.includes("반납완료"), "equipment reservation filter/action must include returned status");
 assert(reservationsView.includes("대여취소"), "equipment reservation filter/action must include cancelled status");
+assert(reservationsView.includes("2026년 1학기"), "reservation management must render semester filter labels");
+assert(reservationsView.includes('data-admin-reservation-semester="2026-S1"'), "reservation semester filter must expose data attribute");
+assert(reservationsView.includes('data-admin-bulk-delete="reservations:filtered"'), "reservation management must expose filtered bulk delete");
+assert(reservationsView.includes('data-admin-bulk-delete="reservations:all"'), "reservation management must expose guarded full delete");
+assert(!reservationsView.includes('data-admin-bulk-delete="users'), "student approval must not expose user bulk delete");
 assert(reservationsView.includes('data-status="checked_out"'), "equipment reservations must expose checked-out action");
 assert(reservationsView.includes('data-status="returned"'), "equipment reservations must expose returned action");
 assert(reservationsView.includes('data-status="cancelled"'), "equipment reservations must expose cancelled action");
@@ -146,9 +168,14 @@ assert.match(reservationsView, /data-status="returned"[^>]*disabled[^>]*aria-cur
 assert.match(reservationsView, /data-status="cancelled"[^>]*disabled[^>]*aria-current="true"/, "current cancelled equipment status action must be disabled and programmatically marked current");
 assert(!reservationsView.includes('data-status="approved"'), "equipment reservations must not expose legacy approval action");
 assert(!reservationsView.includes('data-status="admin_cancelled"'), "equipment reservations must not expose legacy admin cancellation action");
+assert(reportsView.includes('data-admin-report-semester="2026-S2"'), "reports must render semester filters");
+assert(reportsView.includes('data-admin-bulk-delete="reports:filtered"'), "reports must expose filtered bulk delete");
 assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
 assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status must use a small dot indicator");
 assert(!lecturesView.includes("<div><span>진행상태</span><strong>모집중</strong></div>"), "admin lecture status must not render as a large strong meta value");
+assert(lecturesView.includes('data-admin-lecture-semester="all"'), "lectures must render all-semester filter");
+assert(lecturesView.includes('data-admin-bulk-delete="lectures:filtered"'), "lectures must expose filtered bulk delete");
+assert(noticesView.includes('data-admin-bulk-delete="notices:filtered"'), "notices must expose filtered bulk delete");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
@@ -186,6 +213,8 @@ assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10)
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
 assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobile-nav"), "scroll preservation must include mobile menu bars");
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
+assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
+assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
 
 const resStatusStart = eventSource.indexOf("if (target.dataset.resStatus)");
 const resStatusEnd = eventSource.indexOf("if (target.dataset.equipmentStatusAction)", resStatusStart);

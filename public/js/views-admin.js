@@ -132,6 +132,50 @@ function adminPager(page, dataset) {
   return pagination({ page: Number(page?.page || 1), totalPages, dataset, className: "admin-list-pagination" });
 }
 
+function semesterTabs(options = [], active = "all", dataset = "") {
+  const items = [{ key: "all", label: "전체" }, ...(options || [])];
+  if (items.length <= 1) return "";
+  return tabs(items, { active, dataset, className: "wrap admin-semester-tabs", ariaLabel: "학기 필터" });
+}
+
+function bulkDeletePanel(kind, filteredCount, totalCount, filterLabel) {
+  const count = Math.max(0, Number(filteredCount || 0));
+  const total = Math.max(0, Number(totalCount || 0));
+  return `
+    <div class="bulk-danger-zone">
+      <span class="muted">${escapeHtml(filterLabel)}</span>
+      <div class="row-actions">
+        <button class="button danger compact" type="button" data-admin-bulk-delete="${kind}:filtered" ${count ? "" : "disabled"}>${icon("trash")}현재 필터 결과 삭제</button>
+        <button class="button ghost danger compact" type="button" data-admin-bulk-delete="${kind}:all" ${total ? "" : "disabled"}>${icon("trash")}전체 삭제</button>
+      </div>
+    </div>
+  `;
+}
+
+function activeSemesterLabel(options = [], active = "all") {
+  if (!active || active === "all") return "전체 학기";
+  return options.find((item) => item?.key === active)?.label || active;
+}
+
+function reservationBulkFilterLabel(query, renderedCount) {
+  if (query) return `현재 검색 결과 ${renderedCount}건 · ${activeSemesterLabel(state.adminReservationSemesters, state.adminReservationSemesterFilter)}`;
+  const type = state.adminReservationTab === "all" ? "전체 예약" : `${typeLabel[state.adminReservationTab] || state.adminReservationTab} 예약`;
+  const status = state.adminReservationTab === "equipment" && state.adminEquipmentReservationStatusFilter !== "all"
+    ? ` · ${equipmentReservationStatusLabel[state.adminEquipmentReservationStatusFilter] || state.adminEquipmentReservationStatusFilter}`
+    : "";
+  return `${activeSemesterLabel(state.adminReservationSemesters, state.adminReservationSemesterFilter)} · ${type}${status} · 현재 ${renderedCount}건`;
+}
+
+function reportBulkFilterLabel(query, renderedCount) {
+  if (query) return `현재 검색 결과 ${renderedCount}건 · ${activeSemesterLabel(state.adminReportSemesters, state.adminReportSemesterFilter)}`;
+  return `${activeSemesterLabel(state.adminReportSemesters, state.adminReportSemesterFilter)} · 현재 ${renderedCount}건`;
+}
+
+function lectureBulkFilterLabel(query, renderedCount) {
+  if (query) return `현재 검색 결과 ${renderedCount}건 · ${activeSemesterLabel(state.adminLectureSemesters, state.adminLectureSemesterFilter)}`;
+  return `${activeSemesterLabel(state.adminLectureSemesters, state.adminLectureSemesterFilter)} · 현재 ${renderedCount}건`;
+}
+
 export function adminContent() {
   if (state.adminView === "account") return adminAccountView();
   if (state.adminView === "users") return adminUsersView();
@@ -643,9 +687,12 @@ export function adminReservationsView() {
     : statusFilteredReservations;
   // 최신순(예약 생성일 내림차순)으로 정렬해 최근 예약을 위에 노출
   const reservations = base.slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  const reservationSemesterControls = semesterTabs(state.adminReservationSemesters, state.adminReservationSemesterFilter, "admin-reservation-semester");
+  const reservationTotal = Number(state.adminReservationsPage?.total || state.adminReservations.length || 0);
   return `
     <section class="grid">
       ${searchField({ value: state.adminReservationSearch || "", placeholder: "전체 검색 (이름·학번·날짜·기자재·스튜디오)", dataset: "data-admin-reservation-search" })}
+      ${reservationSemesterControls}
       <div ${query ? "hidden" : ""}>
         ${tabs(reservationTabs.map(([key, label]) => ({
           key,
@@ -658,6 +705,7 @@ export function adminReservationsView() {
           label
         })), { active: equipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
       ` : ""}
+      ${bulkDeletePanel("reservations", reservations.length, reservationTotal, reservationBulkFilterLabel(query, reservations.length))}
       ${adminPageScopeNote(state.adminReservationsPage, state.adminReservations.length, reservations.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReservationSearch)}" 검색 결과 ${reservations.length}건 · 전체 예약 대상</p>` : ""}
       <div class="admin-reservation-grid">
@@ -929,10 +977,14 @@ export function adminReportsView() {
     key,
     label: state.adminReportSort.field === key ? `${label} ${sortDirection}` : label
   }));
+  const reportSemesterControls = semesterTabs(state.adminReportSemesters, state.adminReportSemesterFilter, "admin-report-semester");
+  const reportTotal = Number(state.adminReportsPage?.total || state.adminReports.length || 0);
   return `
     <section class="grid">
       ${searchField({ value: state.adminReportSearch || "", placeholder: "전체 검색 (이름·학번·날짜·스튜디오·예약ID)", dataset: "data-admin-report-search" })}
+      ${reportSemesterControls}
       ${tabs(reportSortOptions, { active: state.adminReportSort.field, dataset: "admin-report-sort", ariaLabel: "보고서 정렬" })}
+      ${bulkDeletePanel("reports", reports.length, reportTotal, reportBulkFilterLabel(query, reports.length))}
       ${adminPageScopeNote(state.adminReportsPage, state.adminReports.length, reports.length, query)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminReportSearch)}" 검색 결과 ${reports.length}건</p>` : ""}
       ${reports.length ? reports.map((report) => `
@@ -1051,6 +1103,8 @@ export function adminLecturesView() {
   const query = normalizeSearchText(state.adminLectureSearch).trim();
   const lectures = (state.adminLectures || []).filter((lecture) => !query || adminLectureSearchText(lecture).includes(query));
   const panelTab = editing ? "add" : (state.adminLecturePanelTab || "list");
+  const lectureSemesterControls = semesterTabs(state.adminLectureSemesters, state.adminLectureSemesterFilter, "admin-lecture-semester");
+  const lectureTotal = Number(state.adminLecturesPage?.total || state.adminLectures.length || 0);
   return `
     <section class="grid">
       <div class="admin-inner-tabs" role="tablist" aria-label="비교과 특강 관리 탭">
@@ -1069,6 +1123,8 @@ export function adminLecturesView() {
         </div>
         <div class="list-control-panel compact">
           ${searchField({ value: state.adminLectureSearch || "", placeholder: "날짜·특강명·강사·장소·신청자 검색", dataset: "data-admin-lecture-search", label: "특강 검색" })}
+          ${lectureSemesterControls}
+          ${bulkDeletePanel("lectures", lectures.length, lectureTotal, lectureBulkFilterLabel(query, lectures.length))}
         </div>
         ${query ? `<p class="muted">"${escapeHtml(state.adminLectureSearch)}" 검색 결과 ${lectures.length}건</p>` : ""}
         ${lectures.length ? adminLectureTable(lectures) : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 비교과 특강이 없습니다.", body: query ? "검색어를 지우면 전체 특강을 볼 수 있습니다." : "" })}
@@ -1152,6 +1208,7 @@ export function adminNoticesView() {
       <div class="list-control-panel">
         ${searchField({ value: state.adminNoticeSearch || "", placeholder: "제목·분류·본문 검색", dataset: "data-admin-notice-search", label: "공지 검색" })}
       </div>
+      ${bulkDeletePanel("notices", notices.length, state.adminNotices.length, query ? `현재 검색 결과 ${notices.length}건` : `전체 공지 ${notices.length}건`)}
       ${query ? `<p class="muted">"${escapeHtml(state.adminNoticeSearch)}" 검색 결과 ${notices.length}건</p>` : ""}
       ${notices.length ? notices.map(noticeCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 공지사항이 없습니다.", body: query ? "검색어를 지우면 전체 공지를 볼 수 있습니다." : "" })}
       ${adminGuide("공지사항 사용 가이드", "비교과, 특강, 장비/시설 안내를 학생 화면에 공지합니다. 중요한 내용은 상단 고정으로 설정하고, 신청은 Slack 링크나 외부 링크를 넣으면 됩니다.")}

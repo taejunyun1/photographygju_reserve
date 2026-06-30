@@ -10,6 +10,118 @@ import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
 import { formData, parseCsv } from "../utils.js?v=20260627-admin-lecture-nav";
 import { renderPreservingScroll, resetAdminPage, setAdminPage } from "./shared.js?v=20260627-admin-lecture-nav";
 
+const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
+
+function activeSemesterLabel(options = [], active = "all") {
+  if (!active || active === "all") return "전체 학기";
+  return options.find((item) => item?.key === active)?.label || active;
+}
+
+function reservationBulkFilterLabel() {
+  const query = String(state.adminReservationSearch || "").trim();
+  if (query) return `현재 검색 결과 · ${activeSemesterLabel(state.adminReservationSemesters, state.adminReservationSemesterFilter)}`;
+  const typeLabel = state.adminReservationTab === "all" ? "전체 예약" : `${state.adminReservationTab} 예약`;
+  const statusLabel = state.adminReservationTab === "equipment" && state.adminEquipmentReservationStatusFilter !== "all"
+    ? ` · ${state.adminEquipmentReservationStatusFilter}`
+    : "";
+  return `${activeSemesterLabel(state.adminReservationSemesters, state.adminReservationSemesterFilter)} · ${typeLabel}${statusLabel}`;
+}
+
+function reportBulkFilterLabel() {
+  const query = String(state.adminReportSearch || "").trim();
+  if (query) return `현재 검색 결과 · ${activeSemesterLabel(state.adminReportSemesters, state.adminReportSemesterFilter)}`;
+  return activeSemesterLabel(state.adminReportSemesters, state.adminReportSemesterFilter);
+}
+
+function lectureBulkFilterLabel() {
+  const query = String(state.adminLectureSearch || "").trim();
+  if (query) return `현재 검색 결과 · ${activeSemesterLabel(state.adminLectureSemesters, state.adminLectureSemesterFilter)}`;
+  return activeSemesterLabel(state.adminLectureSemesters, state.adminLectureSemesterFilter);
+}
+
+function noticeBulkFilterLabel() {
+  return String(state.adminNoticeSearch || "").trim() ? "현재 검색 결과" : "전체 공지";
+}
+
+function currentBulkDeleteConfig(kind, scope) {
+  if (kind === "reservations") {
+    const query = String(state.adminReservationSearch || "").trim();
+    return {
+      path: "/api/admin/reservations/bulk",
+      pageKey: "adminReservationsPage",
+      totalCount: scope === "all"
+        ? Number(state.adminReservationsPage?.total || state.adminReservations.length || 0)
+        : Number(state.adminReservationsPage?.total || state.adminReservations.length || 0),
+      filterLabel: reservationBulkFilterLabel(),
+      filters: {
+        semester: state.adminReservationSemesterFilter,
+        q: query,
+        type: query ? "" : state.adminReservationTab,
+        status: !query && state.adminReservationTab === "equipment" ? state.adminEquipmentReservationStatusFilter : ""
+      },
+      toastMessage: (result) => `예약 ${result.deletedReservations}건과 연결 보고서 ${result.deletedReports}건을 삭제했습니다.`
+    };
+  }
+  if (kind === "reports") {
+    return {
+      path: "/api/admin/reports/bulk",
+      pageKey: "adminReportsPage",
+      totalCount: Number(state.adminReportsPage?.total || state.adminReports.length || 0),
+      filterLabel: reportBulkFilterLabel(),
+      filters: {
+        semester: state.adminReportSemesterFilter,
+        q: String(state.adminReportSearch || "").trim()
+      },
+      toastMessage: (result) => `보고서 ${result.deletedReports}건을 삭제했습니다.`
+    };
+  }
+  if (kind === "lectures") {
+    return {
+      path: "/api/admin/lectures/bulk",
+      pageKey: "adminLecturesPage",
+      totalCount: Number(state.adminLecturesPage?.total || state.adminLectures.length || 0),
+      filterLabel: lectureBulkFilterLabel(),
+      filters: {
+        semester: state.adminLectureSemesterFilter,
+        q: String(state.adminLectureSearch || "").trim()
+      },
+      toastMessage: (result) => `특강 ${result.deletedLectures}건과 신청 ${result.deletedApplications}건을 삭제했습니다.`
+    };
+  }
+  if (kind === "notices") {
+    const query = String(state.adminNoticeSearch || "").trim();
+    const filteredCount = query
+      ? state.adminNotices.filter((notice) => {
+        const haystack = [notice.title, notice.category, notice.body].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(query.toLowerCase());
+      }).length
+      : state.adminNotices.length;
+    return {
+      path: "/api/admin/notices/bulk",
+      pageKey: "",
+      totalCount: scope === "all" ? state.adminNotices.length : filteredCount,
+      filterLabel: noticeBulkFilterLabel(),
+      filters: { q: query },
+      toastMessage: (result) => `공지 ${result.deletedNotices}건을 삭제했습니다.`
+    };
+  }
+  return null;
+}
+
+async function refreshAdminDataPreservingScroll(pageKey = "") {
+  await loadAdminData();
+  if (pageKey) {
+    const page = state[pageKey] || {};
+    const pageSize = Math.max(1, Number(page.pageSize || 0) || 100);
+    const totalPages = Math.max(1, Math.ceil(Number(page.total || 0) / pageSize));
+    if (Number(page.page || 1) > totalPages) {
+      setAdminPage(pageKey, totalPages);
+      await loadAdminData();
+    }
+  }
+  renderPreservingScroll();
+}
+
 export function setupAdminFlowClickHandlers() {
   document.addEventListener("click", async (event) => {
     const target = event.target.closest("button, a");
@@ -74,6 +186,24 @@ export function setupAdminFlowClickHandlers() {
         resetAdminPage("adminReservationsPage");
         await loadAdminData();
         render();
+        return;
+      }
+      if (target.dataset.adminReservationSemester !== undefined) {
+        state.adminReservationSemesterFilter = target.dataset.adminReservationSemester;
+        resetAdminPage("adminReservationsPage");
+        await refreshAdminDataPreservingScroll("adminReservationsPage");
+        return;
+      }
+      if (target.dataset.adminReportSemester !== undefined) {
+        state.adminReportSemesterFilter = target.dataset.adminReportSemester;
+        resetAdminPage("adminReportsPage");
+        await refreshAdminDataPreservingScroll("adminReportsPage");
+        return;
+      }
+      if (target.dataset.adminLectureSemester !== undefined) {
+        state.adminLectureSemesterFilter = target.dataset.adminLectureSemester;
+        resetAdminPage("adminLecturesPage");
+        await refreshAdminDataPreservingScroll("adminLecturesPage");
         return;
       }
       if (target.dataset.adminUserStatusFilter) {
@@ -161,6 +291,38 @@ export function setupAdminFlowClickHandlers() {
         if (state.editingLectureId === target.dataset.lectureDelete) state.editingLectureId = "";
         await loadAdminData();
         toast(`특강을 삭제했습니다.${result.removedApplications ? ` (신청 ${result.removedApplications}건 포함)` : ""}`);
+        return;
+      }
+      if (target.dataset.adminBulkDelete) {
+        const [kind = "", scope = "filtered"] = String(target.dataset.adminBulkDelete || "").split(":");
+        const config = currentBulkDeleteConfig(kind, scope);
+        if (!config) return;
+        if (!config.totalCount) {
+          toast("삭제할 항목이 없습니다.");
+          return;
+        }
+        let confirmText = "";
+        if (scope === "all") {
+          const input = prompt(`전체 데이터를 삭제하려면 확인 문구를 정확히 입력하세요.\n${FULL_DELETE_CONFIRM_TEXT}`, "");
+          if (input === null) return;
+          confirmText = input.trim();
+          if (confirmText !== FULL_DELETE_CONFIRM_TEXT) {
+            toast("전체 삭제를 취소했습니다.");
+            return;
+          }
+        } else if (!confirm(`${config.filterLabel} 기준 ${config.totalCount}건을 삭제할까요?\n되돌릴 수 없습니다.`)) {
+          return;
+        }
+        const result = await api(config.path, {
+          method: "DELETE",
+          body: {
+            scope,
+            filters: config.filters,
+            confirmText
+          }
+        });
+        await refreshAdminDataPreservingScroll(config.pageKey);
+        toast(config.toastMessage(result));
         return;
       }
       if (target.dataset.blockedRemove) {

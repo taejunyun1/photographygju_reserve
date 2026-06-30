@@ -75,6 +75,7 @@ function adminReservationsPath() {
     pageSize: 100,
     type,
     status,
+    semester: state.adminReservationSemesterFilter,
     q: query
   })}`;
 }
@@ -83,7 +84,17 @@ function adminReportsPath() {
   return `/api/admin/reports?${queryString({
     page: pageNumber(state.adminReportsPage),
     pageSize: 100,
+    semester: state.adminReportSemesterFilter,
     q: state.adminReportSearch
+  })}`;
+}
+
+function adminLecturesPath() {
+  return `/api/admin/lectures?${queryString({
+    page: pageNumber(state.adminLecturesPage),
+    pageSize: 100,
+    semester: state.adminLectureSemesterFilter,
+    q: state.adminLectureSearch
   })}`;
 }
 
@@ -95,7 +106,7 @@ export async function loadAdminData() {
     api("/api/admin/equipment"),
     api(adminReportsPath()),
     api("/api/admin/notices"),
-    api("/api/admin/lectures"),
+    api(adminLecturesPath()),
     api("/api/admin/sessions"),
     api("/api/admin/logs")
   ]);
@@ -104,12 +115,16 @@ export async function loadAdminData() {
     adminUsers: pagedItems(users),
     adminUsersPage: pageMeta(users),
     adminReservations: pagedItems(reservations),
+    adminReservationSemesters: reservations?.semesterOptions || [],
     adminReservationsPage: pageMeta(reservations),
     adminEquipment: equipment,
     adminReports: pagedItems(reports),
+    adminReportSemesters: reports?.semesterOptions || [],
     adminReportsPage: pageMeta(reports),
     adminNotices: notices,
-    adminLectures: lectures,
+    adminLectures: pagedItems(lectures),
+    adminLectureSemesters: lectures?.semesterOptions || [],
+    adminLecturesPage: pageMeta(lectures),
     adminSessions: sessions,
     adminLogs: logs
   });
