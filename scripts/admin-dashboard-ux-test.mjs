@@ -102,6 +102,7 @@ const coreSource = fs.readFileSync("core.mjs", "utf8");
 const dataSource = fs.readFileSync("public/js/data.js", "utf8");
 const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
+const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
 const adminEventSource = [
   "public/js/events/shared.js",
   "public/js/events/scroll-state.js",
@@ -235,6 +236,19 @@ assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobil
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
+assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
+assert(adminEventSource.includes('toast("기자재 상태를 변경했습니다.", { preserveScroll: true })'), "admin equipment status toast must preserve scroll");
+assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true })'), "bulk equipment status toast must preserve scroll");
+assert(adminEventSource.includes('toast("기자재를 제거했습니다.", { preserveScroll: true })'), "admin equipment removal toast must preserve scroll");
+assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true })'), "bulk equipment removal toast must preserve scroll");
+assert(adminEventSource.includes('toast(error.message, { preserveScroll: true })'), "admin action errors must preserve scroll");
+assert(!adminEventSource.includes('toast("비밀번호를 변경했습니다.");'), "password reset toast must not be plain");
+assert(!adminEventSource.includes('toast("기자재 상태를 변경했습니다.");'), "equipment status toast must not be plain");
+assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`);'), "bulk equipment status toast must not be plain");
+assert(!adminEventSource.includes('toast("기자재를 제거했습니다.");'), "equipment removal toast must not be plain");
+assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);'), "bulk equipment removal toast must not be plain");
+assert(formsSource.includes('toast(error.message, { preserveScroll: true })'), "form error toasts must preserve scroll");
+assert(!formsSource.includes('toast(error.message);'), "form error toasts must not use plain toast");
 assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
 assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");

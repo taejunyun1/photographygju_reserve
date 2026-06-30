@@ -144,7 +144,7 @@ export function setupFormEventHandlers() {
         toast("차단 일정을 추가했습니다.", { preserveScroll: true });
       }
     } catch (error) {
-      toast(error.message);
+      toast(error.message, { preserveScroll: true });
     }
   });
 }

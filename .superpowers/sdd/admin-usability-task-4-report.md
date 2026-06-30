@@ -61,3 +61,19 @@ git diff --stat
 
 ## Concerns
 - The source-aggregation test originally did not include the new helper module, so I expanded the test input set to keep the pre-existing scroll-selector assertions meaningful after the extraction.
+
+## Follow-up Fix Notes
+- Updated the remaining required admin completion toasts in `public/js/events/admin-flow.js` so password reset and 기자재 management success paths now call `toast(..., { preserveScroll: true })`.
+- Updated the shared admin/action error path in `public/js/events/admin-flow.js` and `public/js/events/forms.js` so error toasts are scroll-safe.
+- Strengthened `scripts/admin-dashboard-ux-test.mjs` with exact source assertions for the previously missed required admin toast paths, including negative checks for the plain-toast forms.
+
+## Verification
+Ran:
+
+```bash
+npm run test:admin-ui && npm run check:js
+```
+
+Result:
+- Passed: `Admin dashboard UX checks passed.`
+- Passed: `JavaScript syntax checks passed (38 files).`

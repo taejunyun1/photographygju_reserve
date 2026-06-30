@@ -366,7 +366,7 @@ export function setupAdminFlowClickHandlers() {
         if (result.generatedPassword) {
           alert(`임시 비밀번호: ${result.generatedPassword}\n학생에게 전달한 뒤 첫 로그인에서 변경하도록 안내하세요.`);
         } else {
-          toast("비밀번호를 변경했습니다.");
+          toast("비밀번호를 변경했습니다.", { preserveScroll: true });
         }
         return;
       }
@@ -430,7 +430,7 @@ export function setupAdminFlowClickHandlers() {
           target.disabled = false;
         }
         syncAdminEquipmentDom(updated);
-        toast("기자재 상태를 변경했습니다.");
+        toast("기자재 상태를 변경했습니다.", { preserveScroll: true });
         return;
       }
       if (target.dataset.equipmentBulkStatus) {
@@ -441,14 +441,14 @@ export function setupAdminFlowClickHandlers() {
         }
         const updated = await patchAdminEquipment(ids, { status: target.dataset.equipmentBulkStatus });
         syncAdminEquipmentDom(updated);
-        toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`);
+        toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true });
         return;
       }
       if (target.dataset.equipmentRemoveAdmin) {
         if (!confirm("이 기자재를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.")) return;
         const updated = await patchAdminEquipment([target.dataset.equipmentRemoveAdmin], { active: false });
         syncAdminEquipmentDom(updated);
-        toast("기자재를 제거했습니다.");
+        toast("기자재를 제거했습니다.", { preserveScroll: true });
         return;
       }
       if (target.dataset.equipmentBulkRemove !== undefined) {
@@ -460,11 +460,11 @@ export function setupAdminFlowClickHandlers() {
         if (!confirm(`선택한 기자재 ${ids.length}개를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.`)) return;
         const updated = await patchAdminEquipment(ids, { active: false });
         syncAdminEquipmentDom(updated);
-        toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);
+        toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true });
         return;
       }
     } catch (error) {
-      toast(error.message);
+      toast(error.message, { preserveScroll: true });
     }
   });
 }
