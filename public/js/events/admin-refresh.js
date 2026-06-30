@@ -20,6 +20,7 @@ function resetRefreshState() {
 function canStartRefresh(event) {
   if (!(event.target instanceof Element)) return false;
   if (!state.user || state.user.role !== "admin") return false;
+  if (state.adminRefresh?.refreshing) return false;
   if (event.target.closest("input, textarea, select, button, a, form")) return false;
   const main = event.target.closest(".admin-main");
   return Boolean(main && main.scrollTop <= 0);
@@ -61,6 +62,10 @@ export function setupAdminRefreshHandlers() {
   document.addEventListener("pointerup", () => {
     if (!tracking) return;
     tracking = false;
+    if (state.adminRefresh?.refreshing) {
+      startY = 0;
+      return;
+    }
     if (Number(state.adminRefresh?.distance || 0) >= THRESHOLD) {
       runRefresh();
       return;

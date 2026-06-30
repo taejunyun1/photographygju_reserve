@@ -59,3 +59,15 @@
 
 ## Concerns
 - No blocking concerns.
+
+## Review Fix Notes
+- Hardened `public/js/events/admin-refresh.js` so a new pull-to-refresh cannot start while `state.adminRefresh.refreshing` is true.
+- Added a pointerup guard to ignore stale drag distance during an active refresh, preventing overlapping refresh calls and duplicate toasts.
+- Added a compact `.admin-refresh-indicator.refreshing span` style in `public/styles.css` so the rendered class has a visible active state.
+- Strengthened `scripts/admin-dashboard-ux-test.mjs` with direct source assertions against the refresh guard and the active-refresh pointerup branch.
+
+## Verification
+- `npm run test:admin-ui`
+- `npm run check:js`
+- Result: `Admin dashboard UX checks passed.`
+- Result: `JavaScript syntax checks passed (39 files).`

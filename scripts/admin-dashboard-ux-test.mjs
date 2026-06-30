@@ -103,6 +103,7 @@ const dataSource = fs.readFileSync("public/js/data.js", "utf8");
 const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
+const adminRefreshSource = fs.readFileSync("public/js/events/admin-refresh.js", "utf8");
 const adminEventSource = [
   "public/js/events/shared.js",
   "public/js/events/scroll-state.js",
@@ -226,6 +227,7 @@ assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet l
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
 assert(css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must exist");
+assert(css.includes(".admin-refresh-indicator.refreshing span"), "pull refresh indicator must have a visible refreshing state");
 assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
@@ -240,6 +242,8 @@ assert(eventSource.includes(".mobile-nav") && eventSource.includes(".admin-mobil
 assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav"), "scroll preservation must include desktop menu bars");
 assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler must be wired through events facade");
 assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
+assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) return false;"), "pull refresh must block new starts while a refresh is active");
+assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      startY = 0;\n      return;\n    }"), "pointerup must ignore stale drag state during an active refresh");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
