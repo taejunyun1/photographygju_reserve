@@ -129,13 +129,26 @@ async function api(method, pathname, body = {}, token = "", meta = {}) {
 async function withMockedRandomUuids(uuids, fn) {
   const originalRandomUUID = crypto.randomUUID;
   let index = 0;
-  crypto.randomUUID = () => uuids[Math.min(index++, uuids.length - 1)];
+  crypto.randomUUID = () => {
+    if (index >= uuids.length) {
+      throw new Error(`Mocked randomUUID exhausted at call ${index + 1}`);
+    }
+    return uuids[index++];
+  };
   try {
     return await fn();
   } finally {
     crypto.randomUUID = originalRandomUUID;
   }
 }
+
+await assert.rejects(
+  () => withMockedRandomUuids(["00000000-0000-4000-8000-000000000000"], async () => {
+    crypto.randomUUID();
+    crypto.randomUUID();
+  }),
+  /Mocked randomUUID exhausted at call 2/
+);
 
 const adminLogin = await api("POST", "/api/auth/login", {
   loginId: "admin",
@@ -430,7 +443,8 @@ assert.equal(Boolean(studentSession?.ip), true);
 
 const studioReservationForReport = await withMockedRandomUuids([
   "11111111-2222-3333-4444-555555555555",
-  "66666666-7777-8888-9999-aaaaaaaaaaaa"
+  "66666666-7777-8888-9999-aaaaaaaaaaaa",
+  "bbbbbbbb-cccc-dddd-eeee-ffffffffffff"
 ], () => api("POST", "/api/reservations", {
   type: "studio",
   fields: {
@@ -445,9 +459,19 @@ const studioReservationForReport = await withMockedRandomUuids([
 }, studentLogin.body.data.token));
 assert.equal(studioReservationForReport.status, 200);
 assert.equal(studioReservationForReport.body.data.id, "res_11111111222233");
+const studioReservationAuditLog = db.auditLogs.at(-1);
+assert.deepEqual(studioReservationAuditLog, {
+  id: "audit_66666666777788",
+  actorId: studentLogin.body.data.user.id,
+  action: "reservation.created",
+  targetId: "res_11111111222233",
+  detail: { type: "studio" },
+  createdAt: studioReservationAuditLog.createdAt
+});
+assert.match(studioReservationAuditLog.createdAt, /^\d{4}-\d{2}-\d{2}T/);
 const studioReservationSlackLog = db.slackLogs.at(-1);
 assert.deepEqual(studioReservationSlackLog, {
-  id: "slack_66666666777788",
+  id: "slack_bbbbbbbbccccdd",
   event: "reservation_created",
   status: "skipped",
   message: "[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: 2026-07-06\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://photographygju.dothome.co.kr/reservations/res_11111111222233",
