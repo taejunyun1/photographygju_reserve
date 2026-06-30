@@ -98,6 +98,9 @@ npx wrangler secret put SLACK_WEBHOOK_URL
 
 The production database is never reset in place (guardrail). There is no
 reset endpoint; `INTERNAL_CRON_SECRET` only guards the retention-cleanup cron.
+During the Durable Object SQLite migration, the legacy Durable Object `db`
+snapshot is copied into SQL only when SQL is empty and is preserved for manual
+recovery during App Review.
 
 Then deploy:
 

@@ -151,6 +151,7 @@ slack_logs
 
 Database rules:
 
+- During the current Durable Object SQLite migration, preserve the legacy Durable Object `db` snapshot. Copy it into SQL only when SQL is empty, and do not delete it automatically during App Review.
 - Every table needs `id`, `created_at`, and `updated_at`.
 - Store all dates in ISO format.
 - Store user-facing dates in Asia/Seoul at rendering time.
