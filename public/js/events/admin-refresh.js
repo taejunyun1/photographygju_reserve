@@ -51,7 +51,10 @@ export function setupAdminRefreshHandlers() {
   document.addEventListener("pointermove", (event) => {
     if (!tracking || state.adminRefresh?.refreshing) return;
     const distance = Math.max(0, Math.min(MAX_DISTANCE, (event.clientY || 0) - startY));
-    if (distance <= 0) return;
+    if (distance <= 0) {
+      resetRefreshState();
+      return;
+    }
     setRefreshState({
       pulling: true,
       distance,

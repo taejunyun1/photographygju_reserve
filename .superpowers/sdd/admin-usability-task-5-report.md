@@ -82,3 +82,13 @@
 - `npm run check:js`
 - Result: `Admin dashboard UX checks passed.`
 - Result: `JavaScript syntax checks passed (39 files).`
+
+## Review Fix Notes
+- Changed `public/js/events/admin-refresh.js` so reversing a pull back to zero distance immediately clears `state.adminRefresh`, preventing `pointerup` from reusing an old threshold.
+- Added a focused source assertion in `scripts/admin-dashboard-ux-test.mjs` that requires the `distance <= 0` branch to call `resetRefreshState()` before returning.
+
+## Verification for Stale Distance Fix
+- `npm run test:admin-ui`
+- `npm run check:js`
+- Result: `Admin dashboard UX checks passed.`
+- Result: `JavaScript syntax checks passed (39 files).`

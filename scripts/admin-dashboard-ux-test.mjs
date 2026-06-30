@@ -244,6 +244,7 @@ assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler
 assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
 assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) return false;"), "pull refresh must block new starts while a refresh is active");
 assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      startY = 0;\n      return;\n    }"), "pointerup must ignore stale drag state during an active refresh");
+assert(adminRefreshSource.includes("if (distance <= 0) {\n      resetRefreshState();\n      return;\n    }"), "pointermove must clear stale pull state when drag distance reverses to zero");
 assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      startY = 0;\n      return;\n    }\n    resetRefreshState();"), "pointercancel must not clear active refresh state");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
