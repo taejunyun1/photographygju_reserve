@@ -2365,6 +2365,28 @@ button:disabled,
     linear-gradient(90deg, var(--primary) 0 var(--share), var(--surface-container) var(--share) 100%);
 }
 
+.admin-type-share i.share-step-0 { --share: 0%; }
+.admin-type-share i.share-step-1 { --share: 5%; }
+.admin-type-share i.share-step-2 { --share: 10%; }
+.admin-type-share i.share-step-3 { --share: 15%; }
+.admin-type-share i.share-step-4 { --share: 20%; }
+.admin-type-share i.share-step-5 { --share: 25%; }
+.admin-type-share i.share-step-6 { --share: 30%; }
+.admin-type-share i.share-step-7 { --share: 35%; }
+.admin-type-share i.share-step-8 { --share: 40%; }
+.admin-type-share i.share-step-9 { --share: 45%; }
+.admin-type-share i.share-step-10 { --share: 50%; }
+.admin-type-share i.share-step-11 { --share: 55%; }
+.admin-type-share i.share-step-12 { --share: 60%; }
+.admin-type-share i.share-step-13 { --share: 65%; }
+.admin-type-share i.share-step-14 { --share: 70%; }
+.admin-type-share i.share-step-15 { --share: 75%; }
+.admin-type-share i.share-step-16 { --share: 80%; }
+.admin-type-share i.share-step-17 { --share: 85%; }
+.admin-type-share i.share-step-18 { --share: 90%; }
+.admin-type-share i.share-step-19 { --share: 95%; }
+.admin-type-share i.share-step-20 { --share: 100%; }
+
 .guide-card {
   border: 1px solid var(--glass-border);
   background: var(--glass-surface-soft);
@@ -3248,6 +3270,40 @@ details.inquiry-equipment-step {
   pointer-events: none;
   transition: opacity 160ms ease, transform 160ms ease;
 }
+
+.admin-refresh-indicator.pull-step-0 { transform: translateY(0); }
+.admin-refresh-indicator.pull-step-1 { transform: translateY(1px); }
+.admin-refresh-indicator.pull-step-2 { transform: translateY(2px); }
+.admin-refresh-indicator.pull-step-3 { transform: translateY(3px); }
+.admin-refresh-indicator.pull-step-4 { transform: translateY(4px); }
+.admin-refresh-indicator.pull-step-5 { transform: translateY(5px); }
+.admin-refresh-indicator.pull-step-6 { transform: translateY(6px); }
+.admin-refresh-indicator.pull-step-7 { transform: translateY(7px); }
+.admin-refresh-indicator.pull-step-8 { transform: translateY(8px); }
+.admin-refresh-indicator.pull-step-9 { transform: translateY(9px); }
+.admin-refresh-indicator.pull-step-10 { transform: translateY(10px); }
+.admin-refresh-indicator.pull-step-11 { transform: translateY(11px); }
+.admin-refresh-indicator.pull-step-12 { transform: translateY(12px); }
+.admin-refresh-indicator.pull-step-13 { transform: translateY(13px); }
+.admin-refresh-indicator.pull-step-14 { transform: translateY(14px); }
+.admin-refresh-indicator.pull-step-15 { transform: translateY(15px); }
+.admin-refresh-indicator.pull-step-16 { transform: translateY(16px); }
+.admin-refresh-indicator.pull-step-17 { transform: translateY(17px); }
+.admin-refresh-indicator.pull-step-18 { transform: translateY(18px); }
+.admin-refresh-indicator.pull-step-19 { transform: translateY(19px); }
+.admin-refresh-indicator.pull-step-20 { transform: translateY(20px); }
+.admin-refresh-indicator.pull-step-21 { transform: translateY(21px); }
+.admin-refresh-indicator.pull-step-22 { transform: translateY(22px); }
+.admin-refresh-indicator.pull-step-23 { transform: translateY(23px); }
+.admin-refresh-indicator.pull-step-24 { transform: translateY(24px); }
+.admin-refresh-indicator.pull-step-25 { transform: translateY(25px); }
+.admin-refresh-indicator.pull-step-26 { transform: translateY(26px); }
+.admin-refresh-indicator.pull-step-27 { transform: translateY(27px); }
+.admin-refresh-indicator.pull-step-28 { transform: translateY(28px); }
+.admin-refresh-indicator.pull-step-29 { transform: translateY(29px); }
+.admin-refresh-indicator.pull-step-30 { transform: translateY(30px); }
+.admin-refresh-indicator.pull-step-31 { transform: translateY(31px); }
+.admin-refresh-indicator.pull-step-32 { transform: translateY(32px); }
 
 .admin-refresh-indicator.visible {
   height: 36px;

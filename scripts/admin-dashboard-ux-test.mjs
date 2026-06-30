@@ -180,6 +180,7 @@ assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "oper
 assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
 assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
 assert(adminShell().includes("admin-refresh-indicator"), "Admin shell must render pull-to-refresh indicator");
+assert(adminShell().includes("pull-step-0"), "Admin pull-to-refresh indicator must use CSP-safe step classes");
 assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
 assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
 assert(!dashboard.includes("승인 완료"), "equipment dashboard must not show legacy approval status");
@@ -241,6 +242,9 @@ assert(!css.includes(".admin-queue-item"), "duplicated operations queue card sty
 assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
 assert(css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must exist");
 assert(css.includes(".admin-refresh-indicator.refreshing span"), "pull refresh indicator must have a visible refreshing state");
+assert(css.includes(".admin-refresh-indicator.pull-step-32"), "pull refresh indicator must expose CSP-safe transform steps");
+assert(css.includes(".admin-type-share i.share-step-20"), "admin type share bars must expose CSP-safe percentage steps");
+assert(!viewsSource.includes('style="'), "admin views must not render inline style attributes under strict CSP");
 assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
 assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
@@ -326,6 +330,8 @@ assert(eventSource.includes("target.dataset.adminReservationSemester"), "reserva
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
 assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");
 assert(searchSource.includes('"adminNoticeSearch"') && searchSource.includes("adminServerSearchStateKeys"), "notice admin search must be treated as server-backed search state");
+assert(searchSource.includes('document.addEventListener("focusout", (event) => {'), "server-backed search focusout handler must not block the following click event");
+assert(searchSource.includes('setTimeout(() => {\n      if (searchRenderInProgress) return;\n      commitSearchInput(target, binding, { restoreFocus: false });'), "search focusout commit must be deferred until after the current click sequence");
 assert(searchSource.includes('resetAdminPage("adminLecturesPage")'), "lecture server-backed search must reset lecture paging");
 assert(dataSource.includes("function adminNoticesPath()"), "notice admin data must load through a dedicated path helper");
 assert(dataSource.includes("q: state.adminNoticeSearch"), "notice admin data path must forward the notice search query");

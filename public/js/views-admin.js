@@ -99,7 +99,8 @@ function adminRefreshIndicator() {
   const refresh = state.adminRefresh || {};
   const visible = refresh.pulling || refresh.refreshing;
   const distance = Math.min(96, Math.max(0, Number(refresh.distance || 0)));
-  return `<div class="admin-refresh-indicator ${visible ? "visible" : ""} ${refresh.refreshing ? "refreshing" : ""}" style="transform: translateY(${distance ? Math.round(distance / 3) : 0}px)"><span>${escapeHtml(refresh.message || "당겨서 새로고침")}</span></div>`;
+  const offset = Math.min(32, Math.max(0, Math.round(distance / 3)));
+  return `<div class="admin-refresh-indicator pull-step-${offset} ${visible ? "visible" : ""} ${refresh.refreshing ? "refreshing" : ""}"><span>${escapeHtml(refresh.message || "당겨서 새로고침")}</span></div>`;
 }
 
 export function adminTitle() {
@@ -449,11 +450,12 @@ function adminDashboardMetricSection(metrics) {
   const typeRows = typeTotal
     ? Object.entries(metrics.typeCounts).map(([type, count]) => {
       const percent = Math.round((count / typeTotal) * 100);
+      const shareStep = Math.min(20, Math.max(0, Math.round(percent / 5)));
       return `
         <div class="admin-type-share">
           <span>${escapeHtml(typeLabel[type] || type)}</span>
           <strong>${percent}%</strong>
-          <i style="--share:${percent}%"></i>
+          <i class="share-step-${shareStep}"></i>
         </div>
       `;
     }).join("")

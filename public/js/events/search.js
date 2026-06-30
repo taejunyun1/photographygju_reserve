@@ -171,11 +171,14 @@ export function setupSearchEventHandlers() {
     }
   });
 
-  document.addEventListener("focusout", async (event) => {
+  document.addEventListener("focusout", (event) => {
     const target = event.target;
     const binding = searchBindingForTarget(target);
     if (!binding) return;
     if (searchRenderInProgress) return;
-    await commitSearchInput(target, binding, { restoreFocus: false });
+    setTimeout(() => {
+      if (searchRenderInProgress) return;
+      commitSearchInput(target, binding, { restoreFocus: false });
+    }, 0);
   });
 }
