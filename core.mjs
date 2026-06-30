@@ -3,6 +3,12 @@
 // adapters; everything else — data model, validation, routes — lives here.
 // Relies on the Web Crypto + fetch globals available in Workers and Node 18+.
 
+import {
+  deleteAdminLectures,
+  deleteAdminNotices,
+  deleteAdminReports,
+  deleteAdminReservations
+} from "./core/admin-bulk-delete.mjs";
 import { createAdminListHelpers } from "./core/admin-lists.mjs";
 import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
@@ -1195,7 +1201,11 @@ const {
   adminReservationList,
   adminReportList,
   adminUserList,
-  adminLectureList
+  adminLectureList,
+  filterAdminReservations,
+  filterAdminReports,
+  filterAdminLectures,
+  filterAdminNotices
 } = createAdminListHelpers({
   withReservationDetails,
   reportWithDetails,
@@ -1981,6 +1991,15 @@ export async function handleApiRequest(ctx) {
         return ok(db.reservations.map((item) => withReservationDetails(db, item)));
       }
 
+      if (routeKey(method, pathname) === "DELETE /api/admin/reservations/bulk") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const result = deleteAdminReservations(db, { ...body, admin, filterAdminReservations });
+        audit(db, admin, "reservations.bulk_deleted", "reservations", result.audit);
+        await saveDb();
+        return ok(result.summary);
+      }
+
       const adminReservationStatusMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)\/status$/);
       if (method === "PATCH" && adminReservationStatusMatch) {
         const admin = requireAdmin(authorization, db);
@@ -2137,6 +2156,15 @@ export async function handleApiRequest(ctx) {
         return ok(db.reports.map((report) => reportWithDetails(db, report)));
       }
 
+      if (routeKey(method, pathname) === "DELETE /api/admin/reports/bulk") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const result = deleteAdminReports(db, { ...body, admin, filterAdminReports });
+        audit(db, admin, "reports.bulk_deleted", "reports", result.audit);
+        await saveDb();
+        return ok(result.summary);
+      }
+
       if (routeKey(method, pathname) === "GET /api/admin/lectures") {
         requireAdmin(authorization, db);
         if (hasListQuery(searchParams)) return ok(adminLectureList(db, searchParams));
@@ -2195,6 +2223,15 @@ export async function handleApiRequest(ctx) {
         return ok(lectureDetail(db, lecture));
       }
 
+      if (routeKey(method, pathname) === "DELETE /api/admin/lectures/bulk") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const result = deleteAdminLectures(db, { ...body, admin, filterAdminLectures });
+        audit(db, admin, "lectures.bulk_deleted", "lectures", result.audit);
+        await saveDb();
+        return ok(result.summary);
+      }
+
       const lectureDeleteMatch = pathname.match(/^\/api\/admin\/lectures\/([^/]+)$/);
       if (method === "DELETE" && lectureDeleteMatch) {
         const admin = requireAdmin(authorization, db);
@@ -2210,7 +2247,17 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
         requireAdmin(authorization, db);
+        if (hasListQuery(searchParams)) return ok(filterAdminNotices(db, Object.fromEntries(searchParams.entries())).items);
         return ok(db.notices);
+      }
+
+      if (routeKey(method, pathname) === "DELETE /api/admin/notices/bulk") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const result = deleteAdminNotices(db, { ...body, admin, filterAdminNotices });
+        audit(db, admin, "notices.bulk_deleted", "notices", result.audit);
+        await saveDb();
+        return ok(result.summary);
       }
 
       if (routeKey(method, pathname) === "POST /api/admin/notices") {

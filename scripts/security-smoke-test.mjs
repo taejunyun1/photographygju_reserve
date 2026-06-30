@@ -350,6 +350,84 @@ assert.equal(semesterLectures.status, 200);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s1"), true);
 assert.equal(semesterLectures.body.data.items.some((item) => item.id === "lecture_semester_s2"), false);
 assert.equal(semesterLectures.body.data.semesterOptions.some((item) => item.key === "2026-S1" && item.label === "2026년 1학기"), true);
+
+const fullDeleteWithoutPhrase = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "all",
+  confirmText: ""
+}, adminToken);
+assert.equal(fullDeleteWithoutPhrase.status, 400);
+
+db.reservations.push(
+  {
+    id: "res_bulk_keep_s1",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-04-10", studioSpaces: ["Studio A Front"], timeSlots: ["10:30-12:00"], reportStatus: "submitted" },
+    history: [],
+    createdAt: "2026-04-01T00:00:00.000Z",
+    updatedAt: "2026-04-01T00:00:00.000Z"
+  },
+  {
+    id: "res_bulk_delete_s2",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-10-10", studioSpaces: ["Studio A Front"], timeSlots: ["10:30-12:00"], reportStatus: "submitted" },
+    history: [],
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-01T00:00:00.000Z"
+  }
+);
+db.reports.push(
+  { id: "report_bulk_keep_s1", type: "studio", reservationId: "res_bulk_keep_s1", userId: "user_admin", fields: {}, htmlSnapshot: "", submittedAt: "2026-04-10T00:00:00.000Z", expiresAt: "2026-10-10T00:00:00.000Z" },
+  { id: "report_bulk_delete_s2", type: "studio", reservationId: "res_bulk_delete_s2", userId: "user_admin", fields: {}, htmlSnapshot: "", submittedAt: "2026-10-10T00:00:00.000Z", expiresAt: "2027-04-10T00:00:00.000Z" }
+);
+const filteredReservationDelete = await api("DELETE", "/api/admin/reservations/bulk", {
+  scope: "filtered",
+  filters: { semester: "2026-S2", type: "studio" },
+  confirmText: ""
+}, adminToken);
+assert.equal(filteredReservationDelete.status, 200);
+assert.equal(filteredReservationDelete.body.data.deletedReservations, 1);
+assert.equal(filteredReservationDelete.body.data.deletedReports, 1);
+assert.equal(db.reservations.some((item) => item.id === "res_bulk_delete_s2"), false);
+assert.equal(db.reports.some((item) => item.id === "report_bulk_delete_s2"), false);
+assert.equal(db.reservations.some((item) => item.id === "res_bulk_keep_s1"), true);
+
+const reportDelete = await api("DELETE", "/api/admin/reports/bulk", {
+  scope: "filtered",
+  filters: { semester: "2026-S1", q: "report_bulk_keep_s1" },
+  confirmText: ""
+}, adminToken);
+assert.equal(reportDelete.status, 200);
+assert.equal(reportDelete.body.data.deletedReports, 1);
+assert.equal(reportDelete.body.data.resetReservations, 1);
+assert.equal(db.reports.some((item) => item.id === "report_bulk_keep_s1"), false);
+assert.equal(db.reservations.find((item) => item.id === "res_bulk_keep_s1").fields.reportStatus, "required");
+
+db.lectures.push({ id: "lecture_bulk_delete", title: "삭제 특강", lectureDate: "2026-10-01", time: "10:00", location: "A", instructorName: "강사", description: "삭제", status: "모집중", createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-01T00:00:00.000Z" });
+db.lectureApplications.push({ id: "lecture_app_bulk_delete", lectureId: "lecture_bulk_delete", userId: "user_admin", appliedAt: "2026-09-02T00:00:00.000Z" });
+const lectureDelete = await api("DELETE", "/api/admin/lectures/bulk", {
+  scope: "filtered",
+  filters: { semester: "2026-S2", q: "삭제 특강" },
+  confirmText: ""
+}, adminToken);
+assert.equal(lectureDelete.status, 200);
+assert.equal(lectureDelete.body.data.deletedLectures, 1);
+assert.equal(lectureDelete.body.data.deletedApplications, 1);
+assert.equal(db.lectureApplications.some((item) => item.lectureId === "lecture_bulk_delete"), false);
+
+db.notices.push({ id: "notice_bulk_delete", title: "삭제 공지", category: "일반", body: "삭제 테스트", pinned: false, status: "published", createdAt: "2026-07-01T00:00:00.000Z", updatedAt: "2026-07-01T00:00:00.000Z" });
+const noticeDelete = await api("DELETE", "/api/admin/notices/bulk", {
+  scope: "filtered",
+  filters: { q: "삭제 공지" },
+  confirmText: ""
+}, adminToken);
+assert.equal(noticeDelete.status, 200);
+assert.equal(noticeDelete.body.data.deletedNotices, 1);
+assert.equal(db.notices.some((item) => item.id === "notice_bulk_delete"), false);
+
 assert.equal(dateToAcademicSemesterKey("2028-02-29"), "2027-S2");
 
 const removedTaLogin = await api("POST", "/api/auth/login", {
