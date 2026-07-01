@@ -33,8 +33,8 @@
     "pages:deploy": "npm run pages:build && wrangler pages deploy dist --project-name gju-reserve",
     "pages:check": "node scripts/check-pages-readiness.mjs",
     "deploy:check": "node scripts/check-production-deploy.mjs",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler dev",
+    "deploy": "wrangler deploy --config wrangler.worker.jsonc",
+    "preview": "wrangler dev --config wrangler.worker.jsonc",
     "upload:dothome": "bash scripts/upload-dothome.sh"
   },
   "engines": {

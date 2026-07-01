@@ -73,14 +73,14 @@ Cloudflare Worker
 
 ## Cloudflare Deploy
 
-The connected Cloudflare project deploys through Workers with:
+The connected Cloudflare Worker deploys with:
 
 ```text
-Deploy command: npx wrangler deploy
+Deploy command: npx wrangler deploy --config wrangler.worker.jsonc
 Assets directory: public
 ```
 
-`wrangler.jsonc` uses:
+`wrangler.worker.jsonc` uses:
 
 - `main: ./worker.mjs`
 - `assets.binding: ASSETS`
@@ -106,6 +106,18 @@ Then deploy:
 
 ```bash
 npm run deploy
+```
+
+The Cloudflare Pages frontend uses the root `wrangler.jsonc`:
+
+- `name: gju-reserve`
+- `pages_build_output_dir: ./dist`
+- `vars.GJU_WORKER_API_BASE: https://photographygju-reserve.taejunyun.workers.dev`
+
+Deploy Pages with:
+
+```bash
+npm run pages:deploy
 ```
 
 ## Dothome Upload
