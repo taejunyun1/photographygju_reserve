@@ -23,7 +23,13 @@ for (const [label, source] of [
 const db = await initialDb("production-admin-password");
 db.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";
 normalizeDb(db);
-assert.equal(db.settings.adminUrl, "https://photographygju.dothome.co.kr");
+assert.equal(db.settings.adminUrl, "https://gjupreserve.com");
+const legacyDomainDb = await initialDb("legacy-domain-password");
+legacyDomainDb.settings.studentUrl = "https://photographygju.dothome.co.kr";
+legacyDomainDb.settings.adminUrl = "https://admin.photographygju.dothome.co.kr";
+normalizeDb(legacyDomainDb);
+assert.equal(legacyDomainDb.settings.studentUrl, "https://gjupreserve.com");
+assert.equal(legacyDomainDb.settings.adminUrl, "https://gjupreserve.com");
 const fantasyLabItems = db.equipment.filter((item) => item.source === "fantasy_lab");
 assert.ok(fantasyLabItems.length > 0);
 assert.equal(fantasyLabItems.every((item) => item.facility === "판타지랩" && item.reservable === false && item.inquiryOnly === true), true);
@@ -111,7 +117,7 @@ assert.equal(db.reports[0].htmlSnapshot, "");
 
 const exported = adminExportData(db);
 assert.equal(exported.users.some((user) => "passwordHash" in user), false);
-assert.equal(exported.settings.adminUrl, "https://photographygju.dothome.co.kr");
+assert.equal(exported.settings.adminUrl, "https://gjupreserve.com");
 
 async function api(method, pathname, body = {}, token = "", meta = {}) {
   return handleApiRequest({
@@ -539,7 +545,7 @@ const ignoredSettingsKey = await api("PATCH", "/api/admin/settings", {
   darkroomCapacity: 7
 }, adminToken);
 assert.equal(ignoredSettingsKey.status, 200);
-assert.equal(ignoredSettingsKey.body.data.adminUrl, "https://photographygju.dothome.co.kr");
+assert.equal(ignoredSettingsKey.body.data.adminUrl, "https://gjupreserve.com");
 assert.equal(ignoredSettingsKey.body.data.darkroomCapacity, 7);
 
 const invalidBlockedSchedule = await api("PATCH", "/api/admin/settings", {
@@ -721,7 +727,7 @@ assert.deepEqual(studioReservationSlackLog, {
   id: "slack_bbbbbbbbccccdd",
   event: "reservation_created",
   status: "skipped",
-  message: "[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: 2026-07-06\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://photographygju.dothome.co.kr/reservations/res_11111111222233",
+  message: "[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: 2026-07-06\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://gjupreserve.com/reservations/res_11111111222233",
   createdAt: studioReservationSlackLog.createdAt
 });
 assert.match(studioReservationSlackLog.createdAt, /^\d{4}-\d{2}-\d{2}T/);

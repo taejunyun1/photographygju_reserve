@@ -52,13 +52,13 @@ FTP cannot by itself provide:
 If the final domain must remain:
 
 ```text
-https://photographygju.dothome.co.kr/
+https://gjupreserve.com/
 ```
 
 then configure DNS or routing so the domain points to Cloudflare Pages/Workers. If that is not possible, use:
 
 ```text
-https://photographygju.dothome.co.kr/admin
+https://gjupreserve.com/admin
 ```
 
 only as a static shell while API calls go to a Cloudflare Worker subdomain.
@@ -73,4 +73,3 @@ The current `server.mjs` is a development backend (a thin adapter over `core.mjs
 - sends Slack if `SLACK_WEBHOOK_URL` exists
 
 It is useful for local testing, but production should move the data layer to D1.
-

@@ -20,7 +20,8 @@ const LECTURE_CANCEL_LIMIT_MS = 1000 * 60 * 60 * 6;
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_LOCK_MS = 5 * 60 * 1000;
-const PRODUCTION_STUDENT_URL = "https://photographygju.dothome.co.kr";
+const PRODUCTION_STUDENT_URL = "https://gjupreserve.com";
+const LEGACY_STUDENT_URL = "https://photographygju.dothome.co.kr";
 const LEGACY_ADMIN_URL = "https://admin.photographygju.dothome.co.kr";
 const RESERVATION_RETENTION_DAYS = 90;
 const REPORT_HTML_RETENTION_DAYS = 183;
@@ -1414,7 +1415,10 @@ export function normalizeDb(db) {
       db.settings.googleDriveUrl = "";
     }
   }
-  if (db.settings.adminUrl === LEGACY_ADMIN_URL) {
+  if ([LEGACY_STUDENT_URL, LEGACY_ADMIN_URL].includes(db.settings.studentUrl)) {
+    db.settings.studentUrl = PRODUCTION_STUDENT_URL;
+  }
+  if ([LEGACY_STUDENT_URL, LEGACY_ADMIN_URL].includes(db.settings.adminUrl)) {
     db.settings.adminUrl = db.settings.studentUrl || PRODUCTION_STUDENT_URL;
   }
   db.darkroomChemicals = db.darkroomChemicals || darkroomChemicals;

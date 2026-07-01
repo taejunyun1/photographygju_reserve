@@ -7,11 +7,11 @@
 | QA 날짜 | 2026-06-22 09:52 KST |
 | 담당자 | Codex 자동 점검 + 사용자 실기기 QA 일부 |
 | Git 커밋 | `5b41549` 기준 작업 트리 |
-| Web 배포 URL | https://photographygju.dothome.co.kr |
-| Cloudflare Pages | 준비 완료 / 운영 전환 보류 |
+| Web 배포 URL | https://gjupreserve.com |
+| Cloudflare Pages | gju-reserve / custom domain 연결 대상 |
 | Cloudflare Worker API | https://photographygju-reserve.taejunyun.workers.dev |
 | Cloudflare Worker 버전 | `23876a11-fb8d-4a33-9f4b-e1cad7386c03` |
-| Dothome 업로드 | 2026-06-22, FTP 일반 업로드 완료 |
+| Dothome 업로드 | rollback 경로로 유지 |
 | 캐시 버전 | `20260626-watch-release` |
 | iOS 빌드 | `1.0.1 (18)` |
 | Android 빌드 | `versionName 1.0.1`, `versionCode 18` |
@@ -23,7 +23,7 @@
 | `npm run release:check` | 통과 | 문법, 웹/네이티브 릴리즈 설정, 개인정보 매니페스트, 계정 삭제 기능 확인 |
 | `git diff --check` | 통과 | 공백 오류 없음 |
 | `npm run deploy:check` | 통과 | Worker API 기준 운영 자산/API 확인 |
-| `GJU_PRODUCTION_URL=https://photographygju.dothome.co.kr npm run deploy:check` | 통과 | Dothome 정적 파일, PHP 프록시, 계정 삭제 UI/API 확인 |
+| `GJU_PRODUCTION_URL=https://gju-reserve.pages.dev npm run deploy:check` | 통과 | Cloudflare Pages 정적 파일, Pages Function 프록시, 계정 삭제 UI/API 확인 |
 | `npm run native:sync` | 통과 | iOS/Android Capacitor 동기화 완료 |
 | `npm run native:ios:archive` | 통과 | Release archive 생성 가능 |
 | `npm run native:ios:export` | 보류 | Apple Distribution 인증서와 App Store provisioning profile 필요 |

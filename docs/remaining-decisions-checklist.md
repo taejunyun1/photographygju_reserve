@@ -21,20 +21,20 @@ Required decision:
 Current target:
 
 ```text
-https://photographygju.dothome.co.kr/
-https://admin.photographygju.dothome.co.kr/
+https://gjupreserve.com/
+https://gjupreserve.com/admin
 ```
 
 Need to confirm:
 
-- Can Dothome subdomains point to Cloudflare Pages?
+- Is the `gjupreserve.com` zone active in Cloudflare DNS?
 - Can DNS records such as CNAME/TXT be edited?
 
 Fallback:
 
 ```text
-https://photographygju.dothome.co.kr/
-https://photographygju.dothome.co.kr/admin
+https://gju-reserve.pages.dev/
+https://gju-reserve.pages.dev/admin
 ```
 
 ### 3. 암실 Capacity
@@ -452,4 +452,3 @@ Not ready until confirmed:
 - Equipment list corrections
 - Domain/DNS feasibility
 - Slack webhook rotation
-

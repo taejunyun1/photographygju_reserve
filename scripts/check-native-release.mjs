@@ -65,7 +65,7 @@ const checks = [
   ["Android release signing hook", contains("android/app/build.gradle", "GJU_ANDROID_KEYSTORE_PATH")],
   ["web cache version", contains("public/index.html", requiredCacheVersion) && contains("public/app.js", requiredCacheVersion)],
   ["student account deletion", contains("core.mjs", "DELETE /api/me") && contains("public/js/views-student.js", "account-delete")],
-  ["privacy policy page", fileExists("public/privacy.html") && contains("public/privacy.html", "개인정보 처리방침") && contains("public/privacy.html", "https://photographygju.dothome.co.kr/account-deletion.html")],
+  ["privacy policy page", fileExists("public/privacy.html") && contains("public/privacy.html", "개인정보 처리방침") && contains("public/privacy.html", "https://gjupreserve.com/account-deletion.html")],
   ["privacy policy in app", contains("public/js/views-student.js", "/privacy.html") && contains("public/js/views-student.js", "개인정보 처리방침")],
   ["watch reservation bridge", fileExists("ios/App/App/GJUWatchReservationsPlugin.swift") && contains("ios/App/App/GJUWatchReservationsPlugin.swift", "WatchConnectivity") && contains("ios/App/App/GJUWatchReservationsPlugin.swift", "GJUWatchReservations") && contains("public/js/native-notifications.js", "syncWatchReservationSnapshot")],
   ["watch reservation data sync", contains("public/js/data.js", "syncWatchReservationSnapshot") && contains("public/js/native-notifications.js", "watchReservationSnapshot")],

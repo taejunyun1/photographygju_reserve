@@ -69,8 +69,9 @@ npm run native:ios:export
 - `public/index.html`, `public/app.js`의 캐시 버전이 일치해야 한다.
 - Cloudflare Worker 배포 후 `/api/health` 또는 첫 화면 로드가 정상인지 확인한다.
 - Cloudflare Worker 배포 후 `npm run deploy:check`로 운영 URL의 캐시 버전, 계정 삭제 UI/API, CORS, `/api/bootstrap`을 확인한다.
-- Dothome FTP 업로드 후 실제 도메인에서 새 버전이 보이는지 확인한다.
-- Dothome FTP 업로드 후 `GJU_PRODUCTION_URL=https://photographygju.dothome.co.kr npm run deploy:check`로 같은 출처 PHP 프록시와 정적 파일 버전을 확인한다.
+- Cloudflare Pages 배포 후 `https://gju-reserve.pages.dev`에서 새 버전이 보이는지 확인한다.
+- custom domain 연결 후 `GJU_PRODUCTION_URL=https://gjupreserve.com npm run deploy:check`로 같은 출처 Pages 프록시와 정적 파일 버전을 확인한다.
+- DNS/custom domain 전파 중에는 `GJU_PRODUCTION_URL=https://gju-reserve.pages.dev npm run deploy:check`로 같은 검증을 반복한다.
 - 로그인, 내 예약, 특강, 공지, 보고서, 관리자 진입을 실제 도메인에서 점검한다.
 - 외부 분석 스크립트가 다시 들어가지 않았는지 `npm run test:security`로 확인한다.
 
@@ -79,7 +80,7 @@ npm run native:ios:export
 - `npm run pages:check`로 Pages 프록시와 스크립트 구성을 확인한다.
 - `npm run pages:preview`로 로컬 Pages 호환 프리뷰를 확인한다.
 - 운영 전환 전에는 `pages:deploy`를 수동으로 실행하고 `/api/bootstrap`, Admin 로그인, 계정 삭제 페이지를 확인한다.
-- Dothome 업로드 경로는 첫 Pages 운영 릴리스가 안정화될 때까지 유지한다.
+- Dothome 업로드 경로는 rollback 용도로만 유지한다.
 
 ## 5. iOS 제출 체크
 

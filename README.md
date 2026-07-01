@@ -40,7 +40,7 @@ Local development uses `server.mjs` and a file DB; production uses the Cloudflar
 - Slack notification hook through `SLACK_WEBHOOK_URL`
 - Local file DB at `data/db.json`
 - Cloudflare Worker API backend with Durable Object storage
-- Dothome static frontend support through `public/config.js`
+- Cloudflare Pages static frontend support through `public/config.js`
 
 ## Environment
 
@@ -57,10 +57,11 @@ Do not commit `.env`, Slack webhook URLs, FTP passwords, or production admin pas
 Production is split into two simple pieces:
 
 ```text
-Dothome static hosting
-  - https://photographygju.dothome.co.kr/
+Cloudflare Pages frontend
+  - https://gjupreserve.com/
+  - https://gju-reserve.pages.dev/ while DNS/custom domain propagation is pending
   - serves index.html, styles.css, app.js, config.js, js/*
-  - serves /api/* through the PHP proxy in public/api/
+  - serves /api/* through the Pages Function proxy in functions/api/[[path]].js
 
 Cloudflare Worker
   - https://photographygju-reserve.taejunyun.workers.dev
@@ -69,7 +70,7 @@ Cloudflare Worker
   - sends Slack notifications through SLACK_WEBHOOK_URL
 ```
 
-`public/config.js` keeps API calls same-origin. On Dothome, `/api/*` is proxied to the Worker by `public/api/index.php`, so browsers only call `https://photographygju.dothome.co.kr/api/*`.
+`public/config.js` keeps API calls same-origin. On Cloudflare Pages, `/api/*` is proxied to the Worker by `functions/api/[[path]].js`, so browsers call `https://gjupreserve.com/api/*` after the custom domain is connected. The Dothome PHP proxy remains available only as a rollback path.
 
 ## Cloudflare Deploy
 
@@ -114,6 +115,12 @@ The Cloudflare Pages frontend uses the root `wrangler.jsonc`:
 - `pages_build_output_dir: ./dist`
 - `vars.GJU_WORKER_API_BASE: https://photographygju-reserve.taejunyun.workers.dev`
 
+Production frontend domain:
+
+- Primary: `https://gjupreserve.com`
+- Optional alias: `https://www.gjupreserve.com`
+- Pages fallback: `https://gju-reserve.pages.dev`
+
 Deploy Pages with:
 
 ```bash
@@ -148,12 +155,13 @@ npm run upload:dothome
 
 The upload script runs `npm run build` and uploads every file under `dist/`, including nested frontend modules. It refuses plaintext `ftp`; use `ftps` or `sftp`.
 
-If this project is later moved to Cloudflare Pages instead of Workers, use:
+If Pages needs to be reconnected manually in the dashboard, use:
 
 ```text
 Build command: npm run build
 Build output directory: dist
 Root directory: /
+Custom domain: gjupreserve.com
 ```
 
 ## Notes
@@ -163,5 +171,5 @@ Root directory: /
 - `data/` is ignored by git.
 - FTP credentials are not needed for local development and must not be stored in this repo.
 - A backend/API is required because signup approval, reservations, admin actions, database writes, and Slack notifications need server-side logic.
-- Dothome FTP-only static hosting can host the frontend, but cannot run the API by itself.
+- Dothome FTP-only static hosting can host the frontend as a fallback, but cannot run the API by itself.
 - The frontend entry remains `public/app.js`, but the implementation is split under `public/js/` for maintainability.

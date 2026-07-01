@@ -111,7 +111,7 @@ Darkroom chemicals:
 작업: 현상, 인화
 사용 약품: Kodak D-76 500ml, ILFORD Hypam Rapid Fixer 500ml
 상태: 자동 확정
-상세: https://admin.photographygju.dothome.co.kr/reservations/123
+상세: https://gjupreserve.com/reservations/123
 ```
 
 ## Reservable Department Equipment
@@ -463,6 +463,5 @@ equipment_import_rows
 반납예정: 2026-06-16 17:30
 품목: CAM-SONY-A7M3-01, LEN-SONY-2470GM-01
 상태: 승인 대기
-상세: https://admin.photographygju.dothome.co.kr/reservations/123
+상세: https://gjupreserve.com/reservations/123
 ```
-

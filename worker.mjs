@@ -5,7 +5,10 @@ import { ensureSqlStoreInitialized } from "./worker-storage.mjs";
 
 // Browser JS may only read API responses from these origins. The API itself is
 // bearer-token authenticated (no cookies), so this is defense-in-depth.
+const PRODUCTION_ORIGIN = "https://gjupreserve.com";
 const ALLOWED_ORIGINS = new Set([
+  PRODUCTION_ORIGIN,
+  "https://www.gjupreserve.com",
   "https://photographygju.dothome.co.kr",
   "https://admin.photographygju.dothome.co.kr",
   "https://photographygju-reserve.taejunyun.workers.dev",
@@ -38,7 +41,7 @@ const SECURITY_HEADERS = {
 function corsHeadersFor(origin) {
   const allowed = origin && (ALLOWED_ORIGINS.has(origin) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin));
   return {
-    "access-control-allow-origin": allowed ? origin : "https://photographygju.dothome.co.kr",
+    "access-control-allow-origin": allowed ? origin : PRODUCTION_ORIGIN,
     "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
     "access-control-max-age": "86400",

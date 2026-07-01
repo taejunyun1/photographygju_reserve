@@ -45,7 +45,7 @@ assert(studentViewsJs.includes("/privacy.html") && studentViewsJs.includes("개�
 ok("production privacy policy link is deployed in the student UI");
 
 const { text: privacyHtml } = await fetchText("/privacy.html");
-assert(privacyHtml.includes("개인정보 처리방침") && privacyHtml.includes("https://photographygju.dothome.co.kr/account-deletion.html"), "production privacy policy page must be deployed");
+assert(privacyHtml.includes("개인정보 처리방침") && privacyHtml.includes("https://gjupreserve.com/account-deletion.html"), "production privacy policy page must be deployed");
 ok("production privacy policy page is deployed");
 
 const { response: optionsResponse } = await fetchText("/api/me", 204, {
