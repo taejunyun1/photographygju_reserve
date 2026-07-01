@@ -4,6 +4,7 @@ import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260627-admin-l
 
 const THRESHOLD = 72;
 const MAX_DISTANCE = 120;
+const DRAG_ACTIVATION_PX = 6;
 let startY = 0;
 let tracking = false;
 let adminRefreshHandlersBound = false;
@@ -15,6 +16,12 @@ function setRefreshState(patch) {
 
 function resetRefreshState() {
   setRefreshState({ pulling: false, refreshing: false, distance: 0, message: "당겨서 새로고침" });
+}
+
+function cancelRefreshTracking(options = {}) {
+  tracking = false;
+  startY = 0;
+  if (options.resetPulling) resetRefreshState();
 }
 
 function canStartRefresh(event) {
@@ -50,11 +57,16 @@ export function setupAdminRefreshHandlers() {
 
   document.addEventListener("pointermove", (event) => {
     if (!tracking || state.adminRefresh?.refreshing) return;
-    const distance = Math.max(0, Math.min(MAX_DISTANCE, (event.clientY || 0) - startY));
-    if (distance <= 0) {
-      resetRefreshState();
+    const deltaY = (event.clientY || 0) - startY;
+    if (deltaY < -DRAG_ACTIVATION_PX) {
+      cancelRefreshTracking({ resetPulling: state.adminRefresh?.pulling });
       return;
     }
+    if (deltaY < DRAG_ACTIVATION_PX) {
+      if (state.adminRefresh?.pulling && deltaY <= 0) resetRefreshState();
+      return;
+    }
+    const distance = Math.max(0, Math.min(MAX_DISTANCE, deltaY));
     setRefreshState({
       pulling: true,
       distance,
@@ -64,11 +76,11 @@ export function setupAdminRefreshHandlers() {
 
   document.addEventListener("pointerup", () => {
     if (!tracking) return;
-    tracking = false;
     if (state.adminRefresh?.refreshing) {
-      startY = 0;
+      cancelRefreshTracking();
       return;
     }
+    cancelRefreshTracking();
     if (Number(state.adminRefresh?.distance || 0) >= THRESHOLD) {
       runRefresh();
       return;
@@ -77,11 +89,11 @@ export function setupAdminRefreshHandlers() {
   }, { passive: true });
 
   document.addEventListener("pointercancel", () => {
-    tracking = false;
     if (state.adminRefresh?.refreshing) {
-      startY = 0;
+      cancelRefreshTracking();
       return;
     }
+    cancelRefreshTracking();
     resetRefreshState();
   }, { passive: true });
 }

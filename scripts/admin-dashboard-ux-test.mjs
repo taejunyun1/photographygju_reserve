@@ -266,9 +266,15 @@ assert(equipmentView.includes("admin-equipment-scroll-region"), "Admin equipment
 assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler must be wired through events facade");
 assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
 assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) return false;"), "pull refresh must block new starts while a refresh is active");
-assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      startY = 0;\n      return;\n    }"), "pointerup must ignore stale drag state during an active refresh");
-assert(adminRefreshSource.includes("if (distance <= 0) {\n      resetRefreshState();\n      return;\n    }"), "pointermove must clear stale pull state when drag distance reverses to zero");
-assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      startY = 0;\n      return;\n    }\n    resetRefreshState();"), "pointercancel must not clear active refresh state");
+assert(adminRefreshSource.includes("const DRAG_ACTIVATION_PX = 6;"), "pull refresh must wait for a deliberate downward drag before rendering");
+assert(adminRefreshSource.includes("function cancelRefreshTracking("), "pull refresh must cancel tracking without rerendering normal upward scrolls");
+assert(adminRefreshSource.includes("const deltaY = (event.clientY || 0) - startY;"), "pull refresh must evaluate signed pointer movement before updating UI");
+assert(adminRefreshSource.includes("if (deltaY < -DRAG_ACTIVATION_PX) {"), "pull refresh must release normal downward page scrolling instead of rerendering");
+assert(adminRefreshSource.includes("cancelRefreshTracking({ resetPulling: state.adminRefresh?.pulling });"), "pull refresh must only reset visible pull UI after an actual pull gesture");
+assert(adminRefreshSource.includes("if (deltaY < DRAG_ACTIVATION_PX) {"), "pull refresh must ignore tiny pointer jitter before showing the refresh indicator");
+assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      cancelRefreshTracking();\n      return;\n    }"), "pointerup must ignore stale drag state during an active refresh");
+assert(!adminRefreshSource.includes("if (distance <= 0) {\n      resetRefreshState();\n      return;\n    }"), "pointermove must not rerender while the user is trying to scroll down the admin page");
+assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      cancelRefreshTracking();\n      return;\n    }\n    cancelRefreshTracking();\n    resetRefreshState();"), "pointercancel must not clear active refresh state");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
