@@ -13,8 +13,8 @@
 | Cloudflare Worker 버전 | `23876a11-fb8d-4a33-9f4b-e1cad7386c03` |
 | Dothome 업로드 | rollback 경로로 유지 |
 | 캐시 버전 | `20260626-watch-release` |
-| iOS 빌드 | `1.0.1 (18)` |
-| Android 빌드 | `versionName 1.0.1`, `versionCode 18` |
+| iOS 빌드 | `1.0.2 (19)` |
+| Android 빌드 | `versionName 1.0.2`, `versionCode 19` |
 
 ## 자동 점검
 

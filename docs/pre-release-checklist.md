@@ -104,7 +104,7 @@ npm run native:ios:export
 ## 6. Android 제출 체크
 
 - Package name: `kr.ac.gju.photomedia.reserve`
-- Current Play upload version: `versionName 1.0.1`, `versionCode 18`
+- Current Play upload version: `versionName 1.0.2`, `versionCode 19`
 - Google Play target API requirement는 Android 15/API 35 이상이 기준이며, 현재 `targetSdkVersion = 36`이다.
 - Play App Signing을 활성화한다.
 - 업로드 키를 만들고 아래 환경변수를 설정한다.

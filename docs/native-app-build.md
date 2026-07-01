@@ -227,8 +227,8 @@ npm run native:ios:export
 
 #### 2026-06-29 Android 제출 가능성 점검 결과
 
-- iOS 업데이트 제출 빌드와 맞춰 Android `versionName`은 `1.0.1`, `versionCode`는 `18`로 설정했다.
-- `npm run native:release:check`: Android 업로드 버전이 iOS `1.0.1 (18)` 업데이트 빌드와 일치하는지 검증한다.
+- iOS 업데이트 제출 빌드와 맞춰 Android `versionName`은 `1.0.2`, `versionCode`는 `19`로 설정했다.
+- `npm run native:release:check`: Android 업로드 버전이 iOS `1.0.2 (19)` 업데이트 빌드와 일치하는지 검증한다.
 - `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" npm run native:android:bundle`: release AAB 생성 및 서명 검증 통과.
 - 출력 파일: `android/app/build/outputs/bundle/release/app-release.aab`
 
