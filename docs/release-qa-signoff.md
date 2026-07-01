@@ -7,14 +7,14 @@
 | QA 날짜 | 2026-06-22 09:52 KST |
 | 담당자 | Codex 자동 점검 + 사용자 실기기 QA 일부 |
 | Git 커밋 | `5b41549` 기준 작업 트리 |
-| Web 배포 URL | https://gjupreserve.com |
+| Web 배포 URL | https://gjureserve.co.kr |
 | Cloudflare Pages | gju-reserve / custom domain 연결 대상 |
 | Cloudflare Worker API | https://photographygju-reserve.taejunyun.workers.dev |
 | Cloudflare Worker 버전 | `23876a11-fb8d-4a33-9f4b-e1cad7386c03` |
 | Dothome 업로드 | rollback 경로로 유지 |
 | 캐시 버전 | `20260626-watch-release` |
-| iOS 빌드 | `1.0.2 (19)` |
-| Android 빌드 | `versionName 1.0.2`, `versionCode 19` |
+| iOS 빌드 | `1.0.2 (20)` |
+| Android 빌드 | `versionName 1.0.2`, `versionCode 20` |
 
 ## 자동 점검
 

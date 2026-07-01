@@ -52,13 +52,13 @@ FTP cannot by itself provide:
 If the final domain must remain:
 
 ```text
-https://gjupreserve.com/
+https://gjureserve.co.kr/
 ```
 
 then configure DNS or routing so the domain points to Cloudflare Pages/Workers. If that is not possible, use:
 
 ```text
-https://gjupreserve.com/admin
+https://gjureserve.co.kr/admin
 ```
 
 only as a static shell while API calls go to a Cloudflare Worker subdomain.

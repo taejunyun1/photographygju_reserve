@@ -57,10 +57,10 @@ Watch 앱은 내 예약 목록 확인만 제공합니다. 예약 신청, 취소,
 사용자는 마이 화면에서 현재 비밀번호와 확인 문구를 입력해 앱 안에서 계정 삭제를 시작하고 완료할 수 있습니다.
 
 개인정보 처리방침 URL:
-https://gjupreserve.com/privacy.html
+https://gjureserve.co.kr/privacy.html
 
 계정/데이터 삭제 안내 URL:
-https://gjupreserve.com/account-deletion.html
+https://gjureserve.co.kr/account-deletion.html
 
 관리자 기능은 학과 조교/운영자 전용이며, 필요 시 별도 테스트 계정을 제공할 수 있습니다.
 ```
@@ -111,9 +111,9 @@ App Store Connect 개인정보 세부사항:
 
 사용자는 앱 내부 `마이 > 계정 삭제`에서 계정 삭제를 완료할 수 있다. 삭제 시 사용자 계정, 세션, 예약, 보고서, 특강 신청, 경고 기록이 함께 정리된다.
 
-App Store Connect의 개인정보 처리방침 URL에는 `https://gjupreserve.com/privacy.html`을 사용한다.
+App Store Connect의 개인정보 처리방침 URL에는 `https://gjureserve.co.kr/privacy.html`을 사용한다.
 
-Google Play Console의 계정 삭제 웹 리소스에는 `https://gjupreserve.com/account-deletion.html`을 사용한다.
+Google Play Console의 계정 삭제 웹 리소스에는 `https://gjureserve.co.kr/account-deletion.html`을 사용한다.
 
 추적 목적 수집은 `아니오`로 유지한다. 앱과 웹 배포본은 Google Analytics, 광고 식별자, 타사 광고 네트워크, 데이터 브로커 제공을 사용하지 않는다.
 

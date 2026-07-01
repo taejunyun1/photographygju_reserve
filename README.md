@@ -58,7 +58,7 @@ Production is split into two simple pieces:
 
 ```text
 Cloudflare Pages frontend
-  - https://gjupreserve.com/
+  - https://gjureserve.co.kr/
   - https://gju-reserve.pages.dev/ while DNS/custom domain propagation is pending
   - serves index.html, styles.css, app.js, config.js, js/*
   - serves /api/* through the Pages Function proxy in functions/api/[[path]].js
@@ -70,7 +70,7 @@ Cloudflare Worker
   - sends Slack notifications through SLACK_WEBHOOK_URL
 ```
 
-`public/config.js` keeps API calls same-origin. On Cloudflare Pages, `/api/*` is proxied to the Worker by `functions/api/[[path]].js`, so browsers call `https://gjupreserve.com/api/*` after the custom domain is connected. The Dothome PHP proxy remains available only as a rollback path.
+`public/config.js` keeps API calls same-origin. On Cloudflare Pages, `/api/*` is proxied to the Worker by `functions/api/[[path]].js`, so browsers call `https://gjureserve.co.kr/api/*` after the custom domain is connected. The Dothome PHP proxy remains available only as a rollback path.
 
 ## Cloudflare Deploy
 
@@ -117,8 +117,8 @@ The Cloudflare Pages frontend uses the root `wrangler.jsonc`:
 
 Production frontend domain:
 
-- Primary: `https://gjupreserve.com`
-- Optional alias: `https://www.gjupreserve.com`
+- Primary: `https://gjureserve.co.kr`
+- Optional alias: `https://www.gjureserve.co.kr`
 - Pages fallback: `https://gju-reserve.pages.dev`
 
 Deploy Pages with:
@@ -161,7 +161,7 @@ If Pages needs to be reconnected manually in the dashboard, use:
 Build command: npm run build
 Build output directory: dist
 Root directory: /
-Custom domain: gjupreserve.com
+Custom domain: gjureserve.co.kr
 ```
 
 ## Notes

@@ -70,7 +70,7 @@ npm run native:ios:export
 - Cloudflare Worker 배포 후 `/api/health` 또는 첫 화면 로드가 정상인지 확인한다.
 - Cloudflare Worker 배포 후 `npm run deploy:check`로 운영 URL의 캐시 버전, 계정 삭제 UI/API, CORS, `/api/bootstrap`을 확인한다.
 - Cloudflare Pages 배포 후 `https://gju-reserve.pages.dev`에서 새 버전이 보이는지 확인한다.
-- custom domain 연결 후 `GJU_PRODUCTION_URL=https://gjupreserve.com npm run deploy:check`로 같은 출처 Pages 프록시와 정적 파일 버전을 확인한다.
+- custom domain 연결 후 `GJU_PRODUCTION_URL=https://gjureserve.co.kr npm run deploy:check`로 같은 출처 Pages 프록시와 정적 파일 버전을 확인한다.
 - DNS/custom domain 전파 중에는 `GJU_PRODUCTION_URL=https://gju-reserve.pages.dev npm run deploy:check`로 같은 검증을 반복한다.
 - 로그인, 내 예약, 특강, 공지, 보고서, 관리자 진입을 실제 도메인에서 점검한다.
 - 외부 분석 스크립트가 다시 들어가지 않았는지 `npm run test:security`로 확인한다.
@@ -104,7 +104,7 @@ npm run native:ios:export
 ## 6. Android 제출 체크
 
 - Package name: `kr.ac.gju.photomedia.reserve`
-- Current Play upload version: `versionName 1.0.2`, `versionCode 19`
+- Current Play upload version: `versionName 1.0.2`, `versionCode 20`
 - Google Play target API requirement는 Android 15/API 35 이상이 기준이며, 현재 `targetSdkVersion = 36`이다.
 - Play App Signing을 활성화한다.
 - 업로드 키를 만들고 아래 환경변수를 설정한다.

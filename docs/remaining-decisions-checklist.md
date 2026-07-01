@@ -21,13 +21,13 @@ Required decision:
 Current target:
 
 ```text
-https://gjupreserve.com/
-https://gjupreserve.com/admin
+https://gjureserve.co.kr/
+https://gjureserve.co.kr/admin
 ```
 
 Need to confirm:
 
-- Is the `gjupreserve.com` zone active in Cloudflare DNS?
+- Is the `gjureserve.co.kr` zone active in Cloudflare DNS?
 - Can DNS records such as CNAME/TXT be edited?
 
 Fallback:

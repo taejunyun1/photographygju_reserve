@@ -82,8 +82,8 @@ References:
 Preferred:
 
 ```text
-https://gjupreserve.com/
-https://gjupreserve.com/admin
+https://gjureserve.co.kr/
+https://gjureserve.co.kr/admin
 ```
 
 Fallback while DNS/custom domain propagation is pending:
@@ -112,8 +112,8 @@ Required public/config values:
 ```text
 PUBLIC_APP_NAME=GJU-reserve
 PUBLIC_DEPARTMENT_NAME=광주대학교 사진영상미디어학과
-PUBLIC_STUDENT_URL=https://gjupreserve.com
-PUBLIC_ADMIN_URL=https://gjupreserve.com
+PUBLIC_STUDENT_URL=https://gjureserve.co.kr
+PUBLIC_ADMIN_URL=https://gjureserve.co.kr
 ```
 
 Slack webhook URLs must be rotated if they are ever shared in chat, source code, screenshots, or public documents.
@@ -286,7 +286,7 @@ Example:
 반납예정: 2026-06-16 17:30
 품목: SONY-A7M3-01, LEN-SONY-2470GM-01
 상태: 승인 대기
-상세: https://gjupreserve.com/reservations/123
+상세: https://gjureserve.co.kr/reservations/123
 ```
 
 Slack delivery rules:
