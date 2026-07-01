@@ -4,7 +4,11 @@ import { adminShell } from "./views-admin.js?v=20260627-admin-lecture-nav";
 import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260627-admin-lecture-nav";
 import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260627-admin-lecture-nav";
 
-document.addEventListener("gju-loading-change", () => render());
+document.addEventListener("gju-loading-change", () => {
+  const scrollState = captureScrollState();
+  render();
+  restoreScrollState(scrollState);
+});
 
 function loadingOverlay() {
   if (!state.loadingCount) return "";

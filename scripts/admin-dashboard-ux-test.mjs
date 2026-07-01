@@ -255,6 +255,7 @@ assert(!primaryButtonRule.includes("inset"), "primary button must not use an ins
 assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary must use the Seoul calendar day, not UTC");
 assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
 assert(rendererSource.includes("export function toast(message, options = {})"), "toast must accept options");
+assert(rendererSource.includes('document.addEventListener("gju-loading-change", () => {\n  const scrollState = captureScrollState();\n  render();\n  restoreScrollState(scrollState);\n});'), "loading overlay renders must preserve scroll state during admin actions");
 assert(rendererSource.includes("options.preserveScroll"), "toast must support preserveScroll");
 assert(rendererSource.includes("options.scrollState"), "toast must support a pre-action scroll snapshot");
 assert(eventSource.includes("SCROLL_RESTORE_TARGET_SELECTOR"), "scroll preservation must use one shared target selector");
@@ -272,12 +273,14 @@ assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin dat
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
 assert(adminEventSource.includes('toast("기자재 상태를 변경했습니다.", { preserveScroll: true, scrollState })'), "admin equipment status toast must preserve pre-action scroll");
+assert(adminEventSource.includes('toast("선택된 기자재가 없습니다.", { preserveScroll: true, scrollState })'), "empty equipment bulk action toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true, scrollState })'), "bulk equipment status toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast("기자재를 제거했습니다.", { preserveScroll: true, scrollState })'), "admin equipment removal toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`, { preserveScroll: true, scrollState })'), "bulk equipment removal toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast(error.message, { preserveScroll: true })'), "admin action errors must preserve scroll");
 assert(!adminEventSource.includes('toast("비밀번호를 변경했습니다.");'), "password reset toast must not be plain");
 assert(!adminEventSource.includes('toast("기자재 상태를 변경했습니다.");'), "equipment status toast must not be plain");
+assert(!adminEventSource.includes('toast("선택된 기자재가 없습니다.");'), "empty equipment bulk action toast must not be plain");
 assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`);'), "bulk equipment status toast must not be plain");
 assert(!adminEventSource.includes('toast("기자재를 제거했습니다.");'), "equipment removal toast must not be plain");
 assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);'), "bulk equipment removal toast must not be plain");

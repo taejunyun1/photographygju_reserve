@@ -470,7 +470,7 @@ export function setupAdminFlowClickHandlers() {
         const scrollState = captureScrollState();
         const ids = [...state.selectedAdminEquipmentIds];
         if (!ids.length) {
-          toast("선택된 기자재가 없습니다.");
+          toast("선택된 기자재가 없습니다.", { preserveScroll: true, scrollState });
           return;
         }
         const updated = await patchAdminEquipment(ids, { status: target.dataset.equipmentBulkStatus });
@@ -490,7 +490,7 @@ export function setupAdminFlowClickHandlers() {
         const scrollState = captureScrollState();
         const ids = [...state.selectedAdminEquipmentIds];
         if (!ids.length) {
-          toast("선택된 기자재가 없습니다.");
+          toast("선택된 기자재가 없습니다.", { preserveScroll: true, scrollState });
           return;
         }
         if (!confirm(`선택한 기자재 ${ids.length}개를 제거할까요? 목록에서 숨겨지고 학생 예약에서도 제외됩니다.`)) return;

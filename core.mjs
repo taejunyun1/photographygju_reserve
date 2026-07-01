@@ -48,6 +48,7 @@ const WEEKDAY_INDEX = {
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_VALUE_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print"]);
+const NOTICE_LIST_QUERY_KEYS = new Set(["q", "type", "status", "from", "to", "page", "pageSize"]);
 
 const defaultSettings = {
   appName: "GJU Photography Reservation",
@@ -1213,6 +1214,10 @@ const {
   lectureDetail
 });
 
+function hasNoticeListQuery(searchParams) {
+  return Boolean(searchParams && [...searchParams.keys()].some((key) => NOTICE_LIST_QUERY_KEYS.has(key)));
+}
+
 function publicReservationSummary(db, reservation) {
   const user = db.users.find((item) => item.id === reservation.userId);
   const equipmentItems = reservation.type === "equipment"
@@ -2247,7 +2252,7 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
         requireAdmin(authorization, db);
-        if (hasListQuery(searchParams)) {
+        if (hasNoticeListQuery(searchParams)) {
           const { items, collectionTotal } = filterAdminNotices(db, Object.fromEntries(searchParams.entries()));
           return ok({
             items,

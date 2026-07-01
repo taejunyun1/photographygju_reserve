@@ -265,6 +265,16 @@ const legacyReports = await api("GET", "/api/admin/reports", {}, adminToken);
 assert.equal(legacyReports.status, 200);
 assert.equal(Array.isArray(legacyReports.body.data), true);
 
+const cachebustedNotices = await api("GET", "/api/admin/notices?_=cachebuster", {}, adminToken);
+assert.equal(cachebustedNotices.status, 200);
+assert.equal(Array.isArray(cachebustedNotices.body.data), true);
+
+const searchedNotices = await api("GET", "/api/admin/notices?q=공지", {}, adminToken);
+assert.equal(searchedNotices.status, 200);
+assert.equal(Array.isArray(searchedNotices.body.data.items), true);
+assert.equal(typeof searchedNotices.body.data.total, "number");
+assert.equal(searchedNotices.body.data.collectionTotal >= searchedNotices.body.data.total, true);
+
 db.reservations.push(
   {
     id: "res_semester_s1",
