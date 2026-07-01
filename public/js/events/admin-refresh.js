@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260627-admin-lecture-nav";
-import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260627-admin-lecture-nav";
+import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-scroll-fix";
 
 const THRESHOLD = 72;
 const MAX_DISTANCE = 120;

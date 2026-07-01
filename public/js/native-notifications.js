@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260627-admin-lecture-nav";
-import { state } from "./state.js?v=20260627-admin-lecture-nav";
+import { statusLabel, typeLabel } from "./constants.js?v=20260702-admin-scroll-fix";
+import { state } from "./state.js?v=20260702-admin-scroll-fix";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

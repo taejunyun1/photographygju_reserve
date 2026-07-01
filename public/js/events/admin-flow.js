@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260627-admin-lecture-nav";
-import { api } from "../api.js?v=20260627-admin-lecture-nav";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260627-admin-lecture-nav";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260627-admin-lecture-nav";
+import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { api } from "../api.js?v=20260702-admin-scroll-fix";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260702-admin-scroll-fix";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260702-admin-scroll-fix";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260627-admin-lecture-nav";
-import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
-import { formData, parseCsv } from "../utils.js?v=20260627-admin-lecture-nav";
+} from "../admin-equipment.js?v=20260702-admin-scroll-fix";
+import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
+import { formData, parseCsv } from "../utils.js?v=20260702-admin-scroll-fix";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260627-admin-lecture-nav";
+} from "./shared.js?v=20260702-admin-scroll-fix";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

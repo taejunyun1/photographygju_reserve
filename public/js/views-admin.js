@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-lecture-nav";
+import { state } from "./state.js?v=20260702-admin-scroll-fix";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260627-admin-lecture-nav";
+} from "./constants.js?v=20260702-admin-scroll-fix";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260627-admin-lecture-nav";
+} from "./utils.js?v=20260702-admin-scroll-fix";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260627-admin-lecture-nav";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260627-admin-lecture-nav";
-import { noticeCard } from "./views-student.js?v=20260627-admin-lecture-nav";
+} from "./ui.js?v=20260702-admin-scroll-fix";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260702-admin-scroll-fix";
+import { noticeCard } from "./views-student.js?v=20260702-admin-scroll-fix";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260627-admin-lecture-nav";
+} from "./admin-equipment.js?v=20260702-admin-scroll-fix";
 
 export function adminShell() {
   return `

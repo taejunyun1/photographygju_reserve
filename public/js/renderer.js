@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260627-admin-lecture-nav";
-import { escapeHtml } from "./utils.js?v=20260627-admin-lecture-nav";
-import { adminShell } from "./views-admin.js?v=20260627-admin-lecture-nav";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260627-admin-lecture-nav";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260627-admin-lecture-nav";
+import { $app, state } from "./state.js?v=20260702-admin-scroll-fix";
+import { escapeHtml } from "./utils.js?v=20260702-admin-scroll-fix";
+import { adminShell } from "./views-admin.js?v=20260702-admin-scroll-fix";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260702-admin-scroll-fix";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260702-admin-scroll-fix";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

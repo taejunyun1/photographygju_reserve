@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260627-admin-lecture-nav";
-import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260627-admin-lecture-nav";
+import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-scroll-fix";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -9,13 +9,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260627-admin-lecture-nav";
+} from "../utils.js?v=20260702-admin-scroll-fix";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260627-admin-lecture-nav";
+} from "./scroll-state.js?v=20260702-admin-scroll-fix";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

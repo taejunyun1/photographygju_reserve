@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260627-admin-lecture-nav");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260627-admin-lecture-nav");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260627-admin-lecture-nav");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260627-admin-lecture-nav");
+const { state } = await import("../public/js/state.js?v=20260702-admin-scroll-fix");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-scroll-fix");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-scroll-fix");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-scroll-fix");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {

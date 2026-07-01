@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260627-admin-lecture-nav";
-import { api } from "../api.js?v=20260627-admin-lecture-nav";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260627-admin-lecture-nav";
-import { logout, openReport } from "../actions.js?v=20260627-admin-lecture-nav";
+import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { api } from "../api.js?v=20260702-admin-scroll-fix";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-scroll-fix";
+import { logout, openReport } from "../actions.js?v=20260702-admin-scroll-fix";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260627-admin-lecture-nav";
-import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
+} from "../native-notifications.js?v=20260702-admin-scroll-fix";
+import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260627-admin-lecture-nav";
+} from "./shared.js?v=20260702-admin-scroll-fix";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

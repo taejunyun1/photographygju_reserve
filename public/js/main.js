@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260627-admin-lecture-nav";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260627-admin-lecture-nav";
-import { setupEventHandlers } from "./events.js?v=20260627-admin-lecture-nav";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260627-admin-lecture-nav";
-import { render } from "./renderer.js?v=20260627-admin-lecture-nav";
-import { escapeHtml } from "./utils.js?v=20260627-admin-lecture-nav";
+import { $app, state } from "./state.js?v=20260702-admin-scroll-fix";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260702-admin-scroll-fix";
+import { setupEventHandlers } from "./events.js?v=20260702-admin-scroll-fix";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260702-admin-scroll-fix";
+import { render } from "./renderer.js?v=20260702-admin-scroll-fix";
+import { escapeHtml } from "./utils.js?v=20260702-admin-scroll-fix";
 
 async function init() {
   await loadBootstrap();

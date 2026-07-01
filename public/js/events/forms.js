@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260627-admin-lecture-nav";
-import { api } from "../api.js?v=20260627-admin-lecture-nav";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260627-admin-lecture-nav";
+import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { api } from "../api.js?v=20260702-admin-scroll-fix";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260702-admin-scroll-fix";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260627-admin-lecture-nav";
-import { render, toast } from "../renderer.js?v=20260627-admin-lecture-nav";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260627-admin-lecture-nav";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260627-admin-lecture-nav";
+} from "../actions.js?v=20260702-admin-scroll-fix";
+import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260702-admin-scroll-fix";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-scroll-fix";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

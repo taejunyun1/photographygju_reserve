@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260627-admin-lecture-nav";
+import { state } from "./state.js?v=20260702-admin-scroll-fix";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);
