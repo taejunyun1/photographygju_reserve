@@ -3254,6 +3254,7 @@ details.inquiry-equipment-step {
 }
 
 .admin-main {
+  --admin-header-icon-size: 42px;
   padding: 28px;
   min-width: 0;
   width: 100%;
@@ -3262,6 +3263,14 @@ details.inquiry-equipment-step {
 
 .admin-header-refresh {
   white-space: nowrap;
+}
+
+.admin-icon-button {
+  width: var(--admin-header-icon-size);
+  min-width: var(--admin-header-icon-size);
+  height: var(--admin-header-icon-size);
+  padding: 0;
+  justify-content: center;
 }
 
 .admin-header {
@@ -6091,7 +6100,7 @@ tr.selected td {
 
   .admin-mobile-header .header-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(54px, auto));
+    grid-template-columns: repeat(3, var(--admin-header-icon-size));
     gap: 6px;
   }
 }

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260702-admin-refresh-button";
+import { state } from "./state.js?v=20260702-admin-icon-header";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260702-admin-refresh-button";
+} from "./constants.js?v=20260702-admin-icon-header";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260702-admin-refresh-button";
+} from "./utils.js?v=20260702-admin-icon-header";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260702-admin-refresh-button";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260702-admin-refresh-button";
-import { noticeCard } from "./views-student.js?v=20260702-admin-refresh-button";
+} from "./ui.js?v=20260702-admin-icon-header";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260702-admin-icon-header";
+import { noticeCard } from "./views-student.js?v=20260702-admin-icon-header";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260702-admin-refresh-button";
+} from "./admin-equipment.js?v=20260702-admin-icon-header";
 
 export function adminShell() {
   return `
@@ -74,16 +74,16 @@ export function adminShell() {
           </div>
           <div class="header-actions">
             ${adminRefreshButton({ compact: true })}
-            <button class="button ghost compact ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">${icon("user")}내 정보</button>
-            <button class="button ghost compact" data-action="logout">${icon("logOut")}나가기</button>
+            <button class="button ghost compact admin-icon-button ${state.adminView === "account" ? "active" : ""}" type="button" data-admin-view="account" aria-label="내 정보" title="내 정보">${icon("user")}</button>
+            <button class="button ghost compact admin-icon-button" type="button" data-action="logout" aria-label="나가기" title="나가기">${icon("logOut")}</button>
           </div>
         </header>
         <header class="admin-header">
           <div><h1 class="page-title">${adminTitle()}</h1></div>
           <div class="header-actions">
             ${adminRefreshButton()}
-            <button class="button ghost ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">${icon("user")}내 정보</button>
-            <button class="button ghost" data-action="logout">${icon("logOut")}로그아웃</button>
+            <button class="button ghost admin-icon-button ${state.adminView === "account" ? "active" : ""}" type="button" data-admin-view="account" aria-label="내 정보" title="내 정보">${icon("user")}</button>
+            <button class="button ghost admin-icon-button" type="button" data-action="logout" aria-label="나가기" title="나가기">${icon("logOut")}</button>
           </div>
         </header>
         ${adminContent()}
@@ -99,7 +99,7 @@ export function adminShell() {
 function adminRefreshButton({ compact = false } = {}) {
   const refresh = state.adminRefresh || {};
   const label = refresh.refreshing ? "새로고침 중" : "새로고침";
-  return `<button class="button ghost ${compact ? "compact " : ""}admin-header-refresh" type="button" data-action="admin-refresh" ${refresh.refreshing ? 'disabled aria-busy="true"' : ""}>${icon("refresh")}${escapeHtml(label)}</button>`;
+  return `<button class="button ghost ${compact ? "compact " : ""}admin-icon-button admin-header-refresh" type="button" data-action="admin-refresh" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${refresh.refreshing ? 'disabled aria-busy="true"' : ""}>${icon("refresh")}</button>`;
 }
 
 export function adminTitle() {

@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260702-admin-refresh-button";
-import { loadAdminData } from "../data.js?v=20260702-admin-refresh-button";
-import { render } from "../renderer.js?v=20260702-admin-refresh-button";
-import { normalizeUnicodeText } from "../utils.js?v=20260702-admin-refresh-button";
-import { resetAdminPage } from "./shared.js?v=20260702-admin-refresh-button";
+import { state } from "../state.js?v=20260702-admin-icon-header";
+import { loadAdminData } from "../data.js?v=20260702-admin-icon-header";
+import { render } from "../renderer.js?v=20260702-admin-icon-header";
+import { normalizeUnicodeText } from "../utils.js?v=20260702-admin-icon-header";
+import { resetAdminPage } from "./shared.js?v=20260702-admin-icon-header";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

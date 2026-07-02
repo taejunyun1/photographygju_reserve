@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260702-admin-refresh-button";
-import { api } from "./api.js?v=20260702-admin-refresh-button";
-import { equipmentStatusOptions } from "./constants.js?v=20260702-admin-refresh-button";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260702-admin-refresh-button";
+import { state } from "./state.js?v=20260702-admin-icon-header";
+import { api } from "./api.js?v=20260702-admin-icon-header";
+import { equipmentStatusOptions } from "./constants.js?v=20260702-admin-icon-header";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260702-admin-icon-header";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260702-admin-refresh-button";
-import { toast } from "../renderer.js?v=20260702-admin-refresh-button";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-refresh-button";
+import { state } from "../state.js?v=20260702-admin-icon-header";
+import { toast } from "../renderer.js?v=20260702-admin-icon-header";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-icon-header";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

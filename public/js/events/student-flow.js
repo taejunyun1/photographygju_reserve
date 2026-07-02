@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260702-admin-refresh-button";
-import { api } from "../api.js?v=20260702-admin-refresh-button";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-refresh-button";
-import { logout, openReport } from "../actions.js?v=20260702-admin-refresh-button";
+import { state } from "../state.js?v=20260702-admin-icon-header";
+import { api } from "../api.js?v=20260702-admin-icon-header";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-icon-header";
+import { logout, openReport } from "../actions.js?v=20260702-admin-icon-header";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260702-admin-refresh-button";
-import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
+} from "../native-notifications.js?v=20260702-admin-icon-header";
+import { render, toast } from "../renderer.js?v=20260702-admin-icon-header";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260702-admin-refresh-button";
+} from "./shared.js?v=20260702-admin-icon-header";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

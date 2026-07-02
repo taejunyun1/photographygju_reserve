@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260702-admin-refresh-button";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260702-admin-refresh-button";
-import { setupEventHandlers } from "./events.js?v=20260702-admin-refresh-button";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260702-admin-refresh-button";
-import { render } from "./renderer.js?v=20260702-admin-refresh-button";
-import { escapeHtml } from "./utils.js?v=20260702-admin-refresh-button";
+import { $app, state } from "./state.js?v=20260702-admin-icon-header";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260702-admin-icon-header";
+import { setupEventHandlers } from "./events.js?v=20260702-admin-icon-header";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260702-admin-icon-header";
+import { render } from "./renderer.js?v=20260702-admin-icon-header";
+import { escapeHtml } from "./utils.js?v=20260702-admin-icon-header";
 
 async function init() {
   await loadBootstrap();

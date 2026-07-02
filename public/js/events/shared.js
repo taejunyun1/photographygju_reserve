@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260702-admin-refresh-button";
-import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-refresh-button";
+import { state } from "../state.js?v=20260702-admin-icon-header";
+import { render, toast } from "../renderer.js?v=20260702-admin-icon-header";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-icon-header";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -9,13 +9,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260702-admin-refresh-button";
+} from "../utils.js?v=20260702-admin-icon-header";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260702-admin-refresh-button";
+} from "./scroll-state.js?v=20260702-admin-icon-header";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

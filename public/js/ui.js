@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260702-admin-refresh-button";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260702-admin-icon-header";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

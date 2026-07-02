@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260702-admin-refresh-button");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-refresh-button");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-refresh-button");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-refresh-button");
+const { state } = await import("../public/js/state.js?v=20260702-admin-icon-header");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-icon-header");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-icon-header");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-icon-header");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -181,6 +181,14 @@ assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "oper
 assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
 assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
 assert(adminShell().includes('data-action="admin-refresh"'), "Admin shell must render a top refresh button");
+assert(adminShell().includes('aria-label="새로고침"'), "Admin refresh icon button must keep an accessible label");
+assert(adminShell().includes('aria-label="내 정보"'), "Admin account icon button must keep an accessible label");
+assert(adminShell().includes('aria-label="나가기"'), "Admin logout icon button must keep an accessible label");
+assert(adminShell().includes("admin-icon-button"), "Admin header actions must use icon-only buttons");
+assert(!adminShell().includes("새로고침</button>"), "Admin refresh button must not render visible text");
+assert(!adminShell().includes("내 정보</button>"), "Admin account button must not render visible text");
+assert(!adminShell().includes("나가기</button>"), "Admin mobile logout button must not render visible text");
+assert(!adminShell().includes("로그아웃</button>"), "Admin desktop logout button must not render visible text");
 assert(!adminShell().includes("admin-refresh-indicator"), "Admin shell must not render a pull-to-refresh indicator");
 assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
 assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
@@ -244,6 +252,8 @@ assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet l
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
 assert(css.includes(".admin-header-refresh"), "top admin refresh action styles must exist");
+assert(css.includes(".admin-icon-button"), "admin icon-only header button styles must exist");
+assert(css.includes("grid-template-columns: repeat(3, var(--admin-header-icon-size));"), "admin mobile header actions must keep three icon buttons in one row");
 assert(!css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must be removed");
 assert(css.includes(".admin-type-share i.share-step-20"), "admin type share bars must expose CSP-safe percentage steps");
 assert(!viewsSource.includes('style="'), "admin views must not render inline style attributes under strict CSP");

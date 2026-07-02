@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260702-admin-refresh-button";
-import { escapeHtml } from "./utils.js?v=20260702-admin-refresh-button";
-import { adminShell } from "./views-admin.js?v=20260702-admin-refresh-button";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260702-admin-refresh-button";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260702-admin-refresh-button";
+import { $app, state } from "./state.js?v=20260702-admin-icon-header";
+import { escapeHtml } from "./utils.js?v=20260702-admin-icon-header";
+import { adminShell } from "./views-admin.js?v=20260702-admin-icon-header";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260702-admin-icon-header";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260702-admin-icon-header";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();
