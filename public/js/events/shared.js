@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
-import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
+import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-refresh-button";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -9,13 +9,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260702-admin-scroll-fix";
+} from "../utils.js?v=20260702-admin-refresh-button";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260702-admin-scroll-fix";
+} from "./scroll-state.js?v=20260702-admin-refresh-button";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -44,14 +44,14 @@ export function renderPreservingScroll() {
 }
 
 export async function refreshAdminDataPreservingScroll(options = {}) {
-  const { includeBootstrap = false, includeMe = false } = options;
-  const scrollState = captureScrollState();
+  const { includeBootstrap = false, includeMe = false, scrollState = captureScrollState() } = options;
   const jobs = [loadAdminData()];
   if (includeBootstrap) jobs.unshift(loadBootstrap());
   if (includeMe) jobs.push(loadMe());
   await Promise.all(jobs);
   render();
   restoreScrollState(scrollState);
+  return scrollState;
 }
 
 export function captureEquipmentInteractionScroll(event) {

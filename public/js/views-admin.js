@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260702-admin-scroll-fix";
+import { state } from "./state.js?v=20260702-admin-refresh-button";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260702-admin-scroll-fix";
+} from "./constants.js?v=20260702-admin-refresh-button";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260702-admin-scroll-fix";
+} from "./utils.js?v=20260702-admin-refresh-button";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260702-admin-scroll-fix";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260702-admin-scroll-fix";
-import { noticeCard } from "./views-student.js?v=20260702-admin-scroll-fix";
+} from "./ui.js?v=20260702-admin-refresh-button";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260702-admin-refresh-button";
+import { noticeCard } from "./views-student.js?v=20260702-admin-refresh-button";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260702-admin-scroll-fix";
+} from "./admin-equipment.js?v=20260702-admin-refresh-button";
 
 export function adminShell() {
   return `
@@ -64,7 +64,6 @@ export function adminShell() {
         </nav>
       </aside>
       <section class="admin-main">
-        ${adminRefreshIndicator()}
         <header class="admin-mobile-header">
           <div class="appbar-brand">
             <div class="brand-mark">G</div>
@@ -74,6 +73,7 @@ export function adminShell() {
             </div>
           </div>
           <div class="header-actions">
+            ${adminRefreshButton({ compact: true })}
             <button class="button ghost compact ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">${icon("user")}내 정보</button>
             <button class="button ghost compact" data-action="logout">${icon("logOut")}나가기</button>
           </div>
@@ -81,6 +81,7 @@ export function adminShell() {
         <header class="admin-header">
           <div><h1 class="page-title">${adminTitle()}</h1></div>
           <div class="header-actions">
+            ${adminRefreshButton()}
             <button class="button ghost ${state.adminView === "account" ? "active" : ""}" data-admin-view="account">${icon("user")}내 정보</button>
             <button class="button ghost" data-action="logout">${icon("logOut")}로그아웃</button>
           </div>
@@ -95,12 +96,10 @@ export function adminShell() {
   `;
 }
 
-function adminRefreshIndicator() {
+function adminRefreshButton({ compact = false } = {}) {
   const refresh = state.adminRefresh || {};
-  const visible = refresh.pulling || refresh.refreshing;
-  const distance = Math.min(96, Math.max(0, Number(refresh.distance || 0)));
-  const offset = Math.min(32, Math.max(0, Math.round(distance / 3)));
-  return `<div class="admin-refresh-indicator pull-step-${offset} ${visible ? "visible" : ""} ${refresh.refreshing ? "refreshing" : ""}"><span>${escapeHtml(refresh.message || "당겨서 새로고침")}</span></div>`;
+  const label = refresh.refreshing ? "새로고침 중" : "새로고침";
+  return `<button class="button ghost ${compact ? "compact " : ""}admin-header-refresh" type="button" data-action="admin-refresh" ${refresh.refreshing ? 'disabled aria-busy="true"' : ""}>${icon("refresh")}${escapeHtml(label)}</button>`;
 }
 
 export function adminTitle() {

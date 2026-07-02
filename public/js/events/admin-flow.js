@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
-import { api } from "../api.js?v=20260702-admin-scroll-fix";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260702-admin-scroll-fix";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
+import { api } from "../api.js?v=20260702-admin-refresh-button";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260702-admin-refresh-button";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260702-admin-refresh-button";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260702-admin-scroll-fix";
-import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
-import { formData, parseCsv } from "../utils.js?v=20260702-admin-scroll-fix";
+} from "../admin-equipment.js?v=20260702-admin-refresh-button";
+import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
+import { formData, parseCsv } from "../utils.js?v=20260702-admin-refresh-button";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260702-admin-scroll-fix";
+} from "./shared.js?v=20260702-admin-refresh-button";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

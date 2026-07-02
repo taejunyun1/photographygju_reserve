@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
-import { loadAdminData } from "../data.js?v=20260702-admin-scroll-fix";
-import { render } from "../renderer.js?v=20260702-admin-scroll-fix";
-import { normalizeUnicodeText } from "../utils.js?v=20260702-admin-scroll-fix";
-import { resetAdminPage } from "./shared.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
+import { loadAdminData } from "../data.js?v=20260702-admin-refresh-button";
+import { render } from "../renderer.js?v=20260702-admin-refresh-button";
+import { normalizeUnicodeText } from "../utils.js?v=20260702-admin-refresh-button";
+import { resetAdminPage } from "./shared.js?v=20260702-admin-refresh-button";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

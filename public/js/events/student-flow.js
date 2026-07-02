@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
-import { api } from "../api.js?v=20260702-admin-scroll-fix";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-scroll-fix";
-import { logout, openReport } from "../actions.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
+import { api } from "../api.js?v=20260702-admin-refresh-button";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-refresh-button";
+import { logout, openReport } from "../actions.js?v=20260702-admin-refresh-button";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260702-admin-scroll-fix";
-import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
+} from "../native-notifications.js?v=20260702-admin-refresh-button";
+import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260702-admin-scroll-fix";
+} from "./shared.js?v=20260702-admin-refresh-button";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

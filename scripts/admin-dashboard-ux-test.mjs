@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260702-admin-scroll-fix");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-scroll-fix");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-scroll-fix");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-scroll-fix");
+const { state } = await import("../public/js/state.js?v=20260702-admin-refresh-button");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-refresh-button");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-refresh-button");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-refresh-button");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -117,6 +117,7 @@ const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
 const adminRefreshSource = fs.readFileSync("public/js/events/admin-refresh.js", "utf8");
+const stateSource = fs.readFileSync("public/js/state.js", "utf8");
 const adminEventSource = [
   "public/js/events/shared.js",
   "public/js/events/scroll-state.js",
@@ -179,8 +180,8 @@ assert(dashboard.includes('admin-action-card tone-yellow'), "dashboard checked-o
 assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "operations queue click must render a bottom sheet");
 assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
 assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
-assert(adminShell().includes("admin-refresh-indicator"), "Admin shell must render pull-to-refresh indicator");
-assert(adminShell().includes("pull-step-0"), "Admin pull-to-refresh indicator must use CSP-safe step classes");
+assert(adminShell().includes('data-action="admin-refresh"'), "Admin shell must render a top refresh button");
+assert(!adminShell().includes("admin-refresh-indicator"), "Admin shell must not render a pull-to-refresh indicator");
 assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
 assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
 assert(!dashboard.includes("승인 완료"), "equipment dashboard must not show legacy approval status");
@@ -242,9 +243,8 @@ assert(css.includes(".admin-queue-sheet-grid"), "operations queue sheet trigger 
 assert(css.includes(".admin-queue-sheet-list"), "operations queue bottom sheet list styles must exist");
 assert(!css.includes(".admin-queue-item"), "duplicated operations queue card styles must be removed");
 assert(css.includes(".admin-lecture-status-dot"), "admin lecture status dot styles must exist");
-assert(css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must exist");
-assert(css.includes(".admin-refresh-indicator.refreshing span"), "pull refresh indicator must have a visible refreshing state");
-assert(css.includes(".admin-refresh-indicator.pull-step-32"), "pull refresh indicator must expose CSP-safe transform steps");
+assert(css.includes(".admin-header-refresh"), "top admin refresh action styles must exist");
+assert(!css.includes(".admin-refresh-indicator"), "pull refresh indicator styles must be removed");
 assert(css.includes(".admin-type-share i.share-step-20"), "admin type share bars must expose CSP-safe percentage steps");
 assert(!viewsSource.includes('style="'), "admin views must not render inline style attributes under strict CSP");
 assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
@@ -264,17 +264,18 @@ assert(eventSource.includes(".desktop-nav") && eventSource.includes(".side-nav")
 assert(eventSource.includes(".admin-equipment-scroll-region"), "scroll preservation must include the Admin equipment table's internal scroll region");
 assert(equipmentView.includes("admin-equipment-scroll-region"), "Admin equipment management table must expose a dedicated scroll preservation region");
 assert(eventSource.includes("setupAdminRefreshHandlers"), "Admin refresh handler must be wired through events facade");
-assert(eventSource.includes("closest(\"input, textarea, select, button, a, form\")"), "pull refresh must ignore form controls");
-assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) return false;"), "pull refresh must block new starts while a refresh is active");
-assert(adminRefreshSource.includes("const DRAG_ACTIVATION_PX = 6;"), "pull refresh must wait for a deliberate downward drag before rendering");
-assert(adminRefreshSource.includes("function cancelRefreshTracking("), "pull refresh must cancel tracking without rerendering normal upward scrolls");
-assert(adminRefreshSource.includes("const deltaY = (event.clientY || 0) - startY;"), "pull refresh must evaluate signed pointer movement before updating UI");
-assert(adminRefreshSource.includes("if (deltaY < -DRAG_ACTIVATION_PX) {"), "pull refresh must release normal downward page scrolling instead of rerendering");
-assert(adminRefreshSource.includes("cancelRefreshTracking({ resetPulling: state.adminRefresh?.pulling });"), "pull refresh must only reset visible pull UI after an actual pull gesture");
-assert(adminRefreshSource.includes("if (deltaY < DRAG_ACTIVATION_PX) {"), "pull refresh must ignore tiny pointer jitter before showing the refresh indicator");
-assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      cancelRefreshTracking();\n      return;\n    }"), "pointerup must ignore stale drag state during an active refresh");
-assert(!adminRefreshSource.includes("if (distance <= 0) {\n      resetRefreshState();\n      return;\n    }"), "pointermove must not rerender while the user is trying to scroll down the admin page");
-assert(adminRefreshSource.includes("if (state.adminRefresh?.refreshing) {\n      cancelRefreshTracking();\n      return;\n    }\n    cancelRefreshTracking();\n    resetRefreshState();"), "pointercancel must not clear active refresh state");
+assert(adminRefreshSource.includes('target.dataset.action !== "admin-refresh"'), "Admin refresh must run only from the explicit top refresh button");
+assert(adminRefreshSource.includes("pendingRefreshScrollState"), "manual admin refresh must preserve the pre-click scroll snapshot captured before button focus");
+assert(adminRefreshSource.includes("pendingRefreshScrollState = captureScrollState();"), "manual admin refresh must capture scroll before button focus changes it");
+assert(adminRefreshSource.includes("pendingRefreshScrollState || captureScrollState()"), "manual admin refresh must fall back to click-time scroll capture for keyboard activation");
+assert(adminRefreshSource.includes('document.addEventListener("pointerdown"'), "manual admin refresh button must capture scroll before click focus changes it");
+assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
+assert(!adminRefreshSource.includes('document.addEventListener("pointermove"'), "Admin refresh must not bind pointermove scroll gestures");
+assert(!adminRefreshSource.includes('document.addEventListener("pointerup"'), "Admin refresh must not bind pointerup scroll gestures");
+assert(!adminRefreshSource.includes('document.addEventListener("pointercancel"'), "Admin refresh must not bind pointercancel scroll gestures");
+assert(!adminRefreshSource.includes("당겨서 새로고침"), "Admin refresh copy must not advertise pull-to-refresh");
+assert(!stateSource.includes("당겨서 새로고침"), "Admin state must not keep pull-to-refresh copy");
+assert(!stateSource.includes("pulling"), "Admin state must not keep pull gesture state");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260702-admin-scroll-fix";
+const requiredCacheVersion = "20260702-admin-refresh-button";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");

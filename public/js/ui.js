@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260702-admin-scroll-fix";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260702-admin-refresh-button";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");
@@ -22,6 +22,7 @@ const ICONS = {
   moon: '<path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 6.5 6.5 0 0 0 21 14.5z"></path>',
   plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
   printer: '<path d="M7 9V3h10v6"></path><path d="M7 17H5a3 3 0 0 1-3-3v-2a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-2"></path><path d="M7 14h10v7H7z"></path>',
+  refresh: '<path d="M21 12a9 9 0 0 1-15.3 6.4"></path><path d="M3 12a9 9 0 0 1 15.3-6.4"></path><path d="M18 2v4h-4"></path><path d="M6 22v-4h4"></path>',
   send: '<path d="m22 2-7 20-4-9-9-4z"></path><path d="M22 2 11 13"></path>',
   spark: '<path d="M12 2 9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"></path>',
   trash: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path>',

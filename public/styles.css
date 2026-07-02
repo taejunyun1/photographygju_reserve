@@ -3260,71 +3260,8 @@ details.inquiry-equipment-step {
   max-width: 1440px;
 }
 
-.admin-refresh-indicator {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 0;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.admin-refresh-indicator.pull-step-0 { transform: translateY(0); }
-.admin-refresh-indicator.pull-step-1 { transform: translateY(1px); }
-.admin-refresh-indicator.pull-step-2 { transform: translateY(2px); }
-.admin-refresh-indicator.pull-step-3 { transform: translateY(3px); }
-.admin-refresh-indicator.pull-step-4 { transform: translateY(4px); }
-.admin-refresh-indicator.pull-step-5 { transform: translateY(5px); }
-.admin-refresh-indicator.pull-step-6 { transform: translateY(6px); }
-.admin-refresh-indicator.pull-step-7 { transform: translateY(7px); }
-.admin-refresh-indicator.pull-step-8 { transform: translateY(8px); }
-.admin-refresh-indicator.pull-step-9 { transform: translateY(9px); }
-.admin-refresh-indicator.pull-step-10 { transform: translateY(10px); }
-.admin-refresh-indicator.pull-step-11 { transform: translateY(11px); }
-.admin-refresh-indicator.pull-step-12 { transform: translateY(12px); }
-.admin-refresh-indicator.pull-step-13 { transform: translateY(13px); }
-.admin-refresh-indicator.pull-step-14 { transform: translateY(14px); }
-.admin-refresh-indicator.pull-step-15 { transform: translateY(15px); }
-.admin-refresh-indicator.pull-step-16 { transform: translateY(16px); }
-.admin-refresh-indicator.pull-step-17 { transform: translateY(17px); }
-.admin-refresh-indicator.pull-step-18 { transform: translateY(18px); }
-.admin-refresh-indicator.pull-step-19 { transform: translateY(19px); }
-.admin-refresh-indicator.pull-step-20 { transform: translateY(20px); }
-.admin-refresh-indicator.pull-step-21 { transform: translateY(21px); }
-.admin-refresh-indicator.pull-step-22 { transform: translateY(22px); }
-.admin-refresh-indicator.pull-step-23 { transform: translateY(23px); }
-.admin-refresh-indicator.pull-step-24 { transform: translateY(24px); }
-.admin-refresh-indicator.pull-step-25 { transform: translateY(25px); }
-.admin-refresh-indicator.pull-step-26 { transform: translateY(26px); }
-.admin-refresh-indicator.pull-step-27 { transform: translateY(27px); }
-.admin-refresh-indicator.pull-step-28 { transform: translateY(28px); }
-.admin-refresh-indicator.pull-step-29 { transform: translateY(29px); }
-.admin-refresh-indicator.pull-step-30 { transform: translateY(30px); }
-.admin-refresh-indicator.pull-step-31 { transform: translateY(31px); }
-.admin-refresh-indicator.pull-step-32 { transform: translateY(32px); }
-
-.admin-refresh-indicator.visible {
-  height: 36px;
-  opacity: 1;
-}
-
-.admin-refresh-indicator.refreshing span {
-  background: var(--primary-container);
-  border-color: rgba(11, 77, 162, 0.22);
-  color: var(--primary);
-  box-shadow: 0 2px 8px rgba(11, 77, 162, 0.08);
-}
-
-.admin-refresh-indicator span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 12px;
-  padding: 6px 10px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+.admin-header-refresh {
+  white-space: nowrap;
 }
 
 .admin-header {

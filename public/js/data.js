@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260702-admin-scroll-fix";
-import { api } from "./api.js?v=20260702-admin-scroll-fix";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260702-admin-scroll-fix";
+import { state } from "./state.js?v=20260702-admin-refresh-button";
+import { api } from "./api.js?v=20260702-admin-refresh-button";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260702-admin-refresh-button";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

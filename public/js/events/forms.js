@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
-import { api } from "../api.js?v=20260702-admin-scroll-fix";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
+import { api } from "../api.js?v=20260702-admin-refresh-button";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260702-admin-refresh-button";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260702-admin-scroll-fix";
-import { render, toast } from "../renderer.js?v=20260702-admin-scroll-fix";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260702-admin-scroll-fix";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-scroll-fix";
+} from "../actions.js?v=20260702-admin-refresh-button";
+import { render, toast } from "../renderer.js?v=20260702-admin-refresh-button";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260702-admin-refresh-button";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-refresh-button";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

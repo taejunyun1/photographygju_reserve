@@ -67,10 +67,7 @@ export const state = {
   adminLogSearch: "",
   adminBlockedScheduleSearch: "",
   adminRefresh: {
-    pulling: false,
-    refreshing: false,
-    distance: 0,
-    message: "당겨서 새로고침"
+    refreshing: false
   },
   adminReportSort: {
     field: "submittedAt",

@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260702-admin-scroll-fix";
+import { state } from "../state.js?v=20260702-admin-refresh-button";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260702-admin-scroll-fix";
+} from "../admin-equipment.js?v=20260702-admin-refresh-button";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260702-admin-scroll-fix";
+} from "./shared.js?v=20260702-admin-refresh-button";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {
