@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260703-react-astryx-admin";
-import { api } from "./api.js?v=20260703-react-astryx-admin";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260703-react-astryx-admin";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260703-react-astryx-admin";
+import { state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { api } from "./api.js?v=20260704-admin-mobile-overflow";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-admin-mobile-overflow";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-admin-mobile-overflow";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

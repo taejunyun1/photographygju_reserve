@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260703-react-astryx-admin";
-import { statusLabel, typeLabel } from "./constants.js?v=20260703-react-astryx-admin";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-react-astryx-admin";
+import { state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-admin-mobile-overflow";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260704-admin-mobile-overflow";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260703-react-astryx-admin";
+} from "./utils.js?v=20260704-admin-mobile-overflow";
 import {
   actionRow,
   card,
@@ -50,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-react-astryx-admin";
+} from "./ui.js?v=20260704-admin-mobile-overflow";
 
 export function authView() {
   const isLogin = state.authMode === "login";

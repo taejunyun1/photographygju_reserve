@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260703-react-astryx-admin";
-import { state } from "./state.js?v=20260703-react-astryx-admin";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-admin-mobile-overflow";
+import { state } from "./state.js?v=20260704-admin-mobile-overflow";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

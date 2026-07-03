@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260703-react-astryx-admin";
-import { escapeHtml } from "./utils.js?v=20260703-react-astryx-admin";
-import { adminContent, adminShell } from "./views-admin.js?v=20260703-react-astryx-admin";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260703-react-astryx-admin";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260703-react-astryx-admin";
+import { $app, state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { escapeHtml } from "./utils.js?v=20260704-admin-mobile-overflow";
+import { adminContent, adminShell } from "./views-admin.js?v=20260704-admin-mobile-overflow";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260704-admin-mobile-overflow";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260704-admin-mobile-overflow";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

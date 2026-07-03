@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-react-astryx-admin";
+import { state } from "./state.js?v=20260704-admin-mobile-overflow";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260703-react-astryx-admin";
+} from "./constants.js?v=20260704-admin-mobile-overflow";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260703-react-astryx-admin";
+} from "./utils.js?v=20260704-admin-mobile-overflow";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-react-astryx-admin";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-react-astryx-admin";
-import { noticeCard } from "./views-student.js?v=20260703-react-astryx-admin";
+} from "./ui.js?v=20260704-admin-mobile-overflow";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-admin-mobile-overflow";
+import { noticeCard } from "./views-student.js?v=20260704-admin-mobile-overflow";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260703-react-astryx-admin";
+} from "./admin-equipment.js?v=20260704-admin-mobile-overflow";
 
 export function adminShell() {
   return `

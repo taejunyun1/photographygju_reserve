@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-react-astryx-admin";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260704-admin-mobile-overflow";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260703-react-astryx-admin";
+import "./js/main.js?v=20260704-admin-mobile-overflow";

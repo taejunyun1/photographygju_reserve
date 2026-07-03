@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260703-react-astryx-admin";
+import { state } from "../state.js?v=20260704-admin-mobile-overflow";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260703-react-astryx-admin";
+} from "../admin-equipment.js?v=20260704-admin-mobile-overflow";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260703-react-astryx-admin";
+} from "./shared.js?v=20260704-admin-mobile-overflow";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

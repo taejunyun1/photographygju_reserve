@@ -84,8 +84,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-react-astryx-admin");
-const { render } = await import("../public/js/renderer.js?v=20260703-react-astryx-admin");
+const { state } = await import("../public/js/state.js?v=20260704-admin-mobile-overflow");
+const { render } = await import("../public/js/renderer.js?v=20260704-admin-mobile-overflow");
 
 state.bootstrap = { settings: { blockedSchedules: [] } };
 state.user = { id: "admin1", role: "admin", name: "관리자", email: "admin@gju.local" };

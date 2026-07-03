@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260703-react-astryx-admin";
-import { api } from "../api.js?v=20260703-react-astryx-admin";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-react-astryx-admin";
+import { state } from "../state.js?v=20260704-admin-mobile-overflow";
+import { api } from "../api.js?v=20260704-admin-mobile-overflow";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260704-admin-mobile-overflow";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260703-react-astryx-admin";
-import { render, toast } from "../renderer.js?v=20260703-react-astryx-admin";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-react-astryx-admin";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-react-astryx-admin";
+} from "../actions.js?v=20260704-admin-mobile-overflow";
+import { render, toast } from "../renderer.js?v=20260704-admin-mobile-overflow";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260704-admin-mobile-overflow";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260704-admin-mobile-overflow";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

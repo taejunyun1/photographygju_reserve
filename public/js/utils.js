@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-react-astryx-admin";
+import { state } from "./state.js?v=20260704-admin-mobile-overflow";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260703-react-astryx-admin";
+} from "./constants.js?v=20260704-admin-mobile-overflow";
 
 export function escapeHtml(value) {
   return String(value ?? "")
