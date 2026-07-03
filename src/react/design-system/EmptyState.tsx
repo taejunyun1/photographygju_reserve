@@ -1,4 +1,5 @@
 import React from "react";
+import { EmptyState as AstryxEmptyState } from "@astryxdesign/core/EmptyState";
 
 import { cx } from "./classes";
 
@@ -8,6 +9,22 @@ export type GjuEmptyStateProps = React.HTMLAttributes<HTMLDivElement> & {
   action?: React.ReactNode;
 };
 
+function textFromNode(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((entry) => textFromNode(entry)).join("");
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return textFromNode(node.props.children);
+  }
+
+  return "";
+}
+
 export function GjuEmptyState({
   title,
   message,
@@ -16,13 +33,14 @@ export function GjuEmptyState({
   ...props
 }: GjuEmptyStateProps) {
   return React.createElement(
-    "div",
+    AstryxEmptyState,
     {
       ...props,
+      title: textFromNode(title).trim() || "상태",
+      description: message ? textFromNode(message).trim() || undefined : undefined,
+      actions: action ? React.createElement("div", { className: "gju-empty-state__action" }, action) : undefined,
+      headingLevel: 2,
       className: cx("gju-empty-state", className)
-    },
-    React.createElement("h2", { className: "gju-empty-state__title" }, title),
-    message ? React.createElement("p", { className: "gju-empty-state__message" }, message) : null,
-    action ? React.createElement("div", { className: "gju-empty-state__action" }, action) : null
+    }
   );
 }

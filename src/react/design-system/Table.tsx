@@ -1,4 +1,5 @@
 import React from "react";
+import { Table as AstryxTable } from "@astryxdesign/core/Table";
 
 import { cx } from "./classes";
 
@@ -9,7 +10,7 @@ export function GjuTable({ className, children, ...props }: GjuTableProps) {
     "div",
     { className: "gju-table" },
     React.createElement(
-      "table",
+      AstryxTable as React.ComponentType<any>,
       {
         ...props,
         className: cx("gju-table__element", className)

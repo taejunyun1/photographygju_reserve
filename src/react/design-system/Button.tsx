@@ -1,4 +1,6 @@
 import React from "react";
+import { Button as AstryxButton } from "@astryxdesign/core/Button";
+import { IconButton as AstryxIconButton } from "@astryxdesign/core/IconButton";
 
 import { cx } from "./classes";
 import { GjuIcon, type GjuIconName } from "./icons";
@@ -28,11 +30,41 @@ function renderButtonIcon(icon: GjuIconName) {
   );
 }
 
-function renderLoadingIndicator() {
-  return React.createElement("span", {
-    className: "gju-button__spinner",
-    "aria-hidden": true
-  });
+function textFromNode(node: React.ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map((entry) => textFromNode(entry)).join("");
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return textFromNode(node.props.children);
+  }
+
+  return "";
+}
+
+function resolveButtonLabel(children: React.ReactNode, ariaLabel?: string) {
+  const label = textFromNode(children).trim();
+  return label || ariaLabel || "Action";
+}
+
+function mapButtonVariant(variant: GjuButtonVariant, tone: GjuButtonTone) {
+  if (tone === "danger") {
+    return "destructive" as const;
+  }
+
+  if (variant === "ghost") {
+    return "ghost" as const;
+  }
+
+  if (variant === "outline") {
+    return "secondary" as const;
+  }
+
+  return tone === "neutral" ? "secondary" : "primary";
 }
 
 export function GjuButton({
@@ -46,18 +78,23 @@ export function GjuButton({
   type = "button",
   ...props
 }: GjuButtonProps) {
+  const ariaLabel = typeof props["aria-label"] === "string" ? props["aria-label"] : undefined;
+
   return React.createElement(
-    "button",
+    AstryxButton,
     {
       ...props,
       type,
-      disabled: disabled || loading,
+      label: resolveButtonLabel(children, ariaLabel),
+      variant: mapButtonVariant(variant, tone),
+      isLoading: loading,
+      isDisabled: disabled || loading,
+      icon: icon ? renderButtonIcon(icon) : undefined,
       className: cx("gju-button", className),
       "data-variant": variant,
       "data-tone": tone,
       "data-loading": loading ? "true" : undefined
     },
-    loading ? renderLoadingIndicator() : icon ? renderButtonIcon(icon) : null,
     children ? React.createElement("span", { className: "gju-button__label" }, children) : null
   );
 }
@@ -72,16 +109,18 @@ export function GjuIconButton({
   ...props
 }: GjuIconButtonProps) {
   return React.createElement(
-    "button",
+    AstryxIconButton,
     {
       ...props,
       type,
-      disabled,
+      variant: tone === "danger" ? "destructive" : "ghost",
+      isDisabled: disabled,
       className: cx("gju-icon-button", className),
       "data-tone": tone,
       "aria-label": label,
-      title: label
+      label,
+      icon: React.createElement(GjuIcon, { name: icon })
     },
-    React.createElement(GjuIcon, { name: icon })
+    null
   );
 }

@@ -25,6 +25,10 @@ const motionSource = read("src/react/design-system/motion.ts");
 const buttonSource = read("src/react/design-system/Button.tsx");
 const cardSource = read("src/react/design-system/Card.tsx");
 const badgeSource = read("src/react/design-system/StatusBadge.tsx");
+const dialogSource = read("src/react/design-system/Dialog.tsx");
+const emptyStateSource = read("src/react/design-system/EmptyState.tsx");
+const tableSource = read("src/react/design-system/Table.tsx");
+const toastSource = read("src/react/design-system/Toast.tsx");
 const renderTestSource = read("scripts/react-admin-render-test.mjs");
 
 function readTree(rootDir) {
@@ -76,8 +80,17 @@ assert(fs.existsSync("src/react/design-system/Toast.tsx"), "Task 3 must provide 
 assert(buttonSource.includes("export function GjuButton"), "Button wrapper must export GjuButton");
 assert(buttonSource.includes("export function GjuIconButton"), "Button wrapper must export GjuIconButton");
 assert(buttonSource.includes('"aria-label": label'), "Icon button wrapper must keep the accessible label");
+assert(/@astryxdesign\/core\/Button/.test(buttonSource), "Button wrapper must import Astryx Button");
+assert(/@astryxdesign\/core\/IconButton/.test(buttonSource), "Icon button wrapper must import Astryx IconButton");
 assert(cardSource.includes("export function GjuCard"), "Card wrapper must export GjuCard");
+assert(/@astryxdesign\/core\/Card/.test(cardSource), "Card wrapper must import Astryx Card");
 assert(badgeSource.includes("export function GjuStatusBadge"), "Status badge wrapper must export GjuStatusBadge");
+assert(/@astryxdesign\/core\/Badge/.test(badgeSource), "Status badge wrapper must import Astryx Badge");
+assert(/@astryxdesign\/core\/Dialog/.test(dialogSource), "Dialog wrapper must import Astryx Dialog");
+assert(/useId/.test(dialogSource), "Dialog wrapper must generate unique title ids per instance");
+assert(/@astryxdesign\/core\/EmptyState/.test(emptyStateSource), "Empty state wrapper must import Astryx EmptyState");
+assert(/@astryxdesign\/core\/Table/.test(tableSource), "Table wrapper must import Astryx Table");
+assert(/@astryxdesign\/core\/Toast/.test(toastSource), "Toast wrapper must import Astryx Toast");
 assert(iconsSource.includes('export type GjuIconName ='), "Design system icons must export the icon name union");
 for (const iconName of ["refresh", "user", "logOut", "trash", "check", "x", "camera", "fileText", "userPlus", "edit", "plus"]) {
   assert(iconsSource.includes(`| "${iconName}"`), `Design system icons must include ${iconName}`);
@@ -125,6 +138,18 @@ for (const motionClassName of [".gju-motion-screen", ".gju-motion-panel", ".gju-
 }
 assert(renderTestSource.includes('aria-label="삭제"'), "Render test must assert the icon button accessible label");
 assert(renderTestSource.includes('!iconButton.includes(">삭제<")'), "Render test must assert the icon button stays icon-only");
+for (const astryxClassName of [
+  "astryx-button",
+  "astryx-card",
+  "astryx-badge",
+  "astryx-dialog",
+  "astryx-empty-state",
+  "astryx-table",
+  "astryx-toast"
+]) {
+  assert(renderTestSource.includes(astryxClassName), `Render test must assert ${astryxClassName} adaptation`);
+}
+assert(renderTestSource.includes("new Set(dialogIds).size"), "Render test must assert unique dialog title ids");
 
 const nonWrapperReactSources = readTree("src/react")
   .filter(({ file }) => !file.includes(`${path.sep}design-system${path.sep}`))

@@ -1,4 +1,5 @@
 import React from "react";
+import { Toast as AstryxToast } from "@astryxdesign/core/Toast";
 
 import { cx } from "./classes";
 import { motionClass } from "./motion";
@@ -20,6 +21,12 @@ export function GjuToast({
       role: "status",
       "aria-live": "polite"
     },
-    React.createElement("span", { className: "gju-toast__message" }, message)
+    React.createElement(AstryxToast, {
+      type: "info",
+      body: React.createElement("span", { className: "gju-toast__message" }, message),
+      isAutoHide: false,
+      autoHideDuration: 5000,
+      onDismiss: () => {}
+    })
   );
 }

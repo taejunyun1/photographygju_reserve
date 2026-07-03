@@ -1,4 +1,5 @@
 import React from "react";
+import { Card as AstryxCard } from "@astryxdesign/core/Card";
 
 import { cx } from "./classes";
 import { motionClass } from "./motion";
@@ -20,9 +21,10 @@ export function GjuCard({
   const hasHeader = title || eyebrow || actions;
 
   return React.createElement(
-    "section",
+    AstryxCard,
     {
       ...props,
+      padding: 0,
       className: cx("gju-card", motionClass.panel, className)
     },
     hasHeader
