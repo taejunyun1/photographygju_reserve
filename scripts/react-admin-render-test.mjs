@@ -187,6 +187,8 @@ const dashboardMarkup = renderToStaticMarkup(
 );
 assert(dashboardMarkup.includes("가입 승인 대기"), "dashboard must render pending users card");
 assert(dashboardMarkup.includes("대여완료"), "dashboard must render checked-out card");
+assert(dashboardMarkup.includes("반납완료"), "dashboard must render returned card");
+assert(dashboardMarkup.includes("대여취소"), "dashboard must render cancelled card");
 assert(dashboardMarkup.includes("보고서 확인 필요"), "dashboard must render report card");
 assert(!dashboardMarkup.includes("legacy"), "dashboard must be React-owned");
 
