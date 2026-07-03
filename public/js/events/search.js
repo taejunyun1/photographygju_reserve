@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260703-equipment-weekend-rules";
-import { loadAdminData } from "../data.js?v=20260703-equipment-weekend-rules";
-import { render } from "../renderer.js?v=20260703-equipment-weekend-rules";
-import { normalizeUnicodeText } from "../utils.js?v=20260703-equipment-weekend-rules";
-import { resetAdminPage } from "./shared.js?v=20260703-equipment-weekend-rules";
+import { state } from "../state.js?v=20260703-astryx-token-bridge";
+import { loadAdminData } from "../data.js?v=20260703-astryx-token-bridge";
+import { render } from "../renderer.js?v=20260703-astryx-token-bridge";
+import { normalizeUnicodeText } from "../utils.js?v=20260703-astryx-token-bridge";
+import { resetAdminPage } from "./shared.js?v=20260703-astryx-token-bridge";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

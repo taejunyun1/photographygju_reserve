@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { state } from "./state.js?v=20260703-astryx-token-bridge";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260703-equipment-weekend-rules";
+} from "./constants.js?v=20260703-astryx-token-bridge";
 
 export function escapeHtml(value) {
   return String(value ?? "")

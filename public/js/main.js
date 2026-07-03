@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260703-equipment-weekend-rules";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-equipment-weekend-rules";
-import { setupEventHandlers } from "./events.js?v=20260703-equipment-weekend-rules";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
-import { render } from "./renderer.js?v=20260703-equipment-weekend-rules";
-import { escapeHtml } from "./utils.js?v=20260703-equipment-weekend-rules";
+import { $app, state } from "./state.js?v=20260703-astryx-token-bridge";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-astryx-token-bridge";
+import { setupEventHandlers } from "./events.js?v=20260703-astryx-token-bridge";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-astryx-token-bridge";
+import { render } from "./renderer.js?v=20260703-astryx-token-bridge";
+import { escapeHtml } from "./utils.js?v=20260703-astryx-token-bridge";
 
 async function init() {
   await loadBootstrap();

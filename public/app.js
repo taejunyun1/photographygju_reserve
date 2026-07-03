@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260703-equipment-weekend-rules";
+import "./js/main.js?v=20260703-astryx-token-bridge";

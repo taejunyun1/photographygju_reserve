@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { state } from "./state.js?v=20260703-astryx-token-bridge";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260703-equipment-weekend-rules";
+} from "./constants.js?v=20260703-astryx-token-bridge";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260703-equipment-weekend-rules";
+} from "./utils.js?v=20260703-astryx-token-bridge";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-equipment-weekend-rules";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
-import { noticeCard } from "./views-student.js?v=20260703-equipment-weekend-rules";
+} from "./ui.js?v=20260703-astryx-token-bridge";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-astryx-token-bridge";
+import { noticeCard } from "./views-student.js?v=20260703-astryx-token-bridge";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260703-equipment-weekend-rules";
+} from "./admin-equipment.js?v=20260703-astryx-token-bridge";
 
 export function adminShell() {
   return `

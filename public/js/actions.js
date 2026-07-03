@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260703-equipment-weekend-rules";
-import { api } from "./api.js?v=20260703-equipment-weekend-rules";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-equipment-weekend-rules";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
-import { render, toast } from "./renderer.js?v=20260703-equipment-weekend-rules";
+import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { api } from "./api.js?v=20260703-astryx-token-bridge";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-astryx-token-bridge";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-astryx-token-bridge";
+import { render, toast } from "./renderer.js?v=20260703-astryx-token-bridge";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260703-equipment-weekend-rules";
+} from "./utils.js?v=20260703-astryx-token-bridge";
 
 export async function login(form) {
   const data = formData(form);

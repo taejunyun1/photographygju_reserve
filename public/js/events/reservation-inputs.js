@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260703-equipment-weekend-rules";
+import { state } from "../state.js?v=20260703-astryx-token-bridge";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260703-equipment-weekend-rules";
+} from "../admin-equipment.js?v=20260703-astryx-token-bridge";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260703-equipment-weekend-rules";
+} from "./shared.js?v=20260703-astryx-token-bridge";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

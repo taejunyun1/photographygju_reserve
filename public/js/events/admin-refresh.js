@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260703-equipment-weekend-rules";
-import { toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-weekend-rules";
+import { state } from "../state.js?v=20260703-astryx-token-bridge";
+import { toast } from "../renderer.js?v=20260703-astryx-token-bridge";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-astryx-token-bridge";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

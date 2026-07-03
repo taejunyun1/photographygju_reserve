@@ -69,6 +69,7 @@ const pkg = readJson("package.json");
 const cap = readJson("capacitor.config.json");
 const indexHtml = read("public/index.html");
 const appEntry = read("public/app.js");
+const styles = read("public/styles.css");
 const worker = read("worker.mjs");
 const androidManifest = read("android/app/src/main/AndroidManifest.xml");
 const androidVariables = read("android/variables.gradle");
@@ -120,6 +121,33 @@ const uniqueCacheVersions = [...new Set(cacheVersions)];
 assert(uniqueCacheVersions.length === 1, `public/index.html cache versions must match: ${uniqueCacheVersions.join(", ") || "none"}`);
 assert(appEntry.includes(uniqueCacheVersions[0]), "public/app.js must import main.js with the same cache version");
 ok(`web cache version is consistent (${uniqueCacheVersions[0]})`);
+
+const astryxRequiredTokens = [
+  "--color-background-body",
+  "--color-background-surface",
+  "--color-background-card",
+  "--color-text-primary",
+  "--color-text-secondary",
+  "--color-accent",
+  "--color-on-accent",
+  "--color-border",
+  "--spacing-4",
+  "--radius-container",
+  "--size-element-lg",
+  "--shadow-low",
+  "--duration-fast"
+];
+assert(styles.includes("Astryx design token bridge"), "public/styles.css must declare an Astryx design token bridge");
+for (const token of astryxRequiredTokens) {
+  assert(styles.includes(token), `public/styles.css must expose Astryx token ${token}`);
+}
+assert(/--background:\s*var\(--color-background-body\)/.test(styles), "legacy --background token must map to Astryx body background");
+assert(/--surface-lowest:\s*var\(--color-background-surface\)/.test(styles), "legacy --surface-lowest token must map to Astryx surface background");
+assert(/--text:\s*var\(--color-text-primary\)/.test(styles), "legacy --text token must map to Astryx primary text");
+assert(/--primary:\s*var\(--color-accent\)/.test(styles), "legacy --primary token must map to Astryx accent");
+assert(/--radius-lg:\s*var\(--radius-container\)/.test(styles), "legacy --radius-lg token must map to Astryx container radius");
+assert(/--control-height-sm:\s*var\(--size-element-lg\)/.test(styles), "compact controls must use the Astryx large element size");
+ok("Astryx design token bridge is configured");
 
 assert(read("public/config.js").includes('window.GJU_API_BASE = ""'), "public/config.js must keep same-origin API for web deploy");
 const distConfig = readIfExists("dist/config.js");

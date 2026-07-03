@@ -1,21 +1,21 @@
-import { state } from "../state.js?v=20260703-equipment-weekend-rules";
-import { api } from "../api.js?v=20260703-equipment-weekend-rules";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260703-equipment-weekend-rules";
-import { logout, openReport } from "../actions.js?v=20260703-equipment-weekend-rules";
+import { state } from "../state.js?v=20260703-astryx-token-bridge";
+import { api } from "../api.js?v=20260703-astryx-token-bridge";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260703-astryx-token-bridge";
+import { logout, openReport } from "../actions.js?v=20260703-astryx-token-bridge";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260703-equipment-weekend-rules";
-import { render, toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
-import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260703-equipment-weekend-rules";
+} from "../native-notifications.js?v=20260703-astryx-token-bridge";
+import { render, toast } from "../renderer.js?v=20260703-astryx-token-bridge";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260703-astryx-token-bridge";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260703-equipment-weekend-rules";
+} from "./shared.js?v=20260703-astryx-token-bridge";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

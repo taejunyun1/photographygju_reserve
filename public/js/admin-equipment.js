@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260703-equipment-weekend-rules";
-import { api } from "./api.js?v=20260703-equipment-weekend-rules";
-import { equipmentStatusOptions } from "./constants.js?v=20260703-equipment-weekend-rules";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260703-equipment-weekend-rules";
+import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { api } from "./api.js?v=20260703-astryx-token-bridge";
+import { equipmentStatusOptions } from "./constants.js?v=20260703-astryx-token-bridge";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260703-astryx-token-bridge";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-equipment-weekend-rules";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-astryx-token-bridge";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

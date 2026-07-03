@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260703-equipment-weekend-rules";
-import { api } from "./api.js?v=20260703-equipment-weekend-rules";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
+import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { api } from "./api.js?v=20260703-astryx-token-bridge";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260703-astryx-token-bridge";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
