@@ -58,6 +58,16 @@ function mountReactAdmin(root, adminMarkup) {
   lastReactAdminContent = adminMarkup;
 }
 
+function updateReactAdmin(root, adminMarkup) {
+  window.GJUReactAdmin?.update?.({
+    root,
+    state,
+    actions: reactAdminActions,
+    legacyRenderAdminContent: () => adminMarkup
+  });
+  lastReactAdminContent = adminMarkup;
+}
+
 const reactAdminActions = {
   async setAdminView(view) {
     state.adminView = view;
@@ -100,7 +110,11 @@ export function render() {
     }
     const root = document.querySelector("#react-admin-root");
     if (root) {
-      if (!reactAdminMounted || lastReactAdminContent !== adminMarkup) {
+      if (!reactAdminMounted) {
+        mountReactAdmin(root, adminMarkup);
+      } else if (typeof window.GJUReactAdmin?.update === "function") {
+        updateReactAdmin(root, adminMarkup);
+      } else if (lastReactAdminContent !== adminMarkup) {
         mountReactAdmin(root, adminMarkup);
       }
     }

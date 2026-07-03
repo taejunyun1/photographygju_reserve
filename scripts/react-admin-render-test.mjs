@@ -374,6 +374,50 @@ assert(usersMarkup.includes('data-admin-users-page="3"'), "React users screen mu
 assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
 assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
 
+const usersWarningMemoMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "users",
+      user: { role: "admin" },
+      adminUserSearch: "연체",
+      adminUserSort: { field: "name", direction: "asc" },
+      adminUsersPage: { total: 1, page: 1, pageSize: 20, hasMore: false },
+      adminUsers: [
+        {
+          id: "u2",
+          role: "student",
+          name: "경고학생",
+          email: "warn@gju.local",
+          studentId: "20260002",
+          studentStatus: "재학생",
+          phone: "010-1234-5678",
+          approvalStatus: "approved",
+          warningCount: 2,
+          warningRecords: [
+            {
+              id: "w2",
+              reason: "장비 연체 2회",
+              createdAt: "2026-07-03T10:30:00.000Z"
+            },
+            {
+              id: "w1",
+              reason: "이전 메모",
+              createdAt: "2026-07-02T08:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(usersWarningMemoMarkup.includes('data-user-warn="u2"'), "React users screen must render delegated warning memo add control");
+assert(usersWarningMemoMarkup.includes('data-user-warn-reset="u2"'), "React users screen must render delegated warning memo reset control");
+assert(usersWarningMemoMarkup.includes("최근 경고 메모 2건"), "React users screen must render warning memo summary");
+assert(usersWarningMemoMarkup.includes("장비 연체 2회"), "React users screen must render the latest warning memo reason");
+assert(!usersWarningMemoMarkup.includes("검색 결과가 없습니다."), "React users search must match warning memo text");
+
 const equipmentMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: {
@@ -400,6 +444,8 @@ const equipmentMarkup = renderToStaticMarkup(
 );
 assert(equipmentMarkup.includes('data-equipment-remove-admin="e1"'), "React equipment screen must render remove action contract");
 assert(equipmentMarkup.includes('data-equipment-bulk-status="문의"'), "React equipment screen must include inquiry status action");
+assert(equipmentMarkup.includes('data-admin-equipment-panel-tab="add"'), "React equipment manage view must keep access to the add workflow tab");
+assert(equipmentMarkup.includes('data-admin-equipment-panel-tab="manage"'), "React equipment manage view must keep the manage workflow tab");
 
 const equipmentBrandMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -481,6 +527,25 @@ const equipmentReservableMarkup = renderToStaticMarkup(
   })
 );
 assert(equipmentReservableMarkup.includes('data-equipment-row="e1"'), "React equipment search must match reservable token parity");
+
+const equipmentAddFallbackMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      adminEquipmentPanelTab: "add",
+      user: { role: "admin" },
+      adminEquipment: []
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () =>
+      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-header">legacy header</header><section class="grid"><div class="admin-inner-tabs"><button class="tab-button active" data-admin-equipment-panel-tab="add">장비추가</button><button class="tab-button" data-admin-equipment-panel-tab="manage">장비관리</button></div><div class="card admin-equipment-add-card"><form data-form="equipment-add"><input name="name" /></form></div><div class="card admin-equipment-add-card"><form data-form="equipment-category-add"><input name="categoryName" /></form></div><div class="card admin-equipment-add-card"><form data-form="equipment-import"><textarea name="csv"></textarea></form></div></section></section></main>'
+  })
+);
+assert(equipmentAddFallbackMarkup.includes('data-form="equipment-add"'), "React equipment add fallback must preserve the legacy add form");
+assert(equipmentAddFallbackMarkup.includes('data-form="equipment-category-add"'), "React equipment add fallback must preserve the legacy category form");
+assert(equipmentAddFallbackMarkup.includes('data-form="equipment-import"'), "React equipment add fallback must preserve the legacy CSV import form");
+assert(!equipmentAddFallbackMarkup.includes('class="admin-shell"'), "React equipment add fallback must not duplicate the legacy admin shell");
+assert(!equipmentAddFallbackMarkup.includes("legacy nav"), "React equipment add fallback must not duplicate the legacy sidebar chrome");
 
 const logsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

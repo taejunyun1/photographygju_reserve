@@ -7,21 +7,39 @@ import type { ReactAdminMountOptions } from "../platform/types";
 let mountedRoot: HTMLElement | null = null;
 let rootInstance: Root | null = null;
 
-function mount(options: ReactAdminMountOptions) {
-  const initialLegacyMarkup = options.legacyRenderAdminContent();
-  if (rootInstance) rootInstance.unmount();
-  if (mountedRoot && mountedRoot !== options.root) {
-    mountedRoot.innerHTML = "";
-  }
-  mountedRoot = options.root;
-  rootInstance = createRoot(options.root);
+function renderAdmin(options: ReactAdminMountOptions) {
+  const legacyMarkup = options.legacyRenderAdminContent();
+  if (!rootInstance) return;
   rootInstance.render(
     React.createElement(AdminApp, {
       state: options.state,
       actions: options.actions,
-      legacyRenderAdminContent: () => initialLegacyMarkup
+      legacyRenderAdminContent: () => legacyMarkup
     })
   );
+}
+
+function mount(options: ReactAdminMountOptions) {
+  if (rootInstance && mountedRoot !== options.root) {
+    rootInstance.unmount();
+    rootInstance = null;
+  }
+  if (mountedRoot && mountedRoot !== options.root) {
+    mountedRoot.innerHTML = "";
+  }
+  mountedRoot = options.root;
+  if (!rootInstance) {
+    rootInstance = createRoot(options.root);
+  }
+  renderAdmin(options);
+}
+
+function update(options: ReactAdminMountOptions) {
+  if (!rootInstance || mountedRoot !== options.root) {
+    mount(options);
+    return;
+  }
+  renderAdmin(options);
 }
 
 function unmount() {
@@ -35,3 +53,4 @@ function unmount() {
 }
 
 window.GJUReactAdmin = { mount, unmount };
+window.GJUReactAdmin.update = update;

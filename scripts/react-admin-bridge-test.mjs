@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 let appWriteCount = 0;
 let frameVisible = false;
 const mountCalls = [];
+const updateCalls = [];
 const unmountCalls = [];
 const listeners = new Map();
 const reactAdminChrome = { innerHTML: "" };
@@ -56,8 +57,13 @@ globalThis.window = {
   GJUReactAdmin: {
     mount(options) {
       mountCalls.push(options.root);
-      options.root.innerHTML = `<section data-render="${mountCalls.length}">legacy admin</section>`;
-      options.root.mountedSubtree = { render: mountCalls.length };
+      options.root.innerHTML = `<section data-render="${mountCalls.length}" data-refreshing="${String(Boolean(options.state.adminRefresh?.refreshing))}">legacy admin</section>`;
+      options.root.mountedSubtree = { render: mountCalls.length, refreshing: Boolean(options.state.adminRefresh?.refreshing) };
+    },
+    update(options) {
+      updateCalls.push(options.root);
+      options.root.innerHTML = `<section data-render="update:${updateCalls.length}" data-refreshing="${String(Boolean(options.state.adminRefresh?.refreshing))}">legacy admin</section>`;
+      options.root.mountedSubtree = { render: mountCalls.length, update: updateCalls.length, refreshing: Boolean(options.state.adminRefresh?.refreshing) };
     },
     unmount() {
       unmountCalls.push(true);
@@ -91,27 +97,47 @@ render();
 
 assert.equal(appWriteCount, 1, "initial React Admin render must write the shell once");
 assert.equal(mountCalls.length, 1, "initial React Admin render must mount the bundle");
+assert.equal(updateCalls.length, 0, "initial React Admin render must not call update before mount");
 assert.equal(unmountCalls.length, 0, "initial React Admin render must not unmount");
 
 const initialRoot = mountCalls[0];
-const initialSubtree = reactAdminRoot.mountedSubtree;
 state.toast = "브리지 확인";
 render();
 
 assert.equal(appWriteCount, 1, "toast renders inside React Admin must preserve the mounted shell");
 assert.equal(mountCalls.length, 1, "toast renders inside React Admin must not remount the bundle");
-assert.equal(reactAdminRoot.mountedSubtree, initialSubtree, "toast renders inside React Admin must preserve the mounted subtree");
+assert.equal(updateCalls.length, 1, "toast renders inside React Admin must update the mounted bundle");
 assert.equal(unmountCalls.length, 0, "toast renders inside React Admin must not unmount the bundle");
 assert(reactAdminChrome.innerHTML.includes("toast"), "toast renders inside React Admin must update the surrounding chrome");
+assert(reactAdminRoot.innerHTML.includes('data-render="update:1"'), "toast renders inside React Admin must update the existing React Admin tree");
 
 state.loadingCount = 1;
 document.dispatchEvent(new CustomEvent("gju-loading-change"));
 
 assert.equal(appWriteCount, 1, "loading overlay renders inside React Admin must preserve the mounted shell");
 assert.equal(mountCalls.length, 1, "loading overlay renders inside React Admin must not remount the bundle");
-assert.equal(reactAdminRoot.mountedSubtree, initialSubtree, "loading overlay renders inside React Admin must preserve the mounted subtree");
+assert.equal(updateCalls.length, 2, "loading overlay renders inside React Admin must update the mounted bundle");
 assert.equal(unmountCalls.length, 0, "loading overlay renders inside React Admin must not unmount the bundle");
 assert(reactAdminChrome.innerHTML.includes("loading-overlay"), "loading overlay renders inside React Admin must update the surrounding chrome");
+assert(reactAdminRoot.innerHTML.includes('data-render="update:2"'), "loading overlay renders inside React Admin must update the existing React Admin tree");
+
+state.adminRefresh = { refreshing: true };
+render();
+
+assert.equal(appWriteCount, 1, "refresh busy-state renders inside React Admin must preserve the mounted shell");
+assert.equal(mountCalls.length, 1, "refresh busy-state renders inside React Admin must not remount the bundle");
+assert.equal(updateCalls.length, 3, "refresh busy-state renders inside React Admin must update the mounted bundle");
+assert.equal(unmountCalls.length, 0, "refresh busy-state renders inside React Admin must not unmount the bundle");
+assert(reactAdminRoot.innerHTML.includes('data-refreshing="true"'), "refresh busy-state renders inside React Admin must propagate the refreshing flag");
+
+state.adminRefresh = { refreshing: false };
+render();
+
+assert.equal(appWriteCount, 1, "refresh clear renders inside React Admin must preserve the mounted shell");
+assert.equal(mountCalls.length, 1, "refresh clear renders inside React Admin must not remount the bundle");
+assert.equal(updateCalls.length, 4, "refresh clear renders inside React Admin must update the mounted bundle");
+assert.equal(unmountCalls.length, 0, "refresh clear renders inside React Admin must not unmount the bundle");
+assert(reactAdminRoot.innerHTML.includes('data-refreshing="false"'), "refresh clear renders inside React Admin must clear the refreshing flag");
 
 state.reactAdminEnabled = false;
 render();

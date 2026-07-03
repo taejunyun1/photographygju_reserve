@@ -28,6 +28,7 @@ declare global {
     GJU_REACT_ADMIN_ENABLED?: boolean;
     GJUReactAdmin?: {
       mount(options: ReactAdminMountOptions): void;
+      update?(options: ReactAdminMountOptions): void;
       unmount(): void;
     };
   }

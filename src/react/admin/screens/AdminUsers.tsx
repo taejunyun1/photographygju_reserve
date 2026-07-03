@@ -13,16 +13,27 @@ type AdminUsersProps = {
   state: LegacyState;
 };
 
+type AdminUserWarningRecord = {
+  id: string;
+  reason?: string;
+  count?: number;
+  createdAt?: string;
+};
+
 type AdminUser = {
   id: string;
   role?: string;
   name?: string;
   email?: string;
   studentId?: string;
+  grade?: string;
   studentStatus?: string;
   phone?: string;
   approvalStatus?: string;
   blockDuration?: string;
+  blockedUntil?: string;
+  warningCount?: number;
+  warningRecords?: AdminUserWarningRecord[];
 };
 
 type AdminUserSortField = "name" | "studentId" | "studentStatus" | "approvalStatus";
@@ -62,15 +73,30 @@ function asUsers(value: unknown): AdminUser[] {
   return Array.isArray(value) ? (value as AdminUser[]) : [];
 }
 
+function asWarningRecords(value: unknown): AdminUserWarningRecord[] {
+  return Array.isArray(value) ? (value as AdminUserWarningRecord[]) : [];
+}
+
+function warningSearchText(user: AdminUser) {
+  return asWarningRecords(user.warningRecords)
+    .flatMap((record) => [record.reason, record.createdAt, record.count])
+    .filter(Boolean)
+    .join(" ");
+}
+
 function matchesUserQuery(user: AdminUser, query: string) {
   if (!query) return true;
   return [
     user.name,
     user.email,
     user.studentId,
+    user.grade,
     user.studentStatus,
     user.phone,
-    user.approvalStatus
+    user.approvalStatus,
+    statusLabel(String(user.approvalStatus || "")),
+    user.blockedUntil,
+    warningSearchText(user)
   ]
     .filter(Boolean)
     .join(" ")
@@ -217,6 +243,10 @@ function renderDeleteIcon() {
   );
 }
 
+function renderPlusIcon() {
+  return <GjuIcon name="plus" className="button-icon icon" />;
+}
+
 function renderApprovalAction(user: AdminUser) {
   const approvedLike = user.approvalStatus === "approved" || user.approvalStatus === "blocked";
 
@@ -232,6 +262,64 @@ function renderApprovalAction(user: AdminUser) {
     <button className="button primary compact" type="button" data-user-approval={user.id} data-status="approved">
       승인
     </button>
+  );
+}
+
+function formatDateTime(value: unknown) {
+  if (!value) return "";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function renderWarningMemo(user: AdminUser) {
+  const records = asWarningRecords(user.warningRecords);
+
+  if (!records.length) {
+    return (
+      <div className="admin-user-warning-memo is-empty">
+        <div className="admin-user-warning-memo-head">
+          <strong>경고 메모 기록 없음</strong>
+          <button className="button warn compact admin-user-memo-add" type="button" data-user-warn={user.id}>
+            {renderPlusIcon()}
+            메모 추가
+          </button>
+        </div>
+        <span>저장된 메모가 없습니다.</span>
+      </div>
+    );
+  }
+
+  const latest = records[0];
+  const date = formatDateTime(latest.createdAt);
+  const count = Math.max(0, Number(user.warningCount || records.length || 0));
+
+  return (
+    <div className="admin-user-warning-memo">
+      <div className="admin-user-warning-memo-head">
+        <strong>최근 경고 메모 {count}건</strong>
+        <div className="admin-user-warning-actions">
+          <button className="button warn compact admin-user-memo-add" type="button" data-user-warn={user.id}>
+            {renderPlusIcon()}
+            메모 추가
+          </button>
+          <button className="button ghost compact admin-user-memo-reset" type="button" data-user-warn-reset={user.id}>
+            초기화
+          </button>
+        </div>
+      </div>
+      <span>
+        {date}
+        {date ? " · " : ""}
+        {latest.reason || "사유 없음"}
+      </span>
+    </div>
   );
 }
 
@@ -342,6 +430,7 @@ export function AdminUsers({ state }: AdminUsersProps) {
                               ))}
                             </select>
                           </div>
+                          {renderWarningMemo(user)}
                           <div className="admin-user-action-group admin-user-secondary-group">
                             <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
                               비번 리셋

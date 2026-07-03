@@ -293,8 +293,13 @@ assertIconOnlyAction(logsView, 'data-session-revoke="session1"', "로그아웃",
 assert(reactUsersSource.includes("data-user-delete"), "React users screen must keep delegated delete contract");
 assert(reactUsersSource.includes("data-user-sort"), "React users screen must keep delegated sort contract");
 assert(reactUsersSource.includes("data-admin-users-page"), "React users screen must keep delegated pagination contract");
+assert(reactUsersSource.includes("data-user-warn"), "React users screen must keep delegated warning memo add contract");
+assert(reactUsersSource.includes("data-user-warn-reset"), "React users screen must keep delegated warning memo reset contract");
+assert(reactUsersSource.includes("warningRecords"), "React users screen must include warning memo records in its rendering/search path");
 assert(reactEquipmentSource.includes("data-equipment-remove-admin"), "React equipment screen must keep delegated remove contract");
 assert(reactEquipmentSource.includes('data-equipment-bulk-status="문의"'), "React equipment screen must expose inquiry status");
+assert(reactEquipmentSource.includes("data-admin-equipment-panel-tab"), "React equipment screen must keep panel-tab controls in the React manage view");
+assert(reactEquipmentSource.includes("LegacyAdminPanel"), "React equipment screen must route unconverted workflows through the legacy panel bridge");
 assert(reactEquipmentSource.includes("item.brand"), "React equipment search must include brand");
 assert(reactEquipmentSource.includes("item.model"), "React equipment search must include model");
 assert(reactEquipmentSource.includes('"예약가능"'), "React equipment search must include the reservable token");
@@ -358,6 +363,8 @@ assert(adminRefreshSource.includes("pendingRefreshScrollState"), "manual admin r
 assert(adminRefreshSource.includes("pendingRefreshScrollState = captureScrollState();"), "manual admin refresh must capture scroll before button focus changes it");
 assert(adminRefreshSource.includes("pendingRefreshScrollState || captureScrollState()"), "manual admin refresh must fall back to click-time scroll capture for keyboard activation");
 assert(adminRefreshSource.includes('document.addEventListener("pointerdown"'), "manual admin refresh button must capture scroll before click focus changes it");
+assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();'), "admin refresh must render immediately after entering the refreshing state");
+assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();'), "admin refresh must render immediately after clearing the refreshing state");
 assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
 assert(adminRefreshSource.includes("await runRefresh(scrollState);"), "React Admin refresh must reuse the legacy runRefresh helper");
 assert(!adminRefreshSource.includes("includeMe: true"), "React Admin refresh must not bypass legacy refresh semantics with a special includeMe path");
@@ -369,6 +376,7 @@ assert(!stateSource.includes("당겨서 새로고침"), "Admin state must not ke
 assert(!stateSource.includes("pulling"), "Admin state must not keep pull gesture state");
 assert(adminEventSource.includes("refreshAdminDataPreservingScroll"), "Admin data refreshes must use the scroll-preserving helper");
 assert(!adminEventSource.includes(".then(() => render())"), "Admin async refresh paths must not use bare render in promise callbacks");
+assert(rendererSource.includes("window.GJUReactAdmin?.update"), "renderer must update the mounted React Admin tree when shell state changes");
 assert(adminEventSource.includes('toast("비밀번호를 변경했습니다.", { preserveScroll: true })'), "admin password reset toast must preserve scroll");
 assert(adminEventSource.includes('toast("기자재 상태를 변경했습니다.", { preserveScroll: true, scrollState })'), "admin equipment status toast must preserve pre-action scroll");
 assert(adminEventSource.includes('toast("선택된 기자재가 없습니다.", { preserveScroll: true, scrollState })'), "empty equipment bulk action toast must preserve pre-action scroll");

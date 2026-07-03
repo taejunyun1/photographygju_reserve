@@ -1,5 +1,5 @@
 import { state } from "../state.js?v=20260703-react-astryx-admin";
-import { toast } from "../renderer.js?v=20260703-react-astryx-admin";
+import { render, toast } from "../renderer.js?v=20260703-react-astryx-admin";
 import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-react-astryx-admin";
 
 let adminRefreshHandlersBound = false;
@@ -15,6 +15,7 @@ function refreshButtonFromEvent(event) {
 async function runRefresh(scrollState = captureScrollState()) {
   if (state.adminRefresh?.refreshing) return;
   state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };
+  render();
   try {
     await refreshAdminDataPreservingScroll({ includeBootstrap: true, scrollState });
     toast("최신 데이터를 불러왔습니다.", { scrollState });
@@ -22,6 +23,7 @@ async function runRefresh(scrollState = captureScrollState()) {
     toast(error.message || "데이터 새로고침에 실패했습니다.", { scrollState });
   } finally {
     state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };
+    render();
   }
 }
 

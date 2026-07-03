@@ -86,7 +86,7 @@ export function AdminApp({
   } else if (view === "users") {
     content = React.createElement(AdminUsers, { state });
   } else if (view === "equipment") {
-    content = React.createElement(AdminEquipment, { state });
+    content = React.createElement(AdminEquipment, { state, legacyRenderAdminContent });
   } else if (view === "logs") {
     content = React.createElement(AdminLogs, { state });
   } else {

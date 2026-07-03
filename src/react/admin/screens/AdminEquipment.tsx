@@ -7,9 +7,11 @@ import {
   GjuTable
 } from "../../design-system";
 import type { LegacyState } from "../../platform/types";
+import { LegacyAdminPanel } from "../LegacyAdminPanel";
 
 type AdminEquipmentProps = {
   state: LegacyState;
+  legacyRenderAdminContent?: () => string;
 };
 
 type AdminEquipmentItem = {
@@ -123,7 +125,30 @@ function renderReservableTag(item: AdminEquipmentItem) {
   return item.reservable ? <span className="tag green">가능</span> : <span className="tag yellow">문의</span>;
 }
 
-export function AdminEquipment({ state }: AdminEquipmentProps) {
+function renderEquipmentPanelTabs(panelTab: string) {
+  return (
+    <div className="admin-inner-tabs" role="tablist" aria-label="기자재 관리 탭">
+      <button
+        className={`tab-button ${panelTab === "add" ? "active" : ""}`}
+        type="button"
+        data-admin-equipment-panel-tab="add"
+        aria-current={panelTab === "add" ? "true" : undefined}
+      >
+        장비추가
+      </button>
+      <button
+        className={`tab-button ${panelTab === "manage" ? "active" : ""}`}
+        type="button"
+        data-admin-equipment-panel-tab="manage"
+        aria-current={panelTab === "manage" ? "true" : undefined}
+      >
+        장비관리
+      </button>
+    </div>
+  );
+}
+
+export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipmentProps) {
   const panelTab = String(state.adminEquipmentPanelTab || "manage");
   const query = normalizeSearchText(state.adminEquipmentSearch);
   const sourceTab = String(state.adminEquipmentTab || "all");
@@ -140,17 +165,12 @@ export function AdminEquipment({ state }: AdminEquipmentProps) {
   const allVisibleSelected = filtered.length > 0 && visibleSelectedCount === filtered.length;
 
   if (panelTab !== "manage") {
-    return (
-      <section className="grid">
-        <GjuCard title="기자재 관리" eyebrow="React Admin">
-          <p className="muted">이 마일스톤에서는 장비관리 탭만 React로 전환합니다.</p>
-        </GjuCard>
-      </section>
-    );
+    return legacyRenderAdminContent ? <LegacyAdminPanel renderHtml={legacyRenderAdminContent} /> : null;
   }
 
   return (
     <section className="grid">
+      {renderEquipmentPanelTabs(panelTab)}
       <GjuCard
         className="admin-equipment-list-card compact"
         title="등록된 전체 기자재"
