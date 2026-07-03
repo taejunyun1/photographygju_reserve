@@ -6,6 +6,9 @@ import { adminNavItems, adminTitle, type AdminNavKey } from "../platform/adminNa
 import type { ReactAdminMountOptions } from "../platform/types";
 import { LegacyAdminPanel } from "./LegacyAdminPanel";
 import { AdminDashboard } from "./screens/AdminDashboard";
+import { AdminEquipment } from "./screens/AdminEquipment";
+import { AdminLogs } from "./screens/AdminLogs";
+import { AdminUsers } from "./screens/AdminUsers";
 
 type AdminAppProps = Omit<ReactAdminMountOptions, "root">;
 
@@ -77,6 +80,19 @@ export function AdminApp({
     void actions.setAdminView(nextView);
   };
 
+  let content: React.ReactNode;
+  if (view === "dashboard") {
+    content = React.createElement(AdminDashboard, { state, actions });
+  } else if (view === "users") {
+    content = React.createElement(AdminUsers, { state });
+  } else if (view === "equipment") {
+    content = React.createElement(AdminEquipment, { state });
+  } else if (view === "logs") {
+    content = React.createElement(AdminLogs, { state });
+  } else {
+    content = React.createElement(LegacyAdminPanel, { renderHtml: legacyRenderAdminContent });
+  }
+
   return React.createElement(
     GjuAppShell,
     {
@@ -85,8 +101,6 @@ export function AdminApp({
       mobileHeader: renderHeader(title, headerActions),
       mobileBottomNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--bottom")
     },
-    view === "dashboard"
-      ? React.createElement(AdminDashboard, { state, actions })
-      : React.createElement(LegacyAdminPanel, { renderHtml: legacyRenderAdminContent })
+    content
   );
 }

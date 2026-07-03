@@ -218,6 +218,89 @@ assert(refreshingDesktopHeaderSegment, "React Admin shell must keep desktop head
 assert(refreshingDesktopHeaderSegment.includes('aria-label="새로고침 중"'), "Desktop header refresh action must expose the busy label");
 assert(refreshingDesktopHeaderSegment.includes("aria-busy=\"true\""), "Desktop header refresh action must stay busy while refreshing");
 
+const noopActions = {
+  setAdminView() {},
+  refreshAdminData() {},
+  logout() {},
+  render() {}
+};
+
+const usersMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "users",
+      user: { role: "admin" },
+      adminUsers: [
+        {
+          id: "u1",
+          role: "student",
+          name: "학생",
+          email: "s@gju.local",
+          studentId: "20260001",
+          studentStatus: "재학생",
+          phone: "010",
+          approvalStatus: "approved"
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(usersMarkup.includes('data-user-delete="u1"'), "React users screen must render delete action contract");
+assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
+assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
+
+const equipmentMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      user: { role: "admin" },
+      adminEquipment: [
+        {
+          id: "e1",
+          code: "CAM-1",
+          name: "카메라",
+          category: "Body",
+          source: "school",
+          status: "가능",
+          active: true,
+          reservable: true
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(equipmentMarkup.includes('data-equipment-remove-admin="e1"'), "React equipment screen must render remove action contract");
+assert(equipmentMarkup.includes('data-equipment-bulk-status="문의"'), "React equipment screen must include inquiry status action");
+
+const logsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "logs",
+      user: { role: "admin" },
+      adminSessions: [
+        {
+          id: "s1",
+          user: { name: "admin", email: "admin@gju.local" },
+          ip: "127.0.0.1",
+          device: "Mac / Chrome",
+          userAgent: "UA",
+          createdAt: "2026-07-03T00:00:00.000Z",
+          expiresAt: "2026-07-17T00:00:00.000Z"
+        }
+      ],
+      adminLogs: []
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(logsMarkup.includes('data-session-revoke="s1"'), "React logs screen must render session revoke action contract");
+assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke must be icon-only");
+
 const legacyFallbackMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: { adminView: "reports", user: { role: "admin", name: "admin" }, summary: {} },

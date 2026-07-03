@@ -131,6 +131,18 @@ const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
 const adminRefreshSource = fs.readFileSync("public/js/events/admin-refresh.js", "utf8");
 const stateSource = fs.readFileSync("public/js/state.js", "utf8");
+const reactUsersSourcePath = "src/react/admin/screens/AdminUsers.tsx";
+const reactEquipmentSourcePath = "src/react/admin/screens/AdminEquipment.tsx";
+const reactLogsSourcePath = "src/react/admin/screens/AdminLogs.tsx";
+const reactUsersSource = fs.existsSync(reactUsersSourcePath)
+  ? fs.readFileSync(reactUsersSourcePath, "utf8")
+  : "";
+const reactEquipmentSource = fs.existsSync(reactEquipmentSourcePath)
+  ? fs.readFileSync(reactEquipmentSourcePath, "utf8")
+  : "";
+const reactLogsSource = fs.existsSync(reactLogsSourcePath)
+  ? fs.readFileSync(reactLogsSourcePath, "utf8")
+  : "";
 const adminEventSource = [
   "public/js/events/shared.js",
   "public/js/events/scroll-state.js",
@@ -278,6 +290,10 @@ assertIconOnlyAction(equipmentView, "data-equipment-bulk-remove", "선택 기자
 assertIconOnlyAction(equipmentView, 'data-equipment-remove-admin="e1"', "기자재 제거", "equipment row remove");
 assertIconOnlyAction(usersView, 'data-user-delete="user1"', "삭제", "student approval user delete");
 assertIconOnlyAction(logsView, 'data-session-revoke="session1"', "로그아웃", "session revoke");
+assert(reactUsersSource.includes("data-user-delete"), "React users screen must keep delegated delete contract");
+assert(reactEquipmentSource.includes("data-equipment-remove-admin"), "React equipment screen must keep delegated remove contract");
+assert(reactEquipmentSource.includes('data-equipment-bulk-status="문의"'), "React equipment screen must expose inquiry status");
+assert(reactLogsSource.includes("data-session-revoke"), "React logs screen must keep delegated revoke contract");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
