@@ -1,4 +1,5 @@
 import { state } from "../state.js?v=20260703-icon-only-actions";
+import { logout } from "../actions.js?v=20260703-icon-only-actions";
 import { render, toast } from "../renderer.js?v=20260703-icon-only-actions";
 import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-icon-only-actions";
 import {
@@ -30,10 +31,20 @@ export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
 ].join(",");
 
 let lastEquipmentInteractionScrollState = null;
+let sharedEventHandlersBound = false;
 
 export function renderAtTop() {
   render();
   scrollToPageTop();
+}
+
+export function setupSharedEventHandlers() {
+  if (sharedEventHandlersBound) return;
+  sharedEventHandlersBound = true;
+
+  document.addEventListener("gju-react-admin-logout", async () => {
+    await logout();
+  });
 }
 
 export { captureScrollState, restoreScrollState, scrollToPageTop, SCROLL_RESTORE_TARGET_SELECTOR };

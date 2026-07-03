@@ -243,6 +243,12 @@ assert(!viewsSource.includes('state.adminReservations.filter((reservation) => re
 assert(!viewsSource.includes('state.adminReports.filter((report) => reportSearchText(report).includes(query))'), "report view must not re-filter server-backed search results on the client");
 assert(viewsSource.includes('현재 표시 ${reservations.length}건'), "reservation search copy must describe the rendered server result set");
 assert(viewsSource.includes('현재 표시 ${reports.length}건'), "report search copy must describe the rendered server result set");
+assert(viewsSource.includes("export function adminContent"), "legacy Admin content renderer must remain exported");
+assert(rendererSource.includes("react-admin-root"), "renderer must include React Admin root");
+assert(rendererSource.includes("window.GJUReactAdmin?.mount"), "renderer must mount React Admin when available");
+assert(rendererSource.includes("window.GJUReactAdmin?.unmount"), "renderer must unmount React Admin when leaving Admin");
+assert(rendererSource.includes("legacyRenderAdminContent"), "renderer must pass legacy Admin content fallback to React");
+assert(rendererSource.includes("state.reactAdminEnabled !== false"), "renderer must guard React Admin with state.reactAdminEnabled");
 assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
 assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status must use a small dot indicator");
 assert(!lecturesView.includes("<div><span>진행상태</span><strong>모집중</strong></div>"), "admin lecture status must not render as a large strong meta value");

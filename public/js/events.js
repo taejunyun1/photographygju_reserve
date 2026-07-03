@@ -1,4 +1,4 @@
-import { captureEquipmentInteractionScroll } from "./events/shared.js?v=20260703-icon-only-actions";
+import { captureEquipmentInteractionScroll, setupSharedEventHandlers } from "./events/shared.js?v=20260703-icon-only-actions";
 import { setupAdminRefreshHandlers } from "./events/admin-refresh.js?v=20260703-icon-only-actions";
 import { setupAdminFlowClickHandlers } from "./events/admin-flow.js?v=20260703-icon-only-actions";
 import { setupFormEventHandlers } from "./events/forms.js?v=20260703-icon-only-actions";
@@ -8,6 +8,7 @@ import { setupStudentFlowClickHandlers } from "./events/student-flow.js?v=202607
 
 export function setupEventHandlers() {
   document.addEventListener("pointerdown", captureEquipmentInteractionScroll, { capture: true, passive: true });
+  setupSharedEventHandlers();
   setupAdminRefreshHandlers();
   setupStudentFlowClickHandlers();
   setupAdminFlowClickHandlers();
