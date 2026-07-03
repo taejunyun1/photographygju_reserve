@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260702-admin-icon-header");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260702-admin-icon-header");
+const { state } = await import("../public/js/state.js?v=20260703-equipment-weekend-rules");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260703-equipment-weekend-rules");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -190,6 +190,7 @@ function resetStudentState() {
   state.reservationType = "equipment";
   state.reservationFlowStep = { equipment: "schedule", studio: "date", darkroom: "date", print: "date" };
   state.selectedDates = { equipment: futureDateKey(), studio: "", darkroom: "", print: "" };
+  state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
   state.selectedEquipmentPeriod = "";
   state.selectedEquipmentRentalTime = "";
   state.selectedEquipmentReturnTime = "";
@@ -204,6 +205,28 @@ assert.equal(state.selectedEquipmentRentalTime, "10:15", "equipment rental time 
 assert.equal(state.selectedEquipmentReturnTime, "12:00", "equipment return time must default to the next valid return slot, not the same time");
 assert(defaultEquipmentForm.includes('data-reserve-next="equipment:select"'), "equipment schedule step must render the next-step CTA");
 assert(!defaultEquipmentForm.includes('data-reserve-next="equipment:select" disabled'), "equipment schedule CTA must stay enabled when return time is after rental time");
+
+resetStudentState();
+state.calendarMonth = "2026-07";
+state.selectedDates.equipment = "2026-07-10";
+const fridayWeekendEquipmentForm = equipmentForm();
+assert(fridayWeekendEquipmentForm.includes('value="2박3일"'), "Friday equipment reservations must expose the 2-night 3-day option");
+assert(fridayWeekendEquipmentForm.includes("2박3일(주말)"), "Friday equipment reservations must label 2-night 3-day as the weekend option");
+
+resetStudentState();
+state.calendarMonth = "2026-07";
+state.selectedDates.equipment = "2026-07-11";
+const saturdayEquipmentForm = equipmentForm();
+assert(saturdayEquipmentForm.includes('data-calendar-day="2026-07-11" disabled'), "Saturday equipment calendar days must be disabled");
+assert(saturdayEquipmentForm.includes("토요일/일요일은 기자재 예약을 시작할 수 없습니다."), "Saturday equipment reservations must explain that weekend starts are unavailable");
+assert(!saturdayEquipmentForm.includes('data-reserve-next="equipment:schedule"'), "Saturday equipment reservations must not offer the next-step CTA");
+
+resetStudentState();
+state.calendarMonth = "2026-07";
+state.selectedDates.equipment = "2026-07-12";
+const sundayEquipmentForm = equipmentForm();
+assert(sundayEquipmentForm.includes('data-calendar-day="2026-07-12" disabled'), "Sunday equipment calendar days must be disabled");
+assert(!sundayEquipmentForm.includes('data-reserve-next="equipment:schedule"'), "Sunday equipment reservations must not offer the next-step CTA");
 
 resetStudentState();
 state.selectedEquipmentRentalTime = "17:30";

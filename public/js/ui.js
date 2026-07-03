@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260702-admin-icon-header";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-equipment-weekend-rules";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

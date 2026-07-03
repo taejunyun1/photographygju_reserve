@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260702-admin-icon-header";
-import { statusLabel, typeLabel } from "./constants.js?v=20260702-admin-icon-header";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260702-admin-icon-header";
+import { state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { statusLabel, typeLabel } from "./constants.js?v=20260703-equipment-weekend-rules";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -28,6 +28,8 @@ import {
   printCapacityBuckets,
   printDateOutsideUploadWindow,
   printUploadWindowLabel,
+  reservationDateUnavailable,
+  reservationDateUnavailableMessage,
   searchableText,
   studioSlotBlocked,
   studioPairReservedOnDate,
@@ -38,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260702-admin-icon-header";
+} from "./utils.js?v=20260703-equipment-weekend-rules";
 import {
   actionRow,
   card,
@@ -48,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260702-admin-icon-header";
+} from "./ui.js?v=20260703-equipment-weekend-rules";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -403,9 +405,9 @@ function reservationFlowStep(type) {
   return state.reservationFlowStep[type] || "date";
 }
 
-function normalizeEquipmentFlowStep({ selectedDate, closedDate, rangeBlocked, selectedItems }) {
+function normalizeEquipmentFlowStep({ selectedDate, closedDate, dateUnavailable, rangeBlocked, selectedItems }) {
   let step = reservationFlowStep("equipment");
-  if (!selectedDate || closedDate) step = "date";
+  if (!selectedDate || closedDate || dateUnavailable) step = "date";
   if (rangeBlocked && ["select", "details"].includes(step)) step = "schedule";
   if (!selectedItems.length && step === "details") step = "select";
   state.reservationFlowStep.equipment = step;
@@ -537,12 +539,15 @@ function equipmentRecommendationPanel(selectedItems, selectedDate, period) {
   `;
 }
 
-function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, closedDate, rangeBlocked, activeStep) {
+function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, closedDate, dateUnavailable, rangeBlocked, activeStep) {
   if (!selectedDate) {
     return reservationStep(2, "대여 기간/시간 선택", `<p class="muted">먼저 캘린더에서 대여 시작 날짜를 선택하세요.</p>`, flowStepOptions("equipment", "schedule", activeStep, { locked: true }));
   }
   if (closedDate) {
     return reservationStep(2, "대여 기간/시간 선택", pastDateMessage("equipment"), flowStepOptions("equipment", "schedule", activeStep, { locked: true }));
+  }
+  if (dateUnavailable) {
+    return reservationStep(2, "대여 기간/시간 선택", `<p class="muted warning-text">${escapeHtml(reservationDateUnavailableMessage("equipment"))}</p>`, flowStepOptions("equipment", "schedule", activeStep, { locked: true }));
   }
   const validTimeRange = equipmentTimeRangeValid(period, rentalTime, returnTime);
   const scheduleBlocked = rangeBlocked || !validTimeRange;
@@ -563,12 +568,15 @@ function equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, close
   `, flowStepOptions("equipment", "schedule", activeStep, scheduleBlocked ? { note: rangeBlocked ? "기간을 변경하거나 다른 날짜를 선택하세요." : "대여/반납 시간을 확인하세요." } : {}));
 }
 
-function equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, closedDate, rangeBlocked, activeStep) {
+function equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, closedDate, dateUnavailable, rangeBlocked, activeStep) {
   if (!selectedDate) {
     return reservationStep(3, "기자재 선택", `<p class="muted">대여 시작 날짜를 선택하면 기자재 목록이 열립니다.</p>`, flowStepOptions("equipment", "select", activeStep, { locked: true }));
   }
   if (closedDate) {
     return reservationStep(3, "기자재 선택", pastDateMessage("equipment"), flowStepOptions("equipment", "select", activeStep, { locked: true }));
+  }
+  if (dateUnavailable) {
+    return reservationStep(3, "기자재 선택", `<p class="muted warning-text">${escapeHtml(reservationDateUnavailableMessage("equipment"))}</p>`, flowStepOptions("equipment", "select", activeStep, { locked: true }));
   }
   if (rangeBlocked) {
     return reservationStep(3, "기자재 선택", `<p class="muted">선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다. 다른 기간을 선택하세요.</p>`, flowStepOptions("equipment", "select", activeStep, { locked: true }));
@@ -634,9 +642,12 @@ function cameraBagConsent(selectedItems) {
   `;
 }
 
-function equipmentDetailStep(selectedItems, closedDate, rangeBlocked, activeStep) {
+function equipmentDetailStep(selectedItems, closedDate, dateUnavailable, rangeBlocked, activeStep) {
   if (closedDate) {
     return reservationStep(4, "나머지 정보 입력", pastDateMessage("equipment"), flowStepOptions("equipment", "details", activeStep, { locked: true }));
+  }
+  if (dateUnavailable) {
+    return reservationStep(4, "나머지 정보 입력", `<p class="muted warning-text">${escapeHtml(reservationDateUnavailableMessage("equipment"))}</p>`, flowStepOptions("equipment", "details", activeStep, { locked: true }));
   }
   if (rangeBlocked) {
     return reservationStep(4, "나머지 정보 입력", `<p class="muted">차단 일정과 겹치는 기간에는 승인 요청을 보낼 수 없습니다.</p>`, flowStepOptions("equipment", "details", activeStep, { locked: true }));
@@ -714,11 +725,12 @@ export function equipmentForm() {
   if (!categories.includes(state.equipmentCategoryFilter)) state.equipmentCategoryFilter = categories[0] || "Other";
   const selectedDate = state.selectedDates.equipment || "";
   const closedDate = isReservationDateClosed("equipment", selectedDate);
+  const dateUnavailable = reservationDateUnavailable("equipment", selectedDate);
   const period = selectedEquipmentPeriod(selectedDate);
   const rentalTime = selectedEquipmentTime("selectedEquipmentRentalTime", "equipmentRentalTimes");
   const returnTime = selectedEquipmentReturnTime(rentalTime, period);
-  const rangeBlocked = Boolean(selectedDate && !closedDate && equipmentRangeBlocked(selectedDate, period).length);
-  if (closedDate) {
+  const rangeBlocked = Boolean(selectedDate && !closedDate && !dateUnavailable && equipmentRangeBlocked(selectedDate, period).length);
+  if (closedDate || dateUnavailable) {
     state.selectedEquipmentItemIds = [];
   } else if (rangeBlocked) {
     state.selectedEquipmentItemIds = [];
@@ -732,9 +744,12 @@ export function equipmentForm() {
   const selectedItems = state.selectedEquipmentItemIds
     .map((itemId) => reservable.find((item) => item.id === itemId))
     .filter(Boolean);
-  const activeStep = normalizeEquipmentFlowStep({ selectedDate, closedDate, rangeBlocked, selectedItems });
-  const scheduleLabel = selectedDate && !closedDate
+  const activeStep = normalizeEquipmentFlowStep({ selectedDate, closedDate, dateUnavailable, rangeBlocked, selectedItems });
+  const scheduleLabel = selectedDate && !closedDate && !dateUnavailable
     ? `${equipmentRangeLabel(selectedDate, period)} · ${rentalTime || "-"} / ${returnTime || "-"}`
+    : "";
+  const dateStepMessage = dateUnavailable
+    ? `<p class="muted warning-text">${escapeHtml(reservationDateUnavailableMessage("equipment"))}</p>`
     : "";
   return `
     <form class="reservation-layout booking-flow" data-form="reservation" data-type="equipment" data-active-step="${escapeHtml(activeStep)}">
@@ -755,11 +770,11 @@ export function equipmentForm() {
           { step: "schedule", label: "기간/시간", value: scheduleLabel },
           { step: "select", label: "선택 장비", value: equipmentSelectionLabel(selectedItems) }
         ])}
-        ${bookingDateContinue("equipment", activeStep, selectedDate, closedDate, "schedule")}
-        ${reservationStep(1, "날짜 선택", `<p class="selected-date">대여 시작 날짜: <strong>${selectedDate || "캘린더에서 날짜를 선택하세요"}</strong></p>`, flowStepOptions("equipment", "date", activeStep))}
-        ${equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, closedDate, rangeBlocked, activeStep)}
-        ${equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, closedDate, rangeBlocked, activeStep)}
-        ${equipmentDetailStep(selectedItems, closedDate, rangeBlocked, activeStep)}
+        ${bookingDateContinue("equipment", activeStep, selectedDate, closedDate || dateUnavailable, "schedule")}
+        ${reservationStep(1, "날짜 선택", `<p class="selected-date">대여 시작 날짜: <strong>${selectedDate || "캘린더에서 날짜를 선택하세요"}</strong></p>${dateStepMessage}`, flowStepOptions("equipment", "date", activeStep, dateUnavailable ? { note: "평일 또는 금요일 2박3일 옵션을 선택하세요." } : {}))}
+        ${equipmentPeriodStep(selectedDate, period, rentalTime, returnTime, closedDate, dateUnavailable, rangeBlocked, activeStep)}
+        ${equipmentPickerStep(selectedDate, period, categories, visibleItems, selectedItems, closedDate, dateUnavailable, rangeBlocked, activeStep)}
+        ${equipmentDetailStep(selectedItems, closedDate, dateUnavailable, rangeBlocked, activeStep)}
         ${fantasyLabEquipmentSection()}
         <p class="reservation-bottom-note">카메라 Body, Lens, 조명, 음향 장비를 한 번에 여러 개 담을 수 있습니다. 사용일 전날 23:59까지만 예약 가능하며, 당일 예약은 접수되지 않습니다.</p>
       </section>

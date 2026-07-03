@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260702-admin-icon-header";
+import { state } from "./state.js?v=20260703-equipment-weekend-rules";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260702-admin-icon-header";
+} from "./constants.js?v=20260703-equipment-weekend-rules";
 
 export function escapeHtml(value) {
   return String(value ?? "")
@@ -257,6 +257,34 @@ export function addDaysToDateKey(key, days) {
   return dateKey(date);
 }
 
+export function weekdayIndexForDateKey(key) {
+  const date = new Date(`${key}T00:00:00`);
+  const day = date.getDay();
+  return Number.isNaN(day) ? null : day;
+}
+
+export function isWeekendDateKey(key) {
+  const day = weekdayIndexForDateKey(key);
+  return day === 0 || day === 6;
+}
+
+export function equipmentReservationStartUnavailable(key) {
+  return isWeekendDateKey(key);
+}
+
+export function equipmentReservationStartUnavailableMessage() {
+  return "토요일/일요일은 기자재 예약을 시작할 수 없습니다. 금요일 2박3일 옵션을 이용하세요.";
+}
+
+export function reservationDateUnavailable(type, key) {
+  return type === "equipment" && equipmentReservationStartUnavailable(key);
+}
+
+export function reservationDateUnavailableMessage(type) {
+  if (type === "equipment") return equipmentReservationStartUnavailableMessage();
+  return "선택한 날짜는 예약할 수 없습니다.";
+}
+
 export function equipmentPeriodDays(period = "") {
   if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
   if (String(period).includes("1박2일")) return 1;
@@ -488,6 +516,9 @@ export function calendarReservationMeta(reservation) {
 
 export function calendarDayDetails(type, selected) {
   if (!selected) return "";
+  if (reservationDateUnavailable(type, selected)) {
+    return `<div class="calendar-reservations empty-calendar-note">${escapeHtml(reservationDateUnavailableMessage(type))}</div>`;
+  }
   const reservations = sharedReservations(type, selected);
   const blocked = reservationBlockedItemsForDate(type, selected);
   if (!reservations.length && !blocked.length) {
@@ -628,6 +659,7 @@ export function calendar(type) {
     const blocked = reservationBlockedItemsForDate(type, key);
     const past = key < today;
     const closed = isReservationDateClosed(type, key);
+    const unavailable = reservationDateUnavailable(type, key);
     return {
       key,
       day: day.getDate(),
@@ -636,6 +668,7 @@ export function calendar(type) {
       today: key === today,
       past,
       closed,
+      unavailable,
       ownCount,
       otherCount,
       blocked
@@ -666,11 +699,12 @@ export function calendar(type) {
       </div>
       <div class="calendar-grid-large">
         ${days.map((day) => `
-          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.past ? "past" : ""} ${day.closed ? "closed" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}">
+          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.selected ? "selected" : ""} ${day.today ? "today" : ""} ${day.past ? "past" : ""} ${day.closed ? "closed" : ""} ${day.unavailable ? "unavailable" : ""} ${day.ownCount ? "has-own" : ""} ${day.otherCount ? "has-other" : ""} ${day.blocked.length ? "blocked" : ""}" type="button" data-calendar-day="${day.key}" ${day.unavailable ? `disabled aria-disabled="true" title="${escapeHtml(reservationDateUnavailableMessage(type))}"` : ""}>
             <span>${day.day}</span>
             <div class="calendar-markers">
               ${day.ownCount ? `<small class="calendar-marker mine">내 ${day.ownCount}</small>` : ""}
               ${day.otherCount ? `<small class="calendar-marker other">타인 ${day.otherCount}</small>` : ""}
+              ${day.unavailable ? `<small class="calendar-marker blocked">예약불가</small>` : ""}
               ${day.closed && !day.past && !day.blocked.length ? `<small class="calendar-marker blocked">마감</small>` : ""}
               ${day.blocked.length ? `<small class="calendar-marker blocked">차단</small>` : ""}
             </div>

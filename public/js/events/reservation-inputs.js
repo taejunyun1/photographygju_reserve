@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260702-admin-icon-header";
+import { state } from "../state.js?v=20260703-equipment-weekend-rules";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260702-admin-icon-header";
+} from "../admin-equipment.js?v=20260703-equipment-weekend-rules";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260702-admin-icon-header";
+} from "./shared.js?v=20260703-equipment-weekend-rules";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

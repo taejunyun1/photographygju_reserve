@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260702-admin-icon-header");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260702-admin-icon-header");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260702-admin-icon-header");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260702-admin-icon-header");
+const { state } = await import("../public/js/state.js?v=20260703-equipment-weekend-rules");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-equipment-weekend-rules");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-equipment-weekend-rules");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-equipment-weekend-rules");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {

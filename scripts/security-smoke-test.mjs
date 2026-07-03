@@ -700,6 +700,22 @@ assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
 
+const weekendEquipmentItem = db.equipment.find((item) => item.active !== false && item.reservable !== false && item.status === "가능" && !["Body", "Lens"].includes(item.category));
+assert.equal(Boolean(weekendEquipmentItem), true);
+const saturdayEquipmentReservation = await api("POST", "/api/reservations", {
+  type: "equipment",
+  fields: {
+    reservedDate: "2026-07-11",
+    period: "당일",
+    rentalTime: "10:15",
+    returnTime: "17:10",
+    phone: "01039546412",
+    equipmentItemIds: [weekendEquipmentItem.id]
+  }
+}, studentLogin.body.data.token);
+assert.equal(saturdayEquipmentReservation.status, 400);
+assert.match(saturdayEquipmentReservation.body.error, /토요일|일요일|주말/);
+
 const studioReservationForReport = await withMockedRandomUuids([
   "11111111-2222-3333-4444-555555555555",
   "66666666-7777-8888-9999-aaaaaaaaaaaa",

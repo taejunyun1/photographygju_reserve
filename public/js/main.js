@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260702-admin-icon-header";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260702-admin-icon-header";
-import { setupEventHandlers } from "./events.js?v=20260702-admin-icon-header";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260702-admin-icon-header";
-import { render } from "./renderer.js?v=20260702-admin-icon-header";
-import { escapeHtml } from "./utils.js?v=20260702-admin-icon-header";
+import { $app, state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-equipment-weekend-rules";
+import { setupEventHandlers } from "./events.js?v=20260703-equipment-weekend-rules";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
+import { render } from "./renderer.js?v=20260703-equipment-weekend-rules";
+import { escapeHtml } from "./utils.js?v=20260703-equipment-weekend-rules";
 
 async function init() {
   await loadBootstrap();

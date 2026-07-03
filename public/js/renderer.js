@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260702-admin-icon-header";
-import { escapeHtml } from "./utils.js?v=20260702-admin-icon-header";
-import { adminShell } from "./views-admin.js?v=20260702-admin-icon-header";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260702-admin-icon-header";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260702-admin-icon-header";
+import { $app, state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { escapeHtml } from "./utils.js?v=20260703-equipment-weekend-rules";
+import { adminShell } from "./views-admin.js?v=20260703-equipment-weekend-rules";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260703-equipment-weekend-rules";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260703-equipment-weekend-rules";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

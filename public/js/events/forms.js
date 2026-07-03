@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260702-admin-icon-header";
-import { api } from "../api.js?v=20260702-admin-icon-header";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260702-admin-icon-header";
+import { state } from "../state.js?v=20260703-equipment-weekend-rules";
+import { api } from "../api.js?v=20260703-equipment-weekend-rules";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-equipment-weekend-rules";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260702-admin-icon-header";
-import { render, toast } from "../renderer.js?v=20260702-admin-icon-header";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260702-admin-icon-header";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-icon-header";
+} from "../actions.js?v=20260703-equipment-weekend-rules";
+import { render, toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-equipment-weekend-rules";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-weekend-rules";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

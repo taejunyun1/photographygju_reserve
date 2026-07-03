@@ -1,20 +1,21 @@
-import { state } from "../state.js?v=20260702-admin-icon-header";
-import { api } from "../api.js?v=20260702-admin-icon-header";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260702-admin-icon-header";
-import { logout, openReport } from "../actions.js?v=20260702-admin-icon-header";
+import { state } from "../state.js?v=20260703-equipment-weekend-rules";
+import { api } from "../api.js?v=20260703-equipment-weekend-rules";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260703-equipment-weekend-rules";
+import { logout, openReport } from "../actions.js?v=20260703-equipment-weekend-rules";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260702-admin-icon-header";
-import { render, toast } from "../renderer.js?v=20260702-admin-icon-header";
+} from "../native-notifications.js?v=20260703-equipment-weekend-rules";
+import { render, toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260703-equipment-weekend-rules";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260702-admin-icon-header";
+} from "./shared.js?v=20260703-equipment-weekend-rules";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {
@@ -49,6 +50,10 @@ export function setupStudentFlowClickHandlers() {
       if (target.dataset.calendarDay) {
         const widget = target.closest("[data-calendar]");
         const type = widget?.dataset.calendar || state.reservationType;
+        if (reservationDateUnavailable(type, target.dataset.calendarDay)) {
+          toast(reservationDateUnavailableMessage(type));
+          return;
+        }
         state.selectedDates[type] = target.dataset.calendarDay;
         if (type === "studio") {
           state.selectedStudioSpace = "";

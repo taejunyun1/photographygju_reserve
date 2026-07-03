@@ -1387,6 +1387,21 @@ button:disabled,
   color: var(--muted-2);
 }
 
+.calendar-day.unavailable {
+  border-color: rgba(186, 26, 26, 0.38);
+  background: var(--red-soft);
+  color: var(--muted-2);
+  cursor: not-allowed;
+}
+
+.calendar-day.unavailable:disabled {
+  opacity: 0.76;
+}
+
+.calendar-day.unavailable small {
+  color: var(--red);
+}
+
 .calendar-day.today {
   border-color: var(--primary);
 }

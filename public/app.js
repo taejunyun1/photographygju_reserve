@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260702-admin-icon-header";
+import "./js/main.js?v=20260703-equipment-weekend-rules";

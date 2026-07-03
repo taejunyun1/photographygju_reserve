@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260702-admin-icon-header";
-import { api } from "./api.js?v=20260702-admin-icon-header";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260702-admin-icon-header";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260702-admin-icon-header";
-import { render, toast } from "./renderer.js?v=20260702-admin-icon-header";
+import { state } from "./state.js?v=20260703-equipment-weekend-rules";
+import { api } from "./api.js?v=20260703-equipment-weekend-rules";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-equipment-weekend-rules";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-equipment-weekend-rules";
+import { render, toast } from "./renderer.js?v=20260703-equipment-weekend-rules";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -22,11 +22,13 @@ import {
   printUploadWindowLabel,
   printSelectionBlocked,
   printSelectionConflicts,
+  reservationDateUnavailable,
+  reservationDateUnavailableMessage,
   reservationClosedMessage,
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260702-admin-icon-header";
+} from "./utils.js?v=20260703-equipment-weekend-rules";
 
 export async function login(form) {
   const data = formData(form);
@@ -150,6 +152,9 @@ export async function submitReservation(form) {
   }
   if (isReservationDateClosed(type, fields.reservedDate)) {
     throw new Error(reservationClosedMessage(type));
+  }
+  if (reservationDateUnavailable(type, fields.reservedDate)) {
+    throw new Error(reservationDateUnavailableMessage(type));
   }
   if (type === "equipment") {
     const visibleChecked = getChecked("equipmentItemIds");

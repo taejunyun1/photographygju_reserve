@@ -1,21 +1,23 @@
-import { state } from "../state.js?v=20260702-admin-icon-header";
-import { render, toast } from "../renderer.js?v=20260702-admin-icon-header";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260702-admin-icon-header";
+import { state } from "../state.js?v=20260703-equipment-weekend-rules";
+import { render, toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-equipment-weekend-rules";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
   isReservationDateClosed,
+  reservationDateUnavailable,
+  reservationDateUnavailableMessage,
   printDateOutsideUploadWindow,
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260702-admin-icon-header";
+} from "../utils.js?v=20260703-equipment-weekend-rules";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260702-admin-icon-header";
+} from "./scroll-state.js?v=20260703-equipment-weekend-rules";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",
@@ -125,6 +127,10 @@ export function canAdvanceReservationFlow(type, nextStep) {
   }
   if (isReservationDateClosed(type, selectedDate)) {
     toast("선택한 날짜는 예약 마감되어 다음 단계로 이동할 수 없습니다.");
+    return false;
+  }
+  if (reservationDateUnavailable(type, selectedDate)) {
+    toast(reservationDateUnavailableMessage(type));
     return false;
   }
   if (type === "equipment" && nextStep === "select" && equipmentRangeBlocked(selectedDate, state.selectedEquipmentPeriod).length) {

@@ -867,6 +867,11 @@ function dayIndexForDateKey(key) {
   return new Date(`${key}T00:00:00`).getDay();
 }
 
+function equipmentReservationStartUnavailable(key) {
+  const day = dayIndexForDateKey(key);
+  return day === 0 || day === 6;
+}
+
 function ruleAppliesToDate(rule, key) {
   if (!isValidDateKey(key)) return false;
   if (!rule || !key || WEEKDAY_INDEX[rule.day] !== dayIndexForDateKey(key)) return false;
@@ -1054,6 +1059,9 @@ function validateReservation(db, type, fields, editingId = null) {
 
   if (type === "equipment") {
     assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
+    if (equipmentReservationStartUnavailable(fields.reservedDate)) {
+      throw Object.assign(new Error("토요일/일요일은 기자재 예약을 시작할 수 없습니다. 금요일 2박3일 옵션을 이용하세요."), { status: 400 });
+    }
     // 2박3일(주말)·주말 대여는 금요일(금→일) 시작만 허용한다.
     if ((String(fields.period).includes("2박3일") || String(fields.period).includes("주말")) && dayIndexForDateKey(fields.reservedDate) !== 5) {
       throw Object.assign(new Error("2박3일(주말) 대여는 금요일에만 가능합니다."), { status: 400 });

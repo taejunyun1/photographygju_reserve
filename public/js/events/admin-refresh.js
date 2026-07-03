@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260702-admin-icon-header";
-import { toast } from "../renderer.js?v=20260702-admin-icon-header";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260702-admin-icon-header";
+import { state } from "../state.js?v=20260703-equipment-weekend-rules";
+import { toast } from "../renderer.js?v=20260703-equipment-weekend-rules";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-weekend-rules";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;
