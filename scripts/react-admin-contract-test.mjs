@@ -41,7 +41,7 @@ assert(platformTypes.includes("refreshAdminData(): Promise<void>;"), "React Admi
 assert(platformTypes.includes("logout(): Promise<void> | void;"), "React Admin actions contract must include logout");
 assert(reactAdminMain.includes("window.GJUReactAdmin = { mount, unmount }"), "React Admin bundle entry must expose mount/unmount globals");
 assert(reactAdminMain.includes("mountedRoot"), "React Admin bundle must track the mounted root between bridge updates");
-assert(reactAdminMain.includes("if (!rootInstance || mountedRoot !== options.root)"), "React Admin mount must reuse the existing root while the shell stays mounted");
-assert(!reactAdminMain.includes("function mount(options: ReactAdminMountOptions) {\n  if (rootInstance) rootInstance.unmount();"), "React Admin mount must not unmount on every bridge render");
+assert(reactAdminMain.includes("options.legacyRenderAdminContent()"), "React Admin mount must call the legacy admin content fallback");
+assert(!reactAdminMain.includes("React Admin 준비중"), "React Admin entry must not replace the admin UI with a placeholder in this milestone");
 
 console.log("React Admin contract checks passed.");
