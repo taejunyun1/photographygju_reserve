@@ -139,6 +139,45 @@ async function api(method, pathname, body = {}, token = "", meta = {}) {
   });
 }
 
+function todayKeySeoul() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date()).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function addDaysToDateKey(dateKey, days) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function dayIndexForDateKey(dateKey) {
+  return new Date(`${dateKey}T00:00:00Z`).getUTCDay();
+}
+
+function nextDayOfWeek(dateKey, targetDay, minOffset = 1) {
+  let candidate = addDaysToDateKey(dateKey, minOffset);
+  while (dayIndexForDateKey(candidate) !== targetDay) {
+    candidate = addDaysToDateKey(candidate, 1);
+  }
+  return candidate;
+}
+
+const seoulToday = todayKeySeoul();
+const nextSaturday = nextDayOfWeek(seoulToday, 6);
+const nextMonday = nextDayOfWeek(seoulToday, 1);
+const nextTuesday = nextDayOfWeek(seoulToday, 2);
+const nextWednesday = nextDayOfWeek(seoulToday, 3);
+const nextThursday = nextDayOfWeek(seoulToday, 4);
+const nextFriday = nextDayOfWeek(seoulToday, 5);
+
 async function withMockedRandomUuids(uuids, fn) {
   const originalRandomUUID = crypto.randomUUID;
   let index = 0;
@@ -715,7 +754,7 @@ assert.equal(Boolean(weekendEquipmentItem), true);
 const saturdayEquipmentReservation = await api("POST", "/api/reservations", {
   type: "equipment",
   fields: {
-    reservedDate: "2026-07-11",
+    reservedDate: nextSaturday,
     period: "당일",
     rentalTime: "10:15",
     returnTime: "17:10",
@@ -733,7 +772,7 @@ const studioReservationForReport = await withMockedRandomUuids([
 ], () => api("POST", "/api/reservations", {
   type: "studio",
   fields: {
-    reservedDate: "2026-07-06",
+    reservedDate: nextMonday,
     phone: "01039546412",
     studioSpace: "Studio A Front",
     studioSpaces: ["Studio A Front"],
@@ -759,7 +798,7 @@ assert.deepEqual(studioReservationSlackLog, {
   id: "slack_bbbbbbbbccccdd",
   event: "reservation_created",
   status: "skipped",
-  message: "[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: 2026-07-06\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://gjureserve.co.kr/reservations/res_11111111222233",
+  message: `[스튜디오 예약 확정]\n예약자: 보안테스트학생 / 010-****-6412\n신분: 재학생\n사용일: ${nextMonday}\n시간: 10:30-12:00\n장소: Studio A Front\n필요 장비: -\n상태: 자동 확정\n상세: https://gjureserve.co.kr/reservations/res_11111111222233`,
   createdAt: studioReservationSlackLog.createdAt
 });
 assert.match(studioReservationSlackLog.createdAt, /^\d{4}-\d{2}-\d{2}T/);
@@ -818,7 +857,7 @@ assert.equal(duplicateReportAfterCancellation.status, 409);
 const cancelledStudioReservation = await api("POST", "/api/reservations", {
   type: "studio",
   fields: {
-    reservedDate: "2026-07-07",
+    reservedDate: nextTuesday,
     phone: "01039546412",
     studioSpace: "Studio B Front",
     studioSpaces: ["Studio B Front"],
@@ -868,7 +907,7 @@ assert.equal(deleteStudentLogin.status, 200);
 const deleteStudentReservation = await api("POST", "/api/reservations", {
   type: "print",
   fields: {
-    reservedDate: "2026-07-10",
+    reservedDate: nextFriday,
     startTime: "10:00",
     endTime: "11:00",
     phone: "01022223333",
@@ -925,7 +964,7 @@ assert.equal(invalidDateReservation.status, 400);
 const brokenEquipmentReservation = await api("POST", "/api/reservations", {
   type: "equipment",
   fields: {
-    reservedDate: "2026-07-02",
+    reservedDate: nextWednesday,
     period: "당일",
     rentalTime: "10:15",
     returnTime: "17:10",
@@ -938,7 +977,7 @@ assert.equal(brokenEquipmentReservation.status, 400);
 const editableReservation = await api("POST", "/api/reservations", {
   type: "print",
   fields: {
-    reservedDate: "2026-07-03",
+    reservedDate: nextWednesday,
     startTime: "10:00",
     endTime: "11:00",
     phone: "01039546412",
@@ -952,7 +991,7 @@ assert.equal(editableReservation.status, 200);
 const secondPrintReservation = await api("POST", "/api/reservations", {
   type: "print",
   fields: {
-    reservedDate: "2026-07-04",
+    reservedDate: nextThursday,
     startTime: "10:00",
     endTime: "11:00",
     phone: "01039546412",
@@ -963,7 +1002,7 @@ const secondPrintReservation = await api("POST", "/api/reservations", {
 }, studentLogin.body.data.token);
 assert.equal(secondPrintReservation.status, 200);
 
-const pagedReservationsWithDateFilters = await api("GET", "/api/admin/reservations?page=1&pageSize=1&type=print&from=2026-07-03&to=2026-07-04", {}, adminToken);
+const pagedReservationsWithDateFilters = await api("GET", `/api/admin/reservations?page=1&pageSize=1&type=print&from=${nextWednesday}&to=${nextThursday}`, {}, adminToken);
 assert.equal(pagedReservationsWithDateFilters.status, 200);
 assert.equal(Array.isArray(pagedReservationsWithDateFilters.body.data.items), true);
 assert.equal(pagedReservationsWithDateFilters.body.data.page, 1);
@@ -972,7 +1011,7 @@ assert.equal(pagedReservationsWithDateFilters.body.data.total >= 2, true);
 assert.equal(pagedReservationsWithDateFilters.body.data.hasMore, true);
 assert.equal(pagedReservationsWithDateFilters.body.data.items.every((item) => item.type === "print"), true);
 
-const filterOnlyReservations = await api("GET", "/api/admin/reservations?type=print&from=2026-07-03&to=2026-07-04", {}, adminToken);
+const filterOnlyReservations = await api("GET", `/api/admin/reservations?type=print&from=${nextWednesday}&to=${nextThursday}`, {}, adminToken);
 assert.equal(filterOnlyReservations.status, 200);
 assert.equal(filterOnlyReservations.body.data.pageSize, 100);
 assert.equal(filterOnlyReservations.body.data.total >= 2, true);
@@ -995,7 +1034,7 @@ const blockStudent = await api("PATCH", `/api/admin/users/${studentLogin.body.da
 assert.equal(blockStudent.status, 200);
 
 const blockedEdit = await api("PATCH", `/api/reservations/${editableReservation.body.data.id}`, {
-  fields: { reservedDate: "2026-07-04" }
+  fields: { reservedDate: nextThursday }
 }, studentLogin.body.data.token);
 assert.equal(blockedEdit.status, 403);
 
@@ -1017,7 +1056,7 @@ assert.equal(invalidLectureDate.status, 400);
 
 const createdLecture = await api("POST", "/api/admin/lectures", {
   title: "내 예약 표시 테스트 특강",
-  lectureDate: "2026-07-01",
+  lectureDate: nextFriday,
   time: "14:00-16:00",
   location: "사진영상미디어학과 강의실",
   instructorName: "홍길동",
@@ -1040,7 +1079,7 @@ assert.equal(myReservations.status, 200);
 const myLectureReservation = myReservations.body.data.find((item) => item.type === "lecture" && item.fields.title === "내 예약 표시 테스트 특강");
 assert.equal(Boolean(myLectureReservation), true);
 assert.equal(myLectureReservation.status, "lecture_applied");
-assert.equal(myLectureReservation.fields.reservedDate, "2026-07-01");
+assert.equal(myLectureReservation.fields.reservedDate, nextFriday);
 
 const revokeResult = await api("POST", `/api/admin/sessions/${studentSession.id}/revoke`, {}, adminToken);
 assert.equal(revokeResult.status, 200);
