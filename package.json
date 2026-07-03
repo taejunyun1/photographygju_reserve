@@ -7,10 +7,13 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "build": "node scripts/build-static.js",
+    "build:react-admin": "node scripts/build-react-admin.mjs --target public",
     "icons:generate": "node scripts/generate-app-icons.mjs",
     "build:native": "node scripts/build-native.js",
     "check": "node --check core.mjs && node --check storage-sql.mjs && node --check server.mjs && node --check worker.mjs",
+    "check:react-admin": "tsc --noEmit && node scripts/build-react-admin.mjs --target public --dry-run && node scripts/react-admin-render-test.mjs",
     "check:js": "node scripts/check-js-syntax.mjs",
+    "test:react-admin": "node scripts/react-admin-contract-test.mjs",
     "test:equipment-ui": "node --no-warnings scripts/equipment-reservation-ui-test.mjs",
     "test:admin-ui": "node --no-warnings scripts/admin-dashboard-ux-test.mjs",
     "test:security": "node scripts/security-smoke-test.mjs",
@@ -27,7 +30,7 @@
     "native:android:verify": "node scripts/check-android-release.mjs",
     "review:prepare-account": "node scripts/prepare-review-account.mjs",
     "native:release:check": "node scripts/check-native-release.mjs",
-    "release:check": "npm run check && npm run check:js && npm run test:equipment-ui && npm run test:admin-ui && npm run test:storage && node scripts/check-pre-release.mjs && npm run native:release:check",
+    "release:check": "npm run check && npm run check:js && npm run check:react-admin && npm run test:react-admin && npm run test:equipment-ui && npm run test:admin-ui && npm run test:storage && node scripts/check-pre-release.mjs && npm run native:release:check",
     "pages:build": "npm run build",
     "pages:preview": "npm run pages:build && wrangler pages dev dist",
     "pages:deploy": "npm run pages:build && wrangler pages deploy dist --project-name gju-reserve",
@@ -47,10 +50,17 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/ios": "^8.4.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3",
     "wrangler": "^4.100.0"
   },
   "dependencies": {
+    "@astryxdesign/core": "^0.1.2",
     "@capacitor/core": "^8.4.1",
-    "@capacitor/local-notifications": "^8.2.0"
+    "@capacitor/local-notifications": "^8.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

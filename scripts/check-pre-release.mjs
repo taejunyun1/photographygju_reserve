@@ -80,6 +80,9 @@ const xcodeProject = read("ios/App/App.xcodeproj/project.pbxproj");
 const targetSdk = Number((androidVariables.match(/targetSdkVersion\s*=\s*(\d+)/) || [])[1] || 0);
 
 assert(pkg.scripts?.check, "package.json must include npm run check");
+assert(pkg.scripts?.["build:react-admin"] === "node scripts/build-react-admin.mjs --target public", "package.json must include npm run build:react-admin");
+assert(pkg.scripts?.["check:react-admin"] === "tsc --noEmit && node scripts/build-react-admin.mjs --target public --dry-run && node scripts/react-admin-render-test.mjs", "package.json must include npm run check:react-admin");
+assert(pkg.scripts?.["test:react-admin"] === "node scripts/react-admin-contract-test.mjs", "package.json must include npm run test:react-admin");
 assert(pkg.scripts?.["native:sync"], "package.json must include npm run native:sync");
 assert(pkg.scripts?.["native:release:check"], "package.json must include npm run native:release:check");
 assert(pkg.scripts?.["native:android:bundle"], "package.json must include npm run native:android:bundle");
@@ -87,6 +90,9 @@ assert(pkg.scripts?.["native:ios:archive"], "package.json must include npm run n
 assert(pkg.scripts?.["native:ios:export"], "package.json must include npm run native:ios:export");
 assert(pkg.scripts?.["review:prepare-account"] === "node scripts/prepare-review-account.mjs", "package.json must include npm run review:prepare-account");
 assert(pkg.scripts?.["deploy:check"], "package.json must include npm run deploy:check");
+assert(pkg.scripts?.["release:check"]?.includes("npm run check:react-admin"), "release:check must include React Admin checks");
+assert(pkg.scripts?.["release:check"]?.includes("npm run test:react-admin"), "release:check must include React Admin contract test");
+assert(!pkg.dependencies?.["framer-motion"] && !pkg.devDependencies?.["framer-motion"], "Framer Motion must not be installed for Task 1");
 assert(fileExists("scripts/ios-appstore-export.mjs"), "iOS App Store export script must exist");
 assert(fileExists("scripts/check-production-deploy.mjs"), "production deploy check script must exist");
 assert(fileExists("scripts/prepare-review-account.mjs"), "App Review demo account preparation script must exist");
@@ -107,6 +113,8 @@ ok("Capacitor release identity is stable");
 
 assert(indexHtml.includes("Content-Security-Policy"), "public/index.html must define a CSP");
 assert(indexHtml.includes(productionApiBase), "public/index.html CSP connect-src must include the production Worker API");
+assert(indexHtml.includes("/js/react-admin.generated.js?v="), "public/index.html must load the React Admin generated JS bundle");
+assert(indexHtml.includes("/css/react-admin.generated.css?v="), "public/index.html must load the React Admin generated CSS bundle");
 assert(!/googletagmanager|google-analytics|analytics\.google|gtag\(/i.test(indexHtml), "App Store release HTML must not load third-party analytics/tracking scripts");
 assert(!/googletagmanager|google-analytics|analytics\.google/i.test(worker), "Worker CSP must not allow third-party analytics/tracking endpoints");
 assert(fileExists("public/.htaccess"), "Dothome web root must include Apache security headers and SPA fallback");
@@ -179,6 +187,7 @@ assert(/\.status-button\s*{[^}]*border-radius:\s*var\(--component-button-radius\
 ok("card and button consistency tokens are configured");
 
 assert(read("public/config.js").includes('window.GJU_API_BASE = ""'), "public/config.js must keep same-origin API for web deploy");
+assert(read("public/config.js").includes("window.GJU_REACT_ADMIN_ENABLED = true"), "public/config.js must enable React Admin by default");
 const distConfig = readIfExists("dist/config.js");
 if (distConfig) {
   assert(!distConfig.includes("window.GJU_NATIVE_APP = true") || distConfig.includes(productionApiBase), "native dist/config.js must point to the production API");

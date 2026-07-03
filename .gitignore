@@ -15,3 +15,7 @@ References/
 .claude/
 
 .superpowers/
+public/js/react-admin.generated.js
+public/css/react-admin.generated.css
+dist/js/react-admin.generated.js
+dist/css/react-admin.generated.css

@@ -50,6 +50,7 @@ export const state = {
   equipmentSearch: "",
   lectureSearch: "",
   lectureYearFilter: "all",
+  reactAdminEnabled: window.GJU_REACT_ADMIN_ENABLED !== false,
   adminView: "dashboard",
   activeAdminQueueSheet: "",
   adminReservationTab: "equipment",

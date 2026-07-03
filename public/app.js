@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260703-icon-only-actions";
+import "./js/main.js?v=20260703-react-admin-foundation";

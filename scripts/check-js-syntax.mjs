@@ -5,6 +5,12 @@ import path from "node:path";
 const root = path.resolve(new URL("..", import.meta.url).pathname);
 const targets = ["public", "scripts"];
 
+execFileSync(process.execPath, [path.join(root, "node_modules", "typescript", "bin", "tsc"), "--noEmit"], {
+  cwd: root,
+  stdio: "pipe"
+});
+console.log("ok - TypeScript syntax (src/react)");
+
 function listJavaScriptFiles(dir) {
   const base = path.join(root, dir);
   const output = [];
