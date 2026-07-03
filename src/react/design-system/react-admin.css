@@ -17,6 +17,7 @@
   --gju-safe-area-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom, 0px));
   --gju-safe-area-left: var(--safe-area-left, env(safe-area-inset-left, 0px));
   --gju-app-shell-mobile-nav-height: 88px;
+  --gju-app-shell-mobile-edge: clamp(18px, 5vw, 24px);
   --gju-color-surface: var(--surface-lowest, #ffffff);
   --gju-color-surface-muted: var(--surface-low, #f7f8fb);
   --gju-color-border: var(--border-subtle, #d8dde8);
@@ -423,7 +424,7 @@
     position: sticky;
     top: 0;
     z-index: 5;
-    padding: calc(8px + var(--gju-safe-area-top)) max(14px, var(--gju-safe-area-right)) 8px max(14px, var(--gju-safe-area-left));
+    padding: calc(10px + var(--gju-safe-area-top)) max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right)) 10px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left));
     border-bottom: 1px solid var(--gju-color-border);
     background: rgba(247, 248, 251, 0.96);
     backdrop-filter: blur(12px);
@@ -436,7 +437,7 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    padding: 16px 14px;
+    padding: 18px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right)) 18px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left));
   }
 
   .gju-app-shell__content--with-mobile-bottom-nav {
@@ -447,7 +448,7 @@
     position: sticky;
     bottom: 0;
     z-index: 5;
-    padding: 8px 12px calc(8px + var(--gju-safe-area-bottom));
+    padding: 10px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right)) calc(10px + var(--gju-safe-area-bottom)) max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left));
     border-top: 1px solid var(--gju-color-border);
     background: rgba(247, 248, 251, 0.96);
     backdrop-filter: blur(12px);
@@ -469,6 +470,7 @@
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 2px;
+    scroll-padding-inline: var(--gju-app-shell-mobile-edge);
     scrollbar-width: none;
   }
 

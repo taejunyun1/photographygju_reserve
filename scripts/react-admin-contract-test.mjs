@@ -142,6 +142,7 @@ for (const token of [
 assert(designSystemCss.includes(".gju-motion-screen {\n  animation: gju-screen-enter var(--gju-motion-duration-normal) var(--gju-motion-ease-standard);\n}"), "Screen motion class must use the Task 3 animation contract");
 assert(designSystemCss.includes("@media (prefers-reduced-motion: reduce)"), "Design system CSS must include reduced-motion handling");
 assert(designSystemCss.includes("#react-admin-root {\n  min-height: 100%;\n}"), "React Admin root container must inherit app height on desktop");
+assert(designSystemCss.includes("--gju-app-shell-mobile-edge: clamp(18px, 5vw, 24px);"), "React Admin mobile shell must define a shared screen-edge spacing token");
 const mobileMediaStart = designSystemCss.indexOf("@media (max-width: 900px)");
 assert.notEqual(mobileMediaStart, -1, "Design system CSS must define the mobile React Admin shell media query");
 const mobileReactRootRule = cssRule(designSystemCss, "  #react-admin-root {", mobileMediaStart);
@@ -156,6 +157,16 @@ const mobileShellContentRule = cssRule(designSystemCss, "  .gju-app-shell__conte
 for (const token of ["flex: 1 1 auto;", "min-height: 0;", "overflow-x: hidden;", "overflow-y: auto;", "-webkit-overflow-scrolling: touch;", "overscroll-behavior-y: contain;"]) {
   assert(mobileShellContentRule.includes(token), `Mobile React Admin content rule must include ${token}`);
 }
+assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin content must keep a safe right edge inset");
+assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin content must keep a safe left edge inset");
+const mobileShellHeaderRule = cssRule(designSystemCss, "  .gju-app-shell__mobile-header {", mobileMediaStart);
+assert(mobileShellHeaderRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin header must keep a safe right edge inset");
+assert(mobileShellHeaderRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin header must keep a safe left edge inset");
+const mobileShellBottomNavRule = cssRule(designSystemCss, "  .gju-app-shell__bottom-nav {", mobileMediaStart);
+assert(mobileShellBottomNavRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin bottom nav must keep a safe right edge inset");
+assert(mobileShellBottomNavRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin bottom nav must keep a safe left edge inset");
+const mobileBottomNavItemsRule = cssRule(designSystemCss, "  .gju-admin-nav--bottom {", mobileMediaStart);
+assert(mobileBottomNavItemsRule.includes("scroll-padding-inline: var(--gju-app-shell-mobile-edge);"), "Mobile React Admin bottom nav scroll area must respect the shared edge spacing");
 for (const motionClassName of [".gju-motion-screen", ".gju-motion-panel", ".gju-motion-toast", ".gju-motion-dialog"]) {
   assert(designSystemCss.includes(motionClassName), `Reduced-motion CSS must cover ${motionClassName}`);
 }
