@@ -47,6 +47,14 @@ function readTree(rootDir) {
   return entries;
 }
 
+function cssRule(source, selector, fromIndex = 0) {
+  const start = source.indexOf(selector, fromIndex);
+  assert.notEqual(start, -1, `${selector} rule must exist`);
+  const end = source.indexOf("}", start);
+  assert.notEqual(end, -1, `${selector} rule must close`);
+  return source.slice(start, end + 1);
+}
+
 assert.equal(pkg.scripts["build:react-admin"], "node scripts/build-react-admin.mjs --target public");
 assert.equal(pkg.scripts["check:react-admin"], "tsc --noEmit && node scripts/build-react-admin.mjs --target public --dry-run && node scripts/react-admin-render-test.mjs");
 assert.equal(pkg.scripts["test:react-admin"], "node scripts/react-admin-contract-test.mjs");
@@ -133,6 +141,21 @@ for (const token of [
 }
 assert(designSystemCss.includes(".gju-motion-screen {\n  animation: gju-screen-enter var(--gju-motion-duration-normal) var(--gju-motion-ease-standard);\n}"), "Screen motion class must use the Task 3 animation contract");
 assert(designSystemCss.includes("@media (prefers-reduced-motion: reduce)"), "Design system CSS must include reduced-motion handling");
+assert(designSystemCss.includes("#react-admin-root {\n  min-height: 100%;\n}"), "React Admin root container must inherit app height on desktop");
+const mobileMediaStart = designSystemCss.indexOf("@media (max-width: 900px)");
+assert.notEqual(mobileMediaStart, -1, "Design system CSS must define the mobile React Admin shell media query");
+const mobileReactRootRule = cssRule(designSystemCss, "  #react-admin-root {", mobileMediaStart);
+for (const token of ["min-height: 0;", "height: 100%;"]) {
+  assert(mobileReactRootRule.includes(token), `Mobile React Admin root rule must include ${token}`);
+}
+const mobileShellMainRule = cssRule(designSystemCss, "  .gju-app-shell__main {", mobileMediaStart);
+for (const token of ["min-height: 0;", "height: 100%;", "overflow: hidden;"]) {
+  assert(mobileShellMainRule.includes(token), `Mobile React Admin shell main rule must include ${token}`);
+}
+const mobileShellContentRule = cssRule(designSystemCss, "  .gju-app-shell__content {", mobileMediaStart);
+for (const token of ["flex: 1 1 auto;", "min-height: 0;", "overflow-x: hidden;", "overflow-y: auto;", "-webkit-overflow-scrolling: touch;", "overscroll-behavior-y: contain;"]) {
+  assert(mobileShellContentRule.includes(token), `Mobile React Admin content rule must include ${token}`);
+}
 for (const motionClassName of [".gju-motion-screen", ".gju-motion-panel", ".gju-motion-toast", ".gju-motion-dialog"]) {
   assert(designSystemCss.includes(motionClassName), `Reduced-motion CSS must cover ${motionClassName}`);
 }
