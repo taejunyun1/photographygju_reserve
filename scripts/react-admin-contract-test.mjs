@@ -29,7 +29,8 @@ assert(indexHtml.includes("/js/react-admin.generated.js?v="), "index.html must l
 assert(indexHtml.includes("/css/react-admin.generated.css?v="), "index.html must load React Admin generated CSS");
 assert(publicConfig.includes("window.GJU_REACT_ADMIN_ENABLED = true"), "public config must enable React Admin by default");
 assert(stateSource.includes("reactAdminEnabled"), "state must expose reactAdminEnabled");
-assert(rendererSource.includes("legacyRenderAdminContent: adminContent"), "legacy renderer must pass adminContent fallback into React Admin");
+assert(rendererSource.includes("const adminMarkup = adminContent();"), "legacy renderer must compute legacy admin content for React Admin mounts");
+assert(rendererSource.includes("legacyRenderAdminContent: () => adminMarkup"), "legacy renderer must pass legacy admin content fallback into React Admin mounts");
 assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-refresh\"))"), "renderer bridge must dispatch a refresh event for React Admin");
 assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-logout\"))"), "renderer bridge must dispatch a logout event for React Admin");
 assert(rendererSource.includes("updateReactAdminChrome"), "renderer bridge must update React Admin chrome without replacing the mounted shell");

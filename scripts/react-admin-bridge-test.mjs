@@ -6,7 +6,7 @@ const mountCalls = [];
 const unmountCalls = [];
 const listeners = new Map();
 const reactAdminChrome = { innerHTML: "" };
-const reactAdminRoot = { id: "react-admin-root" };
+const reactAdminRoot = { id: "react-admin-root", innerHTML: "", mountedSubtree: null };
 const app = {
   _innerHTML: "",
   set innerHTML(value) {
@@ -56,9 +56,13 @@ globalThis.window = {
   GJUReactAdmin: {
     mount(options) {
       mountCalls.push(options.root);
+      options.root.innerHTML = `<section data-render="${mountCalls.length}">legacy admin</section>`;
+      options.root.mountedSubtree = { render: mountCalls.length };
     },
     unmount() {
       unmountCalls.push(true);
+      reactAdminRoot.innerHTML = "";
+      reactAdminRoot.mountedSubtree = null;
     }
   },
   scrollX: 0,
@@ -90,12 +94,13 @@ assert.equal(mountCalls.length, 1, "initial React Admin render must mount the bu
 assert.equal(unmountCalls.length, 0, "initial React Admin render must not unmount");
 
 const initialRoot = mountCalls[0];
+const initialSubtree = reactAdminRoot.mountedSubtree;
 state.toast = "브리지 확인";
 render();
 
 assert.equal(appWriteCount, 1, "toast renders inside React Admin must preserve the mounted shell");
-assert.equal(mountCalls.length, 2, "toast renders inside React Admin must notify the bundle");
-assert.equal(mountCalls[1], initialRoot, "toast renders inside React Admin must reuse the same root element");
+assert.equal(mountCalls.length, 1, "toast renders inside React Admin must not remount the bundle");
+assert.equal(reactAdminRoot.mountedSubtree, initialSubtree, "toast renders inside React Admin must preserve the mounted subtree");
 assert.equal(unmountCalls.length, 0, "toast renders inside React Admin must not unmount the bundle");
 assert(reactAdminChrome.innerHTML.includes("toast"), "toast renders inside React Admin must update the surrounding chrome");
 
@@ -103,8 +108,8 @@ state.loadingCount = 1;
 document.dispatchEvent(new CustomEvent("gju-loading-change"));
 
 assert.equal(appWriteCount, 1, "loading overlay renders inside React Admin must preserve the mounted shell");
-assert.equal(mountCalls.length, 3, "loading overlay renders inside React Admin must notify the bundle");
-assert.equal(mountCalls[2], initialRoot, "loading overlay renders inside React Admin must reuse the same root element");
+assert.equal(mountCalls.length, 1, "loading overlay renders inside React Admin must not remount the bundle");
+assert.equal(reactAdminRoot.mountedSubtree, initialSubtree, "loading overlay renders inside React Admin must preserve the mounted subtree");
 assert.equal(unmountCalls.length, 0, "loading overlay renders inside React Admin must not unmount the bundle");
 assert(reactAdminChrome.innerHTML.includes("loading-overlay"), "loading overlay renders inside React Admin must update the surrounding chrome");
 
@@ -114,5 +119,6 @@ render();
 assert.equal(unmountCalls.length, 1, "leaving the React Admin path must unmount the bundle");
 assert.equal(appWriteCount, 2, "leaving the React Admin path must replace the shell with legacy admin content");
 assert(!app.innerHTML.includes('id="react-admin-root"'), "legacy admin render must remove the React Admin root");
+assert.equal(reactAdminRoot.mountedSubtree, null, "leaving the React Admin path must clear the mounted subtree");
 
 console.log("React Admin bridge behavior checks passed.");

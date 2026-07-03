@@ -11,11 +11,13 @@ document.addEventListener("gju-loading-change", () => {
 });
 
 let reactAdminMounted = false;
+let lastReactAdminContent = "";
 
 function unmountReactAdmin() {
   if (!reactAdminMounted) return;
   window.GJUReactAdmin?.unmount?.();
   reactAdminMounted = false;
+  lastReactAdminContent = "";
 }
 
 function canUseReactAdmin() {
@@ -43,6 +45,17 @@ function updateReactAdminChrome() {
   if (!chrome) return false;
   chrome.innerHTML = renderAppChrome();
   return true;
+}
+
+function mountReactAdmin(root, adminMarkup) {
+  window.GJUReactAdmin?.mount?.({
+    root,
+    state,
+    actions: reactAdminActions,
+    legacyRenderAdminContent: () => adminMarkup
+  });
+  reactAdminMounted = true;
+  lastReactAdminContent = adminMarkup;
 }
 
 const reactAdminActions = {
@@ -79,6 +92,7 @@ export function render() {
   }
   const useReactAdmin = canUseReactAdmin();
   if (useReactAdmin) {
+    const adminMarkup = adminContent();
     if (!hasReactAdminFrame()) {
       $app.innerHTML = renderReactAdminFrame();
     } else {
@@ -86,13 +100,9 @@ export function render() {
     }
     const root = document.querySelector("#react-admin-root");
     if (root) {
-      window.GJUReactAdmin?.mount?.({
-        root,
-        state,
-        actions: reactAdminActions,
-        legacyRenderAdminContent: adminContent
-      });
-      reactAdminMounted = true;
+      if (!reactAdminMounted || lastReactAdminContent !== adminMarkup) {
+        mountReactAdmin(root, adminMarkup);
+      }
     }
     return;
   }
