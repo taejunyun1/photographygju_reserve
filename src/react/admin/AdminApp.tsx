@@ -1,10 +1,11 @@
 import React from "react";
 
-import { GjuAppShell, GjuCard, GjuIconButton } from "../design-system";
+import { GjuAppShell, GjuIconButton } from "../design-system";
 import { adminHeaderActions } from "../platform/adminActions";
 import { adminNavItems, adminTitle, type AdminNavKey } from "../platform/adminNav";
 import type { ReactAdminMountOptions } from "../platform/types";
 import { LegacyAdminPanel } from "./LegacyAdminPanel";
+import { AdminDashboard } from "./screens/AdminDashboard";
 
 type AdminAppProps = Omit<ReactAdminMountOptions, "root">;
 
@@ -62,21 +63,6 @@ function renderHeader(title: string, actions: ReturnType<typeof adminHeaderActio
   );
 }
 
-function renderDashboardPlaceholder(view: string) {
-  return React.createElement(
-    GjuCard,
-    {
-      title: adminTitle(view),
-      eyebrow: "React Admin"
-    },
-    React.createElement(
-      "p",
-      { className: "gju-admin-placeholder__message" },
-      "대시보드 React 화면은 다음 작업에서 연결됩니다."
-    )
-  );
-}
-
 export function AdminApp({
   state,
   actions,
@@ -100,7 +86,7 @@ export function AdminApp({
       mobileBottomNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--bottom")
     },
     view === "dashboard"
-      ? renderDashboardPlaceholder(view)
+      ? React.createElement(AdminDashboard, { state, actions })
       : React.createElement(LegacyAdminPanel, { renderHtml: legacyRenderAdminContent })
   );
 }

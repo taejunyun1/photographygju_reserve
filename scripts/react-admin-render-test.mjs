@@ -158,6 +158,38 @@ assert(mobileBottomNavSegment, "React Admin shell must render mobile bottom nav 
 assert(!mobileBottomNavSegment.includes('aria-label="새로고침"'), "Mobile bottom nav must remain separate from header actions");
 assert(!mobileBottomNavSegment.includes('aria-label="나가기"'), "Mobile bottom nav must not contain header actions");
 
+const dashboardMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "dashboard",
+      user: { role: "admin" },
+      summary: {
+        pendingUsers: 2,
+        equipmentCheckedOut: 1,
+        equipmentReturned: 3,
+        equipmentCancelled: 4,
+        missingReports: 5
+      },
+      adminReservations: [],
+      adminEquipment: [],
+      adminReports: [],
+      adminLectures: [],
+      adminNotices: []
+    },
+    actions: {
+      setAdminView() {},
+      refreshAdminData() {},
+      logout() {},
+      render() {}
+    },
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(dashboardMarkup.includes("가입 승인 대기"), "dashboard must render pending users card");
+assert(dashboardMarkup.includes("대여완료"), "dashboard must render checked-out card");
+assert(dashboardMarkup.includes("보고서 확인 필요"), "dashboard must render report card");
+assert(!dashboardMarkup.includes("legacy"), "dashboard must be React-owned");
+
 const refreshingShellMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: {
