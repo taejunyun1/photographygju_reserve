@@ -25,6 +25,20 @@ type AdminUser = {
   blockDuration?: string;
 };
 
+type AdminUserSortField = "name" | "studentId" | "studentStatus" | "approvalStatus";
+
+type AdminUserSortState = {
+  field: AdminUserSortField;
+  direction: "asc" | "desc";
+};
+
+type AdminUsersPageState = {
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  hasMore?: boolean;
+};
+
 const USER_STATUS_FILTERS = [
   ["all", "전체"],
   ["approval_pending", "승인대기"],
@@ -87,6 +101,114 @@ function statusTone(status: string) {
   }
 }
 
+function getUsersPageState(state: LegacyState): AdminUsersPageState {
+  const page = state.adminUsersPage;
+  return page && typeof page === "object" ? (page as AdminUsersPageState) : {};
+}
+
+function getUserSortState(state: LegacyState): AdminUserSortState {
+  const sort = state.adminUserSort;
+  if (sort && typeof sort === "object") {
+    const field = (sort as { field?: AdminUserSortField }).field;
+    const direction = (sort as { direction?: "asc" | "desc" }).direction;
+    if (field && direction) {
+      return { field, direction };
+    }
+  }
+  return { field: "approvalStatus", direction: "asc" };
+}
+
+function userSortValue(user: AdminUser, field: AdminUserSortField) {
+  if (field === "approvalStatus") return statusLabel(String(user.approvalStatus || ""));
+  return String(user[field] || "");
+}
+
+function sortUsers(users: AdminUser[], sortState: AdminUserSortState) {
+  const multiplier = sortState.direction === "desc" ? -1 : 1;
+  return [...users].sort((left, right) => (
+    userSortValue(left, sortState.field).toLocaleLowerCase().localeCompare(
+      userSortValue(right, sortState.field).toLocaleLowerCase(),
+      "ko"
+    ) * multiplier
+  ));
+}
+
+function sortButtonClassName(active: boolean) {
+  return `table-sort ${active ? "active" : ""}`;
+}
+
+function renderUserSortButton(sortState: AdminUserSortState, field: AdminUserSortField, label: string) {
+  const active = sortState.field === field;
+  const directionLabel = active ? (sortState.direction === "asc" ? " ↑" : " ↓") : "";
+  return (
+    <button className={sortButtonClassName(active)} type="button" data-user-sort={field}>
+      {label}
+      {directionLabel}
+    </button>
+  );
+}
+
+function totalPages(page: AdminUsersPageState) {
+  const total = Number(page.total || 0);
+  const pageSize = Number(page.pageSize || 100) || 100;
+  return Math.max(1, Math.ceil(total / pageSize));
+}
+
+function visiblePageItems(currentPage: number, pageCount: number) {
+  const items: Array<number | "ellipsis"> = [];
+  for (let index = 1; index <= pageCount; index += 1) {
+    if (pageCount > 7 && index !== 1 && index !== pageCount && Math.abs(index - currentPage) > 1) {
+      if (items[items.length - 1] !== "ellipsis") items.push("ellipsis");
+      continue;
+    }
+    items.push(index);
+  }
+  return items;
+}
+
+function renderUsersPager(page: AdminUsersPageState) {
+  const pageCount = totalPages(page);
+  if (pageCount <= 1) return null;
+  const currentPage = Math.max(1, Number(page.page || 1));
+  return (
+    <nav className="pagination admin-list-pagination" aria-label="페이지 이동">
+      <button
+        className="button compact pagination-button"
+        type="button"
+        data-admin-users-page={Math.max(1, currentPage - 1)}
+        disabled={currentPage <= 1}
+      >
+        이전
+      </button>
+      {visiblePageItems(currentPage, pageCount).map((item, index) => (
+        item === "ellipsis" ? (
+          <span key={`ellipsis:${index}`} className="pagination-summary">
+            ...
+          </span>
+        ) : (
+          <button
+            key={item}
+            className={`button compact pagination-button ${item === currentPage ? "is-active" : ""}`}
+            type="button"
+            data-admin-users-page={item}
+            aria-current={item === currentPage ? "page" : "false"}
+          >
+            {item}
+          </button>
+        )
+      ))}
+      <button
+        className="button compact pagination-button"
+        type="button"
+        data-admin-users-page={Math.min(pageCount, currentPage + 1)}
+        disabled={currentPage >= pageCount}
+      >
+        다음
+      </button>
+    </nav>
+  );
+}
+
 function renderDeleteIcon() {
   return (
     <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
@@ -116,13 +238,18 @@ function renderApprovalAction(user: AdminUser) {
 export function AdminUsers({ state }: AdminUsersProps) {
   const query = normalizeSearchText(state.adminUserSearch);
   const activeFilter = String(state.adminUserStatusFilter || "all");
+  const sortState = getUserSortState(state);
+  const page = getUsersPageState(state);
   const allUsers = asUsers(state.adminUsers).filter((user) => user.role !== "admin");
-  const users = allUsers.filter((user) => {
+  const filteredUsers = allUsers.filter((user) => {
     if (activeFilter !== "all" && user.approvalStatus !== activeFilter) {
       return false;
     }
     return matchesUserQuery(user, query);
   });
+  const users = sortUsers(filteredUsers, sortState);
+  const total = Number(page.total || allUsers.length || 0);
+  const shown = Math.min(allUsers.length, total);
 
   return (
     <section className="grid">
@@ -150,16 +277,20 @@ export function AdminUsers({ state }: AdminUsersProps) {
             ))}
           </div>
         </div>
-        <p className="muted list-page-summary">현재 {users.length}건 표시 / 전체 {allUsers.length}건</p>
+        <p className="muted list-page-summary">
+          현재 {shown}건 표시 / 전체 {total}건
+          {query ? ` · 검색 결과 ${users.length}건(현재 표시 데이터 기준)` : ""}
+          {page.hasMore ? " · 다음 페이지에 기록이 더 있습니다" : ""}
+        </p>
         <div className="table-wrap admin-user-table-wrap">
           <GjuTable className="admin-user-table">
             <thead>
               <tr>
-                <th className="admin-user-name-head">이름</th>
-                <th>학번</th>
-                <th>신분</th>
+                <th className="admin-user-name-head">{renderUserSortButton(sortState, "name", "이름")}</th>
+                <th>{renderUserSortButton(sortState, "studentId", "학번")}</th>
+                <th>{renderUserSortButton(sortState, "studentStatus", "신분")}</th>
                 <th>연락처</th>
-                <th className="admin-user-status-head">상태</th>
+                <th className="admin-user-status-head">{renderUserSortButton(sortState, "approvalStatus", "상태")}</th>
               </tr>
             </thead>
             <tbody>
@@ -244,6 +375,7 @@ export function AdminUsers({ state }: AdminUsersProps) {
             </tbody>
           </GjuTable>
         </div>
+        {renderUsersPager(page)}
       </GjuCard>
     </section>
   );

@@ -17,6 +17,8 @@ type AdminEquipmentItem = {
   code?: string;
   name?: string;
   category?: string;
+  brand?: string;
+  model?: string;
   source?: string;
   facility?: string;
   status?: string;
@@ -62,9 +64,11 @@ function matchesEquipmentQuery(item: AdminEquipmentItem, query: string) {
     item.category,
     item.source,
     item.facility,
+    item.brand,
+    item.model,
     item.status,
     item.notes,
-    item.reservable ? "가능" : "문의"
+    item.reservable ? "예약가능" : "문의"
   ]
     .filter(Boolean)
     .join(" ")

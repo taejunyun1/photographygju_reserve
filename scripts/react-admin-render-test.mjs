@@ -230,6 +230,8 @@ const usersMarkup = renderToStaticMarkup(
     state: {
       adminView: "users",
       user: { role: "admin" },
+      adminUserSort: { field: "name", direction: "asc" },
+      adminUsersPage: { total: 6, page: 2, pageSize: 2, hasMore: true },
       adminUsers: [
         {
           id: "u1",
@@ -248,6 +250,12 @@ const usersMarkup = renderToStaticMarkup(
   })
 );
 assert(usersMarkup.includes('data-user-delete="u1"'), "React users screen must render delete action contract");
+assert(usersMarkup.includes('data-user-sort="name"'), "React users screen must render legacy user sort controls");
+assert(usersMarkup.includes('data-user-sort="studentId"'), "React users screen must render student id sort control");
+assert(usersMarkup.includes('data-user-sort="approvalStatus"'), "React users screen must render approval status sort control");
+assert(usersMarkup.includes('data-admin-users-page="1"'), "React users screen must render previous-page contract");
+assert(usersMarkup.includes('data-admin-users-page="2"'), "React users screen must render current page contract");
+assert(usersMarkup.includes('data-admin-users-page="3"'), "React users screen must render next-page contract");
 assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
 assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
 
@@ -262,6 +270,8 @@ const equipmentMarkup = renderToStaticMarkup(
           code: "CAM-1",
           name: "카메라",
           category: "Body",
+          brand: "Sony",
+          model: "FX3",
           source: "school",
           status: "가능",
           active: true,
@@ -275,6 +285,87 @@ const equipmentMarkup = renderToStaticMarkup(
 );
 assert(equipmentMarkup.includes('data-equipment-remove-admin="e1"'), "React equipment screen must render remove action contract");
 assert(equipmentMarkup.includes('data-equipment-bulk-status="문의"'), "React equipment screen must include inquiry status action");
+
+const equipmentBrandMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      user: { role: "admin" },
+      adminEquipmentSearch: "sony",
+      adminEquipment: [
+        {
+          id: "e1",
+          code: "CAM-1",
+          name: "카메라",
+          category: "Body",
+          brand: "Sony",
+          model: "FX3",
+          source: "school",
+          status: "가능",
+          active: true,
+          reservable: true
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(equipmentBrandMarkup.includes('data-equipment-row="e1"'), "React equipment search must match brand");
+
+const equipmentModelMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      user: { role: "admin" },
+      adminEquipmentSearch: "fx3",
+      adminEquipment: [
+        {
+          id: "e1",
+          code: "CAM-1",
+          name: "카메라",
+          category: "Body",
+          brand: "Sony",
+          model: "FX3",
+          source: "school",
+          status: "가능",
+          active: true,
+          reservable: true
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(equipmentModelMarkup.includes('data-equipment-row="e1"'), "React equipment search must match model");
+
+const equipmentReservableMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      user: { role: "admin" },
+      adminEquipmentSearch: "예약가능",
+      adminEquipment: [
+        {
+          id: "e1",
+          code: "CAM-1",
+          name: "카메라",
+          category: "Body",
+          brand: "Sony",
+          model: "FX3",
+          source: "school",
+          status: "가능",
+          active: true,
+          reservable: true
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(equipmentReservableMarkup.includes('data-equipment-row="e1"'), "React equipment search must match reservable token parity");
 
 const logsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -292,7 +383,16 @@ const logsMarkup = renderToStaticMarkup(
           expiresAt: "2026-07-17T00:00:00.000Z"
         }
       ],
-      adminLogs: []
+      adminLogs: [
+        {
+          id: "log1",
+          action: "user.approval_changed",
+          actor: { name: "관리자", email: "admin@gju.local", studentId: "20260001" },
+          targetId: "u1",
+          detail: { status: "approved" },
+          createdAt: "2026-07-03T00:30:00.000Z"
+        }
+      ]
     },
     actions: noopActions,
     legacyRenderAdminContent: () => "<section>legacy</section>"
@@ -300,6 +400,34 @@ const logsMarkup = renderToStaticMarkup(
 );
 assert(logsMarkup.includes('data-session-revoke="s1"'), "React logs screen must render session revoke action contract");
 assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke must be icon-only");
+assert(logsMarkup.includes("관리자"), "React logs screen must render actor object names");
+assert(logsMarkup.includes("20260001"), "React logs screen must render actor object student ids");
+assert(!logsMarkup.includes("[object Object]"), "React logs screen must not stringify actor objects");
+
+const logsSearchMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "logs",
+      user: { role: "admin" },
+      adminLogSearch: "20260001",
+      adminSessions: [],
+      adminLogs: [
+        {
+          id: "log1",
+          action: "user.approval_changed",
+          actor: { name: "관리자", email: "admin@gju.local", studentId: "20260001" },
+          targetId: "u1",
+          detail: { status: "approved" },
+          createdAt: "2026-07-03T00:30:00.000Z"
+        }
+      ]
+    },
+    actions: noopActions,
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(logsSearchMarkup.includes("관리자"), "React logs search must match actor object fields");
+assert(!logsSearchMarkup.includes("검색 결과가 없습니다."), "React logs search must not drop actor object matches");
 
 const legacyFallbackMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

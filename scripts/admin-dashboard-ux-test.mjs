@@ -291,9 +291,17 @@ assertIconOnlyAction(equipmentView, 'data-equipment-remove-admin="e1"', "기자�
 assertIconOnlyAction(usersView, 'data-user-delete="user1"', "삭제", "student approval user delete");
 assertIconOnlyAction(logsView, 'data-session-revoke="session1"', "로그아웃", "session revoke");
 assert(reactUsersSource.includes("data-user-delete"), "React users screen must keep delegated delete contract");
+assert(reactUsersSource.includes("data-user-sort"), "React users screen must keep delegated sort contract");
+assert(reactUsersSource.includes("data-admin-users-page"), "React users screen must keep delegated pagination contract");
 assert(reactEquipmentSource.includes("data-equipment-remove-admin"), "React equipment screen must keep delegated remove contract");
 assert(reactEquipmentSource.includes('data-equipment-bulk-status="문의"'), "React equipment screen must expose inquiry status");
+assert(reactEquipmentSource.includes("item.brand"), "React equipment search must include brand");
+assert(reactEquipmentSource.includes("item.model"), "React equipment search must include model");
+assert(reactEquipmentSource.includes('"예약가능"'), "React equipment search must include the reservable token");
 assert(reactLogsSource.includes("data-session-revoke"), "React logs screen must keep delegated revoke contract");
+assert(reactLogsSource.includes("actor?.name"), "React logs screen must render actor object names");
+assert(reactLogsSource.includes("actor?.studentId"), "React logs screen must render actor object student ids");
+assert(reactLogsSource.includes("actor?.email"), "React logs search/render must include actor email");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");

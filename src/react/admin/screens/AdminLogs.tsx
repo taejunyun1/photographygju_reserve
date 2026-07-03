@@ -30,7 +30,11 @@ type AdminSession = {
 type AdminLogRecord = {
   id?: string;
   action?: string;
-  actor?: string;
+  actor?: string | {
+    name?: string;
+    email?: string;
+    studentId?: string;
+  } | null;
   targetId?: string;
   detail?: Record<string, unknown> | null;
   createdAt?: string;
@@ -168,12 +172,41 @@ function auditDetailText(log: AdminLogRecord) {
   return parts.join(" · ") || "-";
 }
 
+function actorSearchText(actor: AdminLogRecord["actor"]) {
+  if (!actor) return "";
+  if (typeof actor === "string") return actor;
+  return [
+    actor?.name,
+    actor?.studentId,
+    actor?.email
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function renderActorCell(actor: AdminLogRecord["actor"]) {
+  if (!actor) return "-";
+  if (typeof actor === "string") return actor;
+  const secondary = actor?.studentId || actor?.email || "";
+  return (
+    <>
+      <strong>{actor?.name || "-"}</strong>
+      {secondary ? (
+        <>
+          <br />
+          <span className="muted">{secondary}</span>
+        </>
+      ) : null}
+    </>
+  );
+}
+
 function logSearchText(log: AdminLogRecord) {
   return [
     log.id,
     log.action,
     auditActionLabel(String(log.action || "")),
-    log.actor,
+    actorSearchText(log.actor),
     log.targetId,
     auditDetailText(log),
     log.createdAt
@@ -356,7 +389,7 @@ export function AdminLogs({ state }: AdminLogsProps) {
                   <tr key={log.id || `${log.action || "log"}:${index}`}>
                     <td>{formatDateTime(log.createdAt)}</td>
                     <td>{auditActionLabel(String(log.action || ""))}</td>
-                    <td>{log.actor || "-"}</td>
+                    <td>{renderActorCell(log.actor)}</td>
                     <td>{log.targetId || "-"}</td>
                     <td>{auditDetailText(log)}</td>
                   </tr>
