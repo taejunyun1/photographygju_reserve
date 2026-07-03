@@ -6,10 +6,15 @@ export type AdminHeaderAction = {
   label: string;
   icon: GjuIconName;
   tone?: "neutral" | "danger";
+  disabled?: boolean;
+  ariaBusy?: boolean;
   onSelect: () => Promise<void> | void;
 };
 
-export function adminHeaderActions(actions: ReactAdminActions): AdminHeaderAction[] {
+export function adminHeaderActions(
+  actions: ReactAdminActions,
+  { refreshing = false }: { refreshing?: boolean } = {}
+): AdminHeaderAction[] {
   return [
     {
       key: "account",
@@ -19,8 +24,10 @@ export function adminHeaderActions(actions: ReactAdminActions): AdminHeaderActio
     },
     {
       key: "refresh",
-      label: "새로고침",
+      label: refreshing ? "새로고침 중" : "새로고침",
       icon: "refresh",
+      disabled: refreshing,
+      ariaBusy: refreshing,
       onSelect: () => actions.refreshAdminData()
     },
     {

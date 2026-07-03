@@ -128,5 +128,46 @@ const shellMarkup = renderToStaticMarkup(
 assert(shellMarkup.includes("gju-app-shell"), "React Admin shell must render app shell");
 assert(shellMarkup.includes("학생 승인"), "React Admin shell must render Korean nav labels");
 assert(shellMarkup.includes('aria-label="새로고침"'), "React Admin shell must render refresh icon action");
+assert(shellMarkup.includes("gju-app-shell__sidebar gju-app-shell__desktop-only"), "React Admin shell must mark desktop sidebar chrome explicitly");
+assert(shellMarkup.includes("gju-app-shell__mobile-header gju-app-shell__mobile-only"), "React Admin shell must mark mobile header chrome explicitly");
+assert(shellMarkup.includes("gju-app-shell__bottom-nav gju-app-shell__mobile-only"), "React Admin shell must mark mobile bottom navigation explicitly");
+
+const refreshingShellMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "dashboard",
+      user: { role: "admin", name: "admin" },
+      summary: {},
+      adminRefresh: { refreshing: true }
+    },
+    actions: {
+      setAdminView() {},
+      refreshAdminData() {},
+      logout() {},
+      render() {}
+    },
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(refreshingShellMarkup.includes('aria-label="새로고침 중"'), "React Admin refresh action must announce the in-progress label");
+assert(refreshingShellMarkup.includes('aria-busy="true"'), "React Admin refresh action must expose aria-busy while refreshing");
+
+const legacyFallbackMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: { adminView: "reports", user: { role: "admin", name: "admin" }, summary: {} },
+    actions: {
+      setAdminView() {},
+      refreshAdminData() {},
+      logout() {},
+      render() {}
+    },
+    legacyRenderAdminContent: () =>
+      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-mobile-header">mobile header</header><header class="admin-header">desktop header</header><section class="legacy-fragment">legacy report body</section></section><nav class="admin-mobile-nav">legacy bottom nav</nav></main>'
+  })
+);
+assert(legacyFallbackMarkup.includes("gju-legacy-admin-panel"), "Non-dashboard admin views must render the legacy panel fallback");
+assert(legacyFallbackMarkup.includes("legacy report body"), "Legacy fallback content must render inside the React Admin shell");
+assert(!legacyFallbackMarkup.includes('class="admin-shell"'), "Legacy fallback must not re-render the old admin shell inside React Admin");
+assert(!legacyFallbackMarkup.includes('class="admin-mobile-nav"'), "Legacy fallback must not duplicate the old mobile nav inside React Admin");
 
 console.log("React Admin render checks passed.");

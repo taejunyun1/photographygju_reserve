@@ -8,6 +8,11 @@
   --gju-motion-duration-normal: 180ms;
   --gju-motion-duration-panel: 240ms;
   --gju-motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --gju-safe-area-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
+  --gju-safe-area-right: var(--safe-area-right, env(safe-area-inset-right, 0px));
+  --gju-safe-area-bottom: var(--safe-area-bottom, env(safe-area-inset-bottom, 0px));
+  --gju-safe-area-left: var(--safe-area-left, env(safe-area-inset-left, 0px));
+  --gju-app-shell-mobile-nav-height: 88px;
   --gju-color-surface: var(--surface-lowest, #ffffff);
   --gju-color-surface-muted: var(--surface-low, #f7f8fb);
   --gju-color-border: var(--border-subtle, #d8dde8);
@@ -53,10 +58,19 @@
 
 .gju-app-shell {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 264px) minmax(0, 1fr);
   min-height: 100%;
   color: var(--gju-color-text);
   background: var(--gju-color-surface-muted);
+}
+
+.gju-app-shell__desktop-only {
+  display: block;
+}
+
+.gju-app-shell__mobile-only,
+.gju-app-shell__desktop-header {
+  display: none;
 }
 
 .gju-app-shell__sidebar {
@@ -76,6 +90,64 @@
 
 .gju-app-shell__content {
   padding: 24px;
+}
+
+.gju-admin-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.gju-admin-nav--sidebar {
+  padding: 20px 16px;
+}
+
+.gju-admin-nav__item {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  color: var(--gju-color-text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gju-admin-nav__item[data-active="true"] {
+  font-weight: 600;
+  color: var(--gju-color-primary);
+  background: rgba(36, 87, 255, 0.08);
+}
+
+.gju-admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gju-admin-header__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.gju-admin-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gju-admin-placeholder__message {
+  margin: 0;
+  color: var(--gju-color-text-muted);
+}
+
+.gju-legacy-admin-panel {
+  min-width: 0;
 }
 
 .gju-button,
@@ -139,6 +211,10 @@
   color: var(--gju-color-text);
   background: var(--gju-color-surface);
   border-color: var(--gju-color-border);
+}
+
+.gju-icon-button__busy {
+  display: inline-grid;
 }
 
 .gju-icon-button[data-tone="danger"] {
@@ -298,11 +374,77 @@
 @media (max-width: 900px) {
   .gju-app-shell {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
   }
 
-  .gju-app-shell__sidebar {
-    border-right: 0;
+  .gju-app-shell__desktop-only {
+    display: none;
+  }
+
+  .gju-app-shell__mobile-only {
+    display: block;
+  }
+
+  .gju-app-shell__header {
+    padding: 0;
+  }
+
+  .gju-app-shell__mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: calc(8px + var(--gju-safe-area-top)) max(14px, var(--gju-safe-area-right)) 8px max(14px, var(--gju-safe-area-left));
     border-bottom: 1px solid var(--gju-color-border);
+    background: rgba(247, 248, 251, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  .gju-app-shell__content {
+    padding: 16px 14px;
+  }
+
+  .gju-app-shell__content--with-mobile-bottom-nav {
+    padding-bottom: calc(20px + var(--gju-app-shell-mobile-nav-height) + var(--gju-safe-area-bottom));
+  }
+
+  .gju-app-shell__bottom-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding: 8px 12px calc(8px + var(--gju-safe-area-bottom));
+    border-top: 1px solid var(--gju-color-border);
+    background: rgba(247, 248, 251, 0.96);
+    backdrop-filter: blur(12px);
+  }
+
+  .gju-admin-header {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .gju-admin-header__title {
+    font-size: 18px;
+  }
+
+  .gju-admin-nav--bottom {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(72px, 1fr);
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .gju-admin-nav--bottom::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gju-admin-nav--bottom .gju-admin-nav__item {
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 10px;
+    white-space: nowrap;
   }
 }
 

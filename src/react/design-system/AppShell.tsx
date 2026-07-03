@@ -22,7 +22,6 @@ export function GjuAppShell({
   ...props
 }: GjuAppShellProps) {
   const sidebarContent = desktopNav ?? sidebar;
-  const headerContent = mobileHeader ?? header;
 
   return React.createElement(
     "div",
@@ -31,17 +30,41 @@ export function GjuAppShell({
       className: cx("gju-app-shell", motionClass.screen, className)
     },
     sidebarContent
-      ? React.createElement("aside", { className: "gju-app-shell__sidebar" }, sidebarContent)
+      ? React.createElement(
+          "aside",
+          { className: "gju-app-shell__sidebar gju-app-shell__desktop-only" },
+          sidebarContent
+        )
       : null,
     React.createElement(
       "div",
       { className: "gju-app-shell__main" },
-      headerContent
-        ? React.createElement("header", { className: "gju-app-shell__header" }, headerContent)
+      header
+        ? React.createElement("header", { className: "gju-app-shell__header gju-app-shell__desktop-header" }, header)
         : null,
-      React.createElement("main", { className: "gju-app-shell__content" }, children),
+      mobileHeader
+        ? React.createElement(
+            "header",
+            { className: "gju-app-shell__header gju-app-shell__mobile-header gju-app-shell__mobile-only" },
+            mobileHeader
+          )
+        : null,
+      React.createElement(
+        "main",
+        {
+          className: cx(
+            "gju-app-shell__content",
+            mobileBottomNav ? "gju-app-shell__content--with-mobile-bottom-nav" : null
+          )
+        },
+        children
+      ),
       mobileBottomNav
-        ? React.createElement("div", { className: "gju-app-shell__bottom-nav" }, mobileBottomNav)
+        ? React.createElement(
+            "div",
+            { className: "gju-app-shell__bottom-nav gju-app-shell__mobile-only" },
+            mobileBottomNav
+          )
         : null
     )
   );

@@ -53,6 +53,8 @@ function renderHeader(title: string, actions: ReturnType<typeof adminHeaderActio
           label: action.label,
           icon: action.icon,
           tone: action.tone,
+          disabled: action.disabled,
+          "aria-busy": action.ariaBusy ? "true" : undefined,
           onClick: handleAction(action.onSelect)
         })
       )
@@ -81,7 +83,9 @@ export function AdminApp({
   legacyRenderAdminContent
 }: AdminAppProps) {
   const view = state.adminView || "dashboard";
-  const headerActions = adminHeaderActions(actions);
+  const headerActions = adminHeaderActions(actions, {
+    refreshing: Boolean(state.adminRefresh?.refreshing)
+  });
   const title = adminTitle(view);
   const navigate = (nextView: AdminNavKey) => {
     void actions.setAdminView(nextView);

@@ -108,7 +108,8 @@ export function GjuIconButton({
   disabled,
   ...props
 }: GjuIconButtonProps) {
-  return React.createElement(
+  const busyState = props["aria-busy"];
+  const button = React.createElement(
     AstryxIconButton,
     {
       ...props,
@@ -123,4 +124,10 @@ export function GjuIconButton({
     },
     null
   );
+
+  if (!busyState) {
+    return button;
+  }
+
+  return React.createElement("span", { className: "gju-icon-button__busy", "aria-busy": busyState }, button);
 }

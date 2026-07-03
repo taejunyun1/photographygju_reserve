@@ -1,5 +1,6 @@
 export type LegacyState = Record<string, unknown> & {
   adminView?: string;
+  adminRefresh?: { refreshing?: boolean };
   user?: { role?: string; name?: string; email?: string; studentId?: string };
   summary?: Record<string, unknown> | null;
   adminUsers?: unknown[];
