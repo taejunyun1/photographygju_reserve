@@ -44,16 +44,7 @@ export function setupAdminRefreshHandlers() {
   });
 
   document.addEventListener("gju-react-admin-refresh", async () => {
-    if (state.adminRefresh?.refreshing) return;
     const scrollState = captureScrollState();
-    state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };
-    try {
-      await refreshAdminDataPreservingScroll({ scrollState, includeMe: true });
-      toast("최신 데이터를 불러왔습니다.", { scrollState });
-    } catch (error) {
-      toast(error.message || "데이터 새로고침에 실패했습니다.", { scrollState });
-    } finally {
-      state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };
-    }
+    await runRefresh(scrollState);
   });
 }

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 
 globalThis.document = {
   documentElement: { scrollTop: 0 },
@@ -158,6 +159,12 @@ function readEventSource() {
 }
 
 const eventSource = readEventSource();
+
+const reactAdminBridgeTest = spawnSync(process.execPath, ["scripts/react-admin-bridge-test.mjs"], {
+  stdio: "inherit"
+});
+
+assert.equal(reactAdminBridgeTest.status, 0, "React Admin bridge behavior checks must pass");
 
 function cssRule(selector) {
   const start = css.indexOf(`${selector} {`);
@@ -328,6 +335,8 @@ assert(adminRefreshSource.includes("pendingRefreshScrollState = captureScrollSta
 assert(adminRefreshSource.includes("pendingRefreshScrollState || captureScrollState()"), "manual admin refresh must fall back to click-time scroll capture for keyboard activation");
 assert(adminRefreshSource.includes('document.addEventListener("pointerdown"'), "manual admin refresh button must capture scroll before click focus changes it");
 assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
+assert(adminRefreshSource.includes("await runRefresh(scrollState);"), "React Admin refresh must reuse the legacy runRefresh helper");
+assert(!adminRefreshSource.includes("includeMe: true"), "React Admin refresh must not bypass legacy refresh semantics with a special includeMe path");
 assert(!adminRefreshSource.includes('document.addEventListener("pointermove"'), "Admin refresh must not bind pointermove scroll gestures");
 assert(!adminRefreshSource.includes('document.addEventListener("pointerup"'), "Admin refresh must not bind pointerup scroll gestures");
 assert(!adminRefreshSource.includes('document.addEventListener("pointercancel"'), "Admin refresh must not bind pointercancel scroll gestures");

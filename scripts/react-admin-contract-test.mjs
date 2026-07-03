@@ -32,6 +32,7 @@ assert(stateSource.includes("reactAdminEnabled"), "state must expose reactAdminE
 assert(rendererSource.includes("legacyRenderAdminContent: adminContent"), "legacy renderer must pass adminContent fallback into React Admin");
 assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-refresh\"))"), "renderer bridge must dispatch a refresh event for React Admin");
 assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-logout\"))"), "renderer bridge must dispatch a logout event for React Admin");
+assert(rendererSource.includes("updateReactAdminChrome"), "renderer bridge must update React Admin chrome without replacing the mounted shell");
 assert(buildStatic.includes("build-react-admin.mjs"), "static build must produce React Admin generated assets");
 assert(gitignore.includes("public/js/react-admin.generated.js"), "generated React Admin JS must be ignored");
 assert(gitignore.includes("public/css/react-admin.generated.css"), "generated React Admin CSS must be ignored");
@@ -39,5 +40,8 @@ assert(platformTypes.includes("legacyRenderAdminContent: () => string;"), "React
 assert(platformTypes.includes("refreshAdminData(): Promise<void>;"), "React Admin actions contract must include refreshAdminData");
 assert(platformTypes.includes("logout(): Promise<void> | void;"), "React Admin actions contract must include logout");
 assert(reactAdminMain.includes("window.GJUReactAdmin = { mount, unmount }"), "React Admin bundle entry must expose mount/unmount globals");
+assert(reactAdminMain.includes("mountedRoot"), "React Admin bundle must track the mounted root between bridge updates");
+assert(reactAdminMain.includes("if (!rootInstance || mountedRoot !== options.root)"), "React Admin mount must reuse the existing root while the shell stays mounted");
+assert(!reactAdminMain.includes("function mount(options: ReactAdminMountOptions) {\n  if (rootInstance) rootInstance.unmount();"), "React Admin mount must not unmount on every bridge render");
 
 console.log("React Admin contract checks passed.");

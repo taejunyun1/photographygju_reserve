@@ -26,6 +26,25 @@ function renderReactAdminShell() {
   return `<div id="react-admin-root"></div>`;
 }
 
+function renderAppChrome() {
+  return `${noticeBottomSheet()}${warningPopup()}${loadingOverlay()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}`;
+}
+
+function renderReactAdminFrame() {
+  return `<div class="app">${renderReactAdminShell()}<div id="react-admin-chrome">${renderAppChrome()}</div></div>`;
+}
+
+function hasReactAdminFrame() {
+  return reactAdminMounted && Boolean(document.querySelector("#react-admin-root")) && Boolean(document.querySelector("#react-admin-chrome"));
+}
+
+function updateReactAdminChrome() {
+  const chrome = document.querySelector("#react-admin-chrome");
+  if (!chrome) return false;
+  chrome.innerHTML = renderAppChrome();
+  return true;
+}
+
 const reactAdminActions = {
   async setAdminView(view) {
     state.adminView = view;
@@ -59,9 +78,12 @@ export function render() {
     return;
   }
   const useReactAdmin = canUseReactAdmin();
-  const body = !state.user ? authView() : state.user.role === "admin" ? (useReactAdmin ? renderReactAdminShell() : adminShell()) : studentShell();
-  $app.innerHTML = `<div class="app">${body}${noticeBottomSheet()}${warningPopup()}${loadingOverlay()}${state.toast ? `<div class="toast">${escapeHtml(state.toast)}</div>` : ""}</div>`;
   if (useReactAdmin) {
+    if (!hasReactAdminFrame()) {
+      $app.innerHTML = renderReactAdminFrame();
+    } else {
+      updateReactAdminChrome();
+    }
     const root = document.querySelector("#react-admin-root");
     if (root) {
       window.GJUReactAdmin?.mount?.({
@@ -75,6 +97,8 @@ export function render() {
     return;
   }
   unmountReactAdmin();
+  const body = !state.user ? authView() : state.user.role === "admin" ? adminShell() : studentShell();
+  $app.innerHTML = `<div class="app">${body}${renderAppChrome()}</div>`;
 }
 
 let toastTimer = null;
