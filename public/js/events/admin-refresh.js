@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260703-icon-only-actions";
-import { toast } from "../renderer.js?v=20260703-icon-only-actions";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-icon-only-actions";
+import { state } from "../state.js?v=20260703-react-astryx-admin";
+import { toast } from "../renderer.js?v=20260703-react-astryx-admin";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-react-astryx-admin";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

@@ -23,10 +23,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-icon-only-actions");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260703-icon-only-actions");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-icon-only-actions");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-icon-only-actions");
+const { state } = await import("../public/js/state.js?v=20260703-react-astryx-admin");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260703-react-astryx-admin");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-react-astryx-admin");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-react-astryx-admin");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {

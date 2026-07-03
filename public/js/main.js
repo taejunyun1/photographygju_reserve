@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260703-icon-only-actions";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-icon-only-actions";
-import { setupEventHandlers } from "./events.js?v=20260703-icon-only-actions";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-icon-only-actions";
-import { render } from "./renderer.js?v=20260703-icon-only-actions";
-import { escapeHtml } from "./utils.js?v=20260703-icon-only-actions";
+import { $app, state } from "./state.js?v=20260703-react-astryx-admin";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-react-astryx-admin";
+import { setupEventHandlers } from "./events.js?v=20260703-react-astryx-admin";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-react-astryx-admin";
+import { render } from "./renderer.js?v=20260703-react-astryx-admin";
+import { escapeHtml } from "./utils.js?v=20260703-react-astryx-admin";
 
 async function init() {
   await loadBootstrap();

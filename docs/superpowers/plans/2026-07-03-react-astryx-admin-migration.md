@@ -361,8 +361,8 @@ if (reactBuild.status !== 0) process.exit(reactBuild.status || 1);
 Update `public/index.html` with generated assets using the current cache version string:
 
 ```html
-<link rel="stylesheet" href="/css/react-admin.generated.css?v=20260703-react-admin-foundation" />
-<script src="/js/react-admin.generated.js?v=20260703-react-admin-foundation"></script>
+<link rel="stylesheet" href="/css/react-admin.generated.css?v=20260703-react-astryx-admin" />
+<script src="/js/react-admin.generated.js?v=20260703-react-astryx-admin"></script>
 ```
 
 Keep `/app.js` as the module app entry after the React script.
@@ -399,7 +399,7 @@ Update:
 
 - `scripts/check-js-syntax.mjs`: include `src/react/**/*.ts` and `src/react/**/*.tsx` only through `tsc`; keep existing JS checks for JS files.
 - `scripts/check-pre-release.mjs`: assert React generated CSS/JS references in `public/index.html`, assert `check:react-admin`, assert no Framer Motion dependency.
-- `scripts/check-native-release.mjs`: update `requiredCacheVersion` to `20260703-react-admin-foundation`.
+- `scripts/check-native-release.mjs`: update `requiredCacheVersion` to `20260703-react-astryx-admin`.
 - `scripts/check-pages-readiness.mjs`: assert `pages:build` still equals `npm run build`.
 
 - [ ] **Step 12: Run tests to verify GREEN**

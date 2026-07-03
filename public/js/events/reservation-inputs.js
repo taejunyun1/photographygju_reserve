@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260703-icon-only-actions";
+import { state } from "../state.js?v=20260703-react-astryx-admin";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260703-icon-only-actions";
+} from "../admin-equipment.js?v=20260703-react-astryx-admin";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260703-icon-only-actions";
+} from "./shared.js?v=20260703-react-astryx-admin";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

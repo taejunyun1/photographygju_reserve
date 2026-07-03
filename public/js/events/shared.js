@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260703-icon-only-actions";
-import { logout } from "../actions.js?v=20260703-icon-only-actions";
-import { render, toast } from "../renderer.js?v=20260703-icon-only-actions";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-icon-only-actions";
+import { state } from "../state.js?v=20260703-react-astryx-admin";
+import { logout } from "../actions.js?v=20260703-react-astryx-admin";
+import { render, toast } from "../renderer.js?v=20260703-react-astryx-admin";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-react-astryx-admin";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260703-icon-only-actions";
+} from "../utils.js?v=20260703-react-astryx-admin";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260703-icon-only-actions";
+} from "./scroll-state.js?v=20260703-react-astryx-admin";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260703-icon-only-actions";
-import { api } from "./api.js?v=20260703-icon-only-actions";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-icon-only-actions";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-icon-only-actions";
-import { render, toast } from "./renderer.js?v=20260703-icon-only-actions";
+import { state } from "./state.js?v=20260703-react-astryx-admin";
+import { api } from "./api.js?v=20260703-react-astryx-admin";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-react-astryx-admin";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-react-astryx-admin";
+import { render, toast } from "./renderer.js?v=20260703-react-astryx-admin";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260703-icon-only-actions";
+} from "./utils.js?v=20260703-react-astryx-admin";
 
 export async function login(form) {
   const data = formData(form);

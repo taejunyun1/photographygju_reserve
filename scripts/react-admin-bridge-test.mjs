@@ -78,8 +78,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-icon-only-actions");
-const { render } = await import("../public/js/renderer.js?v=20260703-icon-only-actions");
+const { state } = await import("../public/js/state.js?v=20260703-react-astryx-admin");
+const { render } = await import("../public/js/renderer.js?v=20260703-react-astryx-admin");
 
 state.bootstrap = { settings: { blockedSchedules: [] } };
 state.user = { id: "admin1", role: "admin", name: "관리자", email: "admin@gju.local" };

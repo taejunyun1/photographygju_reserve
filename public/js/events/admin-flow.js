@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260703-icon-only-actions";
-import { api } from "../api.js?v=20260703-icon-only-actions";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-icon-only-actions";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-icon-only-actions";
+import { state } from "../state.js?v=20260703-react-astryx-admin";
+import { api } from "../api.js?v=20260703-react-astryx-admin";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-react-astryx-admin";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-react-astryx-admin";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260703-icon-only-actions";
-import { render, toast } from "../renderer.js?v=20260703-icon-only-actions";
-import { formData, parseCsv } from "../utils.js?v=20260703-icon-only-actions";
+} from "../admin-equipment.js?v=20260703-react-astryx-admin";
+import { render, toast } from "../renderer.js?v=20260703-react-astryx-admin";
+import { formData, parseCsv } from "../utils.js?v=20260703-react-astryx-admin";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260703-icon-only-actions";
+} from "./shared.js?v=20260703-react-astryx-admin";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 
