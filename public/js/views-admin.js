@@ -1,6 +1,7 @@
-import { state } from "./state.js?v=20260703-ui-consistency";
+import { state } from "./state.js?v=20260703-equipment-inquiry-status";
 import {
   adminNavItems,
+  equipmentAdminStatusOptions,
   equipmentReservationStatuses,
   equipmentReservationStatusLabel,
   equipmentStatusOptions,
@@ -10,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260703-ui-consistency";
+} from "./constants.js?v=20260703-equipment-inquiry-status";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260703-ui-consistency";
+} from "./utils.js?v=20260703-equipment-inquiry-status";
 import {
   card,
   emptyState,
@@ -38,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-ui-consistency";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-ui-consistency";
-import { noticeCard } from "./views-student.js?v=20260703-ui-consistency";
+} from "./ui.js?v=20260703-equipment-inquiry-status";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-equipment-inquiry-status";
+import { noticeCard } from "./views-student.js?v=20260703-equipment-inquiry-status";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260703-ui-consistency";
+} from "./admin-equipment.js?v=20260703-equipment-inquiry-status";
 
 export function adminShell() {
   return `
@@ -883,7 +884,7 @@ export function adminEquipmentView() {
         ${state.adminEquipmentTab === "fantasy_lab" ? `
           <div class="info-strip">
             <strong>판타지랩 기자재는 온라인 예약불가</strong>
-            <span>학생 화면에는 확인용 목록으로만 표시됩니다. 이 관리처로 등록하거나 CSV 업로드한 장비는 자동으로 문의전용 처리됩니다.</span>
+            <span>학생 화면에는 확인용 목록으로만 표시됩니다. 이 관리처로 등록하거나 CSV 업로드한 장비는 자동으로 문의 처리됩니다.</span>
           </div>
         ` : ""}
         <div class="tab-row wrap">
@@ -897,7 +898,7 @@ export function adminEquipmentView() {
           </label>
           <span class="tag" data-admin-equipment-selected-count>${selected.size}개 선택</span>
           <div class="bulk-actions" aria-label="선택 기자재 상태 변경">
-            ${equipmentStatusOptions.map((status) => `<button class="button compact" type="button" data-equipment-bulk-status="${status}" ${selected.size ? "" : "disabled"}>${status}</button>`).join("")}
+            ${equipmentAdminStatusOptions.map((status) => `<button class="button compact" type="button" data-equipment-bulk-status="${status}" ${selected.size ? "" : "disabled"}>${status}</button>`).join("")}
             <button class="button danger compact" type="button" data-equipment-bulk-remove ${selected.size ? "" : "disabled"}>선택 기자재 제거</button>
           </div>
         </div>

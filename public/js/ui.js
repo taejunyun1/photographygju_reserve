@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-ui-consistency";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-equipment-inquiry-status";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

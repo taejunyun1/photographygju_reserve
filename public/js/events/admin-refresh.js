@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260703-ui-consistency";
-import { toast } from "../renderer.js?v=20260703-ui-consistency";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-ui-consistency";
+import { state } from "../state.js?v=20260703-equipment-inquiry-status";
+import { toast } from "../renderer.js?v=20260703-equipment-inquiry-status";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-inquiry-status";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

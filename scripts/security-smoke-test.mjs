@@ -618,6 +618,16 @@ assert.equal(fixedEquipment.status, 200);
 assert.equal(fixedEquipment.body.data.status, "가능");
 assert.equal(fixedEquipment.body.data.reservable, true);
 
+const inquiryEquipment = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
+  status: "가능",
+  reservable: false,
+  inquiryOnly: true
+}, adminToken);
+assert.equal(inquiryEquipment.status, 200);
+assert.equal(inquiryEquipment.body.data.status, "가능");
+assert.equal(inquiryEquipment.body.data.reservable, false);
+assert.equal(inquiryEquipment.body.data.inquiryOnly, true);
+
 const brokenEquipment = await api("PATCH", `/api/admin/equipment/${createdRepairEquipment.body.data[0].id}`, {
   status: "파손"
 }, adminToken);

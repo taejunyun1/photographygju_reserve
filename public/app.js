@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260703-ui-consistency";
+import "./js/main.js?v=20260703-equipment-inquiry-status";

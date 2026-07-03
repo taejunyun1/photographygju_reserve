@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260703-ui-consistency";
+import { state } from "../state.js?v=20260703-equipment-inquiry-status";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260703-ui-consistency";
+} from "../admin-equipment.js?v=20260703-equipment-inquiry-status";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260703-ui-consistency";
+} from "./shared.js?v=20260703-equipment-inquiry-status";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

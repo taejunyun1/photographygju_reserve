@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-ui-consistency");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-ui-consistency");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-ui-consistency");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-ui-consistency");
+const { state } = await import("../public/js/state.js?v=20260703-equipment-inquiry-status");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-equipment-inquiry-status");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-equipment-inquiry-status");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-equipment-inquiry-status");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -65,10 +65,10 @@ state.adminReservations = [
   { id: "r4", type: "studio", status: "auto_confirmed", user: { name: "최학생" }, fields: { reservedDate: today, timeSlots: ["16:00-17:00"] } }
 ];
 state.adminEquipment = [
-  { id: "e1", active: true, status: "가능" },
-  { id: "e2", active: true, status: "가능" },
-  { id: "e3", active: true, status: "수리중" },
-  { id: "e4", active: false, status: "가능" }
+  { id: "e1", active: true, status: "가능", reservable: true },
+  { id: "e2", active: true, status: "가능", reservable: false, inquiryOnly: true },
+  { id: "e3", active: true, status: "수리중", reservable: false, inquiryOnly: true },
+  { id: "e4", active: false, status: "가능", reservable: true }
 ];
 state.adminReports = [{
   id: "report1",
@@ -101,6 +101,8 @@ state.adminView = "notices";
 const noticesView = adminNoticesView();
 state.adminView = "equipment";
 state.adminEquipmentPanelTab = "manage";
+state.adminEquipmentTab = "all";
+state.adminEquipmentCategoryTab = "all";
 const equipmentView = adminEquipmentView();
 state.adminView = "dashboard";
 state.activeAdminQueueSheet = "today";
@@ -224,6 +226,10 @@ assert(lecturesView.includes('data-admin-bulk-delete="lectures:filtered"'), "lec
 assert.match(lecturesView, /data-admin-bulk-delete="lectures:filtered"[^>]*disabled/, "lectures filtered bulk delete must be disabled when no effective filter is active");
 assert(noticesView.includes('data-admin-bulk-delete="notices:filtered"'), "notices must expose filtered bulk delete");
 assert.match(noticesView, /data-admin-bulk-delete="notices:filtered"[^>]*disabled/, "notices filtered bulk delete must be disabled when no search filter is active");
+assert(equipmentView.includes('data-status="문의"'), "equipment status controls must expose an inquiry button");
+assert(equipmentView.includes('data-equipment-bulk-status="문의"'), "bulk equipment status controls must expose an inquiry button");
+assert(equipmentView.includes('<span class="tag yellow">문의</span>'), "equipment inquiry-only display must use the shorter inquiry label");
+assert(!equipmentView.includes("문의전용"), "admin equipment view must not show the legacy inquiry-only label");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
@@ -397,6 +403,8 @@ for (const [token, next] of [
 
 assert(eventSource.includes("target.dataset.adminEquipmentPanelTab"), "admin equipment must support add/manage inner tabs");
 assert(eventSource.includes("target.dataset.adminLecturePanelTab"), "admin lectures must support add/list inner tabs");
+assert(adminEventSource.includes('status === "문의" ? { status: "가능", reservable: false, inquiryOnly: true } : { status }'), "single equipment inquiry action must patch reservable state instead of creating a new status");
+assert(adminEventSource.includes('bulkStatus === "문의" ? { status: "가능", reservable: false, inquiryOnly: true } : { status: bulkStatus }'), "bulk equipment inquiry action must patch reservable state instead of creating a new status");
 
 const adminMobileHeaderRule = cssRule("  .admin-mobile-header");
 assert(!adminMobileHeaderRule.includes("position: sticky;"), "admin mobile header must not be sticky");

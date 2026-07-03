@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260703-ui-consistency";
-import { api } from "../api.js?v=20260703-ui-consistency";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-ui-consistency";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-ui-consistency";
+import { state } from "../state.js?v=20260703-equipment-inquiry-status";
+import { api } from "../api.js?v=20260703-equipment-inquiry-status";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-equipment-inquiry-status";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-equipment-inquiry-status";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260703-ui-consistency";
-import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
-import { formData, parseCsv } from "../utils.js?v=20260703-ui-consistency";
+} from "../admin-equipment.js?v=20260703-equipment-inquiry-status";
+import { render, toast } from "../renderer.js?v=20260703-equipment-inquiry-status";
+import { formData, parseCsv } from "../utils.js?v=20260703-equipment-inquiry-status";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260703-ui-consistency";
+} from "./shared.js?v=20260703-equipment-inquiry-status";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 
@@ -458,7 +458,8 @@ export function setupAdminFlowClickHandlers() {
         target.disabled = true;
         let updated;
         try {
-          updated = await patchAdminEquipment([itemId], { status });
+          const patch = status === "문의" ? { status: "가능", reservable: false, inquiryOnly: true } : { status };
+          updated = await patchAdminEquipment([itemId], patch);
         } finally {
           target.disabled = false;
         }
@@ -473,7 +474,9 @@ export function setupAdminFlowClickHandlers() {
           toast("선택된 기자재가 없습니다.", { preserveScroll: true, scrollState });
           return;
         }
-        const updated = await patchAdminEquipment(ids, { status: target.dataset.equipmentBulkStatus });
+        const bulkStatus = target.dataset.equipmentBulkStatus;
+        const patch = bulkStatus === "문의" ? { status: "가능", reservable: false, inquiryOnly: true } : { status: bulkStatus };
+        const updated = await patchAdminEquipment(ids, patch);
         syncAdminEquipmentDom(updated);
         toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`, { preserveScroll: true, scrollState });
         return;

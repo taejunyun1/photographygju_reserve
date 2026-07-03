@@ -377,7 +377,9 @@ function applyEquipmentPatch(item, patch = {}) {
     item.inquiryOnly = true;
     if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
   } else if (patch.status !== undefined) {
-    item.reservable = equipmentReservableForStatus(item.status);
+    item.reservable = patch.reservable === undefined
+      ? equipmentReservableForStatus(item.status)
+      : booleanFromBody(patch.reservable) && equipmentReservableForStatus(item.status);
     item.inquiryOnly = !item.reservable;
   } else if (patch.reservable !== undefined) {
     item.inquiryOnly = !item.reservable;

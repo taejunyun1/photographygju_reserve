@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260703-ui-consistency";
-import { api } from "../api.js?v=20260703-ui-consistency";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-ui-consistency";
+import { state } from "../state.js?v=20260703-equipment-inquiry-status";
+import { api } from "../api.js?v=20260703-equipment-inquiry-status";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-equipment-inquiry-status";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260703-ui-consistency";
-import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-ui-consistency";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-ui-consistency";
+} from "../actions.js?v=20260703-equipment-inquiry-status";
+import { render, toast } from "../renderer.js?v=20260703-equipment-inquiry-status";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-equipment-inquiry-status";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-inquiry-status";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

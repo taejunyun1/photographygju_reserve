@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260703-ui-consistency";
-import { api } from "./api.js?v=20260703-ui-consistency";
-import { equipmentStatusOptions } from "./constants.js?v=20260703-ui-consistency";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260703-ui-consistency";
+import { state } from "./state.js?v=20260703-equipment-inquiry-status";
+import { api } from "./api.js?v=20260703-equipment-inquiry-status";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260703-equipment-inquiry-status";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260703-equipment-inquiry-status";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);
@@ -24,7 +24,7 @@ export function visibleAdminEquipmentItems() {
         item.model,
         item.status,
         item.notes,
-        item.reservable ? "예약가능" : "문의전용"
+        item.reservable ? "예약가능" : "문의"
       ]).includes(query);
     });
 }
@@ -85,21 +85,26 @@ export async function patchAdminEquipment(ids, patch) {
 export function equipmentStatusButtons(item) {
   return `
     <div class="equipment-status-buttons" data-equipment-status-cell="${item.id}">
-      ${equipmentStatusOptions.map((status) => `
+      ${equipmentAdminStatusOptions.map((status) => {
+        const active = status === "문의"
+          ? item.status === "가능" && item.reservable === false
+          : item.status === status && (status !== "가능" || item.reservable !== false);
+        return `
         <button
-          class="status-button ${item.status === status ? "active" : ""}"
+          class="status-button ${active ? "active" : ""}"
           type="button"
           data-equipment-status-action="${item.id}"
           data-status="${status}"
-          aria-pressed="${item.status === status ? "true" : "false"}"
+          aria-pressed="${active ? "true" : "false"}"
         >${status}</button>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 }
 
 export function equipmentReservableTag(item) {
-  return item.reservable ? tag("가능", "green") : tag("문의전용", "yellow");
+  return item.reservable ? tag("가능", "green") : tag("문의", "yellow");
 }
 
 export function syncAdminEquipmentDom(updatedItems = []) {

@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260703-ui-consistency";
-import { loadAdminData } from "../data.js?v=20260703-ui-consistency";
-import { render } from "../renderer.js?v=20260703-ui-consistency";
-import { normalizeUnicodeText } from "../utils.js?v=20260703-ui-consistency";
-import { resetAdminPage } from "./shared.js?v=20260703-ui-consistency";
+import { state } from "../state.js?v=20260703-equipment-inquiry-status";
+import { loadAdminData } from "../data.js?v=20260703-equipment-inquiry-status";
+import { render } from "../renderer.js?v=20260703-equipment-inquiry-status";
+import { normalizeUnicodeText } from "../utils.js?v=20260703-equipment-inquiry-status";
+import { resetAdminPage } from "./shared.js?v=20260703-equipment-inquiry-status";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

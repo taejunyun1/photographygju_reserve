@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-ui-consistency";
+import { state } from "./state.js?v=20260703-equipment-inquiry-status";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260703-ui-consistency";
+} from "./constants.js?v=20260703-equipment-inquiry-status";
 
 export function escapeHtml(value) {
   return String(value ?? "")

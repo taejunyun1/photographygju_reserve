@@ -70,6 +70,7 @@ export const adminNavItems = [
 export const lectureStatusOptions = ["모집중", "진행완료", "취소"];
 
 export const equipmentStatusOptions = ["가능", "수리중", "파손"];
+export const equipmentAdminStatusOptions = [...equipmentStatusOptions, "문의"];
 
 export const sourceLabel = {
   department: "극기관",
