@@ -53,6 +53,9 @@ function futureDateKey(daysFromNow = 7) {
   const date = new Date();
   date.setHours(12, 0, 0, 0);
   date.setDate(date.getDate() + daysFromNow);
+  while ([0, 6].includes(date.getDay())) {
+    date.setDate(date.getDate() + 1);
+  }
   return [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, "0"),
@@ -200,6 +203,8 @@ function resetStudentState() {
 }
 
 resetStudentState();
+const defaultDate = new Date(`${state.selectedDates.equipment}T12:00:00`);
+assert(![0, 6].includes(defaultDate.getDay()), "default equipment test date must be a weekday so weekday CTA assertions are deterministic");
 const defaultEquipmentForm = equipmentForm();
 assert.equal(state.selectedEquipmentRentalTime, "10:15", "equipment rental time must default to the first rental slot");
 assert.equal(state.selectedEquipmentReturnTime, "12:00", "equipment return time must default to the next valid return slot, not the same time");
