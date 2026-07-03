@@ -1,271 +1,120 @@
-# GJU-reserve Mobile Design System Guide
+# GJU-reserve Astryx Design System Guide
 
-이 문서는 GJU-reserve를 모바일 네이티브 앱으로 옮기기 쉬운 제품 UI로 관리하기 위한 단일 디자인 시스템 가이드다. 웹 화면을 작은 기기에 그대로 축소하지 않고, iOS/Android 앱에서 자연스러운 터치 흐름, safe area, 하단 내비게이션, 단계형 예약 경험을 기준으로 정리한다.
+이 문서는 GJU-reserve의 단일 프론트엔드 디자인 기준이다. 이전 모바일 가이드와 임시 레퍼런스 기준은 폐기하고, 현재 앱에 적용 중인 Astryx/GJU 토큰과 컴포넌트 규칙을 기준으로 Admin과 학생단을 함께 관리한다.
 
-Figma MCP는 Starter 플랜 호출 제한으로 직접 노드 컨텍스트를 더 가져오지 못했다. 따라서 적용 기준은 사용자가 전달한 iOS/iPadOS 26 레퍼런스, Simple Design System 레퍼런스의 의도, 첨부 캘린더 이미지, 그리고 현재 프로젝트 UI 구조를 통합해 정의한다.
+## 1. Product Direction
 
-## 1. Core Principles
+- GJU-reserve는 예약 업무 앱이다. 마케팅식 장식보다 반복 사용, 상태 확인, 빠른 처리, 안정적인 터치 흐름을 우선한다.
+- Admin과 학생단은 같은 토큰을 쓴다. 화면 밀도만 다르게 조절하고, 카드/버튼/탭/입력/상태 배지의 모양은 같은 계열로 유지한다.
+- Astryx 원칙은 직접 feature 화면에 흩뿌리지 않는다. React Admin은 `src/react/design-system/*` wrapper를 쓰고, legacy 학생단은 `public/styles.css`와 `public/js/ui.js`의 같은 토큰 이름을 사용한다.
+- 신규 화면은 먼저 wrapper 또는 `public/js/ui.js` primitive를 확인한다. 같은 역할의 UI를 새 클래스와 임의 색상으로 만들지 않는다.
 
-- 학생 화면은 모바일 앱을 1순위로 설계한다. 첫 화면은 예약 진입, 다음 예약, 공지, 특강처럼 자주 쓰는 작업을 빠르게 수행하게 한다.
-- 관리자 화면은 반복 업무 도구다. 검색, 필터, 정렬, 상태 변경, 기록 확인 속도를 장식보다 우선한다.
-- 한 화면의 주 행동은 하나만 강하게 둔다. 보조 행동은 작은 버튼, 메뉴, 접기, 상세 화면으로 낮춘다.
-- 긴 설명문은 상단에서 공간을 차지하지 않는다. 필요 시 카드 하단, `details`, 도움말, 시트로 보낸다.
-- 카드 안에 또 다른 큰 카드를 넣지 않는다. 섹션, 카드, 리스트, 액션 영역의 경계를 명확히 둔다.
-- 모든 반복 UI는 먼저 [public/js/ui.js](/Users/taejun-yun/Desktop/WEB_data/school_reservation/public/js/ui.js)를 확인한다.
+## 2. Token Contract
 
-## 2. Five Core Colors
+공통 토큰은 [public/styles.css](/Users/taejun-yun/Desktop/WEB_data/school_reservation/public/styles.css)의 `:root`가 기준이다. React Admin 전용 확장은 [src/react/design-system/react-admin.css](/Users/taejun-yun/Desktop/WEB_data/school_reservation/src/react/design-system/react-admin.css)에 둔다.
 
-핵심 컬러는 5가지만 사용한다. 화면별 임의 색상 추가는 금지하고, 새 의미가 필요하면 아래 색상 중 하나의 tint/surface 토큰으로 해결한다.
+- Surface: 기본 표면은 흰색 또는 낮은 채도 배경이다. 주요 shell/header/bottom nav는 `rgba(247, 248, 251, 0.96)` 계열을 사용한다.
+- Border: 모든 표면 경계는 `--gju-color-border` 또는 `--line-soft`로 통일한다.
+- Radius: 카드와 버튼의 기본 radius는 8px이다. bottom sheet, native safe-area container처럼 손가락으로 잡는 큰 표면만 예외적으로 12-16px를 사용할 수 있다.
+- Spacing: 4, 8, 12, 16, 20, 24px 단위를 우선한다. 모바일 shell 좌우 여백은 `--gju-student-edge` 또는 `--gju-app-shell-mobile-edge`를 쓴다.
+- Touch target: compact는 40px, 기본 터치는 44px 이상이다.
+- Motion: transform/opacity 중심으로 80ms, 120ms, 180ms, 240ms만 사용한다. `prefers-reduced-motion`에서는 entry/transition을 제거한다.
 
-| Core | Token | Purpose | Use |
-| --- | --- | --- | --- |
-| Action Blue | `--color-action` | 주요 CTA, 선택, 내 예약, 링크 | 예약 확정, 승인, 저장, 현재 탭 |
-| Neutral Slate | `--color-neutral` | 본문, 보조 텍스트, 일반 상태 | 기본 카드, 회색 배지, 비활성 정보 |
-| Success Green | `--color-success` | 정상, 완료, 사용 가능 | 승인 완료, 반납 완료, 모집중 |
-| Warning Amber | `--color-warning` | 주의, 승인 대기, 확인 필요 | 조교 승인, 카메라 가방 확인, 제한 예정 |
-| Danger Red | `--color-danger` | 취소, 삭제, 반려, 차단 | 신청 취소, 삭제, 대여금지, 차단일 |
+## 3. Color Roles
 
-기존 별도 주황/보라 계열은 새 핵심색으로 보지 않는다. `orange`는 Warning Amber의 강한 상태, `purple`은 Neutral Slate의 보조 tint로 매핑한다.
+색상은 의미 역할로만 사용한다.
 
-## 3. Token Rules
-
-- 토큰은 [public/styles.css](/Users/taejun-yun/Desktop/WEB_data/school_reservation/public/styles.css)의 `:root`에서 관리한다.
-- 배경은 낮은 채도, 표면은 유리 느낌의 `--glass-*`, CTA는 진한 `--primary` 계열로 구분한다.
-- spacing은 4, 8, 12, 16, 20, 24px 단위를 우선한다.
-- 기본 radius는 `12px`; 모바일 카드/시트/하단 탭은 18-28px를 사용할 수 있다.
-- 터치 컨트롤은 최소 44px, 모바일 목표는 iOS 44pt와 Android 48dp 기준을 만족해야 한다.
-- focus/selected/disabled 상태는 색상만이 아니라 border, 배경, 텍스트 라벨로 함께 표현한다.
-
-## 4. Icon Set
-
-아이콘은 [public/js/ui.js](/Users/taejun-yun/Desktop/WEB_data/school_reservation/public/js/ui.js)의 `icon()` 프리미티브만 사용한다.
-
-| Icon | Meaning | Primary Use |
+| Role | Token | Use |
 | --- | --- | --- |
-| `home` | 홈 | 하단 탭 |
-| `calendar` | 예약/날짜 | 내 예약, 날짜 선택 |
-| `camera` | 기자재 | 시설 카드 |
-| `spark` | 특강/스튜디오 강조 | 특강, 스튜디오 |
-| `printer` | 출력실 | 시설 카드 |
-| `moon` | 암실 | 시설 카드 |
-| `fileText` | 보고서/문서 | 보고서 작성 |
-| `megaphone` | 공지 | 공지 탭 |
-| `user`, `userPlus` | 계정/가입 | 프로필, 가입 |
-| `check` | 확정/완료 | 승인, 저장, 신청 |
-| `x` | 취소/반려 | 신청 취소, 반려 |
-| `trash` | 삭제 | 삭제 전용 |
-| `download` | 내려받기 | CSV, 백업 |
-| `external`, `arrowUpRight` | 외부 이동 | 구글 드라이브, 링크 |
-| `arrowRight`, `chevronLeft` | 진행/뒤로 | 단계 이동 |
-| `edit` | 수정 | 요약 row 수정 |
-| `plus` | 추가/담기 | 기자재 담기, 메모 추가 |
-| `send` | 제출 | 보고서 제출, 승인 요청 |
-| `logIn`, `logOut` | 접속/나가기 | 인증 |
+| Primary | `--primary`, `--primary-container` | 예약 진행, 현재 탭, 주요 CTA |
+| Text | `--text`, `--muted`, `--muted-2` | 제목, 본문, 보조 설명 |
+| Surface | `--surface-lowest`, `--surface-low`, `--component-card-background` | 앱 쉘, 카드, 입력 영역 |
+| Border | `--line`, `--line-soft`, `--gju-color-border` | 카드, 버튼, 탭, 구분선 |
+| Success | `--green`, `--green-soft` | 가능, 완료, 승인 |
+| Warning | `--yellow`, `--yellow-soft` | 승인 대기, 확인 필요 |
+| Danger | `--red`, `--red-soft` | 삭제, 취소, 반려, 제한 |
 
-아이콘 사용 규칙:
+새 색상이 필요해도 임의 hex를 먼저 추가하지 않는다. 기존 role로 해결할 수 없을 때만 토큰을 추가한다.
 
-- 모든 버튼에 아이콘을 붙이지 않는다. 핵심 CTA, 위험 CTA, 외부 이동, 다운로드, 탭에 우선 사용한다.
-- 아이콘 단독 버튼은 접근성 라벨이 필요하다.
-- 아이콘은 `currentColor`를 사용해 버튼 상태색을 그대로 따른다.
-- 버튼 안 아이콘은 텍스트보다 크지 않게 1.1em을 기본으로 한다.
+## 4. Components
 
-## 5. Buttons
+### Buttons
 
-버튼은 행동의 중요도와 위험도를 명확히 나눈다.
+- 기본 버튼은 8px radius, 40/44px 높이, 굵은 13-15px 텍스트를 사용한다.
+- destructive action은 danger tone과 확인 절차를 함께 둔다.
+- icon-only 버튼은 `aria-label`, `title`, 정사각 hit area를 반드시 가진다.
+- 버튼 안 텍스트가 길면 줄바꿈을 허용하되 버튼 밖으로 넘치면 안 된다.
 
-- Primary: 서버 상태를 바꾸는 핵심 행동. 예약 확정, 승인 요청, 저장, 신청, 승인.
-- Default: 중간 강도의 일반 행동. 보고서 작성, 상태 저장, 수정.
-- Ghost: 뒤로가기, 전체 보기, 닫기처럼 화면 이동 또는 낮은 위험의 보조 행동.
-- Warning: 확인 필요, 메모 추가, 제한 설정처럼 주의가 필요한 행동.
-- Danger: 취소, 반려, 삭제, 로그아웃, 차단 해제 전 위험 안내.
-- Compact: 카드 안 보조 버튼, 관리자 부가 작업, 메모 초기화.
-- Full: 모바일 하단 CTA, 폼 제출, 예약 확정.
+### Cards
 
-모바일에서는 카드 우측에 긴 CTA를 몰아넣지 않는다. 주요 CTA는 카드 하단 또는 sticky bottom CTA로 둔다.
+- 카드는 개별 반복 항목, 입력 그룹, 예약 요약, 안내 패널에만 쓴다.
+- 카드 안에 큰 카드를 중첩하지 않는다. 세부 정보는 구분선, property row, 작은 chip으로 처리한다.
+- 카드 radius는 8px이 기본이다. 학생단 facility card와 예약 카드도 같은 radius 토큰을 쓴다.
+- 데스크톱에서는 grid/table로 넓게 펼치되 모바일에서 같은 정보 순서를 유지한다.
 
-## 6. Accordion
+### Tabs And Segmented Controls
 
-Accordion은 긴 설명, 상세 일정, 도움말, 판타지랩 안내처럼 처음부터 모두 보일 필요가 없는 정보에 사용한다.
+- 필터 탭은 40px 이상 높이를 유지한다.
+- 모바일에서는 가로 스크롤을 허용하되, 텍스트가 버튼 밖으로 넘치면 안 된다.
+- 현재 탭은 `--primary-container` 배경과 primary text로 표현한다.
 
-- summary는 44px 이상 터치 가능해야 한다.
-- 우측에는 `+`/`-` 또는 chevron 계열 표시를 둔다.
-- 본문은 summary 아래 한 단계 낮은 표면색으로 표시한다.
-- 예약 플로우의 필수 단계는 accordion으로 숨기지 않는다. 선택 후 다음 단계로 이동하는 wizard 구조를 우선한다.
+### Inputs
 
-사용 대상:
+- 모든 입력은 label 또는 접근성 이름을 가진다.
+- 검색은 `role="searchbox"` 또는 `type="search"` 흐름을 유지한다.
+- focus는 border와 focus ring으로 같이 표시한다.
 
-- 특강 상세 일정
-- 온라인 예약불가 기자재 안내
-- 지난 예약 목록
-- 관리자 가이드/주의 문구
+### Status Badges
 
-## 7. Calendar
+- 상태는 색상만으로 전달하지 않는다. 텍스트와 tone을 함께 둔다.
+- 가능/완료는 success, 승인 대기/확인 필요는 warning, 삭제/취소/반려는 danger를 사용한다.
 
-캘린더는 첨부 레퍼런스처럼 큰 카드 안에 날짜 선택을 집중시키되, 월 변경 버튼은 작고 명확하게 유지한다.
+## 5. Shells
 
-- 월 제목은 크게, `이전/오늘/다음` 버튼은 compact action으로 둔다.
-- 모바일에서 월 이동 버튼은 30-34px 높이의 작은 버튼으로 유지한다.
-- 날짜 셀은 터치하기 쉬운 크기를 유지하되 화면 하단 탭에 가려지지 않도록 scroll padding을 둔다.
-- 내 예약, 타인 예약, 차단 상태는 색상 dot과 텍스트 배지로 함께 표시한다.
-- 설명/범례는 상단을 차지하지 않게 캘린더 하단 또는 접힌 안내로 둔다.
-- 당일 예약 차단, 차단 일정, 예약 마감은 선택 불가 상태로 즉시 보여준다.
+### Admin
 
-## 8. Cards
+- React Admin은 `GjuAppShell`이 화면 소유권을 가진다.
+- 데스크톱은 sidebar, 모바일은 sticky header와 light bottom nav를 사용한다.
+- 상단 action은 icon-only이다. 새로고침, 내 정보, 나가기는 텍스트를 렌더하지 않고 접근성 라벨만 가진다.
 
-카드는 정보 묶음의 최소 단위다. 반복 아이템, 예약 카드, 특강 카드, 보고서 카드, 관리자 행 카드에 사용한다.
+### 학생단
 
-- 카드 내부 제목은 화면 제목보다 작게 유지한다.
-- 상태 배지는 상단, 핵심 내용은 중앙, CTA는 하단으로 정리한다.
-- 긴 텍스트는 2-3줄 미리보기 후 더보기로 보낸다.
-- 모바일 카드 안의 정적 정보는 작은 key-value row 또는 chip으로 축소한다.
-- 카드 안에 또 다른 큰 카드를 중첩하지 않는다. 필요한 경우 구분선이나 작은 property row를 쓴다.
-- 데스크톱에서는 표/그리드로 확장해도 모바일 구조와 정보 순서를 유지한다.
+- 학생단은 legacy renderer를 유지하되 Astryx/GJU 토큰을 따른다.
+- top appbar는 sticky light surface로 유지한다.
+- bottom nav는 Admin React와 같은 light surface를 사용한다. 이전 dark floating nav 스타일은 사용하지 않는다.
+- nav item은 icon + label 구조를 쓴다. label은 그대로 보여주고, icon은 `public/js/ui.js`의 `icon()` primitive로 렌더한다.
+- 예약 플로우는 학생단의 핵심 작업이므로 한 화면에 현재 단계 하나를 강하게 보여주고, 완료된 단계는 summary row로 접는다.
 
-## 9. Inputs
+## 6. Student Surface Rules
 
-입력 필드는 모바일 키보드와 목적에 맞게 설계한다.
+- Home: 공지, 예약 바로가기, 다음 예약, 모집중 특강 순서로 보여준다. 빈 예약 섹션은 홈 첫 화면에 공간을 차지하지 않는다.
+- Reserve: 날짜 -> 시간/기간 -> 선택 -> 확인의 wizard 구조를 유지한다.
+- My Reservations: 빈 상태에는 바로 예약 CTA를 둔다.
+- Reports: D-day와 제출 상태를 badge로 보여준다.
+- Lectures: 검색, 학기/연도 필터, 신청 상태, 접힌 상세를 유지한다.
+- Notices: 검색 가능한 리스트와 상세 확인을 유지한다.
+- My Page: 프로필/계정 정보와 로그아웃은 명확한 action 영역으로 분리한다.
 
-- 검색은 `type="search"`, 연락처는 `inputmode="tel"`, 이메일은 `type="email"`, URL은 `type="url"`을 사용한다.
-- placeholder는 예시가 아니라 검색 범위를 짧게 설명한다.
-- label은 항상 제공한다. 시각적으로 숨겨도 접근성 이름은 유지한다.
-- focus 상태는 border와 focus ring으로 확실히 표시한다.
-- 오류 메시지는 필드 바로 아래에 둔다.
-- 신청 인원처럼 사용자가 입력하지 않아야 하는 값은 필드로 노출하지 않는다.
+## 7. Native And WebView Rules
 
-## 10. Menu
+- iOS/Android safe area는 `--safe-area-*` 토큰으로 처리한다.
+- shell padding은 `max(edge, safe-area)` 패턴을 사용한다.
+- bottom nav 높이는 명시 토큰으로 잡아 하단 CTA와 겹치지 않게 한다.
+- fixed 또는 sticky 영역은 `backdrop-filter`를 쓰더라도 스크롤 성능을 해치지 않게 그림자와 blur를 과하게 늘리지 않는다.
 
-메뉴는 상태 변경이나 보조 작업을 압축할 때 사용한다.
+## 8. Accessibility
 
-- 모바일에서는 긴 드롭다운보다 action sheet 또는 짧은 select를 우선한다.
-- 대여금지 설정처럼 상태 변경이 포함된 메뉴에는 `대여금지 해제` 옵션도 같은 메뉴 안에 둔다.
-- 위험 행동은 메뉴 안에 넣더라도 Danger 색상과 확인 절차를 유지한다.
-- 메뉴 항목은 동사형으로 쓴다: 저장, 수정, 삭제, 해제, 내보내기.
+- icon-only action은 `aria-label`과 `title`을 가진다.
+- 탭/필터/버튼은 키보드 focus-visible 상태가 있다.
+- 삭제/취소/반려는 색상만으로 의미를 전달하지 않는다.
+- 모든 주요 터치 타깃은 40px compact, 44px preferred 기준을 지킨다.
 
-## 11. Navigation
+## 9. QA Checklist
 
-학생 하단 탭은 5개 이하로 유지한다.
-
-- 홈
-- 내 예약
-- 보고서
-- 특강
-- 공지
-
-예약 탭은 홈의 예약 바로가기로 대체한다. 마이 화면은 별도 탭이 아니라 상단 프로필/상태 칩에서 진입한다.
-
-상단 앱바:
-
-- safe area를 침범하지 않는다.
-- 스크롤 시 backdrop blur가 적용된 sticky header로 유지한다.
-- 프로필 칩은 클릭 가능한 메뉴 진입점으로 사용한다.
-
-관리자:
-
-- 데스크톱은 사이드 nav, 모바일은 하단 nav 또는 compact nav로 전환한다.
-- 관리자 목록은 항상 검색 필드와 필요한 상태 필터를 제공한다.
-
-## 12. Pagination
-
-현재 목록은 대부분 클라이언트 필터/검색 중심이지만, 데이터가 늘어날 수 있으므로 pagination 스타일을 준비한다.
-
-- 데스크톱: `이전`, 페이지 번호, `다음`, 총 건수.
-- 모바일: `이전`, `n / total`, `다음` 3요소로 축소한다.
-- 무한 스크롤은 관리자 업무 화면에서는 피한다. 선택한 행과 정렬 상태가 사라지기 쉽다.
-- 검색 또는 필터가 바뀌면 첫 페이지로 돌아간다.
-- 페이지 버튼은 `button.compact`보다 작게 만들지 않는다.
-
-## 13. Tabs
-
-Tabs는 결과를 크게 줄이는 필터에 사용한다.
-
-- 예약 유형: 기자재, 스튜디오, 출력실, 암실, 비교과.
-- 특강 연도: 전체, 2026년 등.
-- 상태: 승인완료, 반려, 제한, 대여완료, 반납완료.
-- 카테고리: Body, Lens, Lighting, Audio 등.
-
-모바일에서는 가로 스크롤 또는 wrap을 허용하되, 탭 텍스트가 버튼 밖으로 넘치지 않아야 한다.
-
-## 14. Text
-
-타이포그래피는 앱 내 업무 UI 기준으로 제한한다.
-
-- 화면 제목: 28-32px, 굵게.
-- 카드 제목: 18-22px.
-- 본문: 14-16px.
-- 보조 설명: 12-14px.
-- 버튼: 13-15px, 굵게.
-- viewport width에 따라 font-size를 스케일하지 않는다.
-- letter spacing은 0을 기본으로 한다.
-- 한글 긴 단어는 `overflow-wrap: anywhere` 또는 2줄 허용으로 처리한다.
-
-## 15. Forms
-
-폼은 한 화면에 길게 쌓지 않고 단계형으로 나눈다.
-
-- 기자재 예약: 날짜 -> 기간/시간 -> 장비 -> 확인.
-- 스튜디오 예약: 날짜 -> 공간 -> 시간 -> 확인.
-- 출력실/암실 예약: 날짜 -> 시간/버킷 -> 확인.
-- 필수 확인은 CTA 직전에 둔다.
-- 키보드가 올라와도 현재 필드와 제출 버튼이 가려지지 않아야 한다.
-- 제출 중에는 버튼을 비활성화하거나 처리 중 상태를 표시한다.
-- 서버 검증이 있는 예약/신청/취소는 중복 tap을 방지한다.
-
-## 16. Product Patterns
-
-학생 화면:
-
-- Home: 예약 바로가기, 다음 예약, 공지, 모집중 특강.
-- Reservation: 선택한 현재 단계 1개, 완료된 단계 요약 row, 하단 CTA.
-- My Reservations: 기자재, 스튜디오, 출력실, 암실, 비교과 카테고리 탭.
-- Reports: 예약 정보 자동 연동, 사진 업로드 중심.
-- Lectures: 검색, 연도 필터, 신청 상태, 접힌 상세 일정, 신청/취소 CTA.
-- Notices: 검색 가능한 공지 리스트와 상세 확인.
-- My Page: 상단 프로필 칩에서 진입.
-
-관리자 화면:
-
-- Users: 승인 상태별 필터, 승인/반려 단일 CTA, 대여금지 메뉴, 경고 메모 기록.
-- Reservations: 유형/상태 필터, 검색, 카드/표 전환.
-- Equipment: 검색, 카테고리, 상태 변경.
-- Reports: 검색, 정렬, 제출 상태.
-- Lectures: 등록 폼, 검색, 연도/상태 필터, 접힌 상세.
-- Logs/Sessions: 최신순 기본, 작업/사용자/IP 검색.
-
-## 17. Native Mapping
-
-| Web Pattern | iOS/Android Pattern |
-| --- | --- |
-| Top GNB | Bottom tab + stack navigation |
-| Profile chip | Settings/account entry |
-| Sidebar | Drawer or tablet split pane |
-| Dense table | Card list or expandable row |
-| Dropdown | Native picker/action sheet |
-| Tooltip | Inline help/bottom sheet |
-| Web modal | Native modal or bottom sheet |
-| Sticky CTA | Safe-area aware bottom action |
-| details | Accordion/disclosure cell |
-| Calendar grid | Native calendar component or custom grid |
-
-## 18. QA Checklist
-
-- 390px 폭에서 가로 넘침이 없다.
-- iOS Dynamic Island/status bar와 Android status bar를 침범하지 않는다.
-- 하단 탭과 홈 인디케이터에 CTA가 가려지지 않는다.
-- 모든 주요 터치 타깃이 44pt/48dp 기준을 만족한다.
-- 리스트 화면에는 검색과 필요한 필터가 있다.
-- 긴 텍스트는 카드/버튼 밖으로 넘치지 않는다.
-- 색상만으로 상태를 전달하지 않는다.
-- 로딩, 빈 상태, 검색 결과 없음, 오류, disabled, 처리 중 상태가 있다.
+- 390px, 430px 모바일 폭에서 가로 넘침이 없다.
+- top appbar와 bottom nav가 safe area를 침범하지 않는다.
+- 학생단과 Admin의 카드/버튼/탭 radius가 같은 Astryx/GJU 토큰을 사용한다.
+- bottom nav는 light surface이고 active 상태가 primary token으로 보인다.
+- 삭제, 로그아웃, 새로고침 같은 icon-only action은 visible text 없이 접근성 라벨을 가진다.
 - hover 없이 tap/selected/pressed/focus 상태가 동작한다.
-- `npm run check`, `node --check public/js/*.js`, `git diff --check`, `npm run native:sync`를 통과한다.
-
-## 19. Implementation Rule
-
-디자인 변경은 다음 순서로 진행한다.
-
-1. 화면 목적과 주요 CTA를 먼저 정한다.
-2. `ui.js` 프리미티브로 해결 가능한지 확인한다.
-3. 색상은 5개 core token 중 하나로 매핑한다.
-4. 모바일 390px 전후 폭에서 먼저 검증한다.
-5. 데스크톱은 같은 정보 순서를 유지한 채 확장한다.
-6. 문법 검사, 빌드, 네이티브 동기화, 필요 시 FTP 배포를 수행한다.
+- `npm run test:equipment-ui`, `npm run test:admin-ui`, `npm run check:js`, `npm run release:check`를 통과한다.

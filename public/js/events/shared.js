@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260704-admin-reservation-fit";
-import { logout } from "../actions.js?v=20260704-admin-reservation-fit";
-import { render, toast } from "../renderer.js?v=20260704-admin-reservation-fit";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-admin-reservation-fit";
+import { state } from "../state.js?v=20260704-astryx-student-guide";
+import { logout } from "../actions.js?v=20260704-astryx-student-guide";
+import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-astryx-student-guide";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260704-admin-reservation-fit";
+} from "../utils.js?v=20260704-astryx-student-guide";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260704-admin-reservation-fit";
+} from "./scroll-state.js?v=20260704-astryx-student-guide";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

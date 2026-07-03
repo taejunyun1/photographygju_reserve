@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260704-admin-reservation-fit";
-import { api } from "../api.js?v=20260704-admin-reservation-fit";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260704-admin-reservation-fit";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260704-admin-reservation-fit";
+import { state } from "../state.js?v=20260704-astryx-student-guide";
+import { api } from "../api.js?v=20260704-astryx-student-guide";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260704-astryx-student-guide";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260704-astryx-student-guide";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260704-admin-reservation-fit";
-import { render, toast } from "../renderer.js?v=20260704-admin-reservation-fit";
-import { formData, parseCsv } from "../utils.js?v=20260704-admin-reservation-fit";
+} from "../admin-equipment.js?v=20260704-astryx-student-guide";
+import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
+import { formData, parseCsv } from "../utils.js?v=20260704-astryx-student-guide";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260704-admin-reservation-fit";
+} from "./shared.js?v=20260704-astryx-student-guide";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

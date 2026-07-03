@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260704-admin-reservation-fit";
-import { escapeHtml } from "./utils.js?v=20260704-admin-reservation-fit";
-import { adminContent, adminShell } from "./views-admin.js?v=20260704-admin-reservation-fit";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260704-admin-reservation-fit";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260704-admin-reservation-fit";
+import { $app, state } from "./state.js?v=20260704-astryx-student-guide";
+import { escapeHtml } from "./utils.js?v=20260704-astryx-student-guide";
+import { adminContent, adminShell } from "./views-admin.js?v=20260704-astryx-student-guide";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260704-astryx-student-guide";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260704-astryx-student-guide";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

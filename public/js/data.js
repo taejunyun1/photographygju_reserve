@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260704-admin-reservation-fit";
-import { api } from "./api.js?v=20260704-admin-reservation-fit";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260704-admin-reservation-fit";
+import { state } from "./state.js?v=20260704-astryx-student-guide";
+import { api } from "./api.js?v=20260704-astryx-student-guide";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260704-astryx-student-guide";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

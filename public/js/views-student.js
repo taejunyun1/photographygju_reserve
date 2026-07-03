@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260704-admin-reservation-fit";
-import { statusLabel, typeLabel } from "./constants.js?v=20260704-admin-reservation-fit";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260704-admin-reservation-fit";
+import { state } from "./state.js?v=20260704-astryx-student-guide";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-astryx-student-guide";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260704-astryx-student-guide";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260704-admin-reservation-fit";
+} from "./utils.js?v=20260704-astryx-student-guide";
 import {
   actionRow,
   card,
@@ -50,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260704-admin-reservation-fit";
+} from "./ui.js?v=20260704-astryx-student-guide";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -125,14 +125,14 @@ export function studentShell() {
           </div>
         </div>
         <nav class="desktop-nav">
-          ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${label}</button>`).join("")}
+          ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${icon(studentNavIconName(key), "student-nav-icon")}${label}</button>`).join("")}
         </nav>
         <div class="student-appbar-actions">
           <button class="student-status-chip ${state.view === "my" ? "active" : ""}" type="button" data-student-view="my" title="${escapeHtml(`${state.user.name} · ${state.user.studentStatus} · ${userStatus}`)}" aria-label="마이 페이지 열기">
             <strong>${escapeHtml(state.user.name)}</strong>
             <span>${escapeHtml(state.user.studentStatus)} · ${escapeHtml(userStatus)}</span>
           </button>
-          <button class="button ghost compact" data-action="logout">${icon("logOut")}나가기</button>
+          <button class="button ghost compact student-logout-button icon-only-action" type="button" data-action="logout" aria-label="나가기" title="나가기">${icon("logOut", "icon")}</button>
         </div>
       </header>
       <section class="mobile-top">
@@ -144,7 +144,7 @@ export function studentShell() {
       ${studentContent()}
       <nav class="mobile-nav">
         ${equipmentFloatingSelectionDock()}
-        ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}"><span>${label}</span></button>`).join("")}
+        ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${icon(studentNavIconName(key), "student-nav-icon")}<span>${label}</span></button>`).join("")}
       </nav>
     </main>
   `;
@@ -158,6 +158,16 @@ export function studentContent() {
   if (state.view === "notices") return noticesView();
   if (state.view === "my") return myPageView();
   return homeView();
+}
+
+function studentNavIconName(key) {
+  return {
+    home: "home",
+    mine: "calendar",
+    reports: "fileText",
+    lectures: "spark",
+    notices: "megaphone"
+  }[key] || "home";
 }
 
 function facilityIconName(type) {

@@ -23,10 +23,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-admin-reservation-fit");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260704-admin-reservation-fit");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260704-admin-reservation-fit");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260704-admin-reservation-fit");
+const { state } = await import("../public/js/state.js?v=20260704-astryx-student-guide");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260704-astryx-student-guide");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260704-astryx-student-guide");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260704-astryx-student-guide");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -502,9 +502,10 @@ assert(adminMobileHeaderRule.includes("overflow: hidden;"), "admin mobile header
 assert(adminMobileHeaderRule.includes("isolation: isolate;"), "admin mobile header must isolate its blur layer behind controls");
 
 const studentTopAppbarRule = cssRule(".top-appbar");
-assert(!studentTopAppbarRule.includes("position: sticky;"), "student top appbar must not be sticky");
 assert(!studentTopAppbarRule.includes("position: fixed;"), "student top appbar must not be fixed");
-assert(studentTopAppbarRule.includes("position: relative;"), "student top appbar must scroll naturally with the page");
+assert(studentTopAppbarRule.includes("position: sticky;"), "student top appbar must use the Astryx sticky shell behavior");
+assert(studentTopAppbarRule.includes("top: 0;"), "student top appbar must stick to the top of the student scroll container");
+assert(studentTopAppbarRule.includes("background: rgba(247, 248, 251, 0.96);"), "student top appbar must use the Astryx light shell surface");
 assert(studentTopAppbarRule.includes("overflow: hidden;"), "student top appbar must clip its scroll-away blur layer");
 assert(studentTopAppbarRule.includes("isolation: isolate;"), "student top appbar must isolate its blur layer behind controls");
 assert(css.includes(".top-appbar::before,\n.admin-mobile-header::before"), "student/admin top bars must share a scroll-away blur layer");

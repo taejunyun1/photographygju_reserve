@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-admin-reservation-fit";
+import { state } from "./state.js?v=20260704-astryx-student-guide";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260704-admin-reservation-fit";
+} from "./constants.js?v=20260704-astryx-student-guide";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260704-admin-reservation-fit";
+} from "./utils.js?v=20260704-astryx-student-guide";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260704-admin-reservation-fit";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-admin-reservation-fit";
-import { noticeCard } from "./views-student.js?v=20260704-admin-reservation-fit";
+} from "./ui.js?v=20260704-astryx-student-guide";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-astryx-student-guide";
+import { noticeCard } from "./views-student.js?v=20260704-astryx-student-guide";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260704-admin-reservation-fit";
+} from "./admin-equipment.js?v=20260704-astryx-student-guide";
 
 export function adminShell() {
   return `

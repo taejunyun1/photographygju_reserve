@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260704-admin-reservation-fit";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260704-admin-reservation-fit";
-import { setupEventHandlers } from "./events.js?v=20260704-admin-reservation-fit";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260704-admin-reservation-fit";
-import { render } from "./renderer.js?v=20260704-admin-reservation-fit";
-import { escapeHtml } from "./utils.js?v=20260704-admin-reservation-fit";
+import { $app, state } from "./state.js?v=20260704-astryx-student-guide";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260704-astryx-student-guide";
+import { setupEventHandlers } from "./events.js?v=20260704-astryx-student-guide";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260704-astryx-student-guide";
+import { render } from "./renderer.js?v=20260704-astryx-student-guide";
+import { escapeHtml } from "./utils.js?v=20260704-astryx-student-guide";
 
 async function init() {
   await loadBootstrap();

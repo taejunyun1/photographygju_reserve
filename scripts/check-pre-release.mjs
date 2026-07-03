@@ -175,8 +175,8 @@ const interactionSystemTokens = [
 for (const token of interactionSystemTokens) {
   assert(styles.includes(token), `public/styles.css must expose UI consistency token ${token}`);
 }
-assert(/--component-card-radius:\s*var\(--radius-container\)/.test(styles), "card radius token must map to the Astryx container radius");
-assert(/--component-button-radius:\s*var\(--radius-element\)/.test(styles), "button radius token must map to the Astryx element radius");
+assert(/--component-card-radius:\s*8px/.test(styles), "card radius token must use the Astryx 8px radius");
+assert(/--component-button-radius:\s*8px/.test(styles), "button radius token must use the Astryx 8px radius");
 assert(/\.card\s*{[^}]*border-radius:\s*var\(--component-card-radius\)/s.test(styles), "base cards must use the shared card radius token");
 assert(/\.admin-reservation-card\s*{[^}]*border-radius:\s*var\(--component-card-radius\)/s.test(styles), "admin reservation cards must use the shared card radius token");
 assert(!/\.facility-card\s*{[^}]*border-radius:\s*18px/s.test(styles), "facility cards must not override the shared card radius with a hard-coded mobile radius");

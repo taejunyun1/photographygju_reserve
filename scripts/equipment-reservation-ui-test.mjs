@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-admin-reservation-fit");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-admin-reservation-fit");
+const { state } = await import("../public/js/state.js?v=20260704-astryx-student-guide");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-astryx-student-guide");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -48,6 +48,54 @@ function readEventSource() {
 const eventSource = readEventSource();
 const styleSource = fs.readFileSync("public/styles.css", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
+const designGuideSource = fs.readFileSync("docs/frontend-design-system.md", "utf8");
+
+function cssRule(selector, startIndex = 0) {
+  const start = styleSource.indexOf(`${selector} {`, startIndex);
+  assert(start !== -1, `${selector} CSS rule must exist`);
+  const end = styleSource.indexOf("\n}", start);
+  assert(end !== -1, `${selector} CSS rule must close`);
+  return styleSource.slice(start, end);
+}
+
+const rootRule = styleSource.slice(0, styleSource.indexOf("\n}\n\nhtml"));
+const studentShellRule = cssRule(".student-shell");
+const topAppbarRule = cssRule(".top-appbar");
+const mobileNavRule = cssRule(".mobile-nav");
+const mobileNavButtonRule = cssRule(".mobile-nav button");
+const mobileNavActiveRule = cssRule(".mobile-nav button.active");
+const facilityCardRule = cssRule(".facility-card");
+const cardRule = cssRule(".card");
+const buttonRule = cssRule(".button");
+
+assert(designGuideSource.startsWith("# GJU-reserve Astryx Design System Guide"), "frontend design guide must be redefined around the Astryx design system");
+assert(!designGuideSource.includes("Figma MCP"), "frontend design guide must remove the previous Figma/Mobile reference framing");
+assert(!designGuideSource.includes("Five Core Colors"), "frontend design guide must remove the previous five-color guide structure");
+assert(designGuideSource.includes("Astryx/GJU"), "frontend design guide must name the Astryx/GJU local wrapper contract");
+assert(designGuideSource.includes("학생단"), "frontend design guide must define how the student surface uses the same system");
+assert(designGuideSource.includes("8px"), "frontend design guide must lock cards and buttons to the Astryx 8px radius rule");
+assert(designGuideSource.includes("icon-only"), "frontend design guide must document icon-only action rules");
+assert(rootRule.includes("--gju-student-edge: clamp(16px, 5vw, 24px);"), "student shell must expose a shared Astryx edge-spacing token");
+assert(rootRule.includes("--gju-student-bottom-nav-height: 88px;"), "student shell must expose a bottom-nav height token");
+assert(rootRule.includes("--component-card-radius: 8px;"), "student and legacy cards must use the Astryx 8px radius token");
+assert(rootRule.includes("--component-button-radius: 8px;"), "buttons must use the Astryx 8px radius token");
+assert(studentShellRule.includes("padding: 18px max(var(--gju-student-edge), var(--safe-area-right)) calc(var(--gju-student-bottom-nav-height) + var(--safe-area-bottom)) max(var(--gju-student-edge), var(--safe-area-left));"), "student shell must use safe-area-aware Astryx edge spacing");
+assert(topAppbarRule.includes("position: sticky;"), "student app bar must use the sticky Astryx shell behavior");
+assert(topAppbarRule.includes("top: 0;"), "student app bar must stick to the top of the scroll container");
+assert(topAppbarRule.includes("background: rgba(247, 248, 251, 0.96);"), "student app bar must use the same light surface as the React Admin shell");
+assert(!mobileNavRule.includes("rgba(12, 15, 22"), "student bottom nav must not keep the old dark navigation treatment");
+assert(mobileNavRule.includes("background: rgba(247, 248, 251, 0.96);"), "student bottom nav must use the Astryx light surface");
+assert(mobileNavRule.includes("border-top: 1px solid var(--gju-color-border);"), "student bottom nav must use the Astryx border token");
+assert(mobileNavButtonRule.includes("color: var(--muted);"), "student bottom nav inactive items must use muted text");
+assert(mobileNavActiveRule.includes("color: var(--primary);"), "student bottom nav active item must use the primary token");
+assert(mobileNavActiveRule.includes("background: var(--primary-container);"), "student bottom nav active item must use the primary container token");
+assert(facilityCardRule.includes("border-radius: var(--component-card-radius);"), "student facility cards must use the shared Astryx card radius");
+assert(cardRule.includes("border-radius: var(--component-card-radius);"), "student cards must use the shared Astryx card radius");
+assert(buttonRule.includes("border-radius: var(--component-button-radius);"), "student buttons must use the shared Astryx button radius");
+assert(viewSource.includes("function studentNavIconName("), "student views must map navigation labels to shared icons");
+assert(viewSource.includes("student-nav-icon"), "student navigation must render visible icons through the shared icon primitive");
+assert(viewSource.includes("student-logout-button icon-only-action"), "student header logout must use an icon-only Astryx action button");
+assert(!viewSource.includes('${icon("logOut")}나가기</button>'), "student header logout must remove visible logout text");
 
 function futureDateKey(daysFromNow = 7) {
   const date = new Date();
