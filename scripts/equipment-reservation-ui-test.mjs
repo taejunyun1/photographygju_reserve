@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-admin-mobile-overflow");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-admin-mobile-overflow");
+const { state } = await import("../public/js/state.js?v=20260704-admin-reservation-fit");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-admin-reservation-fit");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {

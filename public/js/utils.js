@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { state } from "./state.js?v=20260704-admin-reservation-fit";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260704-admin-mobile-overflow";
+} from "./constants.js?v=20260704-admin-reservation-fit";
 
 export function escapeHtml(value) {
   return String(value ?? "")

@@ -160,8 +160,20 @@ for (const token of ["flex: 1 1 auto;", "min-height: 0;", "overflow-x: hidden;",
 assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin content must keep a safe right edge inset");
 assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin content must keep a safe left edge inset");
 const mobileContentContainmentRule = cssRule(designSystemCss, "  .gju-app-shell__content > *,", mobileMediaStart);
-for (const token of ["min-width: 0;", "max-width: 100%;"]) {
+for (const token of ["width: 100%;", "min-width: 0;", "max-width: 100%;"]) {
   assert(mobileContentContainmentRule.includes(token), `Mobile React Admin content containment must include ${token}`);
+}
+for (const selector of [
+  ".gju-app-shell__content .ui-search-field",
+  ".gju-app-shell__content .bulk-danger-zone",
+  ".gju-app-shell__content .admin-reservation-grid",
+  ".gju-app-shell__content .admin-reservation-card",
+  ".gju-app-shell__content .reservation-card-head",
+  ".gju-app-shell__content .property-list",
+  ".gju-app-shell__content .prop",
+  ".gju-app-shell__content .guide-card"
+]) {
+  assert(mobileContentContainmentRule.includes(selector), `Mobile React Admin content containment must cover ${selector}`);
 }
 const mobileContentClipRule = cssRule(
   designSystemCss,
@@ -169,6 +181,7 @@ const mobileContentClipRule = cssRule(
   mobileMediaStart
 );
 assert(mobileContentClipRule.includes("overflow-x: clip;"), "Mobile React Admin cards and panels must clip accidental horizontal overflow");
+assert(mobileContentClipRule.includes(".gju-app-shell__content .admin-reservation-card"), "Mobile React Admin reservation cards must clip accidental horizontal overflow");
 const mobileContentScrollableRule = cssRule(designSystemCss, "  .gju-app-shell__content .table-wrap,", mobileMediaStart);
 for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavior-x: contain;"]) {
   assert(mobileContentScrollableRule.includes(token), `Mobile React Admin tables must keep horizontal overflow inside the table region: ${token}`);
@@ -176,6 +189,12 @@ for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavi
 const mobileContentControlsRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row,", mobileMediaStart);
 for (const token of ["width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
   assert(mobileContentControlsRule.includes(token), `Mobile React Admin tab/control rows must stay within screen width: ${token}`);
+}
+const mobileContentGridRule = cssRule(designSystemCss, "  .gju-app-shell__content .grid {", mobileMediaStart);
+assert(mobileContentGridRule.includes("grid-template-columns: minmax(0, 1fr);"), "Mobile React Admin legacy grids must use a single shrinkable column inside the React shell");
+const mobileReservationTabsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-reservation-type-tabs,", mobileMediaStart);
+for (const token of ["grid-template-columns: repeat(auto-fit, minmax(0, 1fr));", "grid-auto-columns: auto;", "overflow-x: hidden;"]) {
+  assert(mobileReservationTabsRule.includes(token), `Mobile reservation tabs must fit within the screen without horizontal overflow: ${token}`);
 }
 const mobileContentTextRule = cssRule(designSystemCss, "  .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {", mobileMediaStart);
 for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-wrap: anywhere;"]) {

@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260704-admin-mobile-overflow";
-import { render, toast } from "../renderer.js?v=20260704-admin-mobile-overflow";
-import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260704-admin-mobile-overflow";
+import { state } from "../state.js?v=20260704-admin-reservation-fit";
+import { render, toast } from "../renderer.js?v=20260704-admin-reservation-fit";
+import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260704-admin-reservation-fit";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

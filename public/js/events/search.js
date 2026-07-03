@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260704-admin-mobile-overflow";
-import { loadAdminData } from "../data.js?v=20260704-admin-mobile-overflow";
-import { render } from "../renderer.js?v=20260704-admin-mobile-overflow";
-import { normalizeUnicodeText } from "../utils.js?v=20260704-admin-mobile-overflow";
-import { resetAdminPage } from "./shared.js?v=20260704-admin-mobile-overflow";
+import { state } from "../state.js?v=20260704-admin-reservation-fit";
+import { loadAdminData } from "../data.js?v=20260704-admin-reservation-fit";
+import { render } from "../renderer.js?v=20260704-admin-reservation-fit";
+import { normalizeUnicodeText } from "../utils.js?v=20260704-admin-reservation-fit";
+import { resetAdminPage } from "./shared.js?v=20260704-admin-reservation-fit";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

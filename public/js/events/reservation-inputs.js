@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260704-admin-mobile-overflow";
+import { state } from "../state.js?v=20260704-admin-reservation-fit";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260704-admin-mobile-overflow";
+} from "../admin-equipment.js?v=20260704-admin-reservation-fit";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260704-admin-mobile-overflow";
+} from "./shared.js?v=20260704-admin-reservation-fit";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

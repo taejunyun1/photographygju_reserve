@@ -23,10 +23,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-admin-mobile-overflow");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260704-admin-mobile-overflow");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260704-admin-mobile-overflow");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260704-admin-mobile-overflow");
+const { state } = await import("../public/js/state.js?v=20260704-admin-reservation-fit");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260704-admin-reservation-fit");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260704-admin-reservation-fit");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260704-admin-reservation-fit");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -245,6 +245,8 @@ assert(reservationsView.includes("반납완료"), "equipment reservation filter/
 assert(reservationsView.includes("대여취소"), "equipment reservation filter/action must include cancelled status");
 assert(reservationsView.includes("2026년 1학기"), "reservation management must render semester filter labels");
 assert(reservationsView.includes('data-admin-reservation-semester="2026-S1"'), "reservation semester filter must expose data attribute");
+assert(reservationsView.includes("admin-reservation-type-tabs"), "reservation type filters must expose a mobile fitting class");
+assert(reservationsView.includes("admin-reservation-status-tabs"), "reservation status filters must expose a mobile fitting class");
 assert(reservationsView.includes('data-admin-bulk-delete="reservations:filtered"'), "reservation management must expose filtered bulk delete");
 assert(reservationsView.includes('data-admin-bulk-delete="reservations:all"'), "reservation management must expose guarded full delete");
 assert(!reservationsView.includes('data-admin-bulk-delete="users'), "student approval must not expose user bulk delete");

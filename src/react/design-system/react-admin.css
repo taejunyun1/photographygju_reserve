@@ -449,8 +449,15 @@
   .gju-app-shell__content .grid,
   .gju-app-shell__content .card,
   .gju-app-shell__content .ui-card,
+  .gju-app-shell__content .ui-search-field,
   .gju-app-shell__content .list-control-panel,
   .gju-app-shell__content .pagination,
+  .gju-app-shell__content .bulk-danger-zone,
+  .gju-app-shell__content .admin-reservation-grid,
+  .gju-app-shell__content .admin-reservation-card,
+  .gju-app-shell__content .reservation-card-head,
+  .gju-app-shell__content .property-list,
+  .gju-app-shell__content .prop,
   .gju-app-shell__content .admin-user-action-panel,
   .gju-app-shell__content .admin-user-action-group,
   .gju-app-shell__content .admin-user-warning-memo,
@@ -461,7 +468,9 @@
   .gju-app-shell__content .button-row,
   .gju-app-shell__content .admin-settings-card,
   .gju-app-shell__content .blocked-list,
-  .gju-app-shell__content .blocked-item {
+  .gju-app-shell__content .blocked-item,
+  .gju-app-shell__content .guide-card {
+    width: 100%;
     min-width: 0;
     max-width: 100%;
   }
@@ -473,6 +482,7 @@
   .gju-app-shell__content .ui-card,
   .gju-app-shell__content .list-control-panel,
   .gju-app-shell__content .admin-settings-card,
+  .gju-app-shell__content .admin-reservation-card,
   .gju-app-shell__content .admin-user-action-panel,
   .gju-app-shell__content .equipment-bulk-bar {
     overflow-x: clip;
@@ -504,6 +514,17 @@
   .gju-app-shell__content .admin-inner-tabs .tab-button {
     min-width: 0;
     max-width: 100%;
+  }
+
+  .gju-app-shell__content .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gju-app-shell__content .admin-reservation-type-tabs,
+  .gju-app-shell__content .admin-reservation-status-tabs {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    overflow-x: hidden;
   }
 
   .gju-app-shell__content .bulk-actions,

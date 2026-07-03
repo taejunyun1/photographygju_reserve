@@ -84,8 +84,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-admin-mobile-overflow");
-const { render } = await import("../public/js/renderer.js?v=20260704-admin-mobile-overflow");
+const { state } = await import("../public/js/state.js?v=20260704-admin-reservation-fit");
+const { render } = await import("../public/js/renderer.js?v=20260704-admin-reservation-fit");
 
 state.bootstrap = { settings: { blockedSchedules: [] } };
 state.user = { id: "admin1", role: "admin", name: "관리자", email: "admin@gju.local" };

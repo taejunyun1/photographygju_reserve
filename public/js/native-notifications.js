@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260704-admin-mobile-overflow";
-import { state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-admin-reservation-fit";
+import { state } from "./state.js?v=20260704-admin-reservation-fit";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

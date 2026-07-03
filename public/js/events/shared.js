@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260704-admin-mobile-overflow";
-import { logout } from "../actions.js?v=20260704-admin-mobile-overflow";
-import { render, toast } from "../renderer.js?v=20260704-admin-mobile-overflow";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-admin-mobile-overflow";
+import { state } from "../state.js?v=20260704-admin-reservation-fit";
+import { logout } from "../actions.js?v=20260704-admin-reservation-fit";
+import { render, toast } from "../renderer.js?v=20260704-admin-reservation-fit";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-admin-reservation-fit";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260704-admin-mobile-overflow";
+} from "../utils.js?v=20260704-admin-reservation-fit";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260704-admin-mobile-overflow";
+} from "./scroll-state.js?v=20260704-admin-reservation-fit";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

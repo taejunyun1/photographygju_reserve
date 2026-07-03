@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-admin-mobile-overflow";
+import { state } from "./state.js?v=20260704-admin-reservation-fit";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260704-admin-mobile-overflow";
+} from "./constants.js?v=20260704-admin-reservation-fit";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260704-admin-mobile-overflow";
+} from "./utils.js?v=20260704-admin-reservation-fit";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260704-admin-mobile-overflow";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-admin-mobile-overflow";
-import { noticeCard } from "./views-student.js?v=20260704-admin-mobile-overflow";
+} from "./ui.js?v=20260704-admin-reservation-fit";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-admin-reservation-fit";
+import { noticeCard } from "./views-student.js?v=20260704-admin-reservation-fit";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260704-admin-mobile-overflow";
+} from "./admin-equipment.js?v=20260704-admin-reservation-fit";
 
 export function adminShell() {
   return `
@@ -739,13 +739,13 @@ export function adminReservationsView() {
         ${tabs(reservationTabs.map(([key, label]) => ({
           key,
           label
-        })), { active: currentReservationTab, dataset: "admin-reservation-tab", className: "", ariaLabel: "예약 종류 필터" })}
+        })), { active: currentReservationTab, dataset: "admin-reservation-tab", className: "admin-reservation-type-tabs", ariaLabel: "예약 종류 필터" })}
       </div>
       ${!query && isEquipmentTab ? `
         ${tabs(equipmentStatusFilters.map(([key, label]) => ({
           key,
           label
-        })), { active: currentEquipmentStatusFilter, dataset: "admin-equipment-reservation-status", ariaLabel: "기자재 예약 상태 필터" })}
+        })), { active: currentEquipmentStatusFilter, dataset: "admin-equipment-reservation-status", className: "admin-reservation-status-tabs", ariaLabel: "기자재 예약 상태 필터" })}
       ` : ""}
       ${bulkDeletePanel("reservations", reservations.length, reservationTotal, reservationBulkFilterLabel(query, reservations.length), { filteredEnabled: activeReservationBulkFilter(query) })}
       ${adminPageScopeNote(state.adminReservationsPage, state.adminReservations.length, reservations.length, query)}

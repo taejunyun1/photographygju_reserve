@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260704-admin-mobile-overflow";
-import { api } from "./api.js?v=20260704-admin-mobile-overflow";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-admin-mobile-overflow";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-admin-mobile-overflow";
+import { state } from "./state.js?v=20260704-admin-reservation-fit";
+import { api } from "./api.js?v=20260704-admin-reservation-fit";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-admin-reservation-fit";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-admin-reservation-fit";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);
