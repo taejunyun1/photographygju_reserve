@@ -162,12 +162,32 @@ const legacyFallbackMarkup = renderToStaticMarkup(
       render() {}
     },
     legacyRenderAdminContent: () =>
-      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-mobile-header">mobile header</header><header class="admin-header">desktop header</header><section class="legacy-fragment">legacy report body</section></section><nav class="admin-mobile-nav">legacy bottom nav</nav></main>'
+      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-mobile-header">mobile header</header><header class="admin-header">desktop header</header><section class="legacy-fragment"><h2>legacy report body</h2><section class="nested-legacy-section"><p>nested section body</p></section><div class="after-nested-content">after nested content</div></section><p class="tail-content">tail content</p></section><nav class="admin-mobile-nav">legacy bottom nav</nav></main>'
   })
 );
 assert(legacyFallbackMarkup.includes("gju-legacy-admin-panel"), "Non-dashboard admin views must render the legacy panel fallback");
 assert(legacyFallbackMarkup.includes("legacy report body"), "Legacy fallback content must render inside the React Admin shell");
+assert(legacyFallbackMarkup.includes("nested section body"), "Legacy fallback must preserve nested sections inside admin-main content");
+assert(legacyFallbackMarkup.includes("after nested content"), "Legacy fallback must preserve content that appears after nested sections");
 assert(!legacyFallbackMarkup.includes('class="admin-shell"'), "Legacy fallback must not re-render the old admin shell inside React Admin");
 assert(!legacyFallbackMarkup.includes('class="admin-mobile-nav"'), "Legacy fallback must not duplicate the old mobile nav inside React Admin");
+assert(!legacyFallbackMarkup.includes("legacy nav"), "Legacy fallback must not duplicate the old sidebar chrome");
+assert(!legacyFallbackMarkup.includes("mobile header"), "Legacy fallback must not duplicate the old mobile header chrome");
+assert(!legacyFallbackMarkup.includes("desktop header"), "Legacy fallback must not duplicate the old desktop header chrome");
+
+const standaloneLegacyMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: { adminView: "reports", user: { role: "admin", name: "admin" }, summary: {} },
+    actions: {
+      setAdminView() {},
+      refreshAdminData() {},
+      logout() {},
+      render() {}
+    },
+    legacyRenderAdminContent: () => '<section class="standalone-legacy"><span>plain fallback body</span></section>'
+  })
+);
+assert(standaloneLegacyMarkup.includes('class="standalone-legacy"'), "Legacy fallback must leave standalone markup untouched when no legacy shell is present");
+assert(standaloneLegacyMarkup.includes("plain fallback body"), "Legacy fallback must preserve standalone markup content");
 
 console.log("React Admin render checks passed.");
