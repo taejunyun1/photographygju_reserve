@@ -149,6 +149,35 @@ assert(/--radius-lg:\s*var\(--radius-container\)/.test(styles), "legacy --radius
 assert(/--control-height-sm:\s*var\(--size-element-lg\)/.test(styles), "compact controls must use the Astryx large element size");
 ok("Astryx design token bridge is configured");
 
+const interactionSystemTokens = [
+  "--component-card-radius",
+  "--component-card-padding",
+  "--component-card-border",
+  "--component-card-background",
+  "--component-card-shadow",
+  "--component-card-hover-shadow",
+  "--component-button-radius",
+  "--component-button-border",
+  "--component-button-background",
+  "--component-button-shadow",
+  "--component-button-hover-shadow",
+  "--component-button-gap",
+  "--motion-interactive"
+];
+for (const token of interactionSystemTokens) {
+  assert(styles.includes(token), `public/styles.css must expose UI consistency token ${token}`);
+}
+assert(/--component-card-radius:\s*var\(--radius-container\)/.test(styles), "card radius token must map to the Astryx container radius");
+assert(/--component-button-radius:\s*var\(--radius-element\)/.test(styles), "button radius token must map to the Astryx element radius");
+assert(/\.card\s*{[^}]*border-radius:\s*var\(--component-card-radius\)/s.test(styles), "base cards must use the shared card radius token");
+assert(/\.admin-reservation-card\s*{[^}]*border-radius:\s*var\(--component-card-radius\)/s.test(styles), "admin reservation cards must use the shared card radius token");
+assert(!/\.facility-card\s*{[^}]*border-radius:\s*18px/s.test(styles), "facility cards must not override the shared card radius with a hard-coded mobile radius");
+assert(!/\.facility-card\s*{[^}]*box-shadow:\s*var\(--shadow-glass\)/s.test(styles), "facility cards must not override the shared card shadow with the legacy glass shadow");
+assert(/\.button\s*{[^}]*border-radius:\s*var\(--component-button-radius\)/s.test(styles), "base buttons must use the shared button radius token");
+assert(/\.segmented button,\s*\.tab-button\s*{[^}]*border-radius:\s*var\(--component-button-radius\)/s.test(styles), "tab buttons must use the shared button radius token");
+assert(/\.status-button\s*{[^}]*border-radius:\s*var\(--component-button-radius\)/s.test(styles), "status buttons must use the shared button radius token");
+ok("card and button consistency tokens are configured");
+
 assert(read("public/config.js").includes('window.GJU_API_BASE = ""'), "public/config.js must keep same-origin API for web deploy");
 const distConfig = readIfExists("dist/config.js");
 if (distConfig) {

@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260703-astryx-token-bridge";
-import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { statusLabel, typeLabel } from "./constants.js?v=20260703-ui-consistency";
+import { state } from "./state.js?v=20260703-ui-consistency";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

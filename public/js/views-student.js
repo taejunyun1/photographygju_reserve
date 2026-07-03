@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260703-astryx-token-bridge";
-import { statusLabel, typeLabel } from "./constants.js?v=20260703-astryx-token-bridge";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-astryx-token-bridge";
+import { state } from "./state.js?v=20260703-ui-consistency";
+import { statusLabel, typeLabel } from "./constants.js?v=20260703-ui-consistency";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-ui-consistency";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260703-astryx-token-bridge";
+} from "./utils.js?v=20260703-ui-consistency";
 import {
   actionRow,
   card,
@@ -50,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-astryx-token-bridge";
+} from "./ui.js?v=20260703-ui-consistency";
 
 export function authView() {
   const isLogin = state.authMode === "login";

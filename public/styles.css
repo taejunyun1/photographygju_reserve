@@ -163,6 +163,25 @@
   --shadow: var(--shadow-low);
   --shadow-strong: var(--shadow-high);
   --shadow-glass: var(--shadow-med), inset 0 1px 0 var(--glass-highlight);
+  --motion-interactive: var(--duration-fast) ease;
+  --component-card-radius: var(--radius-container);
+  --component-card-padding: var(--spacing-4);
+  --component-card-gap: var(--spacing-3);
+  --component-card-border: var(--glass-border);
+  --component-card-background: var(--glass-surface-strong);
+  --component-card-background-soft: var(--glass-surface-soft);
+  --component-card-shadow: var(--shadow-glass);
+  --component-card-hover-shadow: var(--shadow-strong);
+  --component-card-backdrop: var(--blur);
+  --component-button-radius: var(--radius-element);
+  --component-button-padding-x: var(--spacing-3);
+  --component-button-padding-y: var(--spacing-2);
+  --component-button-gap: var(--spacing-2);
+  --component-button-border: var(--line);
+  --component-button-background: var(--surface-lowest);
+  --component-button-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+  --component-button-hover-shadow: 0 2px 6px rgba(16, 24, 40, 0.12);
+  --component-button-active-transform: scale(0.98);
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -329,25 +348,25 @@ a {
   border: 0;
   color: var(--muted);
   background: transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--component-button-radius);
   padding: 9px 12px;
   min-width: 0;
   max-width: 100%;
   min-height: var(--control-height-sm);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
   line-height: 18px;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
-  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition: background var(--motion-interactive), color var(--motion-interactive), box-shadow var(--motion-interactive), border-color var(--motion-interactive);
 }
 
 .segmented button.active,
 .tab-button.active {
   background: var(--glass-tint-blue);
   color: var(--on-primary-container);
-  box-shadow: inset 0 0 0 1px var(--control-active-border);
+  box-shadow: var(--shadow-inset-selected);
 }
 
 .field {
@@ -458,15 +477,15 @@ a {
 }
 
 .button {
-  border: 1px solid var(--line);
-  background: var(--surface-lowest);
+  border: 1px solid var(--component-button-border);
+  background: var(--component-button-background);
   color: var(--text);
-  border-radius: var(--radius-sm);
-  padding: var(--control-pad-y) var(--control-pad-x);
+  border-radius: var(--component-button-radius);
+  padding: var(--component-button-padding-y) var(--component-button-padding-x);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--component-button-gap);
   min-width: 0;
   max-width: 100%;
   min-height: var(--control-height);
@@ -477,12 +496,12 @@ a {
   text-decoration: none;
   white-space: normal;
   overflow-wrap: anywhere;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
-  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  box-shadow: var(--component-button-shadow);
+  transition: transform var(--motion-interactive), border-color var(--motion-interactive), background var(--motion-interactive), color var(--motion-interactive), box-shadow var(--motion-interactive);
 }
 
 .button:active {
-  transform: scale(0.98);
+  transform: var(--component-button-active-transform);
 }
 
 .button:focus-visible,
@@ -560,7 +579,7 @@ button:disabled,
   .button:hover:not(:disabled) {
     border-color: var(--primary);
     background: var(--primary-container);
-    box-shadow: 0 2px 6px rgba(16, 24, 40, 0.12);
+    box-shadow: var(--component-button-hover-shadow);
   }
 
   .button.primary:hover:not(:disabled) {
@@ -841,7 +860,7 @@ button:disabled,
 
 .desktop-nav button {
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--component-button-radius);
   background: transparent;
   color: var(--muted);
   padding: 9px 12px;
@@ -856,7 +875,7 @@ button:disabled,
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
-  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition: background var(--motion-interactive), color var(--motion-interactive), box-shadow var(--motion-interactive);
 }
 
 .desktop-nav button.active {
@@ -946,18 +965,18 @@ button:disabled,
   padding: 0;
   overflow: hidden;
   text-align: left;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-surface-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  transition: transform var(--duration-fast) ease, border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  border: 1px solid var(--component-card-border);
+  background: var(--component-card-background);
+  border-radius: var(--component-card-radius);
+  box-shadow: var(--component-card-shadow);
+  -webkit-backdrop-filter: var(--component-card-backdrop);
+  backdrop-filter: var(--component-card-backdrop);
+  transition: transform var(--motion-interactive), border-color var(--motion-interactive), box-shadow var(--motion-interactive);
 }
 
 .facility-card:hover {
   border-color: var(--primary);
-  box-shadow: var(--shadow-strong);
+  box-shadow: var(--component-card-hover-shadow);
 }
 
 .facility-card:active {
@@ -1089,19 +1108,19 @@ button:disabled,
 }
 
 .card {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-surface-strong);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  box-shadow: var(--shadow-glass);
+  border: 1px solid var(--component-card-border);
+  background: var(--component-card-background);
+  border-radius: var(--component-card-radius);
+  padding: var(--component-card-padding);
+  box-shadow: var(--component-card-shadow);
   min-width: 0;
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--component-card-backdrop);
+  backdrop-filter: var(--component-card-backdrop);
 }
 
 .ui-card {
   display: grid;
-  gap: 12px;
+  gap: var(--component-card-gap);
 }
 
 .ui-card-compact {
@@ -1195,13 +1214,13 @@ button:disabled,
 
 .reservation-panel,
 .calendar-card {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-surface-strong);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-glass);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
+  border: 1px solid var(--component-card-border);
+  background: var(--component-card-background);
+  border-radius: var(--component-card-radius);
+  padding: var(--component-card-padding);
+  box-shadow: var(--component-card-shadow);
+  -webkit-backdrop-filter: var(--component-card-backdrop);
+  backdrop-filter: var(--component-card-backdrop);
 }
 
 .reservation-panel {
@@ -1659,10 +1678,10 @@ button:disabled,
 .choice-card {
   min-width: 0;
   max-width: 100%;
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid var(--component-card-border);
+  background: var(--component-card-background);
   color: var(--text);
-  border-radius: 16px;
+  border-radius: var(--component-card-radius);
   padding: 11px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1712,7 +1731,7 @@ button:disabled,
 
 .choice-card.is-unavailable {
   border-color: var(--line-soft);
-  background: rgba(238, 244, 251, 0.74);
+  background: var(--component-card-background-soft);
   color: var(--muted);
 }
 
@@ -2851,11 +2870,11 @@ details.inquiry-equipment-step {
 
 .notice-strip-row {
   min-width: 0;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--glass-surface-strong);
+  border: 1px solid var(--component-card-border);
+  border-radius: var(--component-card-radius);
+  background: var(--component-card-background);
   padding: 12px;
-  box-shadow: none;
+  box-shadow: var(--component-button-shadow);
 }
 
 .notice-preview {
@@ -3739,15 +3758,16 @@ tr.selected td {
 
 .status-button {
   min-height: 32px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  background: var(--glass-surface-strong);
+  border: 1px solid var(--component-button-border);
+  border-radius: var(--component-button-radius);
+  background: var(--component-button-background);
   color: var(--text);
   padding: 6px 9px;
   font-size: 12px;
   line-height: 16px;
   font-weight: 900;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  box-shadow: var(--component-button-shadow);
+  transition: background var(--motion-interactive), border-color var(--motion-interactive), color var(--motion-interactive), box-shadow var(--motion-interactive);
 }
 
 .status-button.active {
@@ -4160,15 +4180,15 @@ tr.selected td {
 }
 
 .admin-reservation-card {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-surface-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
-  padding: 16px;
+  border: 1px solid var(--component-card-border);
+  background: var(--component-card-background);
+  border-radius: var(--component-card-radius);
+  box-shadow: var(--component-card-shadow);
+  padding: var(--component-card-padding);
   display: grid;
-  gap: 12px;
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
+  gap: var(--component-card-gap);
+  -webkit-backdrop-filter: var(--component-card-backdrop);
+  backdrop-filter: var(--component-card-backdrop);
 }
 
 .reservation-summary-card {
@@ -4291,12 +4311,12 @@ tr.selected td {
 .admin-lecture-item-card {
   display: grid;
   overflow: hidden;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  background: var(--glass-surface-strong);
-  box-shadow: var(--shadow-glass);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
+  border: 1px solid var(--component-card-border);
+  border-radius: var(--component-card-radius);
+  background: var(--component-card-background);
+  box-shadow: var(--component-card-shadow);
+  -webkit-backdrop-filter: var(--component-card-backdrop);
+  backdrop-filter: var(--component-card-backdrop);
 }
 
 .admin-lecture-item-main {
@@ -5181,8 +5201,8 @@ tr.selected td {
     display: grid;
     align-content: space-between;
     padding: 12px;
-    border-radius: 18px;
-    box-shadow: var(--shadow-glass);
+    border-radius: var(--component-card-radius);
+    box-shadow: var(--component-card-shadow);
   }
 
   .facility-visual {
@@ -5253,9 +5273,9 @@ tr.selected td {
   .reservation-summary-card,
   .lecture-card,
   .report-card {
-    padding: 14px;
-    border-radius: 18px;
-    box-shadow: var(--shadow-glass);
+    padding: calc(var(--component-card-padding) - 2px);
+    border-radius: var(--component-card-radius);
+    box-shadow: var(--component-card-shadow);
   }
 
   .lecture-card {
@@ -5284,7 +5304,7 @@ tr.selected td {
 
   .button {
     min-height: 44px;
-    border-radius: 14px;
+    border-radius: var(--component-button-radius);
     font-size: 13px;
     line-height: 17px;
   }

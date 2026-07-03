@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
-import { loadAdminData } from "../data.js?v=20260703-astryx-token-bridge";
-import { render } from "../renderer.js?v=20260703-astryx-token-bridge";
-import { normalizeUnicodeText } from "../utils.js?v=20260703-astryx-token-bridge";
-import { resetAdminPage } from "./shared.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
+import { loadAdminData } from "../data.js?v=20260703-ui-consistency";
+import { render } from "../renderer.js?v=20260703-ui-consistency";
+import { normalizeUnicodeText } from "../utils.js?v=20260703-ui-consistency";
+import { resetAdminPage } from "./shared.js?v=20260703-ui-consistency";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

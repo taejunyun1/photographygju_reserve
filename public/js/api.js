@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { state } from "./state.js?v=20260703-ui-consistency";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

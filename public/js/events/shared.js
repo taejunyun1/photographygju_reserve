@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
-import { render, toast } from "../renderer.js?v=20260703-astryx-token-bridge";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
+import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260703-ui-consistency";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -11,13 +11,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260703-astryx-token-bridge";
+} from "../utils.js?v=20260703-ui-consistency";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260703-astryx-token-bridge";
+} from "./scroll-state.js?v=20260703-ui-consistency";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

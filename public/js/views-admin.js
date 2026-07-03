@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-astryx-token-bridge";
+import { state } from "./state.js?v=20260703-ui-consistency";
 import {
   adminNavItems,
   equipmentReservationStatuses,
@@ -10,7 +10,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260703-astryx-token-bridge";
+} from "./constants.js?v=20260703-ui-consistency";
 import {
   addMonths,
   adminGuide,
@@ -28,7 +28,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260703-astryx-token-bridge";
+} from "./utils.js?v=20260703-ui-consistency";
 import {
   card,
   emptyState,
@@ -38,15 +38,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-astryx-token-bridge";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-astryx-token-bridge";
-import { noticeCard } from "./views-student.js?v=20260703-astryx-token-bridge";
+} from "./ui.js?v=20260703-ui-consistency";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-ui-consistency";
+import { noticeCard } from "./views-student.js?v=20260703-ui-consistency";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260703-astryx-token-bridge";
+} from "./admin-equipment.js?v=20260703-ui-consistency";
 
 export function adminShell() {
   return `

@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
-import { api } from "../api.js?v=20260703-astryx-token-bridge";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
+import { api } from "../api.js?v=20260703-ui-consistency";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-ui-consistency";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260703-astryx-token-bridge";
-import { render, toast } from "../renderer.js?v=20260703-astryx-token-bridge";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-astryx-token-bridge";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-astryx-token-bridge";
+} from "../actions.js?v=20260703-ui-consistency";
+import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-ui-consistency";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-ui-consistency";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

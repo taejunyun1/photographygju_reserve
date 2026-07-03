@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-astryx-token-bridge";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-ui-consistency";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

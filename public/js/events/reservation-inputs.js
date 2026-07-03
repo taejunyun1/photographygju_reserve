@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260703-astryx-token-bridge";
+} from "../admin-equipment.js?v=20260703-ui-consistency";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260703-astryx-token-bridge";
+} from "./shared.js?v=20260703-ui-consistency";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

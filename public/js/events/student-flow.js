@@ -1,21 +1,21 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
-import { api } from "../api.js?v=20260703-astryx-token-bridge";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260703-astryx-token-bridge";
-import { logout, openReport } from "../actions.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
+import { api } from "../api.js?v=20260703-ui-consistency";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260703-ui-consistency";
+import { logout, openReport } from "../actions.js?v=20260703-ui-consistency";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260703-astryx-token-bridge";
-import { render, toast } from "../renderer.js?v=20260703-astryx-token-bridge";
-import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260703-astryx-token-bridge";
+} from "../native-notifications.js?v=20260703-ui-consistency";
+import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260703-ui-consistency";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260703-astryx-token-bridge";
+} from "./shared.js?v=20260703-ui-consistency";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

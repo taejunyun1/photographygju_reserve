@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-astryx-token-bridge");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-astryx-token-bridge");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-astryx-token-bridge");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-astryx-token-bridge");
+const { state } = await import("../public/js/state.js?v=20260703-ui-consistency");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-ui-consistency");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-ui-consistency");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-ui-consistency");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -258,7 +258,8 @@ assert(!css.includes(".admin-refresh-indicator"), "pull refresh indicator styles
 assert(css.includes(".admin-type-share i.share-step-20"), "admin type share bars must expose CSP-safe percentage steps");
 assert(!viewsSource.includes('style="'), "admin views must not render inline style attributes under strict CSP");
 assert(css.includes("width: 6px;\n  height: 6px;"), "admin lecture status dot must stay visually small");
-assert(buttonRule.includes("box-shadow: 0 1px 2px"), "button must use one clear surface shadow");
+assert(css.includes("--component-button-shadow: 0 1px 2px"), "button surface shadow token must remain visually restrained");
+assert(buttonRule.includes("box-shadow: var(--component-button-shadow)"), "button must use one shared surface shadow token");
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
 assert(!primaryButtonRule.includes("inset"), "primary button must not use an inset highlight that reads as a double button");
 

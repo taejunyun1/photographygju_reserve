@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260703-astryx-token-bridge";
-import { api } from "../api.js?v=20260703-astryx-token-bridge";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-astryx-token-bridge";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-astryx-token-bridge";
+import { state } from "../state.js?v=20260703-ui-consistency";
+import { api } from "../api.js?v=20260703-ui-consistency";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260703-ui-consistency";
+import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260703-ui-consistency";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260703-astryx-token-bridge";
-import { render, toast } from "../renderer.js?v=20260703-astryx-token-bridge";
-import { formData, parseCsv } from "../utils.js?v=20260703-astryx-token-bridge";
+} from "../admin-equipment.js?v=20260703-ui-consistency";
+import { render, toast } from "../renderer.js?v=20260703-ui-consistency";
+import { formData, parseCsv } from "../utils.js?v=20260703-ui-consistency";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260703-astryx-token-bridge";
+} from "./shared.js?v=20260703-ui-consistency";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

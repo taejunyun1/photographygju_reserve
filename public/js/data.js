@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260703-astryx-token-bridge";
-import { api } from "./api.js?v=20260703-astryx-token-bridge";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260703-astryx-token-bridge";
+import { state } from "./state.js?v=20260703-ui-consistency";
+import { api } from "./api.js?v=20260703-ui-consistency";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260703-ui-consistency";
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");

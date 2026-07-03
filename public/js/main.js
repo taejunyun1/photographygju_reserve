@@ -1,9 +1,9 @@
-import { $app, state } from "./state.js?v=20260703-astryx-token-bridge";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-astryx-token-bridge";
-import { setupEventHandlers } from "./events.js?v=20260703-astryx-token-bridge";
-import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-astryx-token-bridge";
-import { render } from "./renderer.js?v=20260703-astryx-token-bridge";
-import { escapeHtml } from "./utils.js?v=20260703-astryx-token-bridge";
+import { $app, state } from "./state.js?v=20260703-ui-consistency";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260703-ui-consistency";
+import { setupEventHandlers } from "./events.js?v=20260703-ui-consistency";
+import { refreshNativeNotificationState, setupNativeNotificationListeners, syncNativeReservationNotifications } from "./native-notifications.js?v=20260703-ui-consistency";
+import { render } from "./renderer.js?v=20260703-ui-consistency";
+import { escapeHtml } from "./utils.js?v=20260703-ui-consistency";
 
 async function init() {
   await loadBootstrap();
