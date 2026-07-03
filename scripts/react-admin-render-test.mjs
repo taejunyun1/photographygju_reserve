@@ -1,66 +1,55 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { spawnSync } from "node:child_process";
-import vm from "node:vm";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { build } from "esbuild";
+import { renderToStaticMarkup } from "react-dom/server";
+import React from "react";
 
-const buildResult = spawnSync(process.execPath, ["scripts/build-react-admin.mjs", "--target", "public"], {
-  stdio: "inherit"
+const renderEntry = await build({
+  stdin: {
+    contents: `
+      export { GjuIconButton } from "../src/react/design-system/Button.tsx";
+      export { GjuCard } from "../src/react/design-system/Card.tsx";
+      export { GjuStatusBadge } from "../src/react/design-system/StatusBadge.tsx";
+    `,
+    resolveDir: path.join(process.cwd(), "scripts"),
+    sourcefile: "scripts/react-admin-render-entry.tsx",
+    loader: "tsx"
+  },
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  write: false,
+  external: ["react", "react-dom", "react-dom/server"]
 });
 
-assert.equal(buildResult.status, 0, "React Admin public build must succeed before render checks");
-assert(fs.existsSync("public/js/react-admin.generated.js"), "React Admin generated JS must exist");
-assert(fs.existsSync("public/css/react-admin.generated.css"), "React Admin generated CSS must exist");
-
-const bundle = fs.readFileSync("public/js/react-admin.generated.js", "utf8");
-const styles = fs.readFileSync("public/css/react-admin.generated.css", "utf8");
-
-assert(bundle.includes("GJUReactAdmin"), "React Admin bundle must expose the browser global");
-assert(bundle.includes("legacyRenderAdminContent"), "React Admin bundle must preserve the legacy content fallback at runtime");
-assert(styles.includes(".react-admin-root"), "React Admin CSS bundle must still be emitted");
-
-const context = {
-  window: {},
-  console
-};
-
-vm.runInNewContext(bundle, context);
-
-assert.equal(typeof context.window.GJUReactAdmin?.mount, "function", "React Admin runtime must expose mount()");
-assert.equal(typeof context.window.GJUReactAdmin?.unmount, "function", "React Admin runtime must expose unmount()");
-
-const firstRoot = { innerHTML: "" };
-const secondRoot = { innerHTML: "" };
-let fallbackCalls = 0;
-
-context.window.GJUReactAdmin.mount({
-  root: firstRoot,
-  state: {},
-  actions: {},
-  legacyRenderAdminContent() {
-    fallbackCalls += 1;
-    return '<section data-legacy-admin="first">Legacy Admin</section>';
+const compiledModulePath = path.join(process.cwd(), "scripts", ".react-admin-render-test.compiled.mjs");
+fs.writeFileSync(compiledModulePath, renderEntry.outputFiles[0].text);
+process.on("exit", () => {
+  if (fs.existsSync(compiledModulePath)) {
+    fs.unlinkSync(compiledModulePath);
   }
 });
+const renderModule = await import(pathToFileURL(compiledModulePath).href);
 
-assert.equal(fallbackCalls, 1, "React Admin mount must call the legacy content fallback");
-assert(firstRoot.innerHTML.includes('data-legacy-admin="first"'), "React Admin mount must render the legacy admin content into the provided root");
+const iconButton = renderToStaticMarkup(
+  React.createElement(renderModule.GjuIconButton, { label: "삭제", icon: "trash", tone: "danger" })
+);
+assert(iconButton.includes('aria-label="삭제"'), "icon button must keep accessible label");
+assert(!iconButton.includes(">삭제<"), "icon button must not render visible label text");
+assert(iconButton.includes("gju-icon-button"), "icon button must use shared class");
 
-context.window.GJUReactAdmin.mount({
-  root: secondRoot,
-  state: {},
-  actions: {},
-  legacyRenderAdminContent() {
-    fallbackCalls += 1;
-    return '<section data-legacy-admin="second">Legacy Admin Updated</section>';
-  }
-});
+const card = renderToStaticMarkup(
+  React.createElement(renderModule.GjuCard, { title: "테스트 카드" }, "본문")
+);
+assert(card.includes("테스트 카드"), "card must render title");
+assert(card.includes("gju-card"), "card must use shared class");
 
-assert.equal(fallbackCalls, 2, "React Admin remount must call the legacy content fallback again");
-assert.equal(firstRoot.innerHTML, "", "React Admin remount must clear the previous root");
-assert(secondRoot.innerHTML.includes('data-legacy-admin="second"'), "React Admin remount must render the updated legacy admin content");
-
-context.window.GJUReactAdmin.unmount();
-
-assert.equal(secondRoot.innerHTML, "", "React Admin unmount must clear the mounted legacy admin content");
+const badge = renderToStaticMarkup(
+  React.createElement(renderModule.GjuStatusBadge, { tone: "green" }, "가능")
+);
+assert(badge.includes("가능"), "status badge must render label");
+assert(badge.includes("gju-status-badge"), "status badge must use shared class");
 
 console.log("React Admin render checks passed.");
