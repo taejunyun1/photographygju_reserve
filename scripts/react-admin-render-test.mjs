@@ -71,12 +71,17 @@ const dialogMarkup = renderToStaticMarkup(
   React.createElement(
     React.Fragment,
     null,
-    React.createElement(renderModule.GjuDialog, { open: true, title: "첫 번째 확인" }),
+    React.createElement(renderModule.GjuDialog, { open: true, title: "첫 번째 확인", onClose() {} }, "본문"),
     React.createElement(renderModule.GjuDialog, { open: true, title: "두 번째 확인" })
   )
 );
 assert(dialogMarkup.includes("gju-dialog"), "dialog must use shared class");
+assert(dialogMarkup.includes("gju-motion-dialog"), "dialog must use motion class");
 assert(dialogMarkup.includes("astryx-dialog"), "dialog wrapper must adapt Astryx Dialog");
+assert(dialogMarkup.includes('role="dialog"'), "dialog must expose dialog role");
+assert(dialogMarkup.includes('aria-modal="true"'), "dialog must expose modal semantics");
+assert(dialogMarkup.includes('aria-label="닫기"'), "dialog must render a close button");
+assert(dialogMarkup.includes(">본문<"), "dialog must render children as body content");
 const dialogIds = [...dialogMarkup.matchAll(/id="([^"]+)"/g)]
   .map((match) => match[1])
   .filter((id) => id.includes("gju-dialog-title"));
@@ -110,8 +115,11 @@ const toast = renderToStaticMarkup(
   React.createElement(renderModule.GjuToast, { message: "저장되었습니다." })
 );
 assert(toast.includes("gju-toast"), "toast must use shared class");
+assert(toast.includes("gju-motion-toast"), "toast must use motion class");
 assert(toast.includes("astryx-toast"), "toast wrapper must adapt Astryx Toast");
 assert(toast.includes("저장되었습니다."), "toast must render the message");
+assert(toast.includes('role="status"'), "toast must expose status role");
+assert(toast.includes('aria-live="polite"'), "toast must announce politely");
 
 const shellMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
