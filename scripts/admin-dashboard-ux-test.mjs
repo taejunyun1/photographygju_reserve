@@ -365,6 +365,8 @@ assert(adminRefreshSource.includes("pendingRefreshScrollState || captureScrollSt
 assert(adminRefreshSource.includes('document.addEventListener("pointerdown"'), "manual admin refresh button must capture scroll before click focus changes it");
 assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();'), "admin refresh must render immediately after entering the refreshing state");
 assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();'), "admin refresh must render immediately after clearing the refreshing state");
+assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();\n  restoreScrollState(scrollState);'), "admin refresh busy render must restore the pre-refresh scroll snapshot");
+assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();\n    restoreScrollState(scrollState);'), "admin refresh clear render must restore the pre-refresh scroll snapshot");
 assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
 assert(adminRefreshSource.includes("await runRefresh(scrollState);"), "React Admin refresh must reuse the legacy runRefresh helper");
 assert(!adminRefreshSource.includes("includeMe: true"), "React Admin refresh must not bypass legacy refresh semantics with a special includeMe path");
