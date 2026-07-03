@@ -440,6 +440,86 @@
     padding: 18px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right)) 18px max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left));
   }
 
+  .gju-app-shell__content > *,
+  .gju-app-shell__content .gju-card,
+  .gju-app-shell__content .gju-card__header,
+  .gju-app-shell__content .gju-card__body,
+  .gju-app-shell__content .gju-legacy-admin-panel,
+  .gju-app-shell__content .gju-legacy-admin-panel > *,
+  .gju-app-shell__content .grid,
+  .gju-app-shell__content .card,
+  .gju-app-shell__content .ui-card,
+  .gju-app-shell__content .list-control-panel,
+  .gju-app-shell__content .pagination,
+  .gju-app-shell__content .admin-user-action-panel,
+  .gju-app-shell__content .admin-user-action-group,
+  .gju-app-shell__content .admin-user-warning-memo,
+  .gju-app-shell__content .admin-user-warning-memo-head,
+  .gju-app-shell__content .equipment-bulk-bar,
+  .gju-app-shell__content .bulk-actions,
+  .gju-app-shell__content .equipment-status-buttons,
+  .gju-app-shell__content .button-row,
+  .gju-app-shell__content .admin-settings-card,
+  .gju-app-shell__content .blocked-list,
+  .gju-app-shell__content .blocked-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .gju-app-shell__content .gju-card,
+  .gju-app-shell__content .gju-card__body,
+  .gju-app-shell__content .gju-legacy-admin-panel,
+  .gju-app-shell__content .card,
+  .gju-app-shell__content .ui-card,
+  .gju-app-shell__content .list-control-panel,
+  .gju-app-shell__content .admin-settings-card,
+  .gju-app-shell__content .admin-user-action-panel,
+  .gju-app-shell__content .equipment-bulk-bar {
+    overflow-x: clip;
+  }
+
+  .gju-app-shell__content .table-wrap,
+  .gju-app-shell__content .gju-table {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .gju-app-shell__content .tab-row,
+  .gju-app-shell__content .admin-inner-tabs {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .gju-app-shell__content .tab-row::-webkit-scrollbar,
+  .gju-app-shell__content .admin-inner-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gju-app-shell__content .tab-row .tab-button,
+  .gju-app-shell__content .admin-inner-tabs .tab-button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .gju-app-shell__content .bulk-actions,
+  .gju-app-shell__content .equipment-status-buttons,
+  .gju-app-shell__content .button-row,
+  .gju-app-shell__content .row-actions,
+  .gju-app-shell__content .admin-user-secondary-group {
+    width: 100%;
+  }
+
+  .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
   .gju-app-shell__content--with-mobile-bottom-nav {
     padding-bottom: calc(20px + var(--gju-app-shell-mobile-nav-height) + var(--gju-safe-area-bottom));
   }

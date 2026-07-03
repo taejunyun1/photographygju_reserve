@@ -159,6 +159,28 @@ for (const token of ["flex: 1 1 auto;", "min-height: 0;", "overflow-x: hidden;",
 }
 assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin content must keep a safe right edge inset");
 assert(mobileShellContentRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin content must keep a safe left edge inset");
+const mobileContentContainmentRule = cssRule(designSystemCss, "  .gju-app-shell__content > *,", mobileMediaStart);
+for (const token of ["min-width: 0;", "max-width: 100%;"]) {
+  assert(mobileContentContainmentRule.includes(token), `Mobile React Admin content containment must include ${token}`);
+}
+const mobileContentClipRule = cssRule(
+  designSystemCss,
+  "  .gju-app-shell__content .gju-card,\n  .gju-app-shell__content .gju-card__body,\n  .gju-app-shell__content .gju-legacy-admin-panel,",
+  mobileMediaStart
+);
+assert(mobileContentClipRule.includes("overflow-x: clip;"), "Mobile React Admin cards and panels must clip accidental horizontal overflow");
+const mobileContentScrollableRule = cssRule(designSystemCss, "  .gju-app-shell__content .table-wrap,", mobileMediaStart);
+for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavior-x: contain;"]) {
+  assert(mobileContentScrollableRule.includes(token), `Mobile React Admin tables must keep horizontal overflow inside the table region: ${token}`);
+}
+const mobileContentControlsRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row,", mobileMediaStart);
+for (const token of ["width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
+  assert(mobileContentControlsRule.includes(token), `Mobile React Admin tab/control rows must stay within screen width: ${token}`);
+}
+const mobileContentTextRule = cssRule(designSystemCss, "  .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {", mobileMediaStart);
+for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-wrap: anywhere;"]) {
+  assert(mobileContentTextRule.includes(token), `Mobile React Admin text and controls must resist width overflow: ${token}`);
+}
 const mobileShellHeaderRule = cssRule(designSystemCss, "  .gju-app-shell__mobile-header {", mobileMediaStart);
 assert(mobileShellHeaderRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-right))"), "Mobile React Admin header must keep a safe right edge inset");
 assert(mobileShellHeaderRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin header must keep a safe left edge inset");
