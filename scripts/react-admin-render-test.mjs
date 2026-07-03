@@ -129,8 +129,34 @@ assert(shellMarkup.includes("gju-app-shell"), "React Admin shell must render app
 assert(shellMarkup.includes("학생 승인"), "React Admin shell must render Korean nav labels");
 assert(shellMarkup.includes('aria-label="새로고침"'), "React Admin shell must render refresh icon action");
 assert(shellMarkup.includes("gju-app-shell__sidebar gju-app-shell__desktop-only"), "React Admin shell must mark desktop sidebar chrome explicitly");
+assert(shellMarkup.includes("gju-app-shell__header gju-app-shell__desktop-header"), "React Admin shell must render dedicated desktop header chrome");
 assert(shellMarkup.includes("gju-app-shell__mobile-header gju-app-shell__mobile-only"), "React Admin shell must mark mobile header chrome explicitly");
 assert(shellMarkup.includes("gju-app-shell__bottom-nav gju-app-shell__mobile-only"), "React Admin shell must mark mobile bottom navigation explicitly");
+assert(shellMarkup.includes("대시보드"), "React Admin shell must render the current page title");
+const desktopHeaderSegment = shellMarkup.match(
+  /<header class="gju-app-shell__header gju-app-shell__desktop-header">([\s\S]*?)<\/header>/
+)?.[1];
+assert(desktopHeaderSegment, "React Admin shell must render desktop header markup");
+assert(desktopHeaderSegment.includes('<div class="gju-admin-header">'), "React Admin shell must mount admin header content inside the desktop header slot");
+assert(desktopHeaderSegment.includes('aria-label="내 정보"'), "Desktop header must render the account action");
+assert(desktopHeaderSegment.includes('aria-label="새로고침"'), "Desktop header must render the refresh action");
+assert(desktopHeaderSegment.includes('aria-label="나가기"'), "Desktop header must render the logout action");
+
+const mobileHeaderSegment = shellMarkup.match(
+  /<header class="gju-app-shell__header gju-app-shell__mobile-header gju-app-shell__mobile-only">([\s\S]*?)<\/header>/
+)?.[1];
+assert(mobileHeaderSegment, "React Admin shell must render mobile header markup");
+assert(mobileHeaderSegment.includes('<div class="gju-admin-header">'), "React Admin shell must keep the admin header content inside the mobile header slot");
+assert(mobileHeaderSegment.includes('aria-label="내 정보"'), "Mobile header must keep the account action");
+assert(mobileHeaderSegment.includes('aria-label="새로고침"'), "Mobile header must keep the refresh action");
+assert(mobileHeaderSegment.includes('aria-label="나가기"'), "Mobile header must keep the logout action");
+
+const mobileBottomNavSegment = shellMarkup.match(
+  /<div class="gju-app-shell__bottom-nav gju-app-shell__mobile-only">([\s\S]*?)<\/div>/
+)?.[1];
+assert(mobileBottomNavSegment, "React Admin shell must render mobile bottom nav markup");
+assert(!mobileBottomNavSegment.includes('aria-label="새로고침"'), "Mobile bottom nav must remain separate from header actions");
+assert(!mobileBottomNavSegment.includes('aria-label="나가기"'), "Mobile bottom nav must not contain header actions");
 
 const refreshingShellMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -151,6 +177,12 @@ const refreshingShellMarkup = renderToStaticMarkup(
 );
 assert(refreshingShellMarkup.includes('aria-label="새로고침 중"'), "React Admin refresh action must announce the in-progress label");
 assert(refreshingShellMarkup.includes('aria-busy="true"'), "React Admin refresh action must expose aria-busy while refreshing");
+const refreshingDesktopHeaderSegment = refreshingShellMarkup.match(
+  /<header class="gju-app-shell__header gju-app-shell__desktop-header">([\s\S]*?)<\/header>/
+)?.[1];
+assert(refreshingDesktopHeaderSegment, "React Admin shell must keep desktop header markup while refreshing");
+assert(refreshingDesktopHeaderSegment.includes('aria-label="새로고침 중"'), "Desktop header refresh action must expose the busy label");
+assert(refreshingDesktopHeaderSegment.includes("aria-busy=\"true\""), "Desktop header refresh action must stay busy while refreshing");
 
 const legacyFallbackMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

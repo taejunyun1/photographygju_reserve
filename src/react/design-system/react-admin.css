@@ -68,9 +68,12 @@
   display: block;
 }
 
-.gju-app-shell__mobile-only,
-.gju-app-shell__desktop-header {
+.gju-app-shell__mobile-only {
   display: none;
+}
+
+.gju-app-shell__desktop-header {
+  display: block;
 }
 
 .gju-app-shell__sidebar {
@@ -383,6 +386,10 @@
 
   .gju-app-shell__mobile-only {
     display: block;
+  }
+
+  .gju-app-shell__desktop-header {
+    display: none;
   }
 
   .gju-app-shell__header {

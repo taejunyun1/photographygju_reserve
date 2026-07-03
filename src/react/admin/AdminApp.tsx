@@ -95,6 +95,7 @@ export function AdminApp({
     GjuAppShell,
     {
       desktopNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--sidebar"),
+      header: renderHeader(title, headerActions),
       mobileHeader: renderHeader(title, headerActions),
       mobileBottomNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--bottom")
     },
