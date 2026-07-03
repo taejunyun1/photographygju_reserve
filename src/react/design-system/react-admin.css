@@ -243,6 +243,13 @@
   padding: 20px 20px 0;
 }
 
+.gju-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .gju-card__body {
   padding: 20px;
 }

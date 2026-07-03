@@ -38,6 +38,87 @@ process.on("exit", () => {
 });
 const renderModule = await import(pathToFileURL(compiledModulePath).href);
 
+const dialogBehaviorEntry = await build({
+  stdin: {
+    contents: `
+      export { dialogCalls } from "virtual-dialog-mock";
+      export { iconButtonCalls, buttonCalls } from "virtual-button-mock";
+      export { GjuDialog } from "../src/react/design-system/Dialog.tsx";
+    `,
+    resolveDir: path.join(process.cwd(), "scripts"),
+    sourcefile: "scripts/react-admin-dialog-behavior-entry.tsx",
+    loader: "tsx"
+  },
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  write: false,
+  external: ["react", "react-dom", "react-dom/server"],
+  plugins: [
+    {
+      name: "dialog-behavior-mocks",
+      setup(buildContext) {
+        buildContext.onResolve({ filter: /^virtual-dialog-mock$/ }, () => ({
+          path: "virtual-dialog-mock",
+          namespace: "dialog-behavior"
+        }));
+        buildContext.onResolve({ filter: /^virtual-button-mock$/ }, () => ({
+          path: "virtual-button-mock",
+          namespace: "dialog-behavior"
+        }));
+        buildContext.onResolve({ filter: /^@astryxdesign\/core\/Dialog$/ }, () => ({
+          path: "virtual-dialog-mock",
+          namespace: "dialog-behavior"
+        }));
+        buildContext.onResolve({ filter: /^\.\/Button$/ }, (args) => {
+          if (args.importer.endsWith(`${path.sep}Dialog.tsx`)) {
+            return {
+              path: "virtual-button-mock",
+              namespace: "dialog-behavior"
+            };
+          }
+          return null;
+        });
+        buildContext.onLoad({ filter: /^virtual-dialog-mock$/, namespace: "dialog-behavior" }, () => ({
+          contents: `
+            import React from "react";
+            export const dialogCalls = [];
+            export function Dialog(props) {
+              dialogCalls.push(props);
+              return React.createElement("mock-dialog", props, props.children);
+            }
+          `,
+          loader: "tsx"
+        }));
+        buildContext.onLoad({ filter: /^virtual-button-mock$/, namespace: "dialog-behavior" }, () => ({
+          contents: `
+            import React from "react";
+            export const iconButtonCalls = [];
+            export const buttonCalls = [];
+            export function GjuIconButton(props) {
+              iconButtonCalls.push(props);
+              return React.createElement("mock-icon-button", props);
+            }
+            export function GjuButton(props) {
+              buttonCalls.push(props);
+              return React.createElement("mock-button", props, props.children);
+            }
+          `,
+          loader: "tsx"
+        }));
+      }
+    }
+  ]
+});
+const dialogBehaviorModulePath = path.join(process.cwd(), "scripts", ".react-admin-dialog-behavior-test.compiled.mjs");
+fs.writeFileSync(dialogBehaviorModulePath, dialogBehaviorEntry.outputFiles[0].text);
+process.on("exit", () => {
+  if (fs.existsSync(dialogBehaviorModulePath)) {
+    fs.unlinkSync(dialogBehaviorModulePath);
+  }
+});
+const dialogBehaviorModule = await import(pathToFileURL(dialogBehaviorModulePath).href);
+
 const button = renderToStaticMarkup(
   React.createElement(renderModule.GjuButton, { tone: "danger" }, "삭제")
 );
@@ -81,6 +162,7 @@ assert(dialogMarkup.includes("astryx-dialog"), "dialog wrapper must adapt Astryx
 assert(dialogMarkup.includes('role="dialog"'), "dialog must expose dialog role");
 assert(dialogMarkup.includes('aria-modal="true"'), "dialog must expose modal semantics");
 assert(dialogMarkup.includes('aria-label="닫기"'), "dialog must render a close button");
+assert(dialogMarkup.includes('class="gju-dialog__header"'), "dialog must render a named header layout class");
 assert(dialogMarkup.includes(">본문<"), "dialog must render children as body content");
 const dialogIds = [...dialogMarkup.matchAll(/id="([^"]+)"/g)]
   .map((match) => match[1])
@@ -90,6 +172,31 @@ assert.equal(new Set(dialogIds).size, 2, "dialog title ids must be unique per in
 for (const dialogId of dialogIds) {
   assert(dialogMarkup.includes(`aria-labelledby="${dialogId}"`), "dialog must label itself with its unique title id");
 }
+
+const closeEvents = [];
+renderToStaticMarkup(
+  React.createElement(dialogBehaviorModule.GjuDialog, {
+    open: true,
+    title: "닫기 우선순위",
+    onClose() {
+      closeEvents.push("close");
+    },
+    onCancel() {
+      closeEvents.push("cancel");
+    }
+  })
+);
+assert.equal(dialogBehaviorModule.dialogCalls.length, 1, "dialog behavior test must capture Astryx dialog props");
+assert.equal(dialogBehaviorModule.iconButtonCalls.length, 1, "dialog behavior test must capture close button props");
+assert.equal(dialogBehaviorModule.buttonCalls.length, 2, "dialog behavior test must capture footer buttons");
+dialogBehaviorModule.dialogCalls[0].onOpenChange(false);
+assert.deepEqual(closeEvents, ["close"], "dialog open-change close path must prefer onClose over onCancel");
+closeEvents.length = 0;
+dialogBehaviorModule.iconButtonCalls[0].onClick();
+assert.deepEqual(closeEvents, ["close"], "dialog close button must prefer onClose over onCancel");
+closeEvents.length = 0;
+dialogBehaviorModule.buttonCalls[0].onClick();
+assert.deepEqual(closeEvents, ["close"], "dialog cancel button must prefer onClose over onCancel");
 
 const emptyState = renderToStaticMarkup(
   React.createElement(renderModule.GjuEmptyState, {

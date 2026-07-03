@@ -32,12 +32,7 @@ export function GjuDialog({
 }: GjuDialogProps) {
   const titleId = `gju-dialog-title-${React.useId()}`;
   const dialogBody = body ?? children;
-  const handleClose = () => {
-    onCancel?.();
-    if (onClose && onClose !== onCancel) {
-      onClose();
-    }
-  };
+  const closeHandler = onClose ?? onCancel;
 
   if (!open) {
     return null;
@@ -49,7 +44,7 @@ export function GjuDialog({
       isOpen: open,
       onOpenChange: (isOpen) => {
         if (!isOpen) {
-          handleClose();
+          closeHandler?.();
         }
       },
       width: "min(100%, 480px)",
@@ -63,19 +58,19 @@ export function GjuDialog({
         null,
         React.createElement(
           "div",
-          { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" } },
+          { className: "gju-dialog__header" },
           React.createElement("h2", { id: titleId, className: "gju-dialog__title" }, title),
           React.createElement(GjuIconButton, {
             label: "닫기",
             icon: "x",
-            onClick: handleClose
+            onClick: closeHandler
           })
         ),
         dialogBody ? React.createElement("div", { className: "gju-dialog__body" }, dialogBody) : null,
         React.createElement(
           "div",
           { className: "gju-dialog__actions" },
-          React.createElement(GjuButton, { variant: "ghost", tone: "neutral", onClick: handleClose }, cancelLabel),
+          React.createElement(GjuButton, { variant: "ghost", tone: "neutral", onClick: closeHandler }, cancelLabel),
           React.createElement(GjuButton, { tone: tone === "danger" ? "danger" : "primary", onClick: onConfirm }, confirmLabel)
         )
       )
