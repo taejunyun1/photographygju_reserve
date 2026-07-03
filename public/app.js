@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260703-equipment-inquiry-status";
+import "./js/main.js?v=20260703-icon-only-actions";

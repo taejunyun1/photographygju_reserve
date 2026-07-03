@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-equipment-inquiry-status";
+import { state } from "./state.js?v=20260703-icon-only-actions";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260703-equipment-inquiry-status";
+} from "./constants.js?v=20260703-icon-only-actions";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260703-equipment-inquiry-status";
+} from "./utils.js?v=20260703-icon-only-actions";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-equipment-inquiry-status";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-equipment-inquiry-status";
-import { noticeCard } from "./views-student.js?v=20260703-equipment-inquiry-status";
+} from "./ui.js?v=20260703-icon-only-actions";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260703-icon-only-actions";
+import { noticeCard } from "./views-student.js?v=20260703-icon-only-actions";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260703-equipment-inquiry-status";
+} from "./admin-equipment.js?v=20260703-icon-only-actions";
 
 export function adminShell() {
   return `
@@ -152,6 +152,14 @@ function adminCollectionTotal(page, fallback = 0) {
   return Number(page?.total || fallback || 0);
 }
 
+function iconOnlyAction(label, iconName, attrs = "", options = {}) {
+  const safeLabel = escapeHtml(label);
+  const attrsText = attrs ? ` ${attrs}` : "";
+  const disabledText = options.disabled ? " disabled" : "";
+  const className = `${options.className || "button danger compact"} icon-only-action`;
+  return `<button class="${className}" type="${options.type || "button"}"${attrsText}${disabledText} aria-label="${safeLabel}" title="${safeLabel}">${icon(iconName)}</button>`;
+}
+
 function bulkDeletePanel(kind, filteredCount, totalCount, filterLabel, options = {}) {
   const count = Math.max(0, Number(filteredCount || 0));
   const total = Math.max(0, Number(totalCount || 0));
@@ -160,8 +168,8 @@ function bulkDeletePanel(kind, filteredCount, totalCount, filterLabel, options =
     <div class="bulk-danger-zone">
       <span class="muted">${escapeHtml(filterLabel)}</span>
       <div class="row-actions">
-        <button class="button danger compact" type="button" data-admin-bulk-delete="${kind}:filtered" ${filteredEnabled && count ? "" : "disabled"}>${icon("trash")}현재 필터 결과 삭제</button>
-        <button class="button ghost danger compact" type="button" data-admin-bulk-delete="${kind}:all" ${total ? "" : "disabled"}>${icon("trash")}전체 삭제</button>
+        ${iconOnlyAction("현재 필터 결과 삭제", "trash", `data-admin-bulk-delete="${kind}:filtered"`, { disabled: !(filteredEnabled && count) })}
+        ${iconOnlyAction("전체 삭제", "trash", `data-admin-bulk-delete="${kind}:all"`, { className: "button ghost danger compact", disabled: !total })}
       </div>
     </div>
   `;
@@ -636,7 +644,7 @@ export function adminUsersView() {
                     ${userWarningMemo(user)}
                     <div class="admin-user-action-group admin-user-secondary-group">
                       <button class="button compact admin-user-small-action" data-user-reset="${user.id}">비번 리셋</button>
-                      <button class="button danger compact admin-user-delete-button" data-user-delete="${user.id}" data-user-name="${escapeHtml(user.name)}">${icon("trash")}삭제</button>
+                      ${iconOnlyAction("삭제", "trash", `data-user-delete="${user.id}" data-user-name="${escapeHtml(user.name)}"`, { className: "button danger compact admin-user-delete-button" })}
                     </div>
                   </div>
                 </td>
@@ -899,7 +907,7 @@ export function adminEquipmentView() {
           <span class="tag" data-admin-equipment-selected-count>${selected.size}개 선택</span>
           <div class="bulk-actions" aria-label="선택 기자재 상태 변경">
             ${equipmentAdminStatusOptions.map((status) => `<button class="button compact" type="button" data-equipment-bulk-status="${status}" ${selected.size ? "" : "disabled"}>${status}</button>`).join("")}
-            <button class="button danger compact" type="button" data-equipment-bulk-remove ${selected.size ? "" : "disabled"}>선택 기자재 제거</button>
+            ${iconOnlyAction("선택 기자재 제거", "trash", "data-equipment-bulk-remove", { disabled: !selected.size })}
           </div>
         </div>
         <div class="table-wrap embedded admin-equipment-scroll-region">
@@ -914,7 +922,7 @@ export function adminEquipmentView() {
                 <td>${escapeHtml(sourceLabel[item.source] || item.facility || "-")}</td>
                 <td>${equipmentStatusButtons(item)}</td>
                 <td data-equipment-reservable-cell="${item.id}">${equipmentReservableTag(item)}</td>
-                <td><button class="button danger" data-equipment-remove-admin="${item.id}">${icon("trash")}기자재 제거</button></td>
+                <td>${iconOnlyAction("기자재 제거", "trash", `data-equipment-remove-admin="${item.id}"`, { className: "button danger compact" })}</td>
               </tr>`).join("") : `<tr><td colspan="8">${emptyState({ title: query ? "검색 결과가 없습니다." : "등록된 기자재가 없습니다.", body: query ? "검색어를 지우거나 탭 필터를 변경하세요." : "" })}</td></tr>`}</tbody>
           </table>
         </div>
@@ -1184,7 +1192,7 @@ export function adminLectureTable(lectures) {
               </select>
               <button class="button compact" data-lecture-update="${lecture.id}">${icon("check")}상태 저장</button>
               <button class="button compact" data-lecture-edit="${lecture.id}">${icon("edit")}수정</button>
-              <button class="button danger compact" data-lecture-delete="${lecture.id}" data-lecture-title="${escapeHtml(lecture.title || "")}">${icon("trash")}삭제</button>
+              ${iconOnlyAction("삭제", "trash", `data-lecture-delete="${lecture.id}" data-lecture-title="${escapeHtml(lecture.title || "")}"`)}
               <span class="admin-lecture-applicants">${escapeHtml(applicantText)}</span>
             </div>
           </article>
@@ -1380,7 +1388,7 @@ export function adminLogsView() {
                   <td><strong>${escapeHtml(session.device || "-")}</strong><br><span class="muted">${escapeHtml(session.userAgent || "-")}</span></td>
                   <td>${formatDateTime(session.createdAt)}</td>
                   <td>${formatDateTime(session.expiresAt)}</td>
-                  <td><button class="button danger compact" data-session-revoke="${session.id}">${icon("logOut")}로그아웃</button></td>
+                  <td>${iconOnlyAction("로그아웃", "logOut", `data-session-revoke="${session.id}"`)}</td>
                 </tr>
               `).join("") : `<tr><td colspan="6" class="empty">${sessionQuery ? "검색 결과가 없습니다." : "현재 로그인 세션이 없습니다."}</td></tr>`}
             </tbody>
@@ -1505,7 +1513,7 @@ export function blockedScheduleList(items, options = {}) {
           <span class="tag blue">${typeLabel[item.type] || item.type}</span>
           <strong>${weekdayLabel[item.day] || item.day}요일 ${escapeHtml(item.start)}-${escapeHtml(item.end)}</strong>
           <span>${escapeHtml(item.from)} ~ ${escapeHtml(item.to)} · ${escapeHtml(item.target || "전체")}</span>
-          <button class="button danger compact" data-blocked-remove="${item.id}">${icon("trash")}삭제</button>
+          ${iconOnlyAction("삭제", "trash", `data-blocked-remove="${item.id}"`)}
         </div>
       `).join("")}
     </div>

@@ -22,10 +22,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260703-equipment-inquiry-status");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView } = await import("../public/js/views-admin.js?v=20260703-equipment-inquiry-status");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-equipment-inquiry-status");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-equipment-inquiry-status");
+const { state } = await import("../public/js/state.js?v=20260703-icon-only-actions");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260703-icon-only-actions");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260703-icon-only-actions");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260703-icon-only-actions");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -64,6 +64,9 @@ state.adminReservations = [
   { id: "r3", type: "equipment", status: "cancelled", user: { name: "박학생" }, fields: { reservedDate: today, rentalTime: "15:00", returnDate: today } },
   { id: "r4", type: "studio", status: "auto_confirmed", user: { name: "최학생" }, fields: { reservedDate: today, timeSlots: ["16:00-17:00"] } }
 ];
+state.adminUsers = [
+  { id: "user1", role: "student", name: "박준희", email: "qsc2121@naver.com", studentId: "20192691", studentStatus: "졸업생", phone: "01096659527", approvalStatus: "approved" }
+];
 state.adminEquipment = [
   { id: "e1", active: true, status: "가능", reservable: true },
   { id: "e2", active: true, status: "가능", reservable: false, inquiryOnly: true },
@@ -81,6 +84,7 @@ state.adminReports = [{
 }];
 state.adminLectures = [{ id: "lecture1", title: "프린트 워크숍", status: "모집중", lectureDate: "2026-07-01", startsAt: "2026-07-01", applications: [] }];
 state.adminNotices = [{ id: "notice1", title: "하계 운영 안내", createdAt: "2026-06-26T07:00:00.000Z" }];
+state.adminSessions = [{ id: "session1", userId: "admin1", ip: "127.0.0.1", device: "Mac / Chrome", userAgent: "Mozilla/5.0", user: { name: "admin", email: "admin@gju.local" }, createdAt: "2026-07-03T05:00:00.000Z", expiresAt: "2026-07-17T05:00:00.000Z" }];
 state.adminReservationSemesters = [{ key: "2026-S1", label: "2026년 1학기" }, { key: "2026-S2", label: "2026년 2학기" }];
 state.adminReportSemesters = state.adminReservationSemesters;
 state.adminLectureSemesters = state.adminReservationSemesters;
@@ -104,6 +108,12 @@ state.adminEquipmentPanelTab = "manage";
 state.adminEquipmentTab = "all";
 state.adminEquipmentCategoryTab = "all";
 const equipmentView = adminEquipmentView();
+state.adminView = "users";
+state.adminUserStatusFilter = "all";
+const usersView = adminUsersView();
+state.adminView = "logs";
+state.adminSessionSort = "createdAt";
+const logsView = adminLogsView();
 state.adminView = "dashboard";
 state.activeAdminQueueSheet = "today";
 const dashboardWithQueueSheet = adminShell();
@@ -162,6 +172,21 @@ const primaryButtonRule = cssRule(".button.primary");
 
 function countOccurrences(source, token) {
   return source.split(token).length - 1;
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function assertIconOnlyAction(markup, attribute, label, context) {
+  const buttonMatch = markup.match(new RegExp(`<button\\b(?=[^>]*${escapeRegex(attribute)})[^>]*>[\\s\\S]*?<\\/button>`));
+  assert(buttonMatch, `${context} button must render`);
+  const button = buttonMatch[0];
+  assert(button.includes("icon-only-action"), `${context} button must use icon-only action sizing`);
+  assert(button.includes(`aria-label="${label}"`), `${context} button must keep an accessible label`);
+  assert(button.includes(`title="${label}"`), `${context} button must keep a title`);
+  const visibleText = button.replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<[^>]+>/g, "").trim();
+  assert.equal(visibleText, "", `${context} button must not render visible text`);
 }
 
 assert(!dashboard.includes("운영 네이티브 알림"), "dashboard must not render native notification card");
@@ -230,6 +255,16 @@ assert(equipmentView.includes('data-status="문의"'), "equipment status control
 assert(equipmentView.includes('data-equipment-bulk-status="문의"'), "bulk equipment status controls must expose an inquiry button");
 assert(equipmentView.includes('<span class="tag yellow">문의</span>'), "equipment inquiry-only display must use the shorter inquiry label");
 assert(!equipmentView.includes("문의전용"), "admin equipment view must not show the legacy inquiry-only label");
+assertIconOnlyAction(reservationsView, 'data-admin-bulk-delete="reservations:filtered"', "현재 필터 결과 삭제", "reservation filtered delete");
+assertIconOnlyAction(reservationsView, 'data-admin-bulk-delete="reservations:all"', "전체 삭제", "reservation full delete");
+assertIconOnlyAction(reportsView, 'data-admin-bulk-delete="reports:filtered"', "현재 필터 결과 삭제", "report filtered delete");
+assertIconOnlyAction(lecturesView, 'data-admin-bulk-delete="lectures:filtered"', "현재 필터 결과 삭제", "lecture filtered delete");
+assertIconOnlyAction(lecturesView, 'data-admin-bulk-delete="lectures:all"', "전체 삭제", "lecture full delete");
+assertIconOnlyAction(lecturesView, 'data-lecture-delete="lecture1"', "삭제", "lecture delete");
+assertIconOnlyAction(equipmentView, "data-equipment-bulk-remove", "선택 기자재 제거", "equipment bulk remove");
+assertIconOnlyAction(equipmentView, 'data-equipment-remove-admin="e1"', "기자재 제거", "equipment row remove");
+assertIconOnlyAction(usersView, 'data-user-delete="user1"', "삭제", "student approval user delete");
+assertIconOnlyAction(logsView, 'data-session-revoke="session1"', "로그아웃", "session revoke");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");

@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260703-equipment-inquiry-status";
-import { api } from "../api.js?v=20260703-equipment-inquiry-status";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-equipment-inquiry-status";
+import { state } from "../state.js?v=20260703-icon-only-actions";
+import { api } from "../api.js?v=20260703-icon-only-actions";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260703-icon-only-actions";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260703-equipment-inquiry-status";
-import { render, toast } from "../renderer.js?v=20260703-equipment-inquiry-status";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-equipment-inquiry-status";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-inquiry-status";
+} from "../actions.js?v=20260703-icon-only-actions";
+import { render, toast } from "../renderer.js?v=20260703-icon-only-actions";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260703-icon-only-actions";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-icon-only-actions";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

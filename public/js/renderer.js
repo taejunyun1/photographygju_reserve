@@ -1,8 +1,8 @@
-import { $app, state } from "./state.js?v=20260703-equipment-inquiry-status";
-import { escapeHtml } from "./utils.js?v=20260703-equipment-inquiry-status";
-import { adminShell } from "./views-admin.js?v=20260703-equipment-inquiry-status";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260703-equipment-inquiry-status";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260703-equipment-inquiry-status";
+import { $app, state } from "./state.js?v=20260703-icon-only-actions";
+import { escapeHtml } from "./utils.js?v=20260703-icon-only-actions";
+import { adminShell } from "./views-admin.js?v=20260703-icon-only-actions";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260703-icon-only-actions";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260703-icon-only-actions";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

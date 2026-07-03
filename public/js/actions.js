@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260703-equipment-inquiry-status";
-import { api } from "./api.js?v=20260703-equipment-inquiry-status";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-equipment-inquiry-status";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-equipment-inquiry-status";
-import { render, toast } from "./renderer.js?v=20260703-equipment-inquiry-status";
+import { state } from "./state.js?v=20260703-icon-only-actions";
+import { api } from "./api.js?v=20260703-icon-only-actions";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260703-icon-only-actions";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260703-icon-only-actions";
+import { render, toast } from "./renderer.js?v=20260703-icon-only-actions";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260703-equipment-inquiry-status";
+} from "./utils.js?v=20260703-icon-only-actions";
 
 export async function login(form) {
   const data = formData(form);

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260703-equipment-inquiry-status";
-import { statusLabel, typeLabel } from "./constants.js?v=20260703-equipment-inquiry-status";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-equipment-inquiry-status";
+import { state } from "./state.js?v=20260703-icon-only-actions";
+import { statusLabel, typeLabel } from "./constants.js?v=20260703-icon-only-actions";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260703-icon-only-actions";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260703-equipment-inquiry-status";
+} from "./utils.js?v=20260703-icon-only-actions";
 import {
   actionRow,
   card,
@@ -50,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260703-equipment-inquiry-status";
+} from "./ui.js?v=20260703-icon-only-actions";
 
 export function authView() {
   const isLogin = state.authMode === "login";

@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-equipment-inquiry-status";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260703-icon-only-actions";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

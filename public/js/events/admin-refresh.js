@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260703-equipment-inquiry-status";
-import { toast } from "../renderer.js?v=20260703-equipment-inquiry-status";
-import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-equipment-inquiry-status";
+import { state } from "../state.js?v=20260703-icon-only-actions";
+import { toast } from "../renderer.js?v=20260703-icon-only-actions";
+import { captureScrollState, refreshAdminDataPreservingScroll } from "./shared.js?v=20260703-icon-only-actions";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

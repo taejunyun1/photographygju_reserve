@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260703-equipment-inquiry-status";
+import { state } from "./state.js?v=20260703-icon-only-actions";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260703-equipment-inquiry-status";
+} from "./constants.js?v=20260703-icon-only-actions";
 
 export function escapeHtml(value) {
   return String(value ?? "")

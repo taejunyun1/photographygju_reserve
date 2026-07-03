@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260703-equipment-inquiry-status";
-import { loadAdminData } from "../data.js?v=20260703-equipment-inquiry-status";
-import { render } from "../renderer.js?v=20260703-equipment-inquiry-status";
-import { normalizeUnicodeText } from "../utils.js?v=20260703-equipment-inquiry-status";
-import { resetAdminPage } from "./shared.js?v=20260703-equipment-inquiry-status";
+import { state } from "../state.js?v=20260703-icon-only-actions";
+import { loadAdminData } from "../data.js?v=20260703-icon-only-actions";
+import { render } from "../renderer.js?v=20260703-icon-only-actions";
+import { normalizeUnicodeText } from "../utils.js?v=20260703-icon-only-actions";
+import { resetAdminPage } from "./shared.js?v=20260703-icon-only-actions";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {
