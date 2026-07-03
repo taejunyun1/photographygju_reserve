@@ -16,6 +16,7 @@ const renderEntry = await build({
       export { GjuStatusBadge } from "../src/react/design-system/StatusBadge.tsx";
       export { GjuTable } from "../src/react/design-system/Table.tsx";
       export { GjuToast } from "../src/react/design-system/Toast.tsx";
+      export { AdminApp } from "../src/react/admin/AdminApp.tsx";
     `,
     resolveDir: path.join(process.cwd(), "scripts"),
     sourcefile: "scripts/react-admin-render-entry.tsx",
@@ -111,5 +112,21 @@ const toast = renderToStaticMarkup(
 assert(toast.includes("gju-toast"), "toast must use shared class");
 assert(toast.includes("astryx-toast"), "toast wrapper must adapt Astryx Toast");
 assert(toast.includes("저장되었습니다."), "toast must render the message");
+
+const shellMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: { adminView: "dashboard", user: { role: "admin", name: "admin" }, summary: {} },
+    actions: {
+      setAdminView() {},
+      refreshAdminData() {},
+      logout() {},
+      render() {}
+    },
+    legacyRenderAdminContent: () => "<section>legacy</section>"
+  })
+);
+assert(shellMarkup.includes("gju-app-shell"), "React Admin shell must render app shell");
+assert(shellMarkup.includes("학생 승인"), "React Admin shell must render Korean nav labels");
+assert(shellMarkup.includes('aria-label="새로고침"'), "React Admin shell must render refresh icon action");
 
 console.log("React Admin render checks passed.");
