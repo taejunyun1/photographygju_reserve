@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
-import { api } from "../api.js?v=20260704-astryx-student-guide";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
+import { api } from "../api.js?v=20260704-student-icon-nav";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260704-student-icon-nav";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260704-astryx-student-guide";
-import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260704-astryx-student-guide";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260704-astryx-student-guide";
+} from "../actions.js?v=20260704-student-icon-nav";
+import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260704-student-icon-nav";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260704-student-icon-nav";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

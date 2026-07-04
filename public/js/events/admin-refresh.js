@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
-import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
-import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
+import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
+import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260704-student-icon-nav";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

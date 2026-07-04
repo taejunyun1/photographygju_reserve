@@ -1,21 +1,21 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
-import { api } from "../api.js?v=20260704-astryx-student-guide";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260704-astryx-student-guide";
-import { logout, openReport } from "../actions.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
+import { api } from "../api.js?v=20260704-student-icon-nav";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260704-student-icon-nav";
+import { logout, openReport } from "../actions.js?v=20260704-student-icon-nav";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260704-astryx-student-guide";
-import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
-import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260704-astryx-student-guide";
+} from "../native-notifications.js?v=20260704-student-icon-nav";
+import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260704-student-icon-nav";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260704-astryx-student-guide";
+} from "./shared.js?v=20260704-student-icon-nav";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260704-astryx-student-guide";
-import { api } from "./api.js?v=20260704-astryx-student-guide";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260704-astryx-student-guide";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260704-astryx-student-guide";
-import { render, toast } from "./renderer.js?v=20260704-astryx-student-guide";
+import { state } from "./state.js?v=20260704-student-icon-nav";
+import { api } from "./api.js?v=20260704-student-icon-nav";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260704-student-icon-nav";
+import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260704-student-icon-nav";
+import { render, toast } from "./renderer.js?v=20260704-student-icon-nav";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260704-astryx-student-guide";
+} from "./utils.js?v=20260704-student-icon-nav";
 
 export async function login(form) {
   const data = formData(form);

@@ -82,7 +82,8 @@
 - 학생단은 legacy renderer를 유지하되 Astryx/GJU 토큰을 따른다.
 - top appbar는 sticky light surface로 유지한다.
 - bottom nav는 Admin React와 같은 light surface를 사용한다. 이전 dark floating nav 스타일은 사용하지 않는다.
-- nav item은 icon + label 구조를 쓴다. label은 그대로 보여주고, icon은 `public/js/ui.js`의 `icon()` primitive로 렌더한다.
+- 모바일 bottom nav item은 icon-only 구조를 쓴다. 보이는 label은 렌더하지 않고 `aria-label`과 `title`만 유지하며, icon은 `public/js/ui.js`의 `icon()` primitive로 렌더한다.
+- bottom nav 색상은 일반 보조 텍스트보다 진한 `--gju-color-text-muted`와 `--on-primary-container` 계열을 써서 모바일 WebView에서도 선명하게 보이게 한다.
 - 예약 플로우는 학생단의 핵심 작업이므로 한 화면에 현재 단계 하나를 강하게 보여주고, 완료된 단계는 summary row로 접는다.
 
 ## 6. Student Surface Rules

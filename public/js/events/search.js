@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
-import { loadAdminData } from "../data.js?v=20260704-astryx-student-guide";
-import { render } from "../renderer.js?v=20260704-astryx-student-guide";
-import { normalizeUnicodeText } from "../utils.js?v=20260704-astryx-student-guide";
-import { resetAdminPage } from "./shared.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
+import { loadAdminData } from "../data.js?v=20260704-student-icon-nav";
+import { render } from "../renderer.js?v=20260704-student-icon-nav";
+import { normalizeUnicodeText } from "../utils.js?v=20260704-student-icon-nav";
+import { resetAdminPage } from "./shared.js?v=20260704-student-icon-nav";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

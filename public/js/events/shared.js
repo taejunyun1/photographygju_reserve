@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
-import { logout } from "../actions.js?v=20260704-astryx-student-guide";
-import { render, toast } from "../renderer.js?v=20260704-astryx-student-guide";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
+import { logout } from "../actions.js?v=20260704-student-icon-nav";
+import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-student-icon-nav";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260704-astryx-student-guide";
+} from "../utils.js?v=20260704-student-icon-nav";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260704-astryx-student-guide";
+} from "./scroll-state.js?v=20260704-student-icon-nav";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

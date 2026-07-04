@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260704-astryx-student-guide";
+import { state } from "../state.js?v=20260704-student-icon-nav";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260704-astryx-student-guide";
+} from "../admin-equipment.js?v=20260704-student-icon-nav";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260704-astryx-student-guide";
+} from "./shared.js?v=20260704-student-icon-nav";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

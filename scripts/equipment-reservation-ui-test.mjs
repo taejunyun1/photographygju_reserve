@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-astryx-student-guide");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-astryx-student-guide");
+const { state } = await import("../public/js/state.js?v=20260704-student-icon-nav");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260704-student-icon-nav");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -62,8 +62,8 @@ const rootRule = styleSource.slice(0, styleSource.indexOf("\n}\n\nhtml"));
 const studentShellRule = cssRule(".student-shell");
 const topAppbarRule = cssRule(".top-appbar");
 const mobileNavRule = cssRule(".mobile-nav");
-const mobileNavButtonRule = cssRule(".mobile-nav button");
-const mobileNavActiveRule = cssRule(".mobile-nav button.active");
+const mobileNavButtonRule = cssRule(".mobile-nav > button");
+const mobileNavActiveRule = cssRule(".mobile-nav > button.active");
 const facilityCardRule = cssRule(".facility-card");
 const cardRule = cssRule(".card");
 const buttonRule = cssRule(".button");
@@ -75,6 +75,7 @@ assert(designGuideSource.includes("Astryx/GJU"), "frontend design guide must nam
 assert(designGuideSource.includes("학생단"), "frontend design guide must define how the student surface uses the same system");
 assert(designGuideSource.includes("8px"), "frontend design guide must lock cards and buttons to the Astryx 8px radius rule");
 assert(designGuideSource.includes("icon-only"), "frontend design guide must document icon-only action rules");
+assert(designGuideSource.includes("모바일 bottom nav item은 icon-only 구조를 쓴다."), "frontend design guide must define student bottom nav as icon-only");
 assert(rootRule.includes("--gju-student-edge: clamp(16px, 5vw, 24px);"), "student shell must expose a shared Astryx edge-spacing token");
 assert(rootRule.includes("--gju-student-bottom-nav-height: 88px;"), "student shell must expose a bottom-nav height token");
 assert(rootRule.includes("--component-card-radius: 8px;"), "student and legacy cards must use the Astryx 8px radius token");
@@ -86,14 +87,19 @@ assert(topAppbarRule.includes("background: rgba(247, 248, 251, 0.96);"), "studen
 assert(!mobileNavRule.includes("rgba(12, 15, 22"), "student bottom nav must not keep the old dark navigation treatment");
 assert(mobileNavRule.includes("background: rgba(247, 248, 251, 0.96);"), "student bottom nav must use the Astryx light surface");
 assert(mobileNavRule.includes("border-top: 1px solid var(--gju-color-border);"), "student bottom nav must use the Astryx border token");
-assert(mobileNavButtonRule.includes("color: var(--muted);"), "student bottom nav inactive items must use muted text");
-assert(mobileNavActiveRule.includes("color: var(--primary);"), "student bottom nav active item must use the primary token");
-assert(mobileNavActiveRule.includes("background: var(--primary-container);"), "student bottom nav active item must use the primary container token");
+assert(mobileNavButtonRule.includes("color: var(--gju-color-text-muted);"), "student bottom nav inactive icon buttons must use the stronger Astryx muted color");
+assert(mobileNavButtonRule.includes("font-size: 0;"), "student bottom nav must be icon-only without visible label text");
+assert(mobileNavButtonRule.includes("line-height: 0;"), "student bottom nav icon-only buttons must not reserve text line height");
+assert(mobileNavButtonRule.includes("grid-template-columns: 1fr;"), "student bottom nav icon-only buttons must center a single icon column");
+assert(mobileNavActiveRule.includes("color: var(--on-primary-container);"), "student bottom nav active icon must use the darker on-primary-container token");
+assert(mobileNavActiveRule.includes("background: rgba(11, 77, 162, 0.18);"), "student bottom nav active item must use a stronger selected background");
 assert(facilityCardRule.includes("border-radius: var(--component-card-radius);"), "student facility cards must use the shared Astryx card radius");
 assert(cardRule.includes("border-radius: var(--component-card-radius);"), "student cards must use the shared Astryx card radius");
 assert(buttonRule.includes("border-radius: var(--component-button-radius);"), "student buttons must use the shared Astryx button radius");
 assert(viewSource.includes("function studentNavIconName("), "student views must map navigation labels to shared icons");
 assert(viewSource.includes("student-nav-icon"), "student navigation must render visible icons through the shared icon primitive");
+assert(viewSource.includes('aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"'), "student bottom nav icon-only buttons must keep accessible labels");
+assert(!viewSource.includes('${icon(studentNavIconName(key), "student-nav-icon")}<span>${label}</span>'), "student bottom nav must not render visible text labels");
 assert(viewSource.includes("student-logout-button icon-only-action"), "student header logout must use an icon-only Astryx action button");
 assert(!viewSource.includes('${icon("logOut")}나가기</button>'), "student header logout must remove visible logout text");
 

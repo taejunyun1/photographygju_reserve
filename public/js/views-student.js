@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260704-astryx-student-guide";
-import { statusLabel, typeLabel } from "./constants.js?v=20260704-astryx-student-guide";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260704-astryx-student-guide";
+import { state } from "./state.js?v=20260704-student-icon-nav";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-student-icon-nav";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260704-student-icon-nav";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260704-astryx-student-guide";
+} from "./utils.js?v=20260704-student-icon-nav";
 import {
   actionRow,
   card,
@@ -50,7 +50,7 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260704-astryx-student-guide";
+} from "./ui.js?v=20260704-student-icon-nav";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -144,7 +144,7 @@ export function studentShell() {
       ${studentContent()}
       <nav class="mobile-nav">
         ${equipmentFloatingSelectionDock()}
-        ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}">${icon(studentNavIconName(key), "student-nav-icon")}<span>${label}</span></button>`).join("")}
+        ${navItems.map(([key, label]) => `<button class="${state.view === key ? "active" : ""}" data-student-view="${key}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${icon(studentNavIconName(key), "student-nav-icon")}</button>`).join("")}
       </nav>
     </main>
   `;

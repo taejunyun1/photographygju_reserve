@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260704-astryx-student-guide";
-import { state } from "./state.js?v=20260704-astryx-student-guide";
+import { statusLabel, typeLabel } from "./constants.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260704-student-icon-nav";
 
 const NOTIFICATION_PREF_KEY = "gju_native_notifications_enabled";
 const NOTIFICATION_IDS_KEY = "gju_native_notification_ids";

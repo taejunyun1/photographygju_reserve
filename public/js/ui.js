@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260704-astryx-student-guide";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260704-student-icon-nav";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-astryx-student-guide";
+import { state } from "./state.js?v=20260704-student-icon-nav";
 import {
   equipmentReservationStatusColor,
   equipmentReservationStatusLabel,
@@ -6,7 +6,7 @@ import {
   statusLabel,
   typeLabel,
   weekdayIndex
-} from "./constants.js?v=20260704-astryx-student-guide";
+} from "./constants.js?v=20260704-student-icon-nav";
 
 export function escapeHtml(value) {
   return String(value ?? "")

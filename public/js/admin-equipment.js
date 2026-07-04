@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260704-astryx-student-guide";
-import { api } from "./api.js?v=20260704-astryx-student-guide";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-astryx-student-guide";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-astryx-student-guide";
+import { state } from "./state.js?v=20260704-student-icon-nav";
+import { api } from "./api.js?v=20260704-student-icon-nav";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-student-icon-nav";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-student-icon-nav";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

@@ -22,7 +22,7 @@
   --gju-color-surface-muted: var(--surface-low, #f7f8fb);
   --gju-color-border: var(--border-subtle, #d8dde8);
   --gju-color-text: var(--text, #111827);
-  --gju-color-text-muted: var(--text-muted, #566074);
+  --gju-color-text-muted: var(--text-muted, #334155);
   --gju-color-primary: var(--primary, #2457ff);
   --gju-color-danger: #c93f43;
   --gju-color-success: #1f7a4c;

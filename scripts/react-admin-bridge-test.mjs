@@ -84,8 +84,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260704-astryx-student-guide");
-const { render } = await import("../public/js/renderer.js?v=20260704-astryx-student-guide");
+const { state } = await import("../public/js/state.js?v=20260704-student-icon-nav");
+const { render } = await import("../public/js/renderer.js?v=20260704-student-icon-nav");
 
 state.bootstrap = { settings: { blockedSchedules: [] } };
 state.user = { id: "admin1", role: "admin", name: "관리자", email: "admin@gju.local" };
