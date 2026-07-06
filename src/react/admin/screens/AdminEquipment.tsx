@@ -148,6 +148,72 @@ function renderEquipmentPanelTabs(panelTab: string) {
   );
 }
 
+function renderEquipmentMobileCard(item: AdminEquipmentItem, selected: Set<string>) {
+  const selectedItem = selected.has(item.id);
+
+  return (
+    <article
+      className={`admin-equipment-mobile-card ${selectedItem ? "selected" : ""}`}
+      data-equipment-row={item.id}
+      data-status={item.status || ""}
+    >
+      <div className="admin-equipment-mobile-head">
+        <label className="admin-equipment-mobile-select">
+          <input
+            type="checkbox"
+            data-equipment-select={item.id}
+            defaultChecked={selectedItem}
+            aria-label={`${item.code || item.id} ${item.name || "기자재"} 선택`}
+          />
+          <span>
+            <strong>{item.code || "-"}</strong>
+            <em>{item.name || "-"}</em>
+          </span>
+        </label>
+        <span className="admin-equipment-mobile-reservable" data-equipment-reservable-cell={item.id}>
+          {renderReservableTag(item)}
+        </span>
+      </div>
+      {item.notes ? <p className="admin-equipment-mobile-note">{item.notes}</p> : null}
+      <dl className="admin-equipment-mobile-meta">
+        <div>
+          <dt>분류</dt>
+          <dd>{item.category || "-"}</dd>
+        </div>
+        <div>
+          <dt>관리처</dt>
+          <dd>{sourceLabel(String(item.source || item.facility || ""))}</dd>
+        </div>
+        <div>
+          <dt>상태</dt>
+          <dd>{isInquiry(item) ? "문의" : item.status || "-"}</dd>
+        </div>
+        <div>
+          <dt>예약</dt>
+          <dd>{item.reservable ? "가능" : "문의"}</dd>
+        </div>
+      </dl>
+      <div className="admin-equipment-mobile-actions">
+        <div className="equipment-status-buttons" data-equipment-status-cell={item.id}>
+          {renderStatusButton(item, "가능")}
+          {renderStatusButton(item, "수리중")}
+          {renderStatusButton(item, "파손")}
+          {renderStatusButton(item, "문의")}
+        </div>
+        <button
+          className="button danger compact icon-only-action"
+          type="button"
+          data-equipment-remove-admin={item.id}
+          aria-label="기자재 제거"
+          title="기자재 제거"
+        >
+          {renderTrashIcon()}
+        </button>
+      </div>
+    </article>
+  );
+}
+
 export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipmentProps) {
   const panelTab = String(state.adminEquipmentPanelTab || "manage");
   const query = normalizeSearchText(state.adminEquipmentSearch);
@@ -258,7 +324,7 @@ export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipme
             </button>
           </div>
         </div>
-        <div className="table-wrap embedded admin-equipment-scroll-region">
+        <div className="table-wrap embedded admin-equipment-scroll-region admin-equipment-table-wrap">
           <GjuTable>
             <thead>
               <tr>
@@ -291,8 +357,8 @@ export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipme
                         aria-label={`${item.code || item.id} ${item.name || "기자재"} 선택`}
                       />
                     </td>
-                    <td>{item.code || "-"}</td>
-                    <td>
+                    <td data-label="코드">{item.code || "-"}</td>
+                    <td data-label="장비">
                       {item.name || "-"}
                       {item.notes ? (
                         <>
@@ -301,9 +367,9 @@ export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipme
                         </>
                       ) : null}
                     </td>
-                    <td>{item.category || "-"}</td>
-                    <td>{sourceLabel(String(item.source || item.facility || ""))}</td>
-                    <td>
+                    <td data-label="분류">{item.category || "-"}</td>
+                    <td data-label="관리처">{sourceLabel(String(item.source || item.facility || ""))}</td>
+                    <td data-label="상태">
                       <div className="equipment-status-buttons" data-equipment-status-cell={item.id}>
                         {renderStatusButton(item, "가능")}
                         {renderStatusButton(item, "수리중")}
@@ -311,8 +377,8 @@ export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipme
                         {renderStatusButton(item, "문의")}
                       </div>
                     </td>
-                    <td data-equipment-reservable-cell={item.id}>{renderReservableTag(item)}</td>
-                    <td>
+                    <td data-label="예약" data-equipment-reservable-cell={item.id}>{renderReservableTag(item)}</td>
+                    <td data-label="작업">
                       <button
                         className="button danger compact icon-only-action"
                         type="button"
@@ -337,6 +403,20 @@ export function AdminEquipment({ state, legacyRenderAdminContent }: AdminEquipme
               )}
             </tbody>
           </GjuTable>
+        </div>
+        <div className="admin-equipment-mobile-list" aria-label="기자재 모바일 목록">
+          {filtered.length ? (
+            filtered.map((item) => (
+              <React.Fragment key={`mobile:${item.id}`}>
+                {renderEquipmentMobileCard(item, selected)}
+              </React.Fragment>
+            ))
+          ) : (
+            <GjuEmptyState
+              title={query ? "검색 결과가 없습니다." : "등록된 기자재가 없습니다."}
+              message={query ? "검색어를 지우거나 탭 필터를 변경하세요." : undefined}
+            />
+          )}
         </div>
       </GjuCard>
     </section>

@@ -454,6 +454,11 @@
   background: #dfeafe;
 }
 
+.admin-user-mobile-list,
+.admin-equipment-mobile-list {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .gju-app-shell {
     grid-template-columns: 1fr;
@@ -602,15 +607,529 @@
   .gju-app-shell__content .bulk-actions,
   .gju-app-shell__content .equipment-status-buttons,
   .gju-app-shell__content .button-row,
-  .gju-app-shell__content .row-actions,
+  .gju-app-shell__content .row-actions {
+    width: 100%;
+  }
+
   .gju-app-shell__content .admin-user-secondary-group {
     width: 100%;
+    grid-template-columns: minmax(0, 1fr) 48px;
   }
 
   .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .gju-app-shell__content .gju-card {
+    border-radius: 16px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+  }
+
+  .gju-app-shell__content .gju-card__header {
+    padding: 18px 18px 0;
+  }
+
+  .gju-app-shell__content .gju-card__body {
+    display: grid;
+    gap: 12px;
+    padding: 16px 18px 18px;
+  }
+
+  .gju-app-shell__content .list-control-panel {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(248, 251, 255, 0.72);
+  }
+
+  .gju-app-shell__content .list-control-panel .input {
+    min-height: 44px;
+    border-radius: 14px;
+  }
+
+  .gju-app-shell__content .tab-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 8px;
+  }
+
+  .gju-app-shell__content .tab-row .tab-button,
+  .gju-app-shell__content .admin-inner-tabs .tab-button {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  .gju-app-shell__content .admin-user-table-wrap {
+    display: none;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .gju-app-shell__content .admin-user-table-wrap .gju-table {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .gju-app-shell__content .admin-user-table,
+  .gju-app-shell__content .admin-user-table thead,
+  .gju-app-shell__content .admin-user-table tbody,
+  .gju-app-shell__content .admin-user-table tr,
+  .gju-app-shell__content .admin-user-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .gju-app-shell__content .admin-user-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .gju-app-shell__content .admin-user-table thead {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-info-row {
+    border: 1px solid var(--glass-border);
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
+    background: var(--surface-lowest, #fff);
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-actions-row {
+    margin: 0;
+    margin-bottom: 14px;
+    border: 1px solid var(--glass-border);
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: var(--surface-lowest, #fff);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    overflow: hidden;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-actions-row + .admin-user-info-row {
+    margin-top: 14px;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-info-row td {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-info-row td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 900;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-info-row .admin-user-identity {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+    padding: 14px 12px 10px;
+  }
+
+  .gju-app-shell__content .admin-user-table .admin-user-info-row .admin-user-identity::before {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-user-name {
+    font-size: 17px;
+    line-height: 22px;
+  }
+
+  .gju-app-shell__content .admin-user-email {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .gju-app-shell__content .admin-user-status-cell .gju-status-badge,
+  .gju-app-shell__content .admin-user-status-cell .tag {
+    justify-self: start;
+  }
+
+  .gju-app-shell__content .admin-user-actions-row td {
+    padding: 0 12px 12px;
+    border-bottom: 0;
+  }
+
+  .gju-app-shell__content .admin-user-action-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    border: 0;
+    border-top: 1px solid var(--line-soft);
+    border-radius: 0;
+    background: transparent;
+    padding: 12px 0 0;
+  }
+
+  .gju-app-shell__content .admin-user-core-group,
+  .gju-app-shell__content .admin-user-limit-group {
+    grid-template-columns: 1fr;
+  }
+
+  .gju-app-shell__content .admin-user-core-group .button,
+  .gju-app-shell__content .admin-user-limit-group .select {
+    min-height: 44px;
+  }
+
+  .gju-app-shell__content .admin-user-warning-memo {
+    gap: 6px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .gju-app-shell__content .admin-user-warning-memo-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .gju-app-shell__content .admin-user-secondary-group {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    align-items: stretch;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .gju-app-shell__content .admin-user-secondary-group .admin-user-delete-button {
+    justify-self: end;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-card {
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: var(--surface-lowest, #fff);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-identity {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-meta div,
+  .gju-app-shell__content .admin-equipment-mobile-meta div {
+    min-width: 0;
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    background: rgba(248, 251, 255, 0.7);
+    padding: 8px 9px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-meta dt,
+  .gju-app-shell__content .admin-equipment-mobile-meta dt {
+    margin: 0 0 4px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 900;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-meta dd,
+  .gju-app-shell__content .admin-equipment-mobile-meta dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions {
+    display: grid;
+    gap: 8px;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 10px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-core-group .button,
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-limit-group .select {
+    min-height: 44px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-secondary-group {
+    grid-template-columns: minmax(0, 1fr) 48px;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-warning-memo.is-empty {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-warning-memo.is-empty .admin-user-warning-memo-head {
+    display: contents;
+  }
+
+  .gju-app-shell__content .admin-user-mobile-actions .admin-user-warning-memo.is-empty > span {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-equipment-table-wrap {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .table-wrap.embedded {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element,
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element tbody,
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element tr,
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element thead {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact tbody tr {
+    margin: 0 0 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: var(--surface-lowest, #fff);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    overflow: hidden;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 900;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .check-col {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label="장비"],
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label="상태"] {
+    align-items: start;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label="상태"] {
+    display: block;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label="상태"]::before {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .equipment-status-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact .equipment-status-buttons .status-button {
+    min-height: 44px;
+  }
+
+  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label="작업"] .icon-only-action {
+    justify-self: start;
+  }
+
+  .gju-app-shell__content .equipment-bulk-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .gju-app-shell__content .equipment-bulk-bar .bulk-actions {
+    grid-column: 1 / -1;
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-left: 0;
+  }
+
+  .gju-app-shell__content .equipment-bulk-bar .bulk-actions:has(button:not(:disabled)) {
+    display: grid;
+  }
+
+  .gju-app-shell__content .equipment-bulk-bar .bulk-actions .icon-only-action {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-card {
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: var(--surface-lowest, #fff);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    padding: 14px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-card.selected {
+    border-color: var(--control-active-border);
+    background: var(--glass-tint-blue);
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-select {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-select input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--primary);
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-select span {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-select strong {
+    color: var(--text);
+    font-size: 16px;
+    line-height: 21px;
+    font-weight: 900;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-select em,
+  .gju-app-shell__content .admin-equipment-mobile-note {
+    color: var(--muted);
+    font-style: normal;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 800;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-note {
+    margin: 0;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 10px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 10px;
+    align-items: start;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 12px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-actions .equipment-status-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-actions .status-button {
+    min-height: 44px;
+  }
+
+  .gju-app-shell__content .admin-equipment-mobile-actions .icon-only-action {
+    justify-self: end;
   }
 
   .gju-app-shell__content--with-mobile-bottom-nav {

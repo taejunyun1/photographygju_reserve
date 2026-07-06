@@ -30,6 +30,8 @@ const emptyStateSource = read("src/react/design-system/EmptyState.tsx");
 const tableSource = read("src/react/design-system/Table.tsx");
 const toastSource = read("src/react/design-system/Toast.tsx");
 const renderTestSource = read("scripts/react-admin-render-test.mjs");
+const adminUsersSource = read("src/react/admin/screens/AdminUsers.tsx");
+const adminEquipmentSource = read("src/react/admin/screens/AdminEquipment.tsx");
 
 function readTree(rootDir) {
   const entries = [];
@@ -254,6 +256,85 @@ assert(mobileShellBottomNavRule.includes("max(var(--gju-app-shell-mobile-edge), 
 assert(mobileShellBottomNavRule.includes("max(var(--gju-app-shell-mobile-edge), var(--gju-safe-area-left))"), "Mobile React Admin bottom nav must keep a safe left edge inset");
 const mobileBottomNavItemsRule = cssRule(designSystemCss, "  .gju-admin-nav--bottom {", mobileMediaStart);
 assert(mobileBottomNavItemsRule.includes("scroll-padding-inline: var(--gju-app-shell-mobile-edge);"), "Mobile React Admin bottom nav scroll area must respect the shared edge spacing");
+const mobileAdminCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .gju-card {", mobileMediaStart);
+for (const token of ["border-radius: 16px;", "box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);"]) {
+  assert(mobileAdminCardRule.includes(token), `Mobile Admin cards must use the compact Astryx card treatment: ${token}`);
+}
+const mobileAdminUserTableWrapperRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table-wrap .gju-table {", mobileMediaStart);
+for (const token of ["border: 0;", "background: transparent;", "box-shadow: none;", "overflow: visible;"]) {
+  assert(mobileAdminUserTableWrapperRule.includes(token), `Mobile student approval cards must not be double-framed by the table wrapper: ${token}`);
+}
+const mobileAdminUserInfoRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table .admin-user-info-row {", mobileMediaStart);
+for (const token of ["border-radius: 16px 16px 0 0;", "border-bottom: 0;", "box-shadow: none;"]) {
+  assert(mobileAdminUserInfoRowRule.includes(token), `Mobile student info rows must attach to their action panel: ${token}`);
+}
+const mobileAdminUserActionRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table .admin-user-actions-row {", mobileMediaStart);
+for (const token of ["border-top: 0;", "border-radius: 0 0 16px 16px;", "margin-bottom: 14px;"]) {
+  assert(mobileAdminUserActionRowRule.includes(token), `Mobile student action rows must finish the same card: ${token}`);
+}
+const mobileAdminUserActionPanelRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-action-panel {", mobileMediaStart);
+for (const token of ["border: 0;", "border-top: 1px solid var(--line-soft);", "background: transparent;", "padding: 12px 0 0;"]) {
+  assert(mobileAdminUserActionPanelRule.includes(token), `Mobile student action panel must read as part of the card instead of a nested card: ${token}`);
+}
+const mobileAdminUserSecondaryRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-secondary-group {", mobileMediaStart);
+assert(mobileAdminUserSecondaryRule.includes("grid-template-columns: minmax(0, 1fr) 48px;"), "Mobile student secondary actions must keep reset wide and delete icon compact");
+const mobileEquipmentTableWrapperRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact .table-wrap.embedded {", mobileMediaStart);
+for (const token of ["border: 0;", "background: transparent;", "box-shadow: none;", "max-height: none;", "overflow: visible;"]) {
+  assert(mobileEquipmentTableWrapperRule.includes(token), `Mobile equipment cards must not be double-framed by the table wrapper: ${token}`);
+}
+const mobileEquipmentTableDisplayRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact .gju-table__element,", mobileMediaStart);
+for (const token of ["display: block;", "min-width: 0;"]) {
+  assert(mobileEquipmentTableDisplayRule.includes(token), `Mobile equipment table must collapse into cards: ${token}`);
+}
+const mobileEquipmentRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact tbody tr {", mobileMediaStart);
+for (const token of ["border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);", "overflow: hidden;"]) {
+  assert(mobileEquipmentRowRule.includes(token), `Mobile equipment rows must render as tactile cards: ${token}`);
+}
+const mobileEquipmentLabelRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label]::before {", mobileMediaStart);
+for (const token of ["content: attr(data-label);", "font-size: 11px;", "font-weight: 900;"]) {
+  assert(mobileEquipmentLabelRule.includes(token), `Mobile equipment card fields must show stable labels: ${token}`);
+}
+const mobileEquipmentStatusRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact .equipment-status-buttons {", mobileMediaStart);
+for (const token of ["display: grid;", "grid-template-columns: repeat(2, minmax(0, 1fr));", "gap: 8px;"]) {
+  assert(mobileEquipmentStatusRule.includes(token), `Mobile equipment status actions must use a stable two-column grid: ${token}`);
+}
+const mobileAdminUserListRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-list {", mobileMediaStart);
+for (const token of ["display: grid;", "gap: 12px;"]) {
+  assert(mobileAdminUserListRule.includes(token), `Mobile student approvals must use a dedicated card list: ${token}`);
+}
+const mobileAdminUserDesktopTableRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table-wrap {", mobileMediaStart);
+assert(mobileAdminUserDesktopTableRule.includes("display: none;"), "Mobile student approvals must hide the desktop table layout");
+const mobileAdminUserCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-card {", mobileMediaStart);
+for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
+  assert(mobileAdminUserCardRule.includes(token), `Mobile student approval cards must be cohesive touch cards: ${token}`);
+}
+const mobileAdminUserMetaRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-meta {", mobileMediaStart);
+assert(mobileAdminUserMetaRule.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"), "Mobile student cards must summarize metadata in two compact columns");
+const mobileEquipmentListRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-list {", mobileMediaStart);
+for (const token of ["display: grid;", "gap: 12px;"]) {
+  assert(mobileEquipmentListRule.includes(token), `Mobile equipment must use a dedicated card list: ${token}`);
+}
+const mobileEquipmentDesktopTableRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-table-wrap {", mobileMediaStart);
+assert(mobileEquipmentDesktopTableRule.includes("display: none;"), "Mobile equipment must hide the desktop table layout");
+const mobileEquipmentCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-card {", mobileMediaStart);
+for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
+  assert(mobileEquipmentCardRule.includes(token), `Mobile equipment cards must be cohesive touch cards: ${token}`);
+}
+const mobileEquipmentMetaRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-meta {", mobileMediaStart);
+assert(mobileEquipmentMetaRule.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"), "Mobile equipment cards must summarize metadata in two compact columns");
+const mobileEquipmentBulkActionsRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions {", mobileMediaStart);
+assert(mobileEquipmentBulkActionsRule.includes("display: none;"), "Mobile equipment bulk actions must stay hidden until equipment is selected");
+const mobileEquipmentBulkActionsActiveRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions:has(button:not(:disabled)) {", mobileMediaStart);
+assert(mobileEquipmentBulkActionsActiveRule.includes("display: grid;"), "Mobile equipment bulk actions must reappear after selecting equipment");
+for (const className of ["admin-user-mobile-list", "admin-user-mobile-card", "admin-user-mobile-meta", "admin-user-mobile-actions"]) {
+  assert(adminUsersSource.includes(className), `React users screen must render ${className}`);
+}
+for (const className of ["admin-equipment-mobile-list", "admin-equipment-mobile-card", "admin-equipment-mobile-meta", "admin-equipment-mobile-actions"]) {
+  assert(adminEquipmentSource.includes(className), `React equipment screen must render ${className}`);
+}
+for (const label of ["코드", "장비", "분류", "관리처", "상태", "예약", "작업"]) {
+  assert(adminEquipmentSource.includes(`data-label="${label}"`), `React equipment mobile cards must expose a ${label} data label`);
+}
 for (const motionClassName of [".gju-motion-screen", ".gju-motion-panel", ".gju-motion-toast", ".gju-motion-dialog"]) {
   assert(designSystemCss.includes(motionClassName), `Reduced-motion CSS must cover ${motionClassName}`);
 }

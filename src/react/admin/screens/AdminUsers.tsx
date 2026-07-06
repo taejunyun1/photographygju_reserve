@@ -323,6 +323,98 @@ function renderWarningMemo(user: AdminUser) {
   );
 }
 
+function renderUserLimitSelect(user: AdminUser, keyPrefix = "user-limit") {
+  return (
+    <select
+      key={`${keyPrefix}:${user.id}:${user.approvalStatus || ""}:${user.blockDuration || ""}`}
+      className="select compact-select"
+      defaultValue={
+        user.approvalStatus === "blocked" && user.blockDuration
+          ? user.blockDuration
+          : ""
+      }
+      aria-label={`${user.name || "학생"} 대여금지 기간`}
+      data-user-limit-duration={user.id}
+    >
+      <option value="">대여금지 설정</option>
+      {user.approvalStatus === "blocked" ? <option value="unblock">대여금지 해제</option> : null}
+      {USER_LIMIT_OPTIONS.map(([value, label]) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function renderUserSecondaryActions(user: AdminUser) {
+  return (
+    <div className="admin-user-action-group admin-user-secondary-group">
+      <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
+        비번 리셋
+      </button>
+      <button
+        className="button danger compact admin-user-delete-button icon-only-action"
+        type="button"
+        data-user-delete={user.id}
+        data-user-name={user.name || ""}
+        aria-label="삭제"
+        title="삭제"
+      >
+        {renderDeleteIcon()}
+      </button>
+    </div>
+  );
+}
+
+function renderUserMobileCard(user: AdminUser) {
+  return (
+    <article className="admin-user-mobile-card" data-user-mobile-card={user.id}>
+      <div className="admin-user-mobile-head">
+        <div className="admin-user-mobile-identity">
+          <strong className="admin-user-name" title={user.name || ""}>
+            {user.name || "-"}
+          </strong>
+          <span className="admin-user-email" title={user.email || ""}>
+            {user.email || ""}
+          </span>
+        </div>
+        <GjuStatusBadge tone={statusTone(String(user.approvalStatus || ""))}>
+          {statusLabel(String(user.approvalStatus || ""))}
+        </GjuStatusBadge>
+      </div>
+      <dl className="admin-user-mobile-meta">
+        <div>
+          <dt>학번</dt>
+          <dd>{user.studentId || "-"}</dd>
+        </div>
+        <div>
+          <dt>신분</dt>
+          <dd>{user.studentStatus || "-"}</dd>
+        </div>
+        <div>
+          <dt>연락처</dt>
+          <dd>{user.phone || "-"}</dd>
+        </div>
+        <div>
+          <dt>상태</dt>
+          <dd>{statusLabel(String(user.approvalStatus || ""))}</dd>
+        </div>
+      </dl>
+      <div className="admin-user-mobile-actions">
+        <div className="admin-user-action-group admin-user-core-group">
+          {renderApprovalAction(user)}
+        </div>
+        <div className="admin-user-action-group admin-user-limit-group">
+          {renderUserLimitSelect(user, "mobile-user-limit")}
+        </div>
+        {renderWarningMemo(user)}
+        {renderUserSecondaryActions(user)}
+      </div>
+    </article>
+  );
+}
+
 export function AdminUsers({ state }: AdminUsersProps) {
   const query = normalizeSearchText(state.adminUserSearch);
   const activeFilter = String(state.adminUserStatusFilter || "all");
@@ -410,42 +502,10 @@ export function AdminUsers({ state }: AdminUsersProps) {
                             {renderApprovalAction(user)}
                           </div>
                           <div className="admin-user-action-group admin-user-limit-group">
-                            <select
-                              key={`user-limit:${user.id}:${user.approvalStatus || ""}:${user.blockDuration || ""}`}
-                              className="select compact-select"
-                              defaultValue={
-                                user.approvalStatus === "blocked" && user.blockDuration
-                                  ? user.blockDuration
-                                  : ""
-                              }
-                              aria-label={`${user.name || "학생"} 대여금지 기간`}
-                              data-user-limit-duration={user.id}
-                            >
-                              <option value="">대여금지 설정</option>
-                              {user.approvalStatus === "blocked" ? <option value="unblock">대여금지 해제</option> : null}
-                              {USER_LIMIT_OPTIONS.map(([value, label]) => (
-                                <option key={value} value={value}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
+                            {renderUserLimitSelect(user)}
                           </div>
                           {renderWarningMemo(user)}
-                          <div className="admin-user-action-group admin-user-secondary-group">
-                            <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
-                              비번 리셋
-                            </button>
-                            <button
-                              className="button danger compact admin-user-delete-button icon-only-action"
-                              type="button"
-                              data-user-delete={user.id}
-                              data-user-name={user.name || ""}
-                              aria-label="삭제"
-                              title="삭제"
-                            >
-                              {renderDeleteIcon()}
-                            </button>
-                          </div>
+                          {renderUserSecondaryActions(user)}
                         </div>
                       </td>
                     </tr>
@@ -463,6 +523,16 @@ export function AdminUsers({ state }: AdminUsersProps) {
               )}
             </tbody>
           </GjuTable>
+        </div>
+        <div className="admin-user-mobile-list" aria-label="학생 승인 모바일 목록">
+          {users.length ? (
+            users.map((user) => <React.Fragment key={`mobile:${user.id}`}>{renderUserMobileCard(user)}</React.Fragment>)
+          ) : (
+            <GjuEmptyState
+              title={query ? "검색 결과가 없습니다." : "학생이 없습니다."}
+              message={query ? "검색어를 지우거나 상태 필터를 변경하세요." : undefined}
+            />
+          )}
         </div>
         {renderUsersPager(page)}
       </GjuCard>
