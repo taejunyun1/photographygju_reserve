@@ -141,13 +141,24 @@ for (const token of [
 }
 assert(designSystemCss.includes(".gju-motion-screen {\n  animation: gju-screen-enter var(--gju-motion-duration-normal) var(--gju-motion-ease-standard);\n}"), "Screen motion class must use the Task 3 animation contract");
 assert(designSystemCss.includes("@media (prefers-reduced-motion: reduce)"), "Design system CSS must include reduced-motion handling");
-assert(designSystemCss.includes("#react-admin-root {\n  min-height: 100%;\n}"), "React Admin root container must inherit app height on desktop");
+const reactRootRule = cssRule(designSystemCss, "#react-admin-root {");
+for (const token of ["min-height: 100vh;", "min-height: 100dvh;"]) {
+  assert(reactRootRule.includes(token), `React Admin root container must fill the viewport to avoid clipped admin surfaces: ${token}`);
+}
+const appShellRule = cssRule(designSystemCss, ".gju-app-shell {");
+for (const token of ["min-height: 100vh;", "min-height: 100dvh;"]) {
+  assert(appShellRule.includes(token), `React Admin shell background must extend to the viewport: ${token}`);
+}
 assert(designSystemCss.includes("--gju-app-shell-mobile-edge: clamp(18px, 5vw, 24px);"), "React Admin mobile shell must define a shared screen-edge spacing token");
 const mobileMediaStart = designSystemCss.indexOf("@media (max-width: 900px)");
 assert.notEqual(mobileMediaStart, -1, "Design system CSS must define the mobile React Admin shell media query");
 const mobileReactRootRule = cssRule(designSystemCss, "  #react-admin-root {", mobileMediaStart);
-for (const token of ["min-height: 0;", "height: 100%;"]) {
+for (const token of ["min-height: 100vh;", "min-height: 100dvh;", "height: 100vh;", "height: 100dvh;"]) {
   assert(mobileReactRootRule.includes(token), `Mobile React Admin root rule must include ${token}`);
+}
+const mobileAppShellRule = cssRule(designSystemCss, "  .gju-app-shell {", mobileMediaStart);
+for (const token of ["min-height: 100vh;", "min-height: 100dvh;", "height: 100vh;", "height: 100dvh;"]) {
+  assert(mobileAppShellRule.includes(token), `Mobile React Admin shell rule must include ${token}`);
 }
 const mobileShellMainRule = cssRule(designSystemCss, "  .gju-app-shell__main {", mobileMediaStart);
 for (const token of ["min-height: 0;", "height: 100%;", "overflow: hidden;"]) {
