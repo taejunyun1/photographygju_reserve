@@ -66,8 +66,11 @@
 .gju-app-shell {
   display: grid;
   grid-template-columns: minmax(220px, 264px) minmax(0, 1fr);
+  width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
   color: var(--gju-color-text);
   background: var(--gju-color-surface-muted);
 }
@@ -91,6 +94,8 @@
 
 .gju-app-shell__main {
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -100,7 +105,67 @@
 }
 
 .gju-app-shell__content {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   padding: 24px;
+}
+
+.gju-app-shell__content > *,
+.gju-app-shell__content .gju-card,
+.gju-app-shell__content .gju-card__header,
+.gju-app-shell__content .gju-card__body,
+.gju-app-shell__content .gju-legacy-admin-panel,
+.gju-app-shell__content .gju-legacy-admin-panel > *,
+.gju-app-shell__content .grid,
+.gju-app-shell__content .card,
+.gju-app-shell__content .ui-card,
+.gju-app-shell__content .ui-search-field,
+.gju-app-shell__content .list-control-panel,
+.gju-app-shell__content .pagination,
+.gju-app-shell__content .bulk-danger-zone,
+.gju-app-shell__content .admin-reservation-grid,
+.gju-app-shell__content .admin-reservation-card,
+.gju-app-shell__content .reservation-card-head,
+.gju-app-shell__content .property-list,
+.gju-app-shell__content .prop,
+.gju-app-shell__content .admin-user-action-panel,
+.gju-app-shell__content .admin-user-action-group,
+.gju-app-shell__content .admin-user-warning-memo,
+.gju-app-shell__content .admin-user-warning-memo-head,
+.gju-app-shell__content .equipment-bulk-bar,
+.gju-app-shell__content .bulk-actions,
+.gju-app-shell__content .equipment-status-buttons,
+.gju-app-shell__content .button-row,
+.gju-app-shell__content .admin-settings-card,
+.gju-app-shell__content .blocked-list,
+.gju-app-shell__content .blocked-item,
+.gju-app-shell__content .guide-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gju-app-shell__content .table-wrap,
+.gju-app-shell__content .gju-table {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.gju-app-shell__content .tab-row,
+.gju-app-shell__content .admin-inner-tabs {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.gju-app-shell__content .tab-row::-webkit-scrollbar,
+.gju-app-shell__content .admin-inner-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .gju-admin-nav {

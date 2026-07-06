@@ -149,6 +149,41 @@ const appShellRule = cssRule(designSystemCss, ".gju-app-shell {");
 for (const token of ["min-height: 100vh;", "min-height: 100dvh;"]) {
   assert(appShellRule.includes(token), `React Admin shell background must extend to the viewport: ${token}`);
 }
+for (const token of ["width: 100%;", "max-width: 100vw;", "overflow-x: hidden;"]) {
+  assert(appShellRule.includes(token), `React Admin shell must stay within the visible screen: ${token}`);
+}
+const shellMainRule = cssRule(designSystemCss, ".gju-app-shell__main {");
+for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-x: hidden;"]) {
+  assert(shellMainRule.includes(token), `React Admin main region must not push past the viewport: ${token}`);
+}
+const shellContentRule = cssRule(designSystemCss, ".gju-app-shell__content {");
+for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-x: hidden;"]) {
+  assert(shellContentRule.includes(token), `React Admin content region must not clip off-screen content: ${token}`);
+}
+const desktopContentContainmentRule = cssRule(designSystemCss, ".gju-app-shell__content > *,");
+for (const token of ["width: 100%;", "min-width: 0;", "max-width: 100%;"]) {
+  assert(desktopContentContainmentRule.includes(token), `React Admin desktop content containment must include ${token}`);
+}
+for (const selector of [
+  ".gju-app-shell__content .gju-card",
+  ".gju-app-shell__content .gju-legacy-admin-panel",
+  ".gju-app-shell__content .grid",
+  ".gju-app-shell__content .card",
+  ".gju-app-shell__content .ui-card",
+  ".gju-app-shell__content .list-control-panel",
+  ".gju-app-shell__content .admin-user-action-panel",
+  ".gju-app-shell__content .equipment-bulk-bar"
+]) {
+  assert(desktopContentContainmentRule.includes(selector), `React Admin desktop content containment must cover ${selector}`);
+}
+const desktopScrollableRule = cssRule(designSystemCss, ".gju-app-shell__content .table-wrap,");
+for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavior-x: contain;"]) {
+  assert(desktopScrollableRule.includes(token), `React Admin desktop tables must scroll inside their region: ${token}`);
+}
+const desktopControlsRule = cssRule(designSystemCss, ".gju-app-shell__content .tab-row,");
+for (const token of ["width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
+  assert(desktopControlsRule.includes(token), `React Admin desktop controls must stay within screen width: ${token}`);
+}
 assert(designSystemCss.includes("--gju-app-shell-mobile-edge: clamp(18px, 5vw, 24px);"), "React Admin mobile shell must define a shared screen-edge spacing token");
 const mobileMediaStart = designSystemCss.indexOf("@media (max-width: 900px)");
 assert.notEqual(mobileMediaStart, -1, "Design system CSS must define the mobile React Admin shell media query");
