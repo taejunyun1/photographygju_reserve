@@ -59,6 +59,9 @@ function cssRule(selector, startIndex = 0) {
 }
 
 const rootRule = styleSource.slice(0, styleSource.indexOf("\n}\n\nhtml"));
+const brandGroupRule = cssRule(".brand,\n.appbar-brand");
+const brandMarkRule = cssRule(".brand-mark");
+const brandMarkBeforeRule = cssRule(".brand-mark::before");
 const studentShellRule = cssRule(".student-shell");
 const topAppbarRule = cssRule(".top-appbar");
 const mobileNavRule = cssRule(".mobile-nav");
@@ -80,6 +83,11 @@ assert(rootRule.includes("--gju-student-edge: clamp(16px, 5vw, 24px);"), "studen
 assert(rootRule.includes("--gju-student-bottom-nav-height: 88px;"), "student shell must expose a bottom-nav height token");
 assert(rootRule.includes("--component-card-radius: 8px;"), "student and legacy cards must use the Astryx 8px radius token");
 assert(rootRule.includes("--component-button-radius: 8px;"), "buttons must use the Astryx 8px radius token");
+assert(brandGroupRule.includes("overflow: visible;"), "brand rows must not clip the G logo shadow");
+assert(brandMarkRule.includes("flex: 0 0 auto;"), "G logo mark must keep stable dimensions without flex shrinking");
+assert(brandMarkRule.includes("--brand-mark-shadow-room: 10px;"), "G logo mark must reserve internal room for its shadow");
+assert(brandMarkRule.includes("padding: 0 var(--brand-mark-shadow-room) var(--brand-mark-shadow-room) 0;"), "G logo mark shadow room must be part of the rendered logo box");
+assert(brandMarkBeforeRule.includes("box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 8px 18px rgba(11, 77, 162, 0.22);"), "G logo visual square must keep the intended shadow on an unclipped pseudo-element");
 assert(studentShellRule.includes("padding: 18px max(var(--gju-student-edge), var(--safe-area-right)) calc(var(--gju-student-bottom-nav-height) + var(--safe-area-bottom)) max(var(--gju-student-edge), var(--safe-area-left));"), "student shell must use safe-area-aware Astryx edge spacing");
 assert(topAppbarRule.includes("position: sticky;"), "student app bar must use the sticky Astryx shell behavior");
 assert(topAppbarRule.includes("top: 0;"), "student app bar must stick to the top of the scroll container");

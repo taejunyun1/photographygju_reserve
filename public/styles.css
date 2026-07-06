@@ -292,24 +292,51 @@ a {
   align-items: center;
   gap: 12px;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .brand {
   margin-bottom: 22px;
 }
 
+.brand > div:last-child,
+.appbar-brand > div:last-child {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .brand-mark {
-  width: 38px;
-  height: 38px;
+  --brand-mark-size: 38px;
+  --brand-mark-shadow-room: 10px;
+  --brand-mark-radius: 14px;
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 auto;
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
+  padding: 0 var(--brand-mark-shadow-room) var(--brand-mark-shadow-room) 0;
+  box-sizing: content-box;
   display: grid;
+  grid-template-columns: var(--brand-mark-size);
+  grid-template-rows: var(--brand-mark-size);
   place-items: center;
-  border-radius: 14px;
-  background: linear-gradient(145deg, var(--primary-2) 0%, var(--primary) 72%);
   color: var(--on-primary);
   font-weight: 800;
+}
+
+.brand-mark::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
+  border-radius: var(--brand-mark-radius);
+  background: linear-gradient(145deg, var(--primary-2) 0%, var(--primary) 72%);
   border: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 8px 18px rgba(11, 77, 162, 0.22);
+  pointer-events: none;
 }
 
 .brand h1,
@@ -4744,7 +4771,7 @@ tr.selected td {
 
   .admin-mobile-header .brand-mark,
   .top-appbar .brand-mark {
-    flex: 0 0 38px;
+    flex: 0 0 auto;
   }
 
   .admin-mobile-nav {
@@ -5095,9 +5122,9 @@ tr.selected td {
 
   .top-appbar .brand-mark,
   .admin-mobile-header .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
+    --brand-mark-size: 34px;
+    --brand-mark-shadow-room: 10px;
+    --brand-mark-radius: 12px;
   }
 
   .top-appbar .appbar-brand strong,
@@ -5166,8 +5193,8 @@ tr.selected td {
   }
 
   .appbar-brand .brand-mark {
-    width: 34px;
-    height: 34px;
+    --brand-mark-size: 34px;
+    --brand-mark-shadow-room: 10px;
   }
 
   .student-appbar-actions {
