@@ -311,6 +311,23 @@ assert(reactLogsSource.includes("actor?.studentId"), "React logs screen must ren
 assert(reactLogsSource.includes("actor?.email"), "React logs search/render must include actor email");
 assert(settings.includes("운영 알림"), "settings must render operations notification section");
 assert(settings.includes("마지막 동기화"), "settings notification section must show last sync");
+const settingsOrder = [
+  settings.indexOf("학기 차단 캘린더"),
+  settings.indexOf('data-form="blocked-schedule-add"'),
+  settings.indexOf("운영 설정"),
+  settings.indexOf("운영 알림"),
+  settings.indexOf("<h2 class=\"card-title\">Slack</h2>"),
+  settings.indexOf("보안 / 데이터 관리")
+];
+assert(settingsOrder.every((position) => position >= 0), "settings must render every required workflow section");
+assert(settingsOrder.every((position, index) => index === 0 || settingsOrder[index - 1] < position), "settings sections must follow calendar, blocked schedule, operations, notifications, Slack, security order");
+assert(settings.includes("calendar-month-actions"), "blocked calendar month controls must use compact calendar-month-actions");
+assert.match(settings, /data-admin-blocked-date="\d{4}-\d{2}-\d{2}"/, "blocked calendar dates must expose an interactive date attribute");
+assert(adminEventSource.includes("target.dataset.adminBlockedDate"), "admin flow must handle blocked calendar date clicks");
+assert(adminEventSource.includes('[name="from"]'), "blocked calendar date click must fill the form start date");
+assert(adminEventSource.includes('[name="to"]'), "blocked calendar date click must fill the form end date");
+assert(adminEventSource.includes('[name="day"]'), "blocked calendar date click must fill the form weekday");
+assert(adminEventSource.includes("form.querySelector('[name=\"from\"]')?.focus()"), "blocked calendar date click must focus the first date input after scrolling");
 assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
 assert.equal(metrics.equipmentCheckedOut, 1, "metrics must count checked-out equipment reservations");
 assert.equal(metrics.equipmentReturned, 1, "metrics must count returned equipment reservations");

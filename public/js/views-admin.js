@@ -1444,25 +1444,7 @@ export function adminSettingsView() {
   ]).includes(blockedQuery));
   return `
     <section class="grid">
-      <div class="card admin-settings-card admin-settings-card-primary">
-        <h2 class="card-title">운영 설정</h2>
-        <form data-form="settings-save">
-          <div class="field"><label>출력비 계좌 안내</label><input class="input" name="printBankAccount" value="${escapeHtml(settings.printBankAccount)}" /></div>
-          <div class="field"><label>출력실 구글 드라이브 URL</label><input class="input" name="googleDriveUrl" type="url" inputmode="url" value="${escapeHtml(settings.googleDriveUrl || "")}" placeholder="https://drive.google.com/..." /></div>
-          <div class="field"><label>암실 최대 인원</label><input class="input" name="darkroomCapacity" type="number" min="1" value="${settings.darkroomCapacity}" /></div>
-          <div class="field"><label>출력실 시작</label><input class="input" name="printAvailableStart" value="${escapeHtml(settings.printAvailableStart)}" /></div>
-          <div class="field"><label>출력실 종료</label><input class="input" name="printAvailableEnd" value="${escapeHtml(settings.printAvailableEnd)}" /></div>
-          <div class="grid two control-grid">
-            <div class="field"><label>출력 업로드 시작일</label><input class="input" name="printUploadStartDate" type="date" value="${escapeHtml(settings.printUploadStartDate || "")}" /></div>
-            <div class="field"><label>출력 업로드 종료일</label><input class="input" name="printUploadEndDate" type="date" value="${escapeHtml(settings.printUploadEndDate || "")}" /></div>
-          </div>
-          <div class="field"><label>고가장비 카테고리</label><input class="input" name="equipmentHighValueCategories" value="${escapeHtml((settings.equipmentHighValueCategories || ["Body", "Lens"]).join(", "))}" placeholder="Body, Lens" /></div>
-          <div class="field"><label>카메라 가방 키워드</label><input class="input" name="equipmentBagKeywords" value="${escapeHtml((settings.equipmentBagKeywords || ["펠리컨", "Pelican"]).join(", "))}" placeholder="펠리컨, Pelican" /></div>
-          <div class="field"><label>카메라 가방 확인 문구</label><input class="input" name="equipmentCameraBagNotice" value="${escapeHtml(settings.equipmentCameraBagNotice || "고가장비(카메라)를 선택 시 카메라 가방을 지참하겠습니다")}" /></div>
-          <button class="button primary" type="submit">${icon("check")}저장</button>
-        </form>
-      </div>
-      ${adminNotificationSettingsCard()}
+      ${adminBlockedCalendar(blockedSchedules)}
       <div class="card admin-settings-card">
         <h2 class="card-title">수업/학기 차단 일정</h2>
         <form class="grid two" data-form="blocked-schedule-add">
@@ -1489,7 +1471,25 @@ export function adminSettingsView() {
         ${blockedQuery ? `<p class="muted">"${escapeHtml(state.adminBlockedScheduleSearch)}" 검색 결과 ${filteredBlockedSchedules.length}건</p>` : ""}
         ${blockedScheduleList(filteredBlockedSchedules, { emptyTitle: blockedQuery ? "검색 결과가 없습니다." : "등록된 차단 일정이 없습니다." })}
       </div>
-      ${adminBlockedCalendar(blockedSchedules)}
+      <div class="card admin-settings-card admin-settings-card-primary">
+        <h2 class="card-title">운영 설정</h2>
+        <form data-form="settings-save">
+          <div class="field"><label>출력비 계좌 안내</label><input class="input" name="printBankAccount" value="${escapeHtml(settings.printBankAccount)}" /></div>
+          <div class="field"><label>출력실 구글 드라이브 URL</label><input class="input" name="googleDriveUrl" type="url" inputmode="url" value="${escapeHtml(settings.googleDriveUrl || "")}" placeholder="https://drive.google.com/..." /></div>
+          <div class="field"><label>암실 최대 인원</label><input class="input" name="darkroomCapacity" type="number" min="1" value="${settings.darkroomCapacity}" /></div>
+          <div class="field"><label>출력실 시작</label><input class="input" name="printAvailableStart" value="${escapeHtml(settings.printAvailableStart)}" /></div>
+          <div class="field"><label>출력실 종료</label><input class="input" name="printAvailableEnd" value="${escapeHtml(settings.printAvailableEnd)}" /></div>
+          <div class="grid two control-grid">
+            <div class="field"><label>출력 업로드 시작일</label><input class="input" name="printUploadStartDate" type="date" value="${escapeHtml(settings.printUploadStartDate || "")}" /></div>
+            <div class="field"><label>출력 업로드 종료일</label><input class="input" name="printUploadEndDate" type="date" value="${escapeHtml(settings.printUploadEndDate || "")}" /></div>
+          </div>
+          <div class="field"><label>고가장비 카테고리</label><input class="input" name="equipmentHighValueCategories" value="${escapeHtml((settings.equipmentHighValueCategories || ["Body", "Lens"]).join(", "))}" placeholder="Body, Lens" /></div>
+          <div class="field"><label>카메라 가방 키워드</label><input class="input" name="equipmentBagKeywords" value="${escapeHtml((settings.equipmentBagKeywords || ["펠리컨", "Pelican"]).join(", "))}" placeholder="펠리컨, Pelican" /></div>
+          <div class="field"><label>카메라 가방 확인 문구</label><input class="input" name="equipmentCameraBagNotice" value="${escapeHtml(settings.equipmentCameraBagNotice || "고가장비(카메라)를 선택 시 카메라 가방을 지참하겠습니다")}" /></div>
+          <button class="button primary" type="submit">${icon("check")}저장</button>
+        </form>
+      </div>
+      ${adminNotificationSettingsCard()}
       <div class="card admin-settings-card admin-settings-note-card"><h2 class="card-title">Slack</h2><p class="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p></div>
       <div class="card admin-settings-card admin-settings-danger-card">
         <h2 class="card-title">보안 / 데이터 관리</h2>
@@ -1540,19 +1540,19 @@ export function adminBlockedCalendar(items) {
           <p class="eyebrow">학기 차단 캘린더</p>
           <h2>${monthTitle(monthKey)}</h2>
         </div>
-        <div class="row-actions">
-          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, -1)}">이전</button>
-          <button class="button compact" type="button" data-calendar-month="${todayKey().slice(0, 7)}">오늘</button>
-          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, 1)}">다음</button>
+        <div class="row-actions calendar-month-actions">
+          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, -1)}" aria-label="이전 달" title="이전 달">‹</button>
+          <button class="button compact" type="button" data-calendar-month="${todayKey().slice(0, 7)}" aria-label="오늘" title="오늘">오늘</button>
+          <button class="button compact" type="button" data-calendar-month="${addMonths(monthKey, 1)}" aria-label="다음 달" title="다음 달">›</button>
         </div>
       </div>
       <div class="calendar-weekdays">${["일", "월", "화", "수", "목", "금", "토"].map((item) => `<span>${item}</span>`).join("")}</div>
       <div class="calendar-grid-large">
         ${days.map((day) => `
-          <div class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.blocked.length ? "blocked" : ""}">
+          <button class="calendar-day ${day.currentMonth ? "" : "outside"} ${day.blocked.length ? "blocked" : ""}" type="button" data-admin-blocked-date="${day.key}" aria-label="${day.key} 차단 일정 입력">
             <span>${day.day}</span>
             ${day.blocked.slice(0, 2).map((item) => `<small>${typeLabel[item.type] || item.type} ${escapeHtml(item.start)}-${escapeHtml(item.end)}</small>`).join("")}
-          </div>
+          </button>
         `).join("")}
       </div>
     </section>

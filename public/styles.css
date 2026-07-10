@@ -1503,6 +1503,9 @@ button:disabled,
 }
 
 .calendar-day {
+  appearance: none;
+  width: 100%;
+  font: inherit;
   min-height: 82px;
   border: 1px solid var(--glass-border);
   border-radius: 14px;

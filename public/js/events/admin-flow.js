@@ -156,6 +156,19 @@ export function setupAdminFlowClickHandlers() {
         render();
         return;
       }
+      if (target.dataset.adminBlockedDate) {
+        const form = document.querySelector('[data-form="blocked-schedule-add"]');
+        if (form) {
+          const date = new Date(`${target.dataset.adminBlockedDate}T00:00:00`);
+          const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+          form.querySelector('[name="from"]').value = target.dataset.adminBlockedDate;
+          form.querySelector('[name="to"]').value = target.dataset.adminBlockedDate;
+          form.querySelector('[name="day"]').value = weekdays[date.getDay()];
+          form.scrollIntoView({ behavior: "smooth", block: "start" });
+          form.querySelector('[name="from"]')?.focus();
+        }
+        return;
+      }
       if (target.dataset.action === "csv-preview") {
         const form = target.closest("form");
         state.csvPreviewRows = parseCsv(formData(form).csv || "");
