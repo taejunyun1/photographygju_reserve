@@ -89,5 +89,29 @@ export function createMaintenanceHelpers({
     return { ...summary, changed: Boolean(changed) };
   }
 
-  return { cleanupExpiredData };
+  function closeSemesterData(db, actorId = "system") {
+    normalizeDb(db);
+    const reservationIds = new Set(db.reservations.map((reservation) => reservation.id));
+    const summary = {
+      deletedReservations: db.reservations.length,
+      deletedReports: db.reports.filter((report) => reservationIds.has(report.reservationId)).length,
+      deletedSessions: db.sessions.length
+    };
+
+    db.reservations = [];
+    db.reports = db.reports.filter((report) => !reservationIds.has(report.reservationId));
+    db.sessions = [];
+    db.auditLogs.push({
+      id: id("audit"),
+      actorId,
+      action: "maintenance.semester_close",
+      targetId: "db",
+      detail: summary,
+      createdAt: new Date().toISOString()
+    });
+    capLogs(db);
+    return summary;
+  }
+
+  return { cleanupExpiredData, closeSemesterData };
 }

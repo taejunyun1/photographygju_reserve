@@ -1255,7 +1255,8 @@ function auditActionLabel(action) {
     "equipment.updated": "장비 수정",
     "notice.created": "공지 작성",
     "settings.updated": "설정 변경",
-    "maintenance.cleanup": "보관정책 정리"
+    "maintenance.cleanup": "보관정책 정리",
+    "maintenance.semester_close": "학기 종료 데이터 정리"
   }[action] || action;
 }
 
@@ -1493,10 +1494,12 @@ export function adminSettingsView() {
       <div class="card admin-settings-card admin-settings-note-card"><h2 class="card-title">Slack</h2><p class="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p></div>
       <div class="card admin-settings-card admin-settings-danger-card">
         <h2 class="card-title">보안 / 데이터 관리</h2>
-        <p class="muted">조교 교체 전에는 백업 JSON을 내려받고, 학기 종료 후에는 보관정책 정리를 실행하세요. 정리 작업은 오래된 예약 개인정보를 익명화하고 만료된 보고서 HTML과 세션을 삭제합니다.</p>
+        <p class="muted">조교 교체 전에는 백업 JSON을 내려받으세요. 보관정책 정리는 오래된 예약 개인정보를 익명화하고 만료된 보고서 HTML과 세션을 삭제합니다.</p>
+        <p class="muted"><strong>학기 종료 데이터 정리</strong>는 모든 예약과 연결된 보고서, 모든 로그인 세션을 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
         <div class="button-row">
           <button class="button" data-action="admin-export">${icon("download")}백업 JSON</button>
           <button class="button danger" data-action="admin-cleanup">${icon("trash")}보관정책 정리</button>
+          <button class="button danger" data-action="admin-semester-close">${icon("trash")}학기 종료 데이터 정리</button>
         </div>
       </div>
       ${adminGuide("설정 사용 가이드", "학기별 수업 시간, 출력실 시간, 암실 정원처럼 예약 규칙에 영향을 주는 값을 관리합니다. 차단 일정은 캘린더에 표시되어 조교가 학기 운영 상황을 빠르게 확인할 수 있습니다.")}

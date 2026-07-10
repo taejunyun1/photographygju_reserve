@@ -460,6 +460,22 @@ assert(!formsSource.includes('toast(error.message);'), "form error toasts must n
 
 assert(eventSource.includes("target.dataset.adminReservationSemester"), "reservation semester event handler must exist");
 assert(eventSource.includes("target.dataset.adminBulkDelete"), "bulk delete click handler must exist");
+assert(settings.includes('data-action="admin-cleanup"'), "retention cleanup action must remain available");
+assert(settings.includes('data-action="admin-semester-close"'), "semester-close action must be rendered");
+assert(settings.includes("되돌릴 수 없습니다"), "semester-close warning must state that the operation is irreversible");
+assert(settings.includes("학기 종료 데이터 정리"), "semester-close action must use an explicit destructive label");
+assert(adminEventSource.includes('import { downloadAdminBackup, downloadLectureCsv, logout }'), "semester-close flow must use the shared logout action");
+const semesterCloseActionStart = adminEventSource.indexOf('if (target.dataset.action === "admin-semester-close")');
+const semesterCloseActionEnd = adminEventSource.indexOf('if (target.dataset.adminView)', semesterCloseActionStart);
+assert.notEqual(semesterCloseActionStart, -1, "semester-close click handler must exist");
+assert.notEqual(semesterCloseActionEnd, -1, "semester-close click handler must close before navigation handlers");
+const semesterCloseAction = adminEventSource.slice(semesterCloseActionStart, semesterCloseActionEnd);
+assert(semesterCloseAction.includes('prompt('), "semester-close flow must prompt for the confirmation phrase");
+assert(semesterCloseAction.includes('"학기 종료"'), "semester-close flow must require the exact confirmation phrase");
+assert(semesterCloseAction.includes('api("/api/admin/maintenance/semester-close", { method: "POST", body: { confirmText } })'), "semester-close flow must call the destructive maintenance endpoint");
+assert(semesterCloseAction.indexOf("await logout()") > semesterCloseAction.indexOf("/api/admin/maintenance/semester-close"), "semester-close flow must log out only after API success");
+assert(viewsSource.includes('"maintenance.semester_close": "학기 종료 데이터 정리"'), "legacy logs must label semester-close audits");
+assert(reactLogsSource.includes('"maintenance.semester_close": "학기 종료 데이터 정리"'), "React logs must label semester-close audits");
 assert(searchSource.includes('"adminLectureSearch"') && searchSource.includes("adminServerSearchStateKeys"), "lecture admin search must be treated as server-backed search state");
 assert(searchSource.includes('"adminNoticeSearch"') && searchSource.includes("adminServerSearchStateKeys"), "notice admin search must be treated as server-backed search state");
 assert(searchSource.includes('document.addEventListener("focusout", (event) => {'), "server-backed search focusout handler must not block the following click event");

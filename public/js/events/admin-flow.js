@@ -1,7 +1,7 @@
 import { state } from "../state.js?v=20260704-student-icon-nav";
 import { api } from "../api.js?v=20260704-student-icon-nav";
 import { loadAdminData, loadBootstrap } from "../data.js?v=20260704-student-icon-nav";
-import { downloadAdminBackup, downloadLectureCsv } from "../actions.js?v=20260704-student-icon-nav";
+import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260704-student-icon-nav";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
@@ -189,6 +189,17 @@ export function setupAdminFlowClickHandlers() {
         const result = await api("/api/admin/maintenance/cleanup", { method: "POST" });
         await refreshAdminDataPreservingScroll();
         toast(`정리 완료: 예약 익명화 ${result.anonymizedReservations}건, 보고서 HTML 삭제 ${result.deletedReportHtmlSnapshots}건, 세션 삭제 ${result.deletedExpiredSessions}건`, { preserveScroll: true });
+        return;
+      }
+      if (target.dataset.action === "admin-semester-close") {
+        const confirmText = prompt("모든 예약, 연결된 보고서, 로그인 세션을 삭제합니다. 계속하려면 학기 종료를 정확히 입력하세요.");
+        if (confirmText === null) return;
+        if (confirmText !== "학기 종료") {
+          toast("확인 문구가 일치하지 않습니다.");
+          return;
+        }
+        await api("/api/admin/maintenance/semester-close", { method: "POST", body: { confirmText } });
+        await logout();
         return;
       }
       if (target.dataset.adminView) {

@@ -144,7 +144,8 @@ function auditActionLabel(action: string) {
     "equipment.updated": "장비 수정",
     "notice.created": "공지 작성",
     "settings.updated": "설정 변경",
-    "maintenance.cleanup": "보관정책 정리"
+    "maintenance.cleanup": "보관정책 정리",
+    "maintenance.semester_close": "학기 종료 데이터 정리"
   }[action] || action || "-";
 }
 

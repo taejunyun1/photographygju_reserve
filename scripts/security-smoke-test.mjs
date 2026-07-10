@@ -1104,6 +1104,108 @@ const changePassword = await api("PATCH", "/api/me/password", {
 assert.equal(changePassword.status, 200);
 assert.equal(db.sessions.some((session) => session.userId === studentId), false);
 
+const semesterCloseDb = await initialDb("semester-close-admin-password");
+normalizeDb(semesterCloseDb);
+semesterCloseDb.reservations.push(
+  { id: "semester_close_reservation_1", type: "studio", status: "auto_confirmed", userId: "user_admin", fields: {}, history: [] },
+  { id: "semester_close_reservation_2", type: "print", status: "auto_confirmed", userId: "user_admin", fields: {}, history: [] }
+);
+semesterCloseDb.reports.push(
+  { id: "semester_close_report_1", reservationId: "semester_close_reservation_1", userId: "user_admin", fields: {} },
+  { id: "semester_close_orphan_report", reservationId: "missing_reservation", userId: "user_admin", fields: {} }
+);
+
+let semesterCloseSaveCalls = 0;
+let semesterCloseSaveError = null;
+async function semesterCloseApi(method, pathname, body = {}, token = "") {
+  return handleApiRequest({
+    method,
+    pathname,
+    authorization: token ? `Bearer ${token}` : "",
+    readText: async () => JSON.stringify(body),
+    db: semesterCloseDb,
+    saveDb: async () => {
+      semesterCloseSaveCalls += 1;
+      if (semesterCloseSaveError) throw semesterCloseSaveError;
+    },
+    slackWebhook: ""
+  });
+}
+
+const semesterCloseAdminLogin = await semesterCloseApi("POST", "/api/auth/login", {
+  loginId: "admin",
+  password: "semester-close-admin-password"
+});
+assert.equal(semesterCloseAdminLogin.status, 200);
+semesterCloseDb.sessions.push({
+  id: "semester_close_student_session",
+  token: "semester-close-student-token",
+  userId: "user_student",
+  expiresAt: "2026-12-31T00:00:00.000Z",
+  createdAt: "2026-07-10T00:00:00.000Z"
+}, {
+  id: "semester_close_expired_session",
+  token: "semester-close-expired-token",
+  userId: semesterCloseAdminLogin.body.data.user.id,
+  expiresAt: "2026-01-01T00:00:00.000Z",
+  createdAt: "2025-12-01T00:00:00.000Z"
+});
+semesterCloseSaveCalls = 0;
+
+const semesterCloseBeforeWrongConfirm = JSON.stringify(semesterCloseDb);
+const semesterCloseAuditBeforeWrongConfirm = JSON.stringify(semesterCloseDb.auditLogs);
+const wrongSemesterClose = await semesterCloseApi("POST", "/api/admin/maintenance/semester-close", {
+  confirmText: "학기종료"
+}, semesterCloseAdminLogin.body.data.token);
+assert.equal(wrongSemesterClose.status, 400);
+assert.equal(JSON.stringify(semesterCloseDb), semesterCloseBeforeWrongConfirm);
+assert.equal(JSON.stringify(semesterCloseDb.auditLogs), semesterCloseAuditBeforeWrongConfirm);
+assert.equal(semesterCloseSaveCalls, 0);
+
+const semesterCloseBeforeExpiredAuth = JSON.stringify(semesterCloseDb);
+const expiredAuthSemesterClose = await semesterCloseApi("POST", "/api/admin/maintenance/semester-close", {
+  confirmText: "학기 종료"
+}, "semester-close-expired-token");
+assert.equal(expiredAuthSemesterClose.status, 401);
+assert.equal(JSON.stringify(semesterCloseDb), semesterCloseBeforeExpiredAuth);
+assert.equal(semesterCloseSaveCalls, 0);
+
+const semesterCloseBeforeSaveFailure = JSON.stringify(semesterCloseDb);
+const semesterCloseAuditBeforeSaveFailure = JSON.stringify(semesterCloseDb.auditLogs);
+const currentSemesterCloseSessionId = semesterCloseDb.sessions.find(
+  (session) => session.token === semesterCloseAdminLogin.body.data.token
+)?.id;
+semesterCloseSaveError = new Error("semester-close persistence failed");
+const failedSemesterClose = await semesterCloseApi("POST", "/api/admin/maintenance/semester-close", {
+  confirmText: "학기 종료"
+}, semesterCloseAdminLogin.body.data.token);
+assert.equal(failedSemesterClose.status, 500);
+assert.equal(JSON.stringify(semesterCloseDb) === semesterCloseBeforeSaveFailure, true, "failed persistence must restore the complete database");
+assert.equal(JSON.stringify(semesterCloseDb.auditLogs), semesterCloseAuditBeforeSaveFailure);
+assert.equal(semesterCloseDb.sessions.some((session) => session.id === currentSemesterCloseSessionId), true);
+assert.equal(semesterCloseSaveCalls, 1);
+
+semesterCloseSaveError = null;
+semesterCloseSaveCalls = 0;
+const semesterClose = await semesterCloseApi("POST", "/api/admin/maintenance/semester-close", {
+  confirmText: "학기 종료"
+}, semesterCloseAdminLogin.body.data.token);
+assert.equal(semesterClose.status, 200);
+assert.deepEqual(semesterClose.body.data, {
+  deletedReservations: 2,
+  deletedReports: 1,
+  deletedSessions: 3
+});
+assert.equal(semesterCloseDb.reservations.length, 0);
+assert.equal(semesterCloseDb.reports.some((report) => report.id === "semester_close_report_1"), false);
+assert.equal(semesterCloseDb.reports.some((report) => report.id === "semester_close_orphan_report"), true);
+assert.equal(semesterCloseDb.sessions.length, 0);
+assert.equal(semesterCloseSaveCalls, 1);
+const semesterCloseAudit = semesterCloseDb.auditLogs.at(-1);
+assert.equal(semesterCloseAudit.action, "maintenance.semester_close");
+assert.equal(semesterCloseAudit.actorId, semesterCloseAdminLogin.body.data.user.id);
+assert.deepEqual(semesterCloseAudit.detail, semesterClose.body.data);
+
 const insecureUpload = spawnSync("bash", ["scripts/upload-dothome.sh"], {
   cwd: process.cwd(),
   env: {

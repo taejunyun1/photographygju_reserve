@@ -594,6 +594,18 @@ function requireAdmin(authorization, db) {
   return user;
 }
 
+function requireAdminWithoutSessionCleanup(authorization, db) {
+  const token = authToken(authorization);
+  const session = token ? (db.sessions || []).find((item) => item.token === token) : null;
+  if (!session || !(new Date(session.expiresAt).getTime() > Date.now())) {
+    throw Object.assign(new Error("로그인이 필요합니다."), { status: 401 });
+  }
+  const user = db.users.find((item) => item.id === session.userId);
+  if (!user) throw Object.assign(new Error("로그인이 필요합니다."), { status: 401 });
+  if (user.role !== "admin") throw Object.assign(new Error("관리자 권한이 필요합니다."), { status: 403 });
+  return user;
+}
+
 function assertApprovedStudentAccess(user) {
   if (user.role !== "admin" && effectiveApprovalStatus(user) !== "approved") {
     const message = user.approvalStatus === "blocked"
@@ -1482,7 +1494,10 @@ export function capLogs(db) {
   return db;
 }
 
-const { cleanupExpiredData: cleanupExpiredDataImpl } = createMaintenanceHelpers({
+const {
+  cleanupExpiredData: cleanupExpiredDataImpl,
+  closeSemesterData: closeSemesterDataImpl
+} = createMaintenanceHelpers({
   normalizeDb,
   capLogs,
   id,
@@ -1491,6 +1506,7 @@ const { cleanupExpiredData: cleanupExpiredDataImpl } = createMaintenanceHelpers(
 });
 
 export const cleanupExpiredData = cleanupExpiredDataImpl;
+export const closeSemesterData = closeSemesterDataImpl;
 
 export function adminExportData(db) {
   normalizeDb(db);
@@ -1882,6 +1898,25 @@ export async function handleApiRequest(ctx) {
         const admin = requireAdmin(authorization, db);
         const summary = cleanupExpiredData(db, new Date(), admin.id);
         if (summary.changed) await saveDb();
+        return ok(summary);
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/maintenance/semester-close") {
+        const admin = requireAdminWithoutSessionCleanup(authorization, db);
+        const body = await parseBody(readText);
+        if (body.confirmText !== "학기 종료") {
+          throw Object.assign(new Error("확인 문구가 일치하지 않습니다."), { status: 400 });
+        }
+        const snapshot = JSON.stringify(db);
+        const summary = closeSemesterData(db, admin.id);
+        try {
+          await saveDb();
+        } catch (error) {
+          const restored = JSON.parse(snapshot);
+          for (const key of Object.keys(db)) delete db[key];
+          Object.assign(db, restored);
+          throw error;
+        }
         return ok(summary);
       }
 
