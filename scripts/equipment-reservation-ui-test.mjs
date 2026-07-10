@@ -125,6 +125,29 @@ function futureDateKey(daysFromNow = 7) {
   ].join("-");
 }
 
+function formatLocalDate(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function futureWeekendDates() {
+  const friday = new Date();
+  friday.setHours(12, 0, 0, 0);
+  friday.setDate(friday.getDate() + 1);
+  while (friday.getDay() !== 5) {
+    friday.setDate(friday.getDate() + 1);
+  }
+
+  const saturday = new Date(friday);
+  saturday.setDate(saturday.getDate() + 1);
+  const sunday = new Date(saturday);
+  sunday.setDate(sunday.getDate() + 1);
+  return [formatLocalDate(friday), formatLocalDate(saturday), formatLocalDate(sunday)];
+}
+
 const pickerStart = viewSource.indexOf("function equipmentPickerStep");
 const pickerEnd = viewSource.indexOf("function cameraBagConsent", pickerStart);
 assert(pickerStart !== -1 && pickerEnd !== -1, "equipmentPickerStep block must exist");
@@ -274,25 +297,26 @@ assert(defaultEquipmentForm.includes('data-reserve-next="equipment:select"'), "e
 assert(!defaultEquipmentForm.includes('data-reserve-next="equipment:select" disabled'), "equipment schedule CTA must stay enabled when return time is after rental time");
 
 resetStudentState();
-state.calendarMonth = "2026-07";
-state.selectedDates.equipment = "2026-07-10";
+const [fridayDate, saturdayDate, sundayDate] = futureWeekendDates();
+state.selectedDates.equipment = fridayDate;
+state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
 const fridayWeekendEquipmentForm = equipmentForm();
 assert(fridayWeekendEquipmentForm.includes('value="2박3일"'), "Friday equipment reservations must expose the 2-night 3-day option");
 assert(fridayWeekendEquipmentForm.includes("2박3일(주말)"), "Friday equipment reservations must label 2-night 3-day as the weekend option");
 
 resetStudentState();
-state.calendarMonth = "2026-07";
-state.selectedDates.equipment = "2026-07-11";
+state.selectedDates.equipment = saturdayDate;
+state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
 const saturdayEquipmentForm = equipmentForm();
-assert(saturdayEquipmentForm.includes('data-calendar-day="2026-07-11" disabled'), "Saturday equipment calendar days must be disabled");
+assert(saturdayEquipmentForm.includes(`data-calendar-day="${saturdayDate}" disabled`), "Saturday equipment calendar days must be disabled");
 assert(saturdayEquipmentForm.includes("토요일/일요일은 기자재 예약을 시작할 수 없습니다."), "Saturday equipment reservations must explain that weekend starts are unavailable");
 assert(!saturdayEquipmentForm.includes('data-reserve-next="equipment:schedule"'), "Saturday equipment reservations must not offer the next-step CTA");
 
 resetStudentState();
-state.calendarMonth = "2026-07";
-state.selectedDates.equipment = "2026-07-12";
+state.selectedDates.equipment = sundayDate;
+state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
 const sundayEquipmentForm = equipmentForm();
-assert(sundayEquipmentForm.includes('data-calendar-day="2026-07-12" disabled'), "Sunday equipment calendar days must be disabled");
+assert(sundayEquipmentForm.includes(`data-calendar-day="${sundayDate}" disabled`), "Sunday equipment calendar days must be disabled");
 assert(!sundayEquipmentForm.includes('data-reserve-next="equipment:schedule"'), "Sunday equipment reservations must not offer the next-step CTA");
 
 resetStudentState();
