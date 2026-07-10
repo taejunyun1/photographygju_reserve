@@ -247,6 +247,29 @@ function renderPlusIcon() {
   return <GjuIcon name="plus" className="button-icon icon" />;
 }
 
+function renderPasswordResetButton(user: AdminUser) {
+  return (
+    <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
+      비번 리셋
+    </button>
+  );
+}
+
+function renderUserDeleteButton(user: AdminUser) {
+  return (
+    <button
+      className="button danger compact admin-user-delete-button icon-only-action"
+      type="button"
+      data-user-delete={user.id}
+      data-user-name={user.name || ""}
+      aria-label="삭제"
+      title="삭제"
+    >
+      {renderDeleteIcon()}
+    </button>
+  );
+}
+
 function renderApprovalAction(user: AdminUser) {
   const approvedLike = user.approvalStatus === "approved" || user.approvalStatus === "blocked";
 
@@ -350,19 +373,18 @@ function renderUserLimitSelect(user: AdminUser, keyPrefix = "user-limit") {
 function renderUserSecondaryActions(user: AdminUser) {
   return (
     <div className="admin-user-action-group admin-user-secondary-group">
-      <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
-        비번 리셋
-      </button>
-      <button
-        className="button danger compact admin-user-delete-button icon-only-action"
-        type="button"
-        data-user-delete={user.id}
-        data-user-name={user.name || ""}
-        aria-label="삭제"
-        title="삭제"
-      >
-        {renderDeleteIcon()}
-      </button>
+      {renderPasswordResetButton(user)}
+      {renderUserDeleteButton(user)}
+    </div>
+  );
+}
+
+function renderUserMobilePrimaryActions(user: AdminUser) {
+  return (
+    <div className="admin-user-action-group admin-user-mobile-primary-actions">
+      {renderApprovalAction(user)}
+      {renderPasswordResetButton(user)}
+      {renderUserDeleteButton(user)}
     </div>
   );
 }
@@ -402,14 +424,11 @@ function renderUserMobileCard(user: AdminUser) {
         </div>
       </dl>
       <div className="admin-user-mobile-actions">
-        <div className="admin-user-action-group admin-user-core-group">
-          {renderApprovalAction(user)}
-        </div>
+        {renderUserMobilePrimaryActions(user)}
         <div className="admin-user-action-group admin-user-limit-group">
           {renderUserLimitSelect(user, "mobile-user-limit")}
         </div>
         {renderWarningMemo(user)}
-        {renderUserSecondaryActions(user)}
       </div>
     </article>
   );

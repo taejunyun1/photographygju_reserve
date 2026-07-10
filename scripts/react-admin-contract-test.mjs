@@ -310,6 +310,11 @@ for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10
 }
 const mobileAdminUserMetaRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-meta {", mobileMediaStart);
 assert(mobileAdminUserMetaRule.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"), "Mobile student cards must summarize metadata in two compact columns");
+const mobileAdminUserPrimaryActionsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-primary-actions {", mobileMediaStart);
+for (const token of ["display: grid;", "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px;", "gap: 8px;"]) {
+  assert(mobileAdminUserPrimaryActionsRule.includes(token), `Mobile student card reject/reset/delete actions must fit on one row: ${token}`);
+}
+assert(adminUsersSource.includes("admin-user-mobile-primary-actions"), "React users mobile cards must group reject, password reset, and delete into one row");
 const mobileEquipmentListRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-list {", mobileMediaStart);
 for (const token of ["display: grid;", "gap: 12px;"]) {
   assert(mobileEquipmentListRule.includes(token), `Mobile equipment must use a dedicated card list: ${token}`);
@@ -320,16 +325,57 @@ const mobileEquipmentCardRule = cssRule(designSystemCss, "  .gju-app-shell__cont
 for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
   assert(mobileEquipmentCardRule.includes(token), `Mobile equipment cards must be cohesive touch cards: ${token}`);
 }
+const mobileEquipmentToolsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-tools {", mobileMediaStart);
+for (const token of ["display: grid;", "justify-items: end;", "gap: 8px;"]) {
+  assert(mobileEquipmentToolsRule.includes(token), `Mobile equipment delete action must live in the compact header tool area: ${token}`);
+}
 const mobileEquipmentMetaRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-meta {", mobileMediaStart);
 assert(mobileEquipmentMetaRule.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"), "Mobile equipment cards must summarize metadata in two compact columns");
+const mobileEquipmentActionsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-actions {", mobileMediaStart);
+for (const token of ["grid-template-columns: minmax(0, 1fr);", "gap: 8px;"]) {
+  assert(mobileEquipmentActionsRule.includes(token), `Mobile equipment actions must avoid wasted delete-side whitespace: ${token}`);
+}
+const mobileEquipmentStatusButtonsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-actions .equipment-status-buttons {", mobileMediaStart);
+assert(mobileEquipmentStatusButtonsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"), "Mobile equipment status actions must fit 가능/수리중/파손/문의 into one efficient row");
+const mobileEquipmentSpecificStatusButtonsRule = cssRule(
+  designSystemCss,
+  "  .gju-app-shell__content .admin-equipment-list-card.compact .admin-equipment-mobile-actions .equipment-status-buttons {",
+  mobileMediaStart
+);
+assert(mobileEquipmentSpecificStatusButtonsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"), "Mobile equipment status actions must override the older two-column table-card specificity");
+assert(adminEquipmentSource.includes("data-tone={equipmentStatusTone(status)}"), "React equipment status actions must expose the mapped color tone on data-tone");
+for (const token of ['가능: "green"', '수리중: "amber"', '파손: "red"', '문의: "blue"']) {
+  assert(adminEquipmentSource.includes(token), `React equipment status actions must map status tone ${token}`);
+}
+for (const selector of [
+  ".gju-app-shell__content .status-button[data-tone=\"green\"]",
+  ".gju-app-shell__content .status-button[data-tone=\"amber\"]",
+  ".gju-app-shell__content .status-button[data-tone=\"red\"]",
+  ".gju-app-shell__content .status-button[data-tone=\"blue\"]",
+  ".gju-app-shell__content .status-button[data-tone=\"green\"].active",
+  ".gju-app-shell__content .status-button[data-tone=\"amber\"].active",
+  ".gju-app-shell__content .status-button[data-tone=\"red\"].active",
+  ".gju-app-shell__content .status-button[data-tone=\"blue\"].active"
+]) {
+  assert(designSystemCss.includes(selector), `Equipment status button tone CSS must define ${selector}`);
+}
+for (const selector of [
+  ".gju-app-shell__content .equipment-bulk-bar [data-equipment-bulk-status=\"가능\"]",
+  ".gju-app-shell__content .equipment-bulk-bar [data-equipment-bulk-status=\"수리중\"]",
+  ".gju-app-shell__content .equipment-bulk-bar [data-equipment-bulk-status=\"파손\"]",
+  ".gju-app-shell__content .equipment-bulk-bar [data-equipment-bulk-status=\"문의\"]"
+]) {
+  assert(designSystemCss.includes(selector), `Equipment bulk status actions must use clear tone CSS: ${selector}`);
+}
 const mobileEquipmentBulkActionsRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions {", mobileMediaStart);
 assert(mobileEquipmentBulkActionsRule.includes("display: none;"), "Mobile equipment bulk actions must stay hidden until equipment is selected");
+assert(mobileEquipmentBulkActionsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;"), "Mobile equipment bulk actions must keep status buttons and delete icon on one efficient row");
 const mobileEquipmentBulkActionsActiveRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions:has(button:not(:disabled)) {", mobileMediaStart);
 assert(mobileEquipmentBulkActionsActiveRule.includes("display: grid;"), "Mobile equipment bulk actions must reappear after selecting equipment");
 for (const className of ["admin-user-mobile-list", "admin-user-mobile-card", "admin-user-mobile-meta", "admin-user-mobile-actions"]) {
   assert(adminUsersSource.includes(className), `React users screen must render ${className}`);
 }
-for (const className of ["admin-equipment-mobile-list", "admin-equipment-mobile-card", "admin-equipment-mobile-meta", "admin-equipment-mobile-actions"]) {
+for (const className of ["admin-equipment-mobile-list", "admin-equipment-mobile-card", "admin-equipment-mobile-tools", "admin-equipment-mobile-meta", "admin-equipment-mobile-actions"]) {
   assert(adminEquipmentSource.includes(className), `React equipment screen must render ${className}`);
 }
 for (const label of ["코드", "장비", "분류", "관리처", "상태", "예약", "작업"]) {

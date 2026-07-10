@@ -102,6 +102,15 @@ function renderTrashIcon() {
   );
 }
 
+function equipmentStatusTone(status: "가능" | "수리중" | "파손" | "문의") {
+  return {
+    가능: "green",
+    수리중: "amber",
+    파손: "red",
+    문의: "blue"
+  }[status];
+}
+
 function renderStatusButton(item: AdminEquipmentItem, status: "가능" | "수리중" | "파손" | "문의") {
   const active = status === "문의"
     ? isInquiry(item)
@@ -114,6 +123,7 @@ function renderStatusButton(item: AdminEquipmentItem, status: "가능" | "수리
       type="button"
       data-equipment-status-action={item.id}
       data-status={status}
+      data-tone={equipmentStatusTone(status)}
       aria-pressed={active ? "true" : "false"}
     >
       {status}
@@ -170,9 +180,20 @@ function renderEquipmentMobileCard(item: AdminEquipmentItem, selected: Set<strin
             <em>{item.name || "-"}</em>
           </span>
         </label>
-        <span className="admin-equipment-mobile-reservable" data-equipment-reservable-cell={item.id}>
-          {renderReservableTag(item)}
-        </span>
+        <div className="admin-equipment-mobile-tools">
+          <span className="admin-equipment-mobile-reservable" data-equipment-reservable-cell={item.id}>
+            {renderReservableTag(item)}
+          </span>
+          <button
+            className="button danger compact icon-only-action"
+            type="button"
+            data-equipment-remove-admin={item.id}
+            aria-label="기자재 제거"
+            title="기자재 제거"
+          >
+            {renderTrashIcon()}
+          </button>
+        </div>
       </div>
       {item.notes ? <p className="admin-equipment-mobile-note">{item.notes}</p> : null}
       <dl className="admin-equipment-mobile-meta">
@@ -200,15 +221,6 @@ function renderEquipmentMobileCard(item: AdminEquipmentItem, selected: Set<strin
           {renderStatusButton(item, "파손")}
           {renderStatusButton(item, "문의")}
         </div>
-        <button
-          className="button danger compact icon-only-action"
-          type="button"
-          data-equipment-remove-admin={item.id}
-          aria-label="기자재 제거"
-          title="기자재 제거"
-        >
-          {renderTrashIcon()}
-        </button>
       </div>
     </article>
   );
