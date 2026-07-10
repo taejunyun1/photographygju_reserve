@@ -10,6 +10,19 @@ function readJson(file) {
   return JSON.parse(read(file));
 }
 
+globalThis.window = {};
+globalThis.document = {
+  querySelector: () => null,
+  querySelectorAll: () => []
+};
+const storage = new Map();
+globalThis.localStorage = {
+  getItem: (key) => storage.get(key) || "",
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: (key) => storage.delete(key)
+};
+globalThis.sessionStorage = globalThis.localStorage;
+
 const pkg = readJson("package.json");
 const indexHtml = read("public/index.html");
 const publicConfig = read("public/config.js");
@@ -32,6 +45,8 @@ const toastSource = read("src/react/design-system/Toast.tsx");
 const renderTestSource = read("scripts/react-admin-render-test.mjs");
 const adminUsersSource = read("src/react/admin/screens/AdminUsers.tsx");
 const adminEquipmentSource = read("src/react/admin/screens/AdminEquipment.tsx");
+const adminEquipmentLegacySource = read("public/js/admin-equipment.js");
+const { equipmentStatusButtons } = await import("../public/js/admin-equipment.js?v=20260704-student-icon-nav");
 
 function readTree(rootDir) {
   const entries = [];
@@ -346,6 +361,14 @@ assert(mobileEquipmentSpecificStatusButtonsRule.includes("grid-template-columns:
 assert(adminEquipmentSource.includes("data-tone={equipmentStatusTone(status)}"), "React equipment status actions must expose the mapped color tone on data-tone");
 for (const token of ['가능: "green"', '수리중: "amber"', '파손: "red"', '문의: "blue"']) {
   assert(adminEquipmentSource.includes(token), `React equipment status actions must map status tone ${token}`);
+}
+assert(adminEquipmentLegacySource.includes("statusCell.outerHTML = equipmentStatusButtons(item).trim()"), "Imperative equipment DOM sync must replace status cells through equipmentStatusButtons");
+const imperativeEquipmentMarkup = equipmentStatusButtons({ id: "contract-equipment", status: "가능", reservable: true });
+const imperativeEquipmentButtons = [...imperativeEquipmentMarkup.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(([markup]) => markup);
+for (const [status, tone] of [["가능", "green"], ["수리중", "amber"], ["파손", "red"], ["문의", "blue"]]) {
+  const buttonMarkup = imperativeEquipmentButtons.find((markup) => markup.includes(`data-status="${status}"`));
+  assert(buttonMarkup, `Imperative equipment status markup must emit a ${status} button`);
+  assert(buttonMarkup.includes(`data-tone="${tone}"`), `Imperative equipment status ${status} must map to data-tone ${tone} like React`);
 }
 for (const selector of [
   ".gju-app-shell__content .status-button[data-tone=\"green\"]",

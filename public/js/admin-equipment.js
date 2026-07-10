@@ -82,6 +82,15 @@ export async function patchAdminEquipment(ids, patch) {
   return items;
 }
 
+function equipmentStatusTone(status) {
+  return {
+    가능: "green",
+    수리중: "amber",
+    파손: "red",
+    문의: "blue"
+  }[status];
+}
+
 export function equipmentStatusButtons(item) {
   return `
     <div class="equipment-status-buttons" data-equipment-status-cell="${item.id}">
@@ -95,6 +104,7 @@ export function equipmentStatusButtons(item) {
           type="button"
           data-equipment-status-action="${item.id}"
           data-status="${status}"
+          data-tone="${equipmentStatusTone(status)}"
           aria-pressed="${active ? "true" : "false"}"
         >${status}</button>
       `;
