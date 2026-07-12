@@ -1,5 +1,14 @@
 import type { GjuIconName } from "../design-system";
-import type { ReactAdminActions } from "./types";
+import type {
+  AdminBlockedSchedule,
+  AdminSettings,
+  LegacyState,
+  ReactAdminActions
+} from "./types";
+
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value as T[] : [];
+}
 
 export type AdminHeaderAction = {
   key: "account" | "refresh" | "logout";
@@ -38,4 +47,16 @@ export function adminHeaderActions(
       onSelect: () => actions.logout()
     }
   ];
+}
+
+export function adminSettings(state: LegacyState): AdminSettings {
+  return state.bootstrap?.settings || {};
+}
+
+export function blockedSchedules(state: LegacyState): AdminBlockedSchedule[] {
+  return asArray<AdminBlockedSchedule>(adminSettings(state).blockedSchedules);
+}
+
+export function exactSemesterClosePhrase() {
+  return "학기 종료";
 }

@@ -2,6 +2,9 @@
 node_modules/
 dist/
 build/
+test-results/
+playwright-report/
+blob-report/
 data/
 .env
 .env.*
@@ -17,5 +20,9 @@ References/
 .superpowers/
 public/js/react-admin.generated.js
 public/css/react-admin.generated.css
+public/js/react-student.generated.js
+public/css/react-student.generated.css
 dist/js/react-admin.generated.js
 dist/css/react-admin.generated.css
+dist/js/react-student.generated.js
+dist/css/react-student.generated.css

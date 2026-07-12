@@ -28,9 +28,12 @@ loadEnvFile(path.join(__dirname, ".env.local"));
 loadEnvFile(path.join(__dirname, ".env"));
 
 const PORT = Number(process.env.PORT || 5173);
+const HOST = process.env.GJU_HOST || "127.0.0.1";
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DATA_DIR = path.join(ROOT, "data");
+const DATA_DIR = process.env.GJU_DATA_DIR
+  ? path.resolve(process.env.GJU_DATA_DIR)
+  : path.join(ROOT, "data");
 const DB_PATH = path.join(DATA_DIR, "db.json");
 const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 
@@ -148,8 +151,8 @@ const server = http.createServer((req, res) => {
 });
 
 ensureDbInitialized().then(() => {
-  server.listen(PORT, "127.0.0.1", () => {
-    console.log(`GJU-reserve dev server running at http://localhost:${PORT}`);
+  server.listen(PORT, HOST, () => {
+    console.log(`GJU-reserve dev server running at http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
     console.log("Admin login: admin / admin (development default; change before production)");
   });
 });

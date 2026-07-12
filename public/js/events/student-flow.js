@@ -89,19 +89,16 @@ export function setupStudentFlowClickHandlers() {
         toast("알림 권한을 확인합니다.");
         await enableNativeReservationNotifications();
         toast("예약 알림을 켰습니다.");
-        render();
         return;
       }
       if (target.dataset.nativeNotifications === "sync") {
         const result = await syncNativeReservationNotifications({ force: true });
         toast(`예약 알림 ${result.scheduled || 0}개를 동기화했습니다.`);
-        render();
         return;
       }
       if (target.dataset.nativeNotifications === "disable") {
         await disableNativeReservationNotifications();
         toast("예약 알림을 껐습니다.");
-        render();
         return;
       }
       if (target.dataset.equipmentCategory) {
@@ -213,7 +210,6 @@ export function setupStudentFlowClickHandlers() {
         await api(`/api/lectures/${target.dataset.lectureApply}/apply`, { method: "POST" });
         await Promise.all([loadLectures(), loadMyReservations()]);
         toast("특강 신청이 완료되었습니다.");
-        render();
         return;
       }
       if (target.dataset.lectureCancel) {
@@ -221,7 +217,6 @@ export function setupStudentFlowClickHandlers() {
         await api(`/api/lectures/${target.dataset.lectureCancel}/apply`, { method: "DELETE" });
         await Promise.all([loadLectures(), loadMyReservations()]);
         toast("특강 신청을 취소했습니다.");
-        render();
         return;
       }
       if (target.dataset.lectureYearFilter) {

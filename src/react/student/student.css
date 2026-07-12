@@ -1,0 +1,418 @@
+.student-react-shell {
+  --student-ink: #17191c;
+  --student-muted: #5c6470;
+  --student-line: #d8dde4;
+  --student-surface: #ffffff;
+  --student-soft: #f4f6f8;
+  --student-accent: #075e54;
+  --student-accent-strong: #034a42;
+  --student-danger: #b42318;
+  --primary: #174f8f;
+  --muted: #46515d;
+  --color-danger: #9f1d2a;
+  --gju-color-primary: #174f8f;
+  --gju-color-danger: #9f1d2a;
+  --gju-color-text-muted: #46515d;
+  color: var(--student-ink);
+}
+
+.student-react-shell.student-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.student-react-shell .gju-button[data-variant="solid"] {
+  color: #ffffff !important;
+  background: #174f8f !important;
+}
+
+.student-react-shell .gju-button[data-variant="solid"][data-tone="danger"] {
+  color: #ffffff !important;
+  background: #9f1d2a !important;
+}
+
+.student-react-shell .gju-status-badge[data-tone="green"] {
+  color: #12452d !important;
+  background: #dff3e8 !important;
+}
+
+.student-react-shell .gju-status-badge[data-tone="amber"] {
+  color: #6b4500 !important;
+  background: #fff0c6 !important;
+}
+
+.student-react-shell .gju-status-badge[data-tone="red"] {
+  color: #7c1f23 !important;
+  background: #fde3e4 !important;
+}
+
+.student-react-shell .gju-status-badge[data-tone="blue"] {
+  color: #123f7f !important;
+  background: #dfeafe !important;
+}
+
+.student-react-shell .button.ghost {
+  color: #174f8f;
+}
+
+.student-react-shell :where(.muted, .field > label, .native-notification-grid span) {
+  color: #46515d;
+}
+
+.student-react-shell :where(button, input, select, textarea) {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.student-react-desktop-nav {
+  display: grid;
+  gap: 4px;
+  padding: 16px 10px;
+}
+
+.student-react-nav__item {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--student-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.student-react-desktop-nav .student-react-nav__item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.student-react-nav__item:hover {
+  color: var(--student-ink);
+  background: var(--student-soft);
+}
+
+.student-react-nav__item.active,
+.student-react-nav__item[aria-current="page"] {
+  color: #ffffff;
+  background: var(--student-accent-strong);
+}
+
+.student-react-nav__item:focus-visible {
+  outline: 3px solid #f5b700;
+  outline-offset: 2px;
+}
+
+.student-react-nav__icon {
+  width: 21px;
+  height: 21px;
+}
+
+.student-react-screen-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.student-react-screen-header h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.student-react-screen-header p {
+  margin: 5px 0 0;
+  color: var(--student-muted);
+}
+
+.student-react-form-grid,
+.student-react-chemical-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.student-react-reservation-flow,
+.student-react-details-form,
+.student-react-tab-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.student-react-booking-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.student-react-booking-progress button {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--student-line);
+  border-radius: 6px;
+  color: var(--student-muted);
+  background: var(--student-surface);
+}
+
+.student-react-booking-progress button span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.student-react-booking-progress button.active {
+  border-color: var(--student-accent);
+  color: var(--student-accent-strong);
+  background: #e9f5f2;
+}
+
+.student-react-booking-progress button.complete {
+  color: #2f6b3c;
+}
+
+.student-react-field-error,
+.student-react-submit-error,
+.student-react-flow-reason {
+  margin: 8px 0 0;
+  color: var(--student-danger);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.student-react-form-success {
+  margin: 8px 0 0;
+  color: #246b36;
+  font-size: 14px;
+}
+
+.student-react-flow-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.student-react-reservation-review {
+  border: 1px solid var(--student-line);
+  box-shadow: none;
+}
+
+.student-react-chemical-grid .field,
+.student-react-details-form .field {
+  min-width: 0;
+}
+
+.student-react-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-react-drive-panel,
+.student-react-equipment-recommendations,
+.student-react-inquiry-equipment {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-surface);
+}
+
+.student-react-drive-panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.student-react-drive-panel p,
+.student-react-equipment-recommendations p {
+  margin: 4px 0 0;
+}
+
+.student-react-equipment-recommendation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-react-inquiry-equipment summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.student-react-inquiry-equipment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.student-react-inquiry-equipment-list article {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  border-top: 1px solid var(--student-line);
+}
+
+.student-react-inquiry-equipment-list span {
+  color: var(--student-muted);
+  font-size: 13px;
+}
+
+.student-react-section-heading,
+.student-react-past-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-react-section-heading span,
+.student-react-past-toggle small {
+  color: var(--student-muted);
+}
+
+.student-react-past-reservations {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.student-react-past-toggle {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  color: var(--student-ink);
+  background: var(--student-surface);
+  text-align: left;
+}
+
+.student-react-past-toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.student-react-notice-dialog {
+  display: grid;
+  gap: 12px;
+  white-space: pre-wrap;
+}
+
+.student-react-notice-dialog__category {
+  margin: 0;
+  color: var(--student-accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gju-app-shell .student-react-bottom-nav {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(52px, 1fr));
+  grid-auto-flow: initial;
+  grid-auto-columns: initial;
+  gap: 6px;
+  width: 100%;
+  min-height: 68px;
+  padding: 6px max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.student-react-bottom-nav .student-react-nav__item {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0;
+  border-radius: 6px;
+  color: #2f343b;
+}
+
+.student-react-bottom-nav .student-react-nav__item.active,
+.student-react-bottom-nav .student-react-nav__item[aria-current="page"] {
+  color: #ffffff;
+  background: #121416;
+}
+
+.student-react-bottom-nav .student-react-nav__icon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 700px) {
+  .student-react-screen-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-react-screen-header h1 {
+    font-size: 21px;
+  }
+
+  .student-react-screen-header__action {
+    align-self: flex-start;
+  }
+
+  .student-react-form-grid,
+  .student-react-chemical-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-react-drive-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-react-booking-progress {
+    gap: 4px;
+  }
+
+  .student-react-booking-progress button {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .student-react-booking-progress button span {
+    margin: 0;
+  }
+
+  .student-react-flow-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-react-shell *,
+  .student-react-shell *::before,
+  .student-react-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

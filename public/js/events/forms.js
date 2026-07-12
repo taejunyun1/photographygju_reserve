@@ -8,7 +8,7 @@ import {
   signup,
   submitReservation
 } from "../actions.js?v=20260704-student-icon-nav";
-import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
+import { toast } from "../renderer.js?v=20260704-student-icon-nav";
 import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260704-student-icon-nav";
 import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260704-student-icon-nav";
 
@@ -30,7 +30,7 @@ export function setupFormEventHandlers() {
         await refreshAdminDataPreservingScroll();
         toast(limitDuration === "unblock" ? "대여금지를 해제했습니다." : "대여금지를 적용했습니다.", { preserveScroll: true });
       } catch (error) {
-        toast(error.message || "대여금지 설정 변경에 실패했습니다.", { preserveScroll: true });
+        toast(error.message || "대여금지 설정 변경에 실패했습니다.", { preserveScroll: true, tone: "error" });
         await refreshAdminDataPreservingScroll();
       }
     }
@@ -54,7 +54,6 @@ export function setupFormEventHandlers() {
         const result = await api("/api/me", { method: "PATCH", body: formData(form) });
         state.user = result.user;
         toast("개인정보를 저장했습니다.");
-        render();
         return;
       }
       if (form.dataset.form === "reservation") await submitReservation(form);
@@ -113,7 +112,6 @@ export function setupFormEventHandlers() {
         await loadBootstrap();
         await loadMyReservations();
         toast("스튜디오 보고서가 제출되었습니다.");
-        render();
       }
       if (form.dataset.form === "settings-save") {
         const data = formData(form);
@@ -144,7 +142,7 @@ export function setupFormEventHandlers() {
         toast("차단 일정을 추가했습니다.", { preserveScroll: true });
       }
     } catch (error) {
-      toast(error.message, { preserveScroll: true });
+      toast(error.message, { preserveScroll: true, tone: "error" });
     }
   });
 }

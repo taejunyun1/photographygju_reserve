@@ -17,6 +17,7 @@ const renderEntry = await build({
       export { GjuTable } from "../src/react/design-system/Table.tsx";
       export { GjuToast } from "../src/react/design-system/Toast.tsx";
       export { AdminApp } from "../src/react/admin/AdminApp.tsx";
+      export { AdminDashboard } from "../src/react/admin/screens/AdminDashboard.tsx";
     `,
     resolveDir: path.join(process.cwd(), "scripts"),
     sourcefile: "scripts/react-admin-render-entry.tsx",
@@ -228,16 +229,21 @@ assert(toast.includes("저장되었습니다."), "toast must render the message"
 assert(toast.includes('role="status"'), "toast must expose status role");
 assert(toast.includes('aria-live="polite"'), "toast must announce politely");
 
+const noopActions = new Proxy({}, {
+  get: () => () => undefined
+});
+
+function reactElements(node, predicate, matches = []) {
+  if (!React.isValidElement(node)) return matches;
+  if (predicate(node)) matches.push(node);
+  React.Children.forEach(node.props?.children, (child) => reactElements(child, predicate, matches));
+  return matches;
+}
+
 const shellMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: { adminView: "dashboard", user: { role: "admin", name: "admin" }, summary: {} },
-    actions: {
-      setAdminView() {},
-      refreshAdminData() {},
-      logout() {},
-      render() {}
-    },
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
 assert(shellMarkup.includes("gju-app-shell"), "React Admin shell must render app shell");
@@ -272,6 +278,11 @@ const mobileBottomNavSegment = shellMarkup.match(
 assert(mobileBottomNavSegment, "React Admin shell must render mobile bottom nav markup");
 assert(!mobileBottomNavSegment.includes('aria-label="새로고침"'), "Mobile bottom nav must remain separate from header actions");
 assert(!mobileBottomNavSegment.includes('aria-label="나가기"'), "Mobile bottom nav must not contain header actions");
+for (const label of ["대시보드", "학생", "예약", "기자재", "더보기"]) {
+  assert(mobileBottomNavSegment.includes(`aria-label="${label}"`), `Mobile bottom nav must render icon-only ${label} action`);
+}
+assert(!mobileBottomNavSegment.includes(">보고서<"), "Mobile bottom nav must move secondary routes into More");
+assert(!mobileBottomNavSegment.includes(">설정<"), "Mobile bottom nav must move settings into More");
 
 const dashboardMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -291,13 +302,7 @@ const dashboardMarkup = renderToStaticMarkup(
       adminLectures: [],
       adminNotices: []
     },
-    actions: {
-      setAdminView() {},
-      refreshAdminData() {},
-      logout() {},
-      render() {}
-    },
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
 assert(dashboardMarkup.includes("가입 승인 대기"), "dashboard must render pending users card");
@@ -307,6 +312,65 @@ assert(dashboardMarkup.includes("대여취소"), "dashboard must render cancelle
 assert(dashboardMarkup.includes("보고서 확인 필요"), "dashboard must render report card");
 assert(!dashboardMarkup.includes("legacy"), "dashboard must be React-owned");
 
+const dashboardNavigationCalls = [];
+const dashboardTree = renderModule.AdminDashboard({
+  state: {
+    summary: {
+      pendingUsers: 2,
+      equipmentCheckedOut: 1,
+      equipmentReturned: 3,
+      equipmentCancelled: 4,
+      missingReports: 5,
+      todaySchedule: [],
+      checkoutReturnQueue: [{
+        id: "dashboard-return",
+        type: "equipment",
+        status: "checked_out",
+        queueAction: "return",
+        queueAt: "2026-07-12T08:10:00.000Z",
+        fields: { reservedDate: "2026-07-10", rentalTime: "10:15", returnTime: "17:10" },
+        user: { name: "반납 학생" }
+      }],
+      metrics: {
+        weekReservations: 9,
+        activeEquipment: 10,
+        availableEquipment: 8,
+        repairEquipment: 2,
+        equipmentAvailableRate: 80,
+        cancelledReservations: 1,
+        reportQueueCount: 5,
+        openLectures: 2,
+        typeCounts: { equipment: 6, studio: 3 },
+        popularEquipment: [{ name: "Sony FX3", count: 4 }],
+        latestNotice: { title: "운영 공지" }
+      }
+    }
+  },
+  actions: {
+    setAdminView(view, filters) {
+      dashboardNavigationCalls.push([view, filters]);
+    }
+  }
+});
+const dashboardButtons = reactElements(dashboardTree, (element) => element.type === "button");
+dashboardButtons[1].props.onClick();
+dashboardButtons[2].props.onClick();
+dashboardButtons[3].props.onClick();
+assert.deepEqual(
+  dashboardNavigationCalls,
+  [
+    ["reservations", { type: "equipment", status: "checked_out", q: "", page: 1 }],
+    ["reservations", { type: "equipment", status: "returned", q: "", page: 1 }],
+    ["reservations", { type: "equipment", status: "cancelled", q: "", page: 1 }]
+  ],
+  "dashboard reservation cards must pass their target filters through the typed navigation action"
+);
+const dashboardParityMarkup = renderToStaticMarkup(dashboardTree);
+for (const label of ["운영 큐", "오늘 예약 타임라인", "대여/반납 큐", "운영 지표", "이번 주 예약 수", "기자재 가용률", "Sony FX3", "운영 공지"]) {
+  assert(dashboardParityMarkup.includes(label), `dashboard must render ${label}`);
+}
+assert(dashboardParityMarkup.includes("반납 17:10"), "dashboard return queue must display the computed return action and time instead of rental time");
+
 const refreshingShellMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: {
@@ -315,13 +379,7 @@ const refreshingShellMarkup = renderToStaticMarkup(
       summary: {},
       adminRefresh: { refreshing: true }
     },
-    actions: {
-      setAdminView() {},
-      refreshAdminData() {},
-      logout() {},
-      render() {}
-    },
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
 assert(refreshingShellMarkup.includes('aria-label="새로고침 중"'), "React Admin refresh action must announce the in-progress label");
@@ -332,13 +390,6 @@ const refreshingDesktopHeaderSegment = refreshingShellMarkup.match(
 assert(refreshingDesktopHeaderSegment, "React Admin shell must keep desktop header markup while refreshing");
 assert(refreshingDesktopHeaderSegment.includes('aria-label="새로고침 중"'), "Desktop header refresh action must expose the busy label");
 assert(refreshingDesktopHeaderSegment.includes("aria-busy=\"true\""), "Desktop header refresh action must stay busy while refreshing");
-
-const noopActions = {
-  setAdminView() {},
-  refreshAdminData() {},
-  logout() {},
-  render() {}
-};
 
 const usersMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -360,17 +411,14 @@ const usersMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(usersMarkup.includes('data-user-delete="u1"'), "React users screen must render delete action contract");
-assert(usersMarkup.includes('data-user-sort="name"'), "React users screen must render legacy user sort controls");
-assert(usersMarkup.includes('data-user-sort="studentId"'), "React users screen must render student id sort control");
-assert(usersMarkup.includes('data-user-sort="approvalStatus"'), "React users screen must render approval status sort control");
-assert(usersMarkup.includes('data-admin-users-page="1"'), "React users screen must render previous-page contract");
-assert(usersMarkup.includes('data-admin-users-page="2"'), "React users screen must render current page contract");
-assert(usersMarkup.includes('data-admin-users-page="3"'), "React users screen must render next-page contract");
+assert(!usersMarkup.includes("data-user-"), "React users screen must not emit delegated user action attributes");
+assert(!usersMarkup.includes("data-admin-users-page"), "React users pagination must use React handlers");
+for (const label of ["이름", "학번", "신분", "상태", "이전", "다음"]) {
+  assert(usersMarkup.includes(label), `React users screen must keep the ${label} control`);
+}
 assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
 assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
 
@@ -408,15 +456,35 @@ const usersWarningMemoMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(usersWarningMemoMarkup.includes('data-user-warn="u2"'), "React users screen must render delegated warning memo add control");
-assert(usersWarningMemoMarkup.includes('data-user-warn-reset="u2"'), "React users screen must render delegated warning memo reset control");
+assert(!usersWarningMemoMarkup.includes("data-user-warn"), "React warning actions must use React handlers");
+assert(usersWarningMemoMarkup.includes("메모 추가"), "React users screen must render warning memo add control");
+assert(usersWarningMemoMarkup.includes("초기화"), "React users screen must render warning memo reset control");
 assert(usersWarningMemoMarkup.includes("최근 경고 메모 2건"), "React users screen must render warning memo summary");
 assert(usersWarningMemoMarkup.includes("장비 연체 2회"), "React users screen must render the latest warning memo reason");
 assert(!usersWarningMemoMarkup.includes("검색 결과가 없습니다."), "React users search must match warning memo text");
+
+const serverOrderedUsersMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "users",
+      user: { role: "admin" },
+      adminUserSort: { field: "name", direction: "asc" },
+      adminUsersPage: { total: 2, page: 1, pageSize: 20, hasMore: false },
+      adminUsers: [
+        { id: "server-first", role: "student", name: "Zulu", approvalStatus: "approved" },
+        { id: "server-second", role: "student", name: "Alpha", approvalStatus: "approved" }
+      ]
+    },
+    actions: noopActions
+  })
+);
+assert(
+  serverOrderedUsersMarkup.indexOf("Zulu") < serverOrderedUsersMarkup.indexOf("Alpha"),
+  "React users must preserve the server-sorted page order"
+);
 
 const equipmentMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -438,14 +506,14 @@ const equipmentMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(equipmentMarkup.includes('data-equipment-remove-admin="e1"'), "React equipment screen must render remove action contract");
-assert(equipmentMarkup.includes('data-equipment-bulk-status="문의"'), "React equipment screen must include inquiry status action");
-assert(equipmentMarkup.includes('data-admin-equipment-panel-tab="add"'), "React equipment manage view must keep access to the add workflow tab");
-assert(equipmentMarkup.includes('data-admin-equipment-panel-tab="manage"'), "React equipment manage view must keep the manage workflow tab");
+assert(!equipmentMarkup.includes("data-equipment-remove-admin"), "React equipment remove must use an onClick handler");
+assert(!equipmentMarkup.includes("data-equipment-bulk-status"), "React equipment bulk status must use onClick handlers");
+assert(!equipmentMarkup.includes("data-admin-equipment-panel-tab"), "React equipment tabs must use onClick handlers");
+assert(equipmentMarkup.includes("문의"), "React equipment screen must include inquiry status action");
+assert(equipmentMarkup.includes("장비추가"), "React equipment manage view must keep access to the add workflow tab");
 
 const equipmentBrandMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -468,11 +536,10 @@ const equipmentBrandMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(equipmentBrandMarkup.includes('data-equipment-row="e1"'), "React equipment search must match brand");
+assert(equipmentBrandMarkup.includes("CAM-1"), "React equipment search must match brand");
 
 const equipmentModelMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -495,11 +562,10 @@ const equipmentModelMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(equipmentModelMarkup.includes('data-equipment-row="e1"'), "React equipment search must match model");
+assert(equipmentModelMarkup.includes("CAM-1"), "React equipment search must match model");
 
 const equipmentReservableMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -522,13 +588,12 @@ const equipmentReservableMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(equipmentReservableMarkup.includes('data-equipment-row="e1"'), "React equipment search must match reservable token parity");
+assert(equipmentReservableMarkup.includes("CAM-1"), "React equipment search must match reservable token parity");
 
-const equipmentAddFallbackMarkup = renderToStaticMarkup(
+const equipmentAddMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: {
       adminView: "equipment",
@@ -536,16 +601,16 @@ const equipmentAddFallbackMarkup = renderToStaticMarkup(
       user: { role: "admin" },
       adminEquipment: []
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () =>
-      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-header">legacy header</header><section class="grid"><div class="admin-inner-tabs"><button class="tab-button active" data-admin-equipment-panel-tab="add">장비추가</button><button class="tab-button" data-admin-equipment-panel-tab="manage">장비관리</button></div><div class="card admin-equipment-add-card"><form data-form="equipment-add"><input name="name" /></form></div><div class="card admin-equipment-add-card"><form data-form="equipment-category-add"><input name="categoryName" /></form></div><div class="card admin-equipment-add-card"><form data-form="equipment-import"><textarea name="csv"></textarea></form></div></section></section></main>'
+    actions: noopActions
   })
 );
-assert(equipmentAddFallbackMarkup.includes('data-form="equipment-add"'), "React equipment add fallback must preserve the legacy add form");
-assert(equipmentAddFallbackMarkup.includes('data-form="equipment-category-add"'), "React equipment add fallback must preserve the legacy category form");
-assert(equipmentAddFallbackMarkup.includes('data-form="equipment-import"'), "React equipment add fallback must preserve the legacy CSV import form");
-assert(!equipmentAddFallbackMarkup.includes('class="admin-shell"'), "React equipment add fallback must not duplicate the legacy admin shell");
-assert(!equipmentAddFallbackMarkup.includes("legacy nav"), "React equipment add fallback must not duplicate the legacy sidebar chrome");
+assert(equipmentAddMarkup.includes("장비추가"), "React equipment add view must render native add form");
+assert(equipmentAddMarkup.includes("카테고리 추가"), "React equipment add view must render native category form");
+assert(equipmentAddMarkup.includes("CSV 가져오기"), "React equipment add view must render native CSV import form");
+assert(!equipmentAddMarkup.includes("gju-legacy-admin-panel"), "React equipment add view must not use LegacyAdminPanel");
+assert(!equipmentAddMarkup.includes("legacy"), "React equipment add view must not render legacy fallback content");
+assert(equipmentAddMarkup.includes('name="codePrefix"'), "React equipment add form must submit the server codePrefix contract");
+assert(equipmentAddMarkup.includes("문의 전용"), "React equipment add form must expose inquiry-only registration explicitly");
 
 const logsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -574,11 +639,11 @@ const logsMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
-assert(logsMarkup.includes('data-session-revoke="s1"'), "React logs screen must render session revoke action contract");
+assert(!logsMarkup.includes("data-session-revoke"), "React logs session revoke must use an onClick handler");
+assert(logsMarkup.includes('aria-label="로그아웃"'), "React logs screen must keep the accessible session revoke action");
 assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke must be icon-only");
 assert(logsMarkup.includes("관리자"), "React logs screen must render actor object names");
 assert(logsMarkup.includes("20260001"), "React logs screen must render actor object student ids");
@@ -602,49 +667,238 @@ const logsSearchMarkup = renderToStaticMarkup(
         }
       ]
     },
-    actions: noopActions,
-    legacyRenderAdminContent: () => "<section>legacy</section>"
+    actions: noopActions
   })
 );
 assert(logsSearchMarkup.includes("관리자"), "React logs search must match actor object fields");
 assert(!logsSearchMarkup.includes("검색 결과가 없습니다."), "React logs search must not drop actor object matches");
 
-const legacyFallbackMarkup = renderToStaticMarkup(
+const logsDetailMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
-    state: { adminView: "reports", user: { role: "admin", name: "admin" }, summary: {} },
-    actions: {
-      setAdminView() {},
-      refreshAdminData() {},
-      logout() {},
-      render() {}
+    state: {
+      adminView: "logs",
+      user: { role: "admin" },
+      adminLogSearch: "login@example.com",
+      adminSessions: [],
+      adminLogs: [
+        {
+          id: "log-detail",
+          action: "user.deleted",
+          targetId: "user-old",
+          detail: {
+            loginId: "login@example.com",
+            type: "student",
+            revokedSessions: 3,
+            targetUserId: "user-target"
+          },
+          createdAt: "2026-07-03T00:30:00.000Z"
+        }
+      ]
     },
-    legacyRenderAdminContent: () =>
-      '<main class="admin-shell"><aside class="sidebar">legacy nav</aside><section class="admin-main"><header class="admin-mobile-header">mobile header</header><header class="admin-header">desktop header</header><section class="legacy-fragment"><h2>legacy report body</h2><section class="nested-legacy-section"><p>nested section body</p></section><div class="after-nested-content">after nested content</div></section><p class="tail-content">tail content</p></section><nav class="admin-mobile-nav">legacy bottom nav</nav></main>'
+    actions: noopActions
   })
 );
-assert(legacyFallbackMarkup.includes("gju-legacy-admin-panel"), "Non-dashboard admin views must render the legacy panel fallback");
-assert(legacyFallbackMarkup.includes("legacy report body"), "Legacy fallback content must render inside the React Admin shell");
-assert(legacyFallbackMarkup.includes("nested section body"), "Legacy fallback must preserve nested sections inside admin-main content");
-assert(legacyFallbackMarkup.includes("after nested content"), "Legacy fallback must preserve content that appears after nested sections");
-assert(!legacyFallbackMarkup.includes('class="admin-shell"'), "Legacy fallback must not re-render the old admin shell inside React Admin");
-assert(!legacyFallbackMarkup.includes('class="admin-mobile-nav"'), "Legacy fallback must not duplicate the old mobile nav inside React Admin");
-assert(!legacyFallbackMarkup.includes("legacy nav"), "Legacy fallback must not duplicate the old sidebar chrome");
-assert(!legacyFallbackMarkup.includes("mobile header"), "Legacy fallback must not duplicate the old mobile header chrome");
-assert(!legacyFallbackMarkup.includes("desktop header"), "Legacy fallback must not duplicate the old desktop header chrome");
+for (const value of ["login@example.com", "student", "3", "user-target"]) {
+  assert(logsDetailMarkup.includes(value), `React logs must search and display audit detail value ${value}`);
+}
 
-const standaloneLegacyMarkup = renderToStaticMarkup(
+const studioReservationMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
-    state: { adminView: "reports", user: { role: "admin", name: "admin" }, summary: {} },
-    actions: {
-      setAdminView() {},
-      refreshAdminData() {},
-      logout() {},
-      render() {}
+    state: {
+      adminView: "reservations",
+      user: { role: "admin" },
+      adminReservationTab: "studio",
+      adminReservationSemesters: [{ key: "2026-S2", label: "2026년 2학기" }],
+      adminReservationsPage: { total: 1, collectionTotal: 4, page: 1, pageSize: 20 },
+      adminReservations: [{
+        id: "studio-1",
+        type: "studio",
+        status: "auto_confirmed",
+        user: { name: "스튜디오 학생", studentId: "20260001" },
+        fields: {
+          reservedDate: "2026-09-10",
+          timeSlots: ["10:30-12:00"],
+          studioSpaces: ["Studio A Front"],
+          participants: "홍길동 외 1명",
+          requiredEquipment: "Profoto B10"
+        }
+      }]
     },
-    legacyRenderAdminContent: () => '<section class="standalone-legacy"><span>plain fallback body</span></section>'
+    actions: noopActions
   })
 );
-assert(standaloneLegacyMarkup.includes('class="standalone-legacy"'), "Legacy fallback must leave standalone markup untouched when no legacy shell is present");
-assert(standaloneLegacyMarkup.includes("plain fallback body"), "Legacy fallback must preserve standalone markup content");
+for (const label of ["기자재", "암실", "스튜디오", "출력", "2026년 2학기", "Studio A Front", "홍길동 외 1명", "Profoto B10", "완료", "관리자 취소"]) {
+  assert(studioReservationMarkup.includes(label), `studio reservation screen must render ${label}`);
+}
+assert(!studioReservationMarkup.includes(">대여완료<"), "studio reservations must not expose the equipment checked_out transition");
+assert(!studioReservationMarkup.includes(">반납완료<"), "studio reservations must not expose the equipment returned transition");
+
+const reservationDetailsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "reservations",
+      user: { role: "admin" },
+      adminReservationTab: "all",
+      adminReservationsPage: { total: 3, collectionTotal: 5, page: 1, pageSize: 20 },
+      adminReservations: [
+        {
+          id: "equipment-1",
+          type: "equipment",
+          status: "checked_out",
+          fields: { reservedDate: "2026-09-11", rentalTime: "10:15", returnTime: "17:10", period: "당일", purpose: "졸업작품", cameraBagConfirmed: true },
+          equipmentItems: [{ code: "CAM-FX3-01", name: "Sony FX3" }]
+        },
+        {
+          id: "darkroom-1",
+          type: "darkroom",
+          status: "auto_confirmed",
+          fields: { reservedDate: "2026-09-12", timeSlots: ["12:00-14:00"], processTypes: ["현상"], participantCount: 2, chemicals: [{ name: "D-76", amount: "500ml" }] }
+        },
+        {
+          id: "print-1",
+          type: "print",
+          status: "auto_confirmed",
+          fields: { reservedDate: "2026-09-13", startTime: "10:00", endTime: "11:00", printType: "과제", paper: "매트", size: "대형", count: 3, memo: "색상 확인" }
+        }
+      ]
+    },
+    actions: noopActions
+  })
+);
+for (const value of ["CAM-FX3-01", "졸업작품", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
+  assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
+}
+
+const reportsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "reports",
+      user: { role: "admin" },
+      adminReportSemesters: [{ key: "2026-S2", label: "2026년 2학기" }],
+      adminReportsPage: { total: 1, collectionTotal: 2, page: 1, pageSize: 20 },
+      adminReports: [{
+        id: "report-1",
+        reservationId: "studio-1",
+        submittedAt: "2026-09-11T03:00:00.000Z",
+        reservation: {
+          id: "studio-1",
+          fields: { reservedDate: "2026-09-10", studioSpaces: ["Studio A Front"] }
+        },
+        fields: {
+          actualTime: "10:40-11:50",
+          participants: "2명",
+          usedEquipment: ["Profoto B10", "소프트박스"],
+          resultPhotoUrl: "https://example.com/result.jpg",
+          cleanupConfirmed: true,
+          damageFound: true,
+          damageDescription: "스탠드 잠금 불량",
+          notes: "조교 확인 요청"
+        }
+      }]
+    },
+    actions: noopActions
+  })
+);
+for (const value of ["2026년 2학기", "2026-09-10 · Studio A Front", "10:40-11:50", "2명", "Profoto B10", "소프트박스", "https://example.com/result.jpg", "스탠드 잠금 불량", "조교 확인 요청", "필터 결과 보고서 삭제", "전체 보고서 삭제"]) {
+  assert(reportsMarkup.includes(value), `report detail parity must render ${value}`);
+}
+
+const lecturesMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "lectures",
+      user: { role: "admin" },
+      adminLectureSemesters: [{ key: "2026-S2", label: "2026년 2학기" }],
+      adminLecturesPage: { total: 1, collectionTotal: 2, page: 1, pageSize: 20 },
+      adminLectures: [{
+        id: "lecture-1",
+        title: "인물 조명",
+        lectureDate: "2026-09-20",
+        time: "10:00 - 12:00",
+        location: "Studio A",
+        instructorName: "김강사",
+        professor: "박교수",
+        targetGrades: "2, 3학년",
+        notes: "삼각대 지참",
+        status: "모집중",
+        applications: [{
+          id: "app-1",
+          userName: "신청학생",
+          studentId: "20260010",
+          studentStatus: "재학생",
+          phone: "010-1234-5678",
+          email: "student@example.com",
+          appliedAt: "2026-09-01T00:00:00.000Z"
+        }]
+      }]
+    },
+    actions: noopActions
+  })
+);
+for (const value of ["2026년 2학기", "담당교수", "대상 학년", "비고", "박교수", "2, 3학년", "삼각대 지참", "신청학생", "20260010", "010-1234-5678", "student@example.com", "CSV 내보내기", "필터 결과 특강 삭제", "전체 특강 삭제"]) {
+  assert(lecturesMarkup.includes(value), `lecture parity must render ${value}`);
+}
+
+const noticesMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "notices",
+      user: { role: "admin" },
+      adminNoticesPage: { total: 3, collectionTotal: 4, page: 2, pageSize: 1 },
+      adminNotices: [{ id: "notice-hidden", title: "비공개 공지", body: "초안", status: "draft", pinned: false }]
+    },
+    actions: noopActions
+  })
+);
+assert(noticesMarkup.includes("숨김"), "notice status must derive active=false from the server draft contract");
+assert(noticesMarkup.includes("필터 결과 공지 삭제"), "notice screen must expose filtered deletion separately");
+assert(noticesMarkup.includes("전체 공지 삭제"), "notice screen must expose full deletion separately");
+assert(noticesMarkup.includes("2"), "notice pager must use the server page metadata");
+
+const settingsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "settings",
+      user: { role: "admin" },
+      bootstrap: { settings: { studioReportDeadlineHours: 48, blockedSchedules: [] } },
+      nativeNotifications: { supported: true, enabled: true, effective: true, permission: "granted", pendingCount: 3, syncedAt: "2026-07-11T00:00:00.000Z" }
+    },
+    actions: noopActions
+  })
+);
+for (const value of ["스튜디오 보고서 제출 기한", "방학 모드", "백업 JSON", "운영 알림", "동기화", "알림 끄기"]) {
+  assert(settingsMarkup.includes(value), `settings parity must render ${value}`);
+}
+assert(!settingsMarkup.includes("예약 안내"), "settings must not claim to save an unsupported reservationNotice field");
+assert(!settingsMarkup.includes("기자재 안내"), "settings must not claim to save an unsupported equipmentNotice field");
+
+for (const [view, requiredText] of [
+  ["reservations", "예약 관리"],
+  ["reports", "보고서"],
+  ["lectures", "비교과 특강"],
+  ["notices", "공지사항"],
+  ["settings", "보안 / 데이터 관리"],
+  ["account", "내 정보"]
+]) {
+  const routeMarkup = renderToStaticMarkup(
+    React.createElement(renderModule.AdminApp, {
+      state: {
+        adminView: view,
+        user: { role: "admin", name: "관리자", email: "admin@gju.local" },
+        bootstrap: { settings: {} },
+        adminReservations: [],
+        adminReports: [],
+        adminLectures: [],
+        adminNotices: [],
+        adminSessions: [],
+        adminLogs: []
+      },
+      actions: noopActions
+    })
+  );
+  assert(routeMarkup.includes(requiredText), `React Admin ${view} route must render native route content`);
+  assert(!routeMarkup.includes("gju-legacy-admin-panel"), `React Admin ${view} route must not use LegacyAdminPanel`);
+  assert(!routeMarkup.includes("legacy"), `React Admin ${view} route must not render legacy fallback content`);
+}
 
 console.log("React Admin render checks passed.");

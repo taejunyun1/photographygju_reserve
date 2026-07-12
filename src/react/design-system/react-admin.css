@@ -141,6 +141,14 @@
 .gju-app-shell__content .equipment-status-buttons,
 .gju-app-shell__content .admin-equipment-mobile-tools,
 .gju-app-shell__content .button-row,
+.gju-app-shell__content .admin-react-screen,
+.gju-app-shell__content .admin-react-toolbar,
+.gju-app-shell__content .admin-react-form-grid,
+.gju-app-shell__content .admin-react-card-list,
+.gju-app-shell__content .admin-react-list-card,
+.gju-app-shell__content .admin-react-action-row,
+.gju-app-shell__content .calendar-card,
+.gju-app-shell__content .calendar-grid-large,
 .gju-app-shell__content .admin-settings-card,
 .gju-app-shell__content .blocked-list,
 .gju-app-shell__content .blocked-item,
@@ -526,6 +534,179 @@
   background: #dfeafe;
 }
 
+.admin-react-screen {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-react-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.admin-react-toolbar label,
+.admin-react-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--gju-color-text-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-react-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-react-form-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-react-check {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-react-action-row,
+.admin-react-danger-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-react-action-row .button,
+.admin-react-danger-row .button,
+.admin-react-form-grid .button,
+.admin-react-toolbar .button,
+.gju-mobile-more-nav__item {
+  min-height: 44px;
+}
+
+.admin-react-card-list {
+  display: none;
+  gap: 12px;
+}
+
+.admin-react-list-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.admin-settings-react-screen .admin-react-card-list {
+  display: grid;
+}
+
+.admin-react-body-text {
+  margin: 0;
+  color: var(--gju-color-text-muted);
+  line-height: 1.5;
+}
+
+.calendar-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  box-shadow: var(--gju-shadow-panel);
+}
+
+.calendar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.calendar-head h2,
+.calendar-head p {
+  margin: 0;
+}
+
+.calendar-weekdays,
+.calendar-grid-large {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-weekdays span {
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  color: var(--gju-color-text-muted);
+  font-weight: 800;
+}
+
+.calendar-day {
+  min-height: 72px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  color: var(--gju-color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-day.outside {
+  opacity: 0.48;
+}
+
+.calendar-day.blocked {
+  border-color: rgba(201, 63, 67, 0.3);
+  background: rgba(253, 227, 228, 0.42);
+}
+
+.calendar-day span {
+  font-weight: 900;
+}
+
+.calendar-day small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gju-color-danger);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.gju-mobile-more-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.gju-mobile-more-nav__item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  color: var(--gju-color-text);
+  font: inherit;
+}
+
+.gju-mobile-more-nav__item[aria-current="page"] {
+  border-color: var(--gju-color-primary);
+  color: var(--gju-color-primary);
+  background: rgba(36, 87, 255, 0.08);
+}
+
 .admin-user-mobile-list,
 .admin-equipment-mobile-list {
   display: none;
@@ -697,7 +878,7 @@
   }
 
   .gju-app-shell__content .gju-card {
-    border-radius: 16px;
+    border-radius: 8px;
     box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
   }
 
@@ -715,13 +896,13 @@
     display: grid;
     gap: 10px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 8px;
     background: rgba(248, 251, 255, 0.72);
   }
 
   .gju-app-shell__content .list-control-panel .input {
     min-height: 44px;
-    border-radius: 14px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .tab-row {
@@ -733,7 +914,7 @@
   .gju-app-shell__content .tab-row .tab-button,
   .gju-app-shell__content .admin-inner-tabs .tab-button {
     min-height: 44px;
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .admin-user-table-wrap {
@@ -774,7 +955,7 @@
   .gju-app-shell__content .admin-user-table .admin-user-info-row {
     border: 1px solid var(--glass-border);
     border-bottom: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: 8px 8px 0 0;
     background: var(--surface-lowest, #fff);
     box-shadow: none;
     overflow: hidden;
@@ -785,7 +966,7 @@
     margin-bottom: 14px;
     border: 1px solid var(--glass-border);
     border-top: 0;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 8px 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     overflow: hidden;
@@ -868,7 +1049,7 @@
 
   .gju-app-shell__content .admin-user-warning-memo {
     gap: 6px;
-    border-radius: 14px;
+    border-radius: 8px;
     padding: 10px 12px;
     background: rgba(255, 255, 255, 0.72);
   }
@@ -897,7 +1078,7 @@
     display: grid;
     gap: 10px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     padding: 12px;
@@ -927,7 +1108,7 @@
   .gju-app-shell__content .admin-equipment-mobile-meta div {
     min-width: 0;
     border: 1px solid var(--line-soft);
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(248, 251, 255, 0.7);
     padding: 8px 9px;
   }
@@ -1038,7 +1219,7 @@
   .gju-app-shell__content .admin-equipment-list-card.compact tbody tr {
     margin: 0 0 14px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     overflow: hidden;
@@ -1103,7 +1284,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .equipment-bulk-bar .bulk-actions {
@@ -1140,7 +1321,7 @@
     display: grid;
     gap: 12px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     padding: 14px;
@@ -1242,6 +1423,50 @@
     justify-self: end;
   }
 
+  .gju-app-shell__content .admin-react-toolbar,
+  .gju-app-shell__content .admin-react-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gju-app-shell__content .admin-react-form-wide {
+    grid-column: auto;
+  }
+
+  .gju-app-shell__content .admin-react-desktop-table {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-react-card-list {
+    display: grid;
+  }
+
+  .gju-app-shell__content .admin-react-list-card {
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .calendar-card {
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .calendar-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gju-app-shell__content .calendar-month-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gju-app-shell__content .calendar-day {
+    min-height: 58px;
+    padding: 6px;
+  }
+
+  .gju-app-shell__content .calendar-day small {
+    display: none;
+  }
+
   .gju-app-shell__content--with-mobile-bottom-nav {
     padding-bottom: calc(20px + var(--gju-app-shell-mobile-nav-height) + var(--gju-safe-area-bottom));
   }
@@ -1267,10 +1492,9 @@
 
   .gju-admin-nav--bottom {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(72px, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 2px;
     scroll-padding-inline: var(--gju-app-shell-mobile-edge);
     scrollbar-width: none;
@@ -1281,9 +1505,12 @@
   }
 
   .gju-admin-nav--bottom .gju-admin-nav__item {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
     min-height: 44px;
     justify-content: center;
-    padding: 0 10px;
+    padding: 0;
     white-space: nowrap;
   }
 }
