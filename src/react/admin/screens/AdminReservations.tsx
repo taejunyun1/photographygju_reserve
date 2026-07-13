@@ -3,9 +3,11 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
+  GjuIconButton,
   GjuStatusBadge,
   GjuTable,
-  GjuTabs
+  GjuTabs,
+  type GjuIconName
 } from "../../design-system";
 import type { AdminReservationRecord, LegacyState, ReactAdminActions } from "../../platform/types";
 import {
@@ -188,8 +190,42 @@ function statusActionsFor(reservation: AdminReservationRecord) {
   return reservation.type === "equipment" ? EQUIPMENT_STATUS_ACTIONS : FACILITY_STATUS_ACTIONS;
 }
 
+function reservationStatusIcon(status: string): GjuIconName {
+  return status === "cancelled" || status === "admin_cancelled" ? "x" : "check";
+}
+
 function updateReservationStatus(actions: ReactAdminActions, reservation: AdminReservationRecord, status: string) {
   runAdminAction(() => actions.updateReservationStatus(reservation.id, status));
+}
+
+function renderReservationStatusActions(
+  reservation: AdminReservationRecord,
+  actions: ReactAdminActions,
+  disableCurrent = false
+) {
+  const currentStatus = String(reservation.status || "");
+  return statusActionsFor(reservation).map(([nextStatus, label]) => (
+    <GjuIconButton
+      key={nextStatus}
+      label={label}
+      icon={reservationStatusIcon(nextStatus)}
+      tone={nextStatus === "cancelled" || nextStatus === "admin_cancelled" ? "danger" : "success"}
+      disabled={disableCurrent && nextStatus === currentStatus}
+      aria-pressed={nextStatus === currentStatus ? "true" : "false"}
+      onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
+    />
+  ));
+}
+
+function renderReservationDeleteAction(reservation: AdminReservationRecord, actions: ReactAdminActions) {
+  return (
+    <GjuIconButton
+      label="예약 삭제"
+      icon="trash"
+      tone="danger"
+      onClick={() => runAdminAction(() => actions.deleteReservation(reservation.id, reservationTitle(reservation)))}
+    />
+  );
 }
 
 function activeReservationFilters(state: LegacyState) {
@@ -231,21 +267,9 @@ function renderReservationCard(
       </dl>
       {reservationDetails(reservation)}
       <div className="admin-react-action-row" aria-label={`${reservationTitle(reservation)} 상태 변경`}>
-        {statusActionsFor(reservation).map(([nextStatus, label]) => (
-          <button
-            key={nextStatus}
-            className={`button compact ${nextStatus === status ? "primary" : ""}`}
-            type="button"
-            aria-pressed={nextStatus === status ? "true" : "false"}
-            onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
-          >
-            {label}
-          </button>
-        ))}
+        {renderReservationStatusActions(reservation, actions)}
+        {renderReservationDeleteAction(reservation, actions)}
       </div>
-      <button className="button danger compact" type="button" onClick={() => runAdminAction(() => actions.deleteReservation(reservation.id, reservationTitle(reservation)))}>
-        삭제
-      </button>
     </article>
   );
 }
@@ -374,24 +398,8 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
                       </td>
                       <td>
                         <div className="admin-react-action-row">
-                          {statusActionsFor(reservation).map(([nextStatus, label]) => (
-                            <button
-                              key={nextStatus}
-                              className="button compact"
-                              type="button"
-                              disabled={nextStatus === status}
-                              onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                          <button
-                            className="button danger compact"
-                            type="button"
-                            onClick={() => runAdminAction(() => actions.deleteReservation(reservation.id, reservationTitle(reservation)))}
-                          >
-                            삭제
-                          </button>
+                          {renderReservationStatusActions(reservation, actions, true)}
+                          {renderReservationDeleteAction(reservation, actions)}
                         </div>
                       </td>
                     </tr>

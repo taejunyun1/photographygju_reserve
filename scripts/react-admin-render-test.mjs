@@ -441,7 +441,11 @@ assert(!usersMarkup.includes("data-admin-users-page"), "React users pagination m
 for (const label of ["이름", "학번", "신분", "상태", "이전", "다음"]) {
   assert(usersMarkup.includes(label), `React users screen must keep the ${label} control`);
 }
-assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
+for (const label of ["학생 반려", "비밀번호 초기화", "메모 추가", "학생 삭제"]) {
+  assert(usersMarkup.includes(`aria-label="${label}"`), `React users ${label} action must be icon-only accessible`);
+  assert(usersMarkup.includes(`title="${label}"`), `React users ${label} action must expose a native tooltip`);
+}
+assert(!usersMarkup.includes(">비번 리셋</button>"), "React users password reset must not render visible text");
 assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
 assert(usersMarkup.includes('data-surface="workspace"'), "React users list must use the flat workspace surface");
 
@@ -488,6 +492,10 @@ assert(usersWarningMemoMarkup.includes("초기화"), "React users screen must re
 assert(usersWarningMemoMarkup.includes("최근 경고 메모 2건"), "React users screen must render warning memo summary");
 assert(usersWarningMemoMarkup.includes("장비 연체 2회"), "React users screen must render the latest warning memo reason");
 assert(!usersWarningMemoMarkup.includes("검색 결과가 없습니다."), "React users search must match warning memo text");
+for (const label of ["메모 추가", "메모 초기화"]) {
+  assert(usersWarningMemoMarkup.includes(`aria-label="${label}"`), `React users ${label} action must be icon-only accessible`);
+  assert(usersWarningMemoMarkup.includes(`title="${label}"`), `React users ${label} action must expose a native tooltip`);
+}
 
 const serverOrderedUsersMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -762,6 +770,11 @@ for (const label of ["기자재", "암실", "스튜디오", "출력", "2026년 2
 assert(!studioReservationMarkup.includes(">대여완료<"), "studio reservations must not expose the equipment checked_out transition");
 assert(!studioReservationMarkup.includes(">반납완료<"), "studio reservations must not expose the equipment returned transition");
 assert(studioReservationMarkup.includes('data-surface="workspace"'), "React reservations list must use the flat workspace surface");
+for (const label of ["완료", "관리자 취소", "예약 삭제"]) {
+  assert(studioReservationMarkup.includes(`aria-label="${label}"`), `studio reservation ${label} action must be icon-only accessible`);
+  assert(studioReservationMarkup.includes(`title="${label}"`), `studio reservation ${label} action must expose a native tooltip`);
+}
+assert(!studioReservationMarkup.includes(">관리자 취소</button>"), "studio cancellation must not render visible text");
 
 const reservationDetailsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -797,6 +810,10 @@ const reservationDetailsMarkup = renderToStaticMarkup(
 );
 for (const value of ["CAM-FX3-01", "졸업작품", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
+}
+for (const label of ["대여완료", "반납완료", "대여취소", "예약 삭제"]) {
+  assert(reservationDetailsMarkup.includes(`aria-label="${label}"`), `equipment reservation ${label} action must be icon-only accessible`);
+  assert(reservationDetailsMarkup.includes(`title="${label}"`), `equipment reservation ${label} action must expose a native tooltip`);
 }
 
 const reportsMarkup = renderToStaticMarkup(

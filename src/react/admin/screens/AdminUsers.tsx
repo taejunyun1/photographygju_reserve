@@ -3,7 +3,7 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
-  GjuIcon,
+  GjuIconButton,
   GjuStatusBadge,
   GjuTable,
   GjuTabs,
@@ -198,37 +198,26 @@ function renderUsersPager(page: AdminUsersPageState, onPage: (page: number) => v
   );
 }
 
-function renderDeleteIcon() {
-  return (
-    <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
-      <GjuIcon name="trash" className="button-icon icon" />
-    </span>
-  );
-}
-
-function renderPlusIcon() {
-  return <GjuIcon name="plus" className="button-icon icon" />;
-}
-
 function renderPasswordResetButton(user: AdminUser, actions: ReactAdminActions) {
   return (
-    <button className="button compact admin-user-small-action" type="button" onClick={() => runAdminAction(() => actions.resetUserPassword(user.id))}>
-      비번 리셋
-    </button>
+    <GjuIconButton
+      className="admin-user-small-action"
+      label="비밀번호 초기화"
+      icon="refresh"
+      onClick={() => runAdminAction(() => actions.resetUserPassword(user.id))}
+    />
   );
 }
 
 function renderUserDeleteButton(user: AdminUser, actions: ReactAdminActions) {
   return (
-    <button
-      className="button danger compact admin-user-delete-button icon-only-action"
-      type="button"
+    <GjuIconButton
+      className="admin-user-delete-button"
+      label="학생 삭제"
+      icon="trash"
+      tone="danger"
       onClick={() => runAdminAction(() => actions.deleteUser(user.id, user.name))}
-      aria-label="삭제"
-      title="삭제"
-    >
-      {renderDeleteIcon()}
-    </button>
+    />
   );
 }
 
@@ -237,16 +226,22 @@ function renderApprovalAction(user: AdminUser, actions: ReactAdminActions) {
 
   if (approvedLike) {
     return (
-      <button className="button danger compact" type="button" onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "rejected"))}>
-        반려
-      </button>
+      <GjuIconButton
+        label="학생 반려"
+        icon="x"
+        tone="danger"
+        onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "rejected"))}
+      />
     );
   }
 
   return (
-    <button className="button primary compact" type="button" onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "approved"))}>
-      승인
-    </button>
+    <GjuIconButton
+      label="학생 승인"
+      icon="check"
+      tone="success"
+      onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "approved"))}
+    />
   );
 }
 
@@ -271,10 +266,12 @@ function renderWarningMemo(user: AdminUser, actions: ReactAdminActions) {
       <div className="admin-user-warning-memo is-empty">
         <div className="admin-user-warning-memo-head">
           <strong>경고 메모 기록 없음</strong>
-          <button className="button warn compact admin-user-memo-add" type="button" onClick={() => runAdminAction(() => actions.warnUser(user.id))}>
-            {renderPlusIcon()}
-            메모 추가
-          </button>
+          <GjuIconButton
+            className="admin-user-memo-add"
+            label="메모 추가"
+            icon="plus"
+            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
+          />
         </div>
         <span>저장된 메모가 없습니다.</span>
       </div>
@@ -290,13 +287,18 @@ function renderWarningMemo(user: AdminUser, actions: ReactAdminActions) {
       <div className="admin-user-warning-memo-head">
         <strong>최근 경고 메모 {count}건</strong>
         <div className="admin-user-warning-actions">
-          <button className="button warn compact admin-user-memo-add" type="button" onClick={() => runAdminAction(() => actions.warnUser(user.id))}>
-            {renderPlusIcon()}
-            메모 추가
-          </button>
-          <button className="button ghost compact admin-user-memo-reset" type="button" onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))}>
-            초기화
-          </button>
+          <GjuIconButton
+            className="admin-user-memo-add"
+            label="메모 추가"
+            icon="plus"
+            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
+          />
+          <GjuIconButton
+            className="admin-user-memo-reset"
+            label="메모 초기화"
+            icon="refresh"
+            onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))}
+          />
         </div>
       </div>
       <span>
