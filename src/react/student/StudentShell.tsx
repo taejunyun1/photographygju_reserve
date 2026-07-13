@@ -97,11 +97,13 @@ export function StudentShell({ state, actions, children }: StudentShellProps) {
       }
       mobileHeader={
         <div className="mobile-top student-react-mobile-header">
-          <div>
+          <div className="student-react-mobile-header__title">
             <h1 ref={mobileHeadingRef} tabIndex={-1}>{title}</h1>
             <p className="sr-only">GJU Photography 예약</p>
           </div>
-          <GjuIconButton label="마이 페이지" icon="user" onClick={() => run(actions.openAccount)} />
+          <div className="student-react-mobile-header__actions">
+            <GjuIconButton label="마이 페이지" icon="user" onClick={() => run(actions.openAccount)} />
+          </div>
         </div>
       }
       mobileBottomNav={<StudentNav state={state} actions={actions} mobile />}

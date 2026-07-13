@@ -606,6 +606,22 @@ markup = renderToStaticMarkup(React.createElement(student.StudentReactRoot, {
 assert(markup.includes("안녕하세요, 학생님"), "StudentReactRoot must mount the ready StudentApp tree");
 const shellSource = fs.readFileSync("src/react/student/StudentShell.tsx", "utf8");
 assert(shellSource.includes("!mobile ? <span>{label}</span> : null"), "student mobile navigation must remain icon-only");
+assert(shellSource.includes('className="student-react-mobile-header__title"'), "student mobile header must expose a non-shrinking title column contract");
+assert(shellSource.includes('className="student-react-mobile-header__actions"'), "student mobile header must expose a fixed action column contract");
+assert(
+  shellSource.includes('<GjuIconButton label="마이 페이지" icon="user"'),
+  "student mobile account action must use the shared icon-only button"
+);
+
+const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
+assert(
+  studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),
+  "student mobile header must keep title and account action on one responsive row"
+);
+assert(
+  studentCssSource.includes(".student-react-mobile-header h1:focus:not(:focus-visible)"),
+  "programmatic mobile heading focus must not look like keyboard focus"
+);
 
 // Student React remains bridge-driven and must not create a second transport or DOM event system.
 function readTree(directory) {

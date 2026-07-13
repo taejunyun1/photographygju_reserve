@@ -65,6 +65,61 @@
   letter-spacing: 0;
 }
 
+.student-react-header {
+  align-items: center;
+}
+
+.student-react-header .appbar-brand,
+.student-react-header .student-appbar-actions,
+.student-react-header .student-status-chip {
+  min-width: 0;
+}
+
+.student-react-header .student-appbar-actions {
+  align-items: center;
+}
+
+.student-react-mobile-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.student-react-mobile-header__title {
+  min-width: 0;
+}
+
+.student-react-mobile-header h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--student-ink);
+  font-size: clamp(20px, 6vw, 24px);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-react-mobile-header h1:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.student-react-mobile-header h1:focus-visible {
+  outline: 3px solid #f5b700;
+  outline-offset: 2px;
+}
+
+.student-react-mobile-header__actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
 .student-react-desktop-nav {
   display: grid;
   gap: 4px;
@@ -83,7 +138,7 @@
 
 .student-react-desktop-nav .student-react-nav__item {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -108,8 +163,8 @@
 }
 
 .student-react-nav__icon {
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
 }
 
 .student-react-screen-header {
@@ -356,8 +411,8 @@
 }
 
 .student-react-bottom-nav .student-react-nav__icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 700px) {
