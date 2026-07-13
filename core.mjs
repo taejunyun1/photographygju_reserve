@@ -12,14 +12,33 @@ import {
 import { createAdminListHelpers } from "./core/admin-lists.mjs";
 import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
+import { reservationTiming } from "./core/reservation-timing.mjs";
+import {
+  darkroomChemicals,
+  defaultSettings,
+  createSettingsHelpers
+} from "./core/settings.mjs";
+import {
+  FANTASY_LAB_INQUIRY_NOTE,
+  createEquipmentHelpers
+} from "./core/equipment.mjs";
+import {
+  PASSWORD_MIN_LENGTH,
+  SESSION_TTL_MS,
+  createAuthSessionHelpers
+} from "./core/auth-session.mjs";
+import {
+  assertRequired,
+  fail,
+  ok,
+  parseBody,
+  requestPath,
+  routeKey
+} from "./core/router.mjs";
+import { createReportsLecturesNoticesHelpers } from "./core/reports-lectures-notices.mjs";
+import { createReservationValidationHelpers } from "./core/reservation-validation.mjs";
+import { createReservationViewHelpers } from "./core/reservation-views.mjs";
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
-const PASSWORD_ITERATIONS = 100000;
-const PASSWORD_MIN_LENGTH = 8;
-const LECTURE_CANCEL_LIMIT_MS = 1000 * 60 * 60 * 6;
-const LOGIN_MAX_ATTEMPTS = 10;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_LOCK_MS = 5 * 60 * 1000;
 const PRODUCTION_STUDENT_URL = "https://gjureserve.co.kr";
 const LEGACY_STUDENT_URL = "https://photographygju.dothome.co.kr";
 const LEGACY_ADMIN_URL = "https://admin.photographygju.dothome.co.kr";
@@ -41,10 +60,14 @@ const LIMIT_DURATION_DAYS = {
   semester: 120
 };
 const APPROVAL_STATUSES = new Set(["approval_pending", "approved", "rejected", "blocked"]);
-const RESERVATION_STATUSES = new Set(["pending_approval", "auto_confirmed", "approved", "cancelled", "admin_cancelled", "checked_out", "returned", "completed", "rejected"]);
 const EQUIPMENT_RESERVATION_STATUSES = new Set(["checked_out", "returned", "cancelled"]);
-const EQUIPMENT_STATUSES = new Set(["가능", "수리중", "파손", "available", "rented", "maintenance", "repair", "lost", "사용 가능", "대여 중", "점검 중", "수리 중", "분실", "damaged", "broken"]);
-const FANTASY_LAB_INQUIRY_NOTE = "온라인 예약불가. 판타지랩 조교에게 직접 문의";
+const RESERVATION_CANCELLATION_TERMINAL_STATUSES = new Set(["cancelled", "admin_cancelled", "returned", "completed", "rejected"]);
+const ADMIN_RESERVATION_STATUS_BY_TYPE = {
+  equipment: EQUIPMENT_RESERVATION_STATUSES,
+  studio: new Set(["completed", "admin_cancelled"]),
+  darkroom: new Set(["completed", "admin_cancelled"]),
+  print: new Set(["completed", "admin_cancelled"])
+};
 const WEEKDAY_INDEX = {
   sunday: 0,
   monday: 1,
@@ -56,84 +79,6 @@ const WEEKDAY_INDEX = {
 };
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_VALUE_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print"]);
-const NOTICE_LIST_QUERY_KEYS = new Set(["q", "type", "status", "from", "to", "page", "pageSize"]);
-
-const defaultSettings = {
-  appName: "GJU Photography Reservation",
-  departmentName: "광주대학교 사진영상미디어학과",
-  studentUrl: PRODUCTION_STUDENT_URL,
-  adminUrl: PRODUCTION_STUDENT_URL,
-  slackChannel: "#예약_현황automatic",
-  phoneMasking: true,
-  reservationWindowDays: 30,
-  equipmentFacility: "사진영상미디어학과 기자재실",
-  equipmentCategories: ["Body", "Lens", "Lighting", "Audio", "Drone", "Other"],
-  equipmentRentalTimes: ["10:15", "12:00", "17:30"],
-  equipmentReturnTimes: ["10:15", "12:00", "17:10"],
-  equipmentPeriods: ["당일", "1박2일", "2박3일", "주말사용"],
-  studioSpaces: ["Studio A Front", "Studio A Back", "Studio B Front", "Studio B Back"],
-  studioSlots: [
-    "10:30-12:00",
-    "12:00-14:00",
-    "14:00-16:00",
-    "16:00-18:00",
-    "18:00-20:00 (야간)",
-    "20:00-22:00 (야간)",
-    "22:00-24:00 (야간)",
-    "00:00-02:00 (야간)",
-    "02:00-04:00 (야간)",
-    "04:00-06:00 (야간)"
-  ],
-  studioMaxSlots: 3,
-  studioReportDeadlineHours: 48,
-  darkroomCapacity: 6,
-  darkroomSlots: [
-    "00:00-02:00",
-    "02:00-04:00",
-    "04:00-06:00",
-    "06:00-08:00",
-    "08:00-10:00",
-    "10:00-12:00",
-    "12:00-14:00",
-    "14:00-16:00",
-    "16:00-18:00",
-    "18:00-20:00",
-    "20:00-22:00",
-    "22:00-24:00"
-  ],
-  darkroomBlockedRules: [
-    { day: "monday", label: "월요일", start: "14:00", end: "18:00" },
-    { day: "tuesday", label: "화요일", start: "14:00", end: "18:00" }
-  ],
-  printAvailableStart: "10:00",
-  printAvailableEnd: "19:00",
-  printTimeUnitMinutes: 60,
-  printCapacityWindowMinutes: 120,
-  printCapacityPerWindow: 4,
-  printTypes: ["과제", "개인 작품"],
-  printPapers: ["글로시", "매트"],
-  printSizes: ["소형", "중형", "대형"],
-  printBankAccount: "Admin 설정에서 출력비 계좌를 입력하세요.",
-  printUploadStartDate: "",
-  printUploadEndDate: "",
-  googleDriveUrl: "",
-  equipmentHighValueCategories: ["Body", "Lens"],
-  equipmentBagKeywords: ["펠리컨", "Pelican"],
-  equipmentCameraBagNotice: "고가장비(카메라)를 선택 시 카메라 가방을 지참하겠습니다",
-  vacationMode: false,
-  vacationRanges: [],
-  blockedSchedules: [],
-  noticesPinnedFirst: true
-};
-
-const darkroomChemicals = [
-  { id: "chem-d76", process: "현상", name: "Kodak D-76", options: ["500ml", "1000ml", "2000ml", "직접 입력"] },
-  { id: "chem-stopbath", process: "정지", name: "ILFORD indicator stopbath", options: ["500ml", "1000ml", "2000ml", "직접 입력"] },
-  { id: "chem-fixer", process: "정착", name: "ILFORD Hypam Rapid Fixer", options: ["500ml", "1000ml", "2000ml", "직접 입력"] },
-  { id: "chem-developer", process: "인화 현상", name: "ILFORD multigrade paper Developer", options: ["500ml", "1000ml", "2000ml", "직접 입력"] },
-  { id: "lens-schneider-50", process: "확대기 렌즈", name: "Schneider componon-s 50mm f2.8", options: ["1개", "직접 입력"] }
-];
 
 const seedEquipmentGroups = [
   ["department", "Body", "캐논 750D", 5, true, ""],
@@ -229,48 +174,41 @@ function id(prefix) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 14)}`;
 }
 
-function toHex(buffer) {
-  return [...new Uint8Array(buffer)].map((value) => value.toString(16).padStart(2, "0")).join("");
-}
+const {
+  assertApprovedStudentAccess,
+  assertLoginAllowed,
+  blockUntilForDuration,
+  cleanMeta,
+  cleanSessions,
+  clearLoginFailures,
+  getAuthSession,
+  getAuthUser,
+  hashPassword,
+  publicAuditLog,
+  publicSession,
+  publicUser,
+  randomHex,
+  randomPassword,
+  registerLoginFailure,
+  requestMeta,
+  requireAdmin,
+  requireAdminWithoutSessionCleanup,
+  requireApprovedStudent,
+  requireUser,
+  sessionDeviceLabel,
+  userRecord,
+  verifyPassword
+} = createAuthSessionHelpers({ id, nowIso });
 
-function randomHex(bytes = 16) {
-  const values = new Uint8Array(bytes);
-  crypto.getRandomValues(values);
-  return [...values].map((value) => value.toString(16).padStart(2, "0")).join("");
-}
-
-function randomPassword(length = 8) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  const values = new Uint32Array(length);
-  crypto.getRandomValues(values);
-  return [...values].map((value) => alphabet[value % alphabet.length]).join("");
-}
-
-function safeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i += 1) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return mismatch === 0;
-}
-
-async function hashPassword(password, salt = randomHex(16)) {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: PASSWORD_ITERATIONS },
-    key,
-    256
-  );
-  return `pbkdf2:${salt}:${toHex(bits)}`;
-}
-
-async function verifyPassword(password, stored) {
-  if (!stored) return false;
-  const [type, salt, expected] = stored.split(":");
-  if (type !== "pbkdf2" || !salt || !expected) return false;
-  const next = await hashPassword(password, salt);
-  return safeEqual(next, stored);
-}
+const {
+  canCancelLectureApplication,
+  hasNoticeListQuery,
+  lectureApplicationCount,
+  lectureDetail,
+  lectureSummary,
+  reportWithDetails,
+  withLectureApplicationDetails
+} = createReportsLecturesNoticesHelpers({ publicUser });
 
 function normalizeStatusLabel(status) {
   const labels = {
@@ -305,133 +243,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function categoryPrefix(category) {
-  return {
-    Body: "CAM",
-    Lens: "LEN",
-    Lighting: "LGT",
-    Audio: "AUD",
-    Drone: "DRN",
-    Other: "ETC"
-  }[category] || "ETC";
-}
-
-function codeBase(category, name, fallbackIndex) {
-  const ascii = String(name || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(-2)
-    .join("");
-  return `${categoryPrefix(category)}-${ascii || `ITEM${String(fallbackIndex).padStart(3, "0")}`}`;
-}
-
-function normalizeEquipmentStatus(status) {
-  const value = String(status || "").trim().toLowerCase().replace(/\s+/g, "");
-  if (!value || ["available", "사용가능", "가능"].includes(value)) return "가능";
-  if (["repair", "maintenance", "rented", "수리중", "점검중", "대여중"].includes(value)) return "수리중";
-  if (["lost", "damaged", "broken", "분실", "파손"].includes(value)) return "파손";
-  return "가능";
-}
-
-function equipmentReservableForStatus(status) {
-  return normalizeEquipmentStatus(status) === "가능";
-}
-
-function booleanFromBody(value) {
-  return value === true || value === "true";
-}
-
-function equipmentAuditDetail(patch, extra = {}) {
-  const allowed = ["facility", "source", "category", "name", "brand", "model", "code", "status", "reservable", "inquiryOnly", "notes", "active"];
-  return allowed.reduce((detail, field) => {
-    if (patch[field] !== undefined) detail[field] = patch[field];
-    return detail;
-  }, { ...extra });
-}
-
-function applyEquipmentPatch(item, patch = {}) {
-  const nextStatus = patch.status !== undefined ? normalizeEquipmentStatus(patch.status) : normalizeEquipmentStatus(item.status);
-  if (nextStatus && !EQUIPMENT_STATUSES.has(nextStatus)) {
-    throw Object.assign(new Error("지원하지 않는 기자재 상태입니다."), { status: 400 });
-  }
-  if (patch.facility !== undefined) item.facility = String(patch.facility).trim() || item.facility;
-  if (patch.source !== undefined) item.source = patch.source === "fantasy_lab" ? "fantasy_lab" : "department";
-  if (patch.category !== undefined) item.category = String(patch.category).trim() || item.category;
-  if (patch.name !== undefined) item.name = String(patch.name).trim() || item.name;
-  if (patch.brand !== undefined) item.brand = String(patch.brand || "");
-  if (patch.model !== undefined) item.model = String(patch.model || "");
-  if (patch.code !== undefined) item.code = String(patch.code).trim() || item.code;
-  if (patch.notes !== undefined) item.notes = String(patch.notes || "");
-  if (patch.active !== undefined) item.active = booleanFromBody(patch.active);
-  if (patch.reservable !== undefined) item.reservable = booleanFromBody(patch.reservable);
-  if (patch.inquiryOnly !== undefined) item.inquiryOnly = booleanFromBody(patch.inquiryOnly);
-  item.status = nextStatus;
-  item.updatedAt = nowIso();
-  if (item.source === "fantasy_lab" || item.facility === "판타지랩") {
-    item.source = "fantasy_lab";
-    item.facility = "판타지랩";
-    item.reservable = false;
-    item.inquiryOnly = true;
-    if (!item.notes) item.notes = FANTASY_LAB_INQUIRY_NOTE;
-  } else if (patch.status !== undefined) {
-    item.reservable = patch.reservable === undefined
-      ? equipmentReservableForStatus(item.status)
-      : booleanFromBody(patch.reservable) && equipmentReservableForStatus(item.status);
-    item.inquiryOnly = !item.reservable;
-  } else if (patch.reservable !== undefined) {
-    item.inquiryOnly = !item.reservable;
-  }
-  return item;
-}
-
-function seedEquipment() {
-  const items = [];
-  let groupIndex = 0;
-  for (const [source, category, name, quantity, reservable, notes] of seedEquipmentGroups) {
-    groupIndex += 1;
-    const base = codeBase(category, name, groupIndex);
-    for (let i = 1; i <= quantity; i += 1) {
-      items.push({
-        id: id("eq"),
-        facility: source === "fantasy_lab" ? "판타지랩" : defaultSettings.equipmentFacility,
-        source,
-        category,
-        name,
-        code: `${base}-${String(i).padStart(2, "0")}`,
-        status: "가능",
-        reservable,
-        inquiryOnly: !reservable,
-        notes,
-        active: true,
-        createdAt: nowIso(),
-        updatedAt: nowIso()
-      });
-    }
-  }
-  return items;
-}
-
-async function userRecord({ role = "student", username = "", name, email, phone = "", studentId = "", grade = "", studentStatus, approvalStatus, password }) {
-  return {
-    id: username === "admin" ? "user_admin" : id("user"),
-    role,
-    username,
-    name,
-    email,
-    phone,
-    studentId,
-    grade,
-    studentStatus,
-    approvalStatus,
-    passwordHash: await hashPassword(password),
-    createdAt: nowIso(),
-    updatedAt: nowIso()
-  };
-}
-
 export async function initialDb(adminPassword = "admin") {
   return {
     meta: { version: 1, createdAt: nowIso() },
@@ -449,7 +260,7 @@ export async function initialDb(adminPassword = "admin") {
       })
     ],
     sessions: [],
-    equipment: seedEquipment(),
+    equipment: equipmentHelpers.seedEquipment(),
     reservations: [],
     reports: [],
     lectures: [],
@@ -460,194 +271,6 @@ export async function initialDb(adminPassword = "admin") {
     auditLogs: [],
     importBatches: []
   };
-}
-
-function userWarningRecords(db, userId, limit = 3) {
-  return (db?.warnings || [])
-    .filter((item) => item.userId === userId)
-    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
-    .slice(0, limit)
-    .map((item) => ({
-      id: item.id,
-      reason: item.reason || "",
-      count: Math.max(0, Number(item.count || 0)),
-      createdAt: item.createdAt || ""
-    }));
-}
-
-function publicUser(user, db = null) {
-  if (!user) return null;
-  const { passwordHash, ...rest } = user;
-  return {
-    ...rest,
-    warningCount: Math.max(0, Number(user.warningCount || 0)),
-    warningRecords: db ? userWarningRecords(db, user.id) : [],
-    approvalStatus: effectiveApprovalStatus(user)
-  };
-}
-
-function cleanMeta(value, max = 240) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
-}
-
-function requestMeta(ctx) {
-  return {
-    ip: cleanMeta(ctx.clientIp || "", 80),
-    userAgent: cleanMeta(ctx.userAgent || "", 240)
-  };
-}
-
-function sessionDeviceLabel(userAgent = "") {
-  const ua = String(userAgent);
-  const os = /iPhone|iPad|iPod/.test(ua)
-    ? "iOS"
-    : /Android/.test(ua)
-      ? "Android"
-      : /Mac OS X|Macintosh/.test(ua)
-        ? "Mac"
-        : /Windows/.test(ua)
-          ? "Windows"
-          : "기기";
-  const browser = /Edg\//.test(ua)
-    ? "Edge"
-    : /Chrome\//.test(ua)
-      ? "Chrome"
-      : /Safari\//.test(ua)
-        ? "Safari"
-        : /Firefox\//.test(ua)
-          ? "Firefox"
-          : "Browser";
-  return `${os} / ${browser}`;
-}
-
-function publicSession(db, session) {
-  if (!session) return null;
-  const user = db.users.find((item) => item.id === session.userId);
-  return {
-    id: session.id,
-    userId: session.userId,
-    user: publicUser(user),
-    ip: session.ip || "",
-    userAgent: session.userAgent || "",
-    device: session.device || sessionDeviceLabel(session.userAgent || ""),
-    createdAt: session.createdAt,
-    lastSeenAt: session.lastSeenAt || session.createdAt,
-    expiresAt: session.expiresAt
-  };
-}
-
-function publicAuditLog(db, log) {
-  return {
-    ...log,
-    actor: publicUser(db.users.find((user) => user.id === log.actorId))
-  };
-}
-
-function effectiveApprovalStatus(user) {
-  if (!user || user.approvalStatus !== "blocked") return user?.approvalStatus;
-  if (!user.blockedUntil) return "blocked";
-  return new Date(user.blockedUntil).getTime() > Date.now() ? "blocked" : "approved";
-}
-
-function blockUntilForDuration(duration) {
-  const days = LIMIT_DURATION_DAYS[duration] || LIMIT_DURATION_DAYS.week1;
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-}
-
-function blockEndLabel(value) {
-  if (!value) return "";
-  return value.slice(0, 10);
-}
-
-function authToken(authorization) {
-  const auth = authorization || "";
-  return auth.startsWith("Bearer ") ? auth.slice(7) : "";
-}
-
-function cleanSessions(db) {
-  const now = Date.now();
-  db.sessions = (db.sessions || []).filter((session) => new Date(session.expiresAt).getTime() > now);
-}
-
-function getAuthSession(authorization, db) {
-  const token = authToken(authorization);
-  if (!token) return null;
-  cleanSessions(db);
-  return db.sessions.find((item) => item.token === token) || null;
-}
-
-function getAuthUser(authorization, db) {
-  const session = getAuthSession(authorization, db);
-  if (!session) return null;
-  return db.users.find((user) => user.id === session.userId) || null;
-}
-
-function requireUser(authorization, db) {
-  const user = getAuthUser(authorization, db);
-  if (!user) throw Object.assign(new Error("로그인이 필요합니다."), { status: 401 });
-  return user;
-}
-
-function requireAdmin(authorization, db) {
-  const user = requireUser(authorization, db);
-  if (user.role !== "admin") throw Object.assign(new Error("관리자 권한이 필요합니다."), { status: 403 });
-  return user;
-}
-
-function requireAdminWithoutSessionCleanup(authorization, db) {
-  const token = authToken(authorization);
-  const session = token ? (db.sessions || []).find((item) => item.token === token) : null;
-  if (!session || !(new Date(session.expiresAt).getTime() > Date.now())) {
-    throw Object.assign(new Error("로그인이 필요합니다."), { status: 401 });
-  }
-  const user = db.users.find((item) => item.id === session.userId);
-  if (!user) throw Object.assign(new Error("로그인이 필요합니다."), { status: 401 });
-  if (user.role !== "admin") throw Object.assign(new Error("관리자 권한이 필요합니다."), { status: 403 });
-  return user;
-}
-
-function assertApprovedStudentAccess(user) {
-  if (user.role !== "admin" && effectiveApprovalStatus(user) !== "approved") {
-    const message = user.approvalStatus === "blocked"
-      ? `대여금지 상태입니다.${user.blockedUntil ? ` 해제 예정: ${blockEndLabel(user.blockedUntil)}` : ""}`
-      : "관리자 승인 후 예약할 수 있습니다.";
-    throw Object.assign(new Error(message), { status: 403 });
-  }
-}
-
-function requireApprovedStudent(authorization, db) {
-  const user = requireUser(authorization, db);
-  assertApprovedStudentAccess(user);
-  return user;
-}
-
-async function parseBody(readText) {
-  const text = await readText();
-  if (!text) return {};
-  if (text.length > 1024 * 1024) {
-    throw Object.assign(new Error("요청 본문이 너무 큽니다."), { status: 413 });
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw Object.assign(new Error("JSON 형식이 올바르지 않습니다."), { status: 400 });
-  }
-}
-
-function ok(data = null) {
-  return { status: 200, body: { ok: true, data } };
-}
-
-function fail(error) {
-  return { status: error.status || 500, body: { ok: false, error: error.message || "서버 오류가 발생했습니다." } };
-}
-
-function assertRequired(body, fields) {
-  for (const field of fields) {
-    if (body[field] === undefined || body[field] === null || body[field] === "") {
-      throw Object.assign(new Error(`${field} 값이 필요합니다.`), { status: 400 });
-    }
-  }
 }
 
 function isValidDateKey(value) {
@@ -701,6 +324,20 @@ function assertPlainObject(value, label) {
   }
 }
 
+const {
+  sanitizeBlockedSchedule,
+  sanitizeStringList,
+  sanitizeSettingsPatch
+} = createSettingsHelpers({
+  assertPlainObject,
+  assertDateKey,
+  assertOptionalDateKey,
+  assertTimeValue,
+  sanitizeHttpUrl,
+  id,
+  nowIso
+});
+
 function reservationTitle(type) {
   return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실" }[type] || type;
 }
@@ -726,23 +363,6 @@ function normalizeReservationStatus(reservation) {
   return false;
 }
 
-function slotSet(value) {
-  return new Set(Array.isArray(value) ? value : []);
-}
-
-function hasOverlap(a, b) {
-  const bSet = slotSet(b);
-  return [...slotSet(a)].some((slot) => bSet.has(slot));
-}
-
-function areSlotsConsecutive(selectedSlots, orderedSlots) {
-  const unique = [...new Set(Array.isArray(selectedSlots) ? selectedSlots : [])];
-  if (unique.length !== (selectedSlots || []).length) return false;
-  const indices = unique.map((slot) => orderedSlots.indexOf(slot)).sort((a, b) => a - b);
-  if (!indices.length || indices.some((index) => index < 0)) return false;
-  return indices.every((index, position) => position === 0 || index === indices[position - 1] + 1);
-}
-
 function studioSpaces(fields = {}) {
   if (Array.isArray(fields.studioSpaces) && fields.studioSpaces.length) return fields.studioSpaces;
   return fields.studioSpace ? [fields.studioSpace] : [];
@@ -760,10 +380,6 @@ const {
   nowIso
 });
 
-function isBlockingReservation(reservation) {
-  return !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status);
-}
-
 function addDaysToDateKey(key, days) {
   if (!isValidDateKey(key)) return "";
   const date = new Date(`${key}T00:00:00`);
@@ -771,462 +387,51 @@ function addDaysToDateKey(key, days) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function todayKeySeoul() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(new Date()).reduce((acc, part) => {
-    if (part.type !== "literal") acc[part.type] = part.value;
-    return acc;
-  }, {});
-  return `${parts.year}-${parts.month}-${parts.day}`;
-}
+const equipmentHelpers = createEquipmentHelpers({
+  seedEquipmentGroups,
+  defaultSettings,
+  id,
+  nowIso,
+  addDaysToDateKey
+});
 
-function requiresPreviousDayReservation(type) {
-  return type === "equipment" || type === "studio";
-}
+const {
+  applyEquipmentPatch,
+  codeBase,
+  equipmentAuditDetail,
+  equipmentReservationRange,
+  equipmentReservableForStatus,
+  isCameraBagEquipment,
+  isHighValueEquipment,
+  normalizeEquipmentStatus,
+  printDateOutsideUploadWindow
+} = equipmentHelpers;
 
-function reservationDateClosed(type, reservedDate) {
-  if (!reservedDate) return false;
-  const today = todayKeySeoul();
-  return requiresPreviousDayReservation(type)
-    ? reservedDate <= today
-    : reservedDate < today;
-}
+const {
+  reservationDateClosed,
+  reservationDateClosedMessage,
+  todayKeySeoul,
+  validateReservation
+} = createReservationValidationHelpers({
+  addDaysToDateKey,
+  assertDateKey,
+  assertOptionalDateKey,
+  assertRequired,
+  defaultSettings,
+  equipmentReservationRange,
+  equipmentReservableForStatus,
+  isCameraBagEquipment,
+  isHighValueEquipment,
+  isValidDateKey,
+  printDateOutsideUploadWindow,
+  reservationTitle,
+  studioSpaces
+});
 
-function reservationDateClosedMessage(type) {
-  if (requiresPreviousDayReservation(type)) {
-    return `${reservationTitle(type)} 예약은 사용일 전날 23:59까지만 가능합니다. 당일 예약은 시스템에서 접수할 수 없습니다.`;
-  }
-  return "오늘 이전 날짜는 예약할 수 없습니다. 기록 확인만 가능합니다.";
-}
-
-function equipmentPeriodDays(period = "") {
-  if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
-  if (String(period).includes("1박2일")) return 1;
-  return 0;
-}
-
-function equipmentReservationRange(fields = {}) {
-  const start = fields.reservedDate || "";
-  if (!start) return null;
-  return { start, end: addDaysToDateKey(start, equipmentPeriodDays(fields.period)) };
-}
-
-function normalizedText(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function equipmentMatchesCategory(item, categories = []) {
-  const category = normalizedText(item?.category);
-  return categories.map(normalizedText).filter(Boolean).includes(category);
-}
-
-function equipmentMatchesAnyKeyword(item, keywords = []) {
-  const haystack = [item?.name, item?.code, item?.category, item?.notes, item?.model, item?.brand]
-    .map(normalizedText)
-    .join(" ");
-  return keywords.map(normalizedText).filter(Boolean).some((keyword) => haystack.includes(keyword));
-}
-
-function isHighValueEquipment(item, settings = defaultSettings) {
-  return equipmentMatchesCategory(item, settings.equipmentHighValueCategories || defaultSettings.equipmentHighValueCategories);
-}
-
-function isCameraBagEquipment(item, settings = defaultSettings) {
-  return equipmentMatchesAnyKeyword(item, settings.equipmentBagKeywords || defaultSettings.equipmentBagKeywords);
-}
-
-function printDateOutsideUploadWindow(settings, reservedDate) {
-  if (!reservedDate) return false;
-  const start = settings.printUploadStartDate || "";
-  const end = settings.printUploadEndDate || "";
-  return Boolean((start && reservedDate < start) || (end && reservedDate > end));
-}
-
-function dateRangesOverlap(a, b) {
-  if (!a || !b) return false;
-  return a.start <= b.end && b.start <= a.end;
-}
-
-function timeToMinutes(value) {
-  const match = String(value || "").match(/(\d{1,2}):(\d{2})/);
-  if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-function minutesToTime(minutes) {
-  const normalized = ((minutes % 1440) + 1440) % 1440;
-  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
-}
-
-function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && bStart < aEnd;
-}
-
-function dateKeysInRange(range) {
-  if (!range) return [];
-  const keys = [];
-  let cursor = range.start;
-  while (cursor && cursor <= range.end && keys.length < 31) {
-    keys.push(cursor);
-    cursor = addDaysToDateKey(cursor, 1);
-  }
-  return keys;
-}
-
-function dayIndexForDateKey(key) {
-  return new Date(`${key}T00:00:00`).getDay();
-}
-
-function equipmentReservationStartUnavailable(key) {
-  const day = dayIndexForDateKey(key);
-  return day === 0 || day === 6;
-}
-
-function ruleAppliesToDate(rule, key) {
-  if (!isValidDateKey(key)) return false;
-  if (!rule || !key || WEEKDAY_INDEX[rule.day] !== dayIndexForDateKey(key)) return false;
-  if (rule.from && key < rule.from) return false;
-  if (rule.to && key > rule.to) return false;
-  return true;
-}
-
-function timeRangeFromLabel(value) {
-  const match = String(value || "").match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-  if (!match) return null;
-  const start = timeToMinutes(match[1]);
-  let end = timeToMinutes(match[2]);
-  if (start === null || end === null) return null;
-  if (end <= start) end += 1440;
-  return { start, end };
-}
-
-function ruleTimeRange(rule) {
-  const start = timeToMinutes(rule?.start);
-  let end = timeToMinutes(rule?.end);
-  if (start === null || end === null) return null;
-  if (end <= start) end += 1440;
-  return { start, end };
-}
-
-function scheduleOverlapsRange(rule, range) {
-  if (!range) return true;
-  const blocked = ruleTimeRange(rule);
-  if (!blocked) return true;
-  return intervalsOverlap(range.start, range.end, blocked.start, blocked.end);
-}
-
-function sanitizeBlockedSchedule(rule = {}) {
-  assertPlainObject(rule, "차단 일정");
-  const type = String(rule.type || "").trim();
-  const day = String(rule.day || "").trim();
-  if (!SETTING_FACILITY_TYPES.has(type)) {
-    throw Object.assign(new Error("지원하지 않는 차단 시설입니다."), { status: 400 });
-  }
-  if (!(day in WEEKDAY_INDEX)) {
-    throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
-  }
-  assertDateKey(rule.from, "차단 시작일");
-  assertDateKey(rule.to, "차단 종료일");
-  if (String(rule.from) > String(rule.to)) {
-    throw Object.assign(new Error("차단 종료일은 시작일 이후여야 합니다."), { status: 400 });
-  }
-  assertTimeValue(rule.start, "차단 시작 시간");
-  assertTimeValue(rule.end, "차단 종료 시간");
-  return {
-    id: String(rule.id || id("block")).trim().slice(0, 80),
-    type,
-    day,
-    from: String(rule.from),
-    to: String(rule.to),
-    start: String(rule.start),
-    end: String(rule.end),
-    target: String(rule.target || "").trim().slice(0, 120)
-  };
-}
-
-function sanitizeStringList(value, maxItems = 80, maxLength = 80) {
-  const source = Array.isArray(value)
-    ? value
-    : String(value || "").split(",");
-  return [...new Set(source
-    .map((item) => String(item || "").trim().slice(0, maxLength))
-    .filter(Boolean))]
-    .slice(0, maxItems);
-}
-
-function sanitizeSettingsPatch(current, body = {}) {
-  assertPlainObject(body, "설정");
-  const patch = {};
-  if (body.printBankAccount !== undefined) patch.printBankAccount = String(body.printBankAccount || "").trim().slice(0, 240);
-  if (body.googleDriveUrl !== undefined) {
-    const googleDriveUrl = sanitizeHttpUrl(body.googleDriveUrl || "", "출력실 구글 드라이브 URL");
-    if (googleDriveUrl.length > 500) {
-      throw Object.assign(new Error("출력실 구글 드라이브 URL은 500자 이하로 입력하세요."), { status: 400 });
-    }
-    patch.googleDriveUrl = googleDriveUrl;
-  }
-  if (body.printUploadStartDate !== undefined) {
-    assertOptionalDateKey(body.printUploadStartDate, "출력 업로드 시작일");
-    patch.printUploadStartDate = String(body.printUploadStartDate || "");
-  }
-  if (body.printUploadEndDate !== undefined) {
-    assertOptionalDateKey(body.printUploadEndDate, "출력 업로드 종료일");
-    patch.printUploadEndDate = String(body.printUploadEndDate || "");
-  }
-  if (body.darkroomCapacity !== undefined) {
-    const capacity = Number(body.darkroomCapacity);
-    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 200) {
-      throw Object.assign(new Error("암실 최대 인원은 1-200 사이로 입력하세요."), { status: 400 });
-    }
-    patch.darkroomCapacity = Math.floor(capacity);
-  }
-  if (body.printAvailableStart !== undefined) {
-    assertTimeValue(body.printAvailableStart, "출력실 시작 시간");
-    patch.printAvailableStart = String(body.printAvailableStart);
-  }
-  if (body.printAvailableEnd !== undefined) {
-    assertTimeValue(body.printAvailableEnd, "출력실 종료 시간");
-    patch.printAvailableEnd = String(body.printAvailableEnd);
-  }
-  if (body.equipmentCategories !== undefined) {
-    if (!Array.isArray(body.equipmentCategories)) {
-      throw Object.assign(new Error("기자재 카테고리는 배열이어야 합니다."), { status: 400 });
-    }
-    patch.equipmentCategories = sanitizeStringList(body.equipmentCategories, 80, 60);
-  }
-  if (body.equipmentHighValueCategories !== undefined) patch.equipmentHighValueCategories = sanitizeStringList(body.equipmentHighValueCategories, 40, 60);
-  if (body.equipmentBagKeywords !== undefined) patch.equipmentBagKeywords = sanitizeStringList(body.equipmentBagKeywords, 40, 60);
-  if (body.equipmentCameraBagNotice !== undefined) patch.equipmentCameraBagNotice = String(body.equipmentCameraBagNotice || "").trim().slice(0, 160) || defaultSettings.equipmentCameraBagNotice;
-  if (body.blockedSchedules !== undefined) {
-    if (!Array.isArray(body.blockedSchedules) || body.blockedSchedules.length > 400) {
-      throw Object.assign(new Error("차단 일정은 400개 이하 배열이어야 합니다."), { status: 400 });
-    }
-    patch.blockedSchedules = body.blockedSchedules.map(sanitizeBlockedSchedule);
-  }
-  if (body.vacationMode !== undefined) patch.vacationMode = body.vacationMode === true;
-  const next = { ...current, ...patch };
-  if (next.printUploadStartDate && next.printUploadEndDate && next.printUploadStartDate > next.printUploadEndDate) {
-    throw Object.assign(new Error("출력 업로드 종료일은 시작일 이후여야 합니다."), { status: 400 });
-  }
-  return { ...next, updatedAt: nowIso() };
-}
-
-function studioTargetMatches(target, space) {
-  const rawTarget = String(target || "").trim();
-  if (!rawTarget) return true;
-  const rawSpace = String(space || "").trim();
-  if (!rawSpace) return true;
-  const normalizedTarget = rawTarget.toLowerCase().replace(/[\s,_/()·-]+/g, "");
-  const normalizedSpace = rawSpace.toLowerCase().replace(/[\s,_/()·-]+/g, "");
-  if (normalizedTarget.includes(normalizedSpace) || normalizedSpace.includes(normalizedTarget)) return true;
-
-  const wantsA = /studio\s*a|스튜디오\s*a|(^|[^a-z])a($|[^a-z])/i.test(rawTarget);
-  const wantsB = /studio\s*b|스튜디오\s*b|(^|[^a-z])b($|[^a-z])/i.test(rawTarget);
-  const isA = /studio\s*a|스튜디오\s*a/i.test(rawSpace);
-  const isB = /studio\s*b|스튜디오\s*b/i.test(rawSpace);
-  return (wantsA && isA) || (wantsB && isB);
-}
-
-function blockingSchedulesFor(db, type, key, range = null, target = "") {
-  return (db.settings.blockedSchedules || [])
-    .filter((rule) => rule.type === type)
-    .filter((rule) => ruleAppliesToDate(rule, key))
-    .filter((rule) => scheduleOverlapsRange(rule, range))
-    .filter((rule) => type !== "studio" || studioTargetMatches(rule.target, target));
-}
-
-function darkroomBlockedRulesFor(db, key, slot) {
-  const range = timeRangeFromLabel(slot);
-  return (db.settings.darkroomBlockedRules || [])
-    .filter((rule) => ruleAppliesToDate(rule, key))
-    .filter((rule) => scheduleOverlapsRange(rule, range));
-}
-
-function blockLabel(rule) {
-  return `${rule.label || rule.day || "차단"} ${rule.start || ""}-${rule.end || ""}`.trim();
-}
-
-function printCapacityBuckets(settings) {
-  const start = timeToMinutes(settings.printAvailableStart);
-  const end = timeToMinutes(settings.printAvailableEnd);
-  const windowMinutes = Number(settings.printCapacityWindowMinutes || 120);
-  if (start === null || end === null || windowMinutes <= 0) return [];
-  const buckets = [];
-  for (let cursor = start; cursor < end; cursor += windowMinutes) {
-    buckets.push({ start: cursor, end: Math.min(cursor + windowMinutes, end) });
-  }
-  return buckets;
-}
-
-function validateReservation(db, type, fields, editingId = null) {
-  if (!["equipment", "studio", "darkroom", "print"].includes(type)) {
-    throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
-  }
-  assertOptionalDateKey(fields.reservedDate, "예약일");
-  if (reservationDateClosed(type, fields.reservedDate)) {
-    throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });
-  }
-
-  if (type === "equipment") {
-    assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
-    if (equipmentReservationStartUnavailable(fields.reservedDate)) {
-      throw Object.assign(new Error("토요일/일요일은 기자재 예약을 시작할 수 없습니다. 금요일 2박3일 옵션을 이용하세요."), { status: 400 });
-    }
-    // 2박3일(주말)·주말 대여는 금요일(금→일) 시작만 허용한다.
-    if ((String(fields.period).includes("2박3일") || String(fields.period).includes("주말")) && dayIndexForDateKey(fields.reservedDate) !== 5) {
-      throw Object.assign(new Error("2박3일(주말) 대여는 금요일에만 가능합니다."), { status: 400 });
-    }
-    if (!Array.isArray(fields.equipmentItemIds) || fields.equipmentItemIds.length === 0) {
-      throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });
-    }
-    const requestedRange = equipmentReservationRange(fields);
-    const blockedDate = dateKeysInRange(requestedRange).find((key) => blockingSchedulesFor(db, "equipment", key).length);
-    if (blockedDate) {
-      throw Object.assign(new Error(`${blockedDate}은 기자재 예약 차단 일정이 있어 예약할 수 없습니다.`), { status: 409 });
-    }
-    const selectedEquipmentItems = [];
-    for (const itemId of fields.equipmentItemIds) {
-      const item = db.equipment.find((eq) => eq.id === itemId);
-      if (!item || !item.active || !item.reservable || !equipmentReservableForStatus(item.status)) {
-        throw Object.assign(new Error("예약할 수 없는 기자재가 포함되어 있습니다."), { status: 400 });
-      }
-      selectedEquipmentItems.push(item);
-      const conflict = db.reservations.find((reservation) => {
-        if (reservation.id === editingId || reservation.type !== "equipment") return false;
-        if (!isBlockingReservation(reservation)) return false;
-        if (!Array.isArray(reservation.fields.equipmentItemIds) || !reservation.fields.equipmentItemIds.includes(itemId)) return false;
-        return dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
-      });
-      if (conflict) {
-        throw Object.assign(new Error(`${item.code} 기자재가 해당 기간에 이미 예약되어 있습니다.`), { status: 409 });
-      }
-    }
-    const hasHighValueEquipment = selectedEquipmentItems.some((item) => isHighValueEquipment(item, db.settings));
-    const hasCameraBagEquipment = selectedEquipmentItems.some((item) => isCameraBagEquipment(item, db.settings));
-    if (hasHighValueEquipment && !hasCameraBagEquipment && fields.cameraBagConfirmed !== true && fields.cameraBagConfirmed !== "true") {
-      throw Object.assign(new Error(db.settings.equipmentCameraBagNotice || defaultSettings.equipmentCameraBagNotice), { status: 400 });
-    }
-    fields.cameraBagConfirmationRequired = hasHighValueEquipment;
-    fields.pelicanBagReserved = hasHighValueEquipment && hasCameraBagEquipment;
-    fields.cameraBagConfirmed = hasHighValueEquipment ? (hasCameraBagEquipment || fields.cameraBagConfirmed === true || fields.cameraBagConfirmed === "true") : false;
-  }
-
-  if (type === "studio") {
-    assertRequired(fields, ["reservedDate", "phone"]);
-    if (!Array.isArray(fields.timeSlots) || fields.timeSlots.length === 0) throw Object.assign(new Error("사용 시간을 선택해야 합니다."), { status: 400 });
-    if (studioSpaces(fields).length === 0) throw Object.assign(new Error("사용 장소를 1개 이상 선택해야 합니다."), { status: 400 });
-    if (fields.timeSlots.length > db.settings.studioMaxSlots) throw Object.assign(new Error(`스튜디오는 최대 ${db.settings.studioMaxSlots}타임까지 예약할 수 있습니다.`), { status: 400 });
-    if (!areSlotsConsecutive(fields.timeSlots, db.settings.studioSlots)) throw Object.assign(new Error("스튜디오는 연속된 시간만 예약할 수 있습니다."), { status: 400 });
-    const selectedSpaces = studioSpaces(fields);
-    for (const space of selectedSpaces) {
-      for (const slot of fields.timeSlots) {
-        const blocked = blockingSchedulesFor(db, "studio", fields.reservedDate, timeRangeFromLabel(slot), space);
-        if (blocked.length) {
-          throw Object.assign(new Error(`${space} ${slot}은 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
-        }
-      }
-    }
-    const conflict = db.reservations.find((reservation) => {
-      if (reservation.id === editingId || reservation.type !== "studio") return false;
-      if (!isBlockingReservation(reservation)) return false;
-      return reservation.fields.reservedDate === fields.reservedDate &&
-        hasOverlap(studioSpaces(reservation.fields), selectedSpaces) &&
-        hasOverlap(reservation.fields.timeSlots, fields.timeSlots);
-    });
-    if (conflict) throw Object.assign(new Error("선택한 스튜디오와 시간에 이미 예약이 있습니다."), { status: 409 });
-  }
-
-  if (type === "darkroom") {
-    assertRequired(fields, ["reservedDate", "phone"]);
-    if (!Array.isArray(fields.timeSlots) || fields.timeSlots.length === 0) throw Object.assign(new Error("암실 사용 시간을 선택해야 합니다."), { status: 400 });
-    const participantCount = Math.max(1, Number(fields.participantCount || 1));
-    for (const slot of fields.timeSlots) {
-      const blocked = [
-        ...darkroomBlockedRulesFor(db, fields.reservedDate, slot),
-        ...blockingSchedulesFor(db, "darkroom", fields.reservedDate, timeRangeFromLabel(slot))
-      ];
-      if (blocked.length) {
-        throw Object.assign(new Error(`${slot}은 암실 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
-      }
-      const reservedCount = db.reservations
-        .filter((reservation) => reservation.id !== editingId)
-        .filter((reservation) => reservation.type === "darkroom")
-        .filter(isBlockingReservation)
-        .filter((reservation) => reservation.fields.reservedDate === fields.reservedDate)
-        .filter((reservation) => Array.isArray(reservation.fields.timeSlots) && reservation.fields.timeSlots.includes(slot))
-        .reduce((sum, reservation) => sum + Math.max(1, Number(reservation.fields.participantCount || 1)), 0);
-      if (reservedCount + participantCount > db.settings.darkroomCapacity) {
-        throw Object.assign(new Error(`${slot} 암실 정원 ${db.settings.darkroomCapacity}명을 초과합니다.`), { status: 409 });
-      }
-    }
-  }
-
-  if (type === "print") {
-    assertRequired(fields, ["reservedDate", "startTime", "endTime", "phone", "printType", "paper", "size"]);
-    if (printDateOutsideUploadWindow(db.settings, fields.reservedDate)) {
-      const startLabel = db.settings.printUploadStartDate || "제한 없음";
-      const endLabel = db.settings.printUploadEndDate || "제한 없음";
-      throw Object.assign(new Error(`출력 업로드 가능 기간(${startLabel} ~ ${endLabel}) 밖의 날짜입니다.`), { status: 400 });
-    }
-    const start = timeToMinutes(fields.startTime);
-    const end = timeToMinutes(fields.endTime);
-    const availableStart = timeToMinutes(db.settings.printAvailableStart);
-    const availableEnd = timeToMinutes(db.settings.printAvailableEnd);
-    if (start === null || end === null || end <= start) {
-      throw Object.assign(new Error("출력실 시작/종료 시간을 올바르게 선택하세요."), { status: 400 });
-    }
-    if (start < availableStart || end > availableEnd) {
-      throw Object.assign(new Error(`출력실 사용 가능 시간은 ${db.settings.printAvailableStart}-${db.settings.printAvailableEnd}입니다.`), { status: 400 });
-    }
-    const blocked = blockingSchedulesFor(db, "print", fields.reservedDate, { start, end });
-    if (blocked.length) {
-      throw Object.assign(new Error(`${fields.startTime}-${fields.endTime}은 출력실 차단 일정(${blockLabel(blocked[0])})이 있어 예약할 수 없습니다.`), { status: 409 });
-    }
-    const capacity = Number(db.settings.printCapacityPerWindow || 4);
-    const overloaded = printCapacityBuckets(db.settings)
-      .filter((bucket) => intervalsOverlap(start, end, bucket.start, bucket.end))
-      .map((bucket) => {
-        const count = db.reservations
-          .filter((reservation) => reservation.id !== editingId)
-          .filter((reservation) => reservation.type === "print")
-          .filter(isBlockingReservation)
-          .filter((reservation) => reservation.fields.reservedDate === fields.reservedDate)
-          .filter((reservation) => {
-            const reservationStart = timeToMinutes(reservation.fields.startTime);
-            const reservationEnd = timeToMinutes(reservation.fields.endTime);
-            return reservationStart !== null &&
-              reservationEnd !== null &&
-              intervalsOverlap(reservationStart, reservationEnd, bucket.start, bucket.end);
-          }).length;
-        return { ...bucket, count };
-      })
-      .filter((bucket) => bucket.count + 1 > capacity);
-    if (overloaded.length) {
-      const labels = overloaded.map((bucket) => `${minutesToTime(bucket.start)}-${minutesToTime(bucket.end)}`).join(", ");
-      throw Object.assign(new Error(`출력실 ${labels} 시간대는 2시간 기준 최대 ${capacity}명까지 예약 가능합니다.`), { status: 409 });
-    }
-  }
-}
-
-function withReservationDetails(db, reservation) {
-  const user = db.users.find((item) => item.id === reservation.userId);
-  const equipmentItems = reservation.type === "equipment"
-    ? (reservation.fields.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
-    : [];
-  return { ...reservation, user: user ? publicUser(user) : null, equipmentItems };
-}
-
-function reportWithDetails(db, report) {
-  return {
-    ...report,
-    reservation: db.reservations.find((item) => item.id === report.reservationId) || null,
-    user: publicUser(db.users.find((item) => item.id === report.userId))
-  };
-}
+const {
+  publicReservationSummary,
+  withReservationDetails
+} = createReservationViewHelpers({ publicUser, reservationTiming });
 
 const {
   hasListQuery,
@@ -1234,6 +439,7 @@ const {
   adminReportList,
   adminUserList,
   adminLectureList,
+  adminNoticeList,
   filterAdminReservations,
   filterAdminReports,
   filterAdminLectures,
@@ -1245,126 +451,9 @@ const {
   lectureDetail
 });
 
-function hasNoticeListQuery(searchParams) {
-  return Boolean(searchParams && [...searchParams.keys()].some((key) => NOTICE_LIST_QUERY_KEYS.has(key)));
-}
-
-function publicReservationSummary(db, reservation) {
-  const user = db.users.find((item) => item.id === reservation.userId);
-  const equipmentItems = reservation.type === "equipment"
-    ? (reservation.fields.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
-    : [];
-  const fields = reservation.fields || {};
-  return {
-    id: reservation.id,
-    type: reservation.type,
-    status: reservation.status,
-    userId: reservation.userId,
-    userName: user?.name || "예약자",
-    userStatus: user?.studentStatus || "",
-    fields: {
-      reservedDate: fields.reservedDate || "",
-      period: fields.period || "",
-      rentalTime: fields.rentalTime || "",
-      returnTime: fields.returnTime || "",
-      timeSlots: fields.timeSlots || [],
-      studioSpaces: fields.studioSpaces || [],
-      studioSpace: fields.studioSpace || "",
-      processTypes: fields.processTypes || [],
-      participantCount: fields.participantCount || "",
-      printType: fields.printType || "",
-      startTime: fields.startTime || "",
-      endTime: fields.endTime || "",
-      cameraBagConfirmationRequired: Boolean(fields.cameraBagConfirmationRequired),
-      cameraBagConfirmed: Boolean(fields.cameraBagConfirmed),
-      pelicanBagReserved: Boolean(fields.pelicanBagReserved)
-    },
-    equipmentItems: equipmentItems.map((item) => ({
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      category: item.category
-    }))
-  };
-}
-
-function lectureApplicationCount(db, lecture) {
-  const internalCount = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id).length;
-  return internalCount + Number(lecture.baseApplicationCount || 0);
-}
-
-function lectureStartTimestamp(lecture) {
-  const date = String(lecture?.lectureDate || "").trim();
-  const timeMatch = String(lecture?.time || "").match(/(\d{1,2}):(\d{2})/);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !timeMatch) return null;
-  const hour = String(timeMatch[1]).padStart(2, "0");
-  const minute = String(timeMatch[2]).padStart(2, "0");
-  const timestamp = Date.parse(`${date}T${hour}:${minute}:00+09:00`);
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function canCancelLectureApplication(lecture, now = Date.now()) {
-  const startAt = lectureStartTimestamp(lecture);
-  if (!startAt) return true;
-  return startAt - now > LECTURE_CANCEL_LIMIT_MS;
-}
-
-function lectureSummary(db, lecture, user = null) {
-  const applications = (db.lectureApplications || []).filter((item) => item.lectureId === lecture.id);
-  const applied = user ? applications.some((item) => item.userId === user.id) : false;
-  return {
-    ...lecture,
-    applicationCount: lectureApplicationCount(db, lecture),
-    applied,
-    canCancelApplication: applied ? canCancelLectureApplication(lecture) : false
-  };
-}
-
-function lectureDetail(db, lecture) {
-  const applications = (db.lectureApplications || [])
-    .filter((item) => item.lectureId === lecture.id)
-    .map((item) => {
-      const user = db.users.find((candidate) => candidate.id === item.userId) || {};
-      return {
-        ...item,
-        userName: item.userName || user.name || "",
-        studentId: item.studentId || user.studentId || "",
-        studentStatus: item.studentStatus || user.studentStatus || "",
-        phone: item.phone || user.phone || "",
-        email: item.email || user.email || ""
-      };
-    });
-  return {
-    ...lectureSummary(db, lecture),
-    applications
-  };
-}
-
-function withLectureApplicationDetails(db, application) {
-  const lecture = db.lectures.find((item) => item.id === application.lectureId) || {};
-  return {
-    id: application.id,
-    type: "lecture",
-    status: lecture.status === "취소" ? "cancelled" : "lecture_applied",
-    userId: application.userId,
-    fields: {
-      reservedDate: lecture.lectureDate || "",
-      title: lecture.title || "비교과 특강",
-      time: lecture.time || "",
-      location: lecture.location || "",
-      instructorName: lecture.instructorName || "",
-      instructorAffiliation: lecture.instructorAffiliation || "",
-      professor: lecture.professor || "",
-      targetGrades: lecture.targetGrades || "",
-      description: lecture.description || "",
-      notes: lecture.notes || "",
-      appliedAt: application.appliedAt || ""
-    },
-    lecture: lecture.id ? lectureSummary(db, lecture, null) : null,
-    application,
-    createdAt: application.appliedAt || "",
-    updatedAt: application.appliedAt || ""
-  };
+function noticeWithActive(notice) {
+  const active = typeof notice?.active === "boolean" ? notice.active : notice?.status === "published";
+  return { ...notice, active, status: active ? "published" : "draft" };
 }
 
 function audit(db, actor, action, targetId, detail = {}) {
@@ -1396,41 +485,6 @@ function deleteUserAccount(db, user, actor, action = "user.deleted", detail = {}
     ...detail
   });
   return summary;
-}
-
-function loginThrottleKey(loginId) {
-  return String(loginId || "").toLowerCase().slice(0, 120);
-}
-
-function assertLoginAllowed(loginId) {
-  const rec = loginAttempts.get(loginThrottleKey(loginId));
-  if (rec && rec.lockedUntil > Date.now()) {
-    const seconds = Math.ceil((rec.lockedUntil - Date.now()) / 1000);
-    throw Object.assign(new Error(`로그인 시도가 너무 많습니다. ${seconds}초 후 다시 시도하세요.`), { status: 429 });
-  }
-}
-
-function registerLoginFailure(loginId) {
-  if (loginAttempts.size > 10000) loginAttempts.clear();
-  const key = loginThrottleKey(loginId);
-  const now = Date.now();
-  const rec = loginAttempts.get(key) || { count: 0, first: now, lockedUntil: 0 };
-  if (now - rec.first > LOGIN_WINDOW_MS) {
-    rec.count = 0;
-    rec.first = now;
-    rec.lockedUntil = 0;
-  }
-  rec.count += 1;
-  if (rec.count >= LOGIN_MAX_ATTEMPTS) rec.lockedUntil = now + LOGIN_LOCK_MS;
-  loginAttempts.set(key, rec);
-}
-
-function clearLoginFailures(loginId) {
-  loginAttempts.delete(loginThrottleKey(loginId));
-}
-
-function routeKey(method, pathname) {
-  return `${method} ${pathname}`;
 }
 
 export function normalizeDb(db) {
@@ -1541,13 +595,7 @@ export function adminExportData(db) {
 // Always resolves to { status, body }; thrown errors become a fail() result.
 export async function handleApiRequest(ctx) {
   const { method, authorization = "", readText, db, slackWebhook } = ctx;
-  let pathname = ctx.pathname || "/";
-  let searchParams = ctx.searchParams || new URLSearchParams();
-  if (pathname.includes("?")) {
-    const parsed = new URL(pathname, "https://gju-reserve.local");
-    pathname = parsed.pathname;
-    if (!ctx.searchParams) searchParams = parsed.searchParams;
-  }
+  const { pathname, searchParams } = requestPath(ctx);
   const saveDb = ctx.saveDb;
   const meta = requestMeta(ctx);
 
@@ -1558,7 +606,7 @@ export async function handleApiRequest(ctx) {
           settings: db.settings,
           darkroomChemicals: db.darkroomChemicals,
           equipment: db.equipment.filter((item) => item.active),
-          notices: db.notices.filter((notice) => notice.status === "published"),
+          notices: db.notices.map(noticeWithActive).filter((notice) => notice.active),
           reservations: user
             ? db.reservations
               .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
@@ -1797,6 +845,9 @@ export async function handleApiRequest(ctx) {
         const reservation = db.reservations.find((item) => item.id === reservationCancelMatch[1]);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약만 취소할 수 있습니다."), { status: 403 });
+        if (RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(reservation.status)) {
+          throw Object.assign(new Error("이미 종료되었거나 취소된 예약은 다시 취소할 수 없습니다."), { status: 409 });
+        }
         const body = await parseBody(readText);
         reservation.status = reservation.type === "equipment" ? "cancelled" : (user.role === "admin" ? "admin_cancelled" : "cancelled");
         reservation.cancelReason = body.reason || "";
@@ -1871,13 +922,63 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/summary") {
         requireAdmin(authorization, db);
+        const detailedReservations = db.reservations.map((item) => withReservationDetails(db, item));
         const pendingUsers = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approval_pending").length;
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
         const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned").length;
         const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && item.status === "cancelled").length;
         const today = todayKeySeoul();
-        const todayReservations = db.reservations.filter((item) => item.fields.reservedDate === today).length;
+        const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
+        const weekFrom = addDaysToDateKey(today, -(weekday === 0 ? 6 : weekday - 1));
+        const weekTo = addDaysToDateKey(weekFrom, 6);
+        const todaySchedule = detailedReservations
+          .filter((item) => item.fields?.reservedDate === today)
+          .sort((left, right) => String(left.fields?.rentalTime || left.fields?.startTime || left.fields?.timeSlots?.[0] || "")
+            .localeCompare(String(right.fields?.rentalTime || right.fields?.startTime || right.fields?.timeSlots?.[0] || "")));
+        const seoulDateKey = (value) => {
+          const date = new Date(value || "");
+          if (Number.isNaN(date.getTime())) return "";
+          return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(date);
+        };
+        const checkoutReturnQueue = detailedReservations
+          .filter((item) => item.type === "equipment" && item.status === "checked_out")
+          .flatMap((item) => {
+            const entries = [];
+            if (item.fields?.reservedDate === today) {
+              entries.push({ ...item, queueAction: "checkout", queueAt: item.timing?.startAt || "" });
+            }
+            if (seoulDateKey(item.timing?.endAt) === today) {
+              entries.push({ ...item, queueAction: "return", queueAt: item.timing?.endAt || "" });
+            }
+            return entries;
+          })
+          .sort((left, right) => String(left.queueAt || "").localeCompare(String(right.queueAt || "")));
+        const todayReservations = todaySchedule.length;
         const missingReports = db.reservations.filter((item) => item.type === "studio" && item.status !== "cancelled" && item.fields.reportStatus !== "submitted").length;
+        const activeEquipment = db.equipment.filter((item) => item.active !== false);
+        const availableEquipment = activeEquipment.filter((item) => item.status === "가능").length;
+        const repairEquipment = activeEquipment.filter((item) => item.status === "수리중").length;
+        const cancelledReservations = db.reservations.filter((item) => ["cancelled", "admin_cancelled", "rejected"].includes(item.status)).length;
+        const typeCounts = db.reservations.reduce((counts, item) => {
+          const type = item.type || "unknown";
+          counts[type] = Number(counts[type] || 0) + 1;
+          return counts;
+        }, {});
+        const equipmentUse = new Map();
+        for (const reservation of detailedReservations) {
+          for (const item of reservation.equipmentItems || []) {
+            const name = String(item.name || item.code || "").trim();
+            if (name) equipmentUse.set(name, Number(equipmentUse.get(name) || 0) + 1);
+          }
+        }
+        const popularEquipment = [...equipmentUse.entries()]
+          .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "ko"))
+          .slice(0, 5)
+          .map(([name, count]) => ({ name, count }));
+        const latestNotice = db.notices
+          .map(noticeWithActive)
+          .filter((notice) => notice.active)
+          .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))[0] || null;
         return ok({
           pendingUsers,
           pendingEquipment: equipmentCheckedOut,
@@ -1885,7 +986,25 @@ export async function handleApiRequest(ctx) {
           equipmentReturned,
           equipmentCancelled,
           todayReservations,
-          missingReports
+          missingReports,
+          todaySchedule,
+          checkoutReturnQueue,
+          metrics: {
+            weekReservations: db.reservations.filter((item) => {
+              const reservedDate = String(item.fields?.reservedDate || "");
+              return reservedDate >= weekFrom && reservedDate <= weekTo;
+            }).length,
+            activeEquipment: activeEquipment.length,
+            availableEquipment,
+            repairEquipment,
+            equipmentAvailableRate: activeEquipment.length ? Math.round((availableEquipment / activeEquipment.length) * 100) : 0,
+            cancelledReservations,
+            reportQueueCount: db.reports.filter((report) => !["completed", "approved"].includes(report.status)).length,
+            openLectures: db.lectures.filter((lecture) => lecture.status === "모집중").length,
+            typeCounts,
+            popularEquipment,
+            latestNotice
+          }
         });
       }
 
@@ -2062,6 +1181,24 @@ export async function handleApiRequest(ctx) {
         return ok(result.summary);
       }
 
+      const adminReservationDeleteMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)$/);
+      if (method === "DELETE" && adminReservationDeleteMatch) {
+        const admin = requireAdmin(authorization, db);
+        const reservationId = adminReservationDeleteMatch[1];
+        const reservation = db.reservations.find((item) => item.id === reservationId);
+        if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
+        const deletedReports = db.reports.filter((item) => item.reservationId === reservationId).length;
+        db.reservations = db.reservations.filter((item) => item.id !== reservationId);
+        db.reports = db.reports.filter((item) => item.reservationId !== reservationId);
+        audit(db, admin, "reservation.deleted", reservationId, {
+          type: reservation.type,
+          deletedReservations: 1,
+          deletedReports
+        });
+        await saveDb();
+        return ok({ id: reservationId, deletedReservations: 1, deletedReports });
+      }
+
       const adminReservationStatusMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)\/status$/);
       if (method === "PATCH" && adminReservationStatusMatch) {
         const admin = requireAdmin(authorization, db);
@@ -2069,10 +1206,11 @@ export async function handleApiRequest(ctx) {
         const reservation = db.reservations.find((item) => item.id === adminReservationStatusMatch[1]);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         assertRequired(body, ["status"]);
-        if (!RESERVATION_STATUSES.has(body.status)) {
-          throw Object.assign(new Error("지원하지 않는 예약 상태입니다."), { status: 400 });
+        const allowedStatuses = ADMIN_RESERVATION_STATUS_BY_TYPE[reservation.type];
+        if (!allowedStatuses?.has(body.status)) {
+          throw Object.assign(new Error(`${reservationTitle(reservation.type)} 예약에서 지원하지 않는 상태입니다.`), { status: 400 });
         }
-        reservation.status = reservation.type === "equipment" ? normalizeEquipmentReservationStatus(body.status) : body.status;
+        reservation.status = body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: admin.id, action: "status_changed", status: reservation.status });
@@ -2092,10 +1230,16 @@ export async function handleApiRequest(ctx) {
         const body = await parseBody(readText);
         assertRequired(body, ["name", "category"]);
         const quantity = Math.max(1, Number(body.quantity || 1));
-        const base = body.codePrefix || codeBase(body.category, body.name, db.equipment.length + 1);
+        const requestedCodePrefix = String(body.codePrefix || body.code || "").trim();
+        const base = requestedCodePrefix || codeBase(body.category, body.name, db.equipment.length + 1);
         const source = body.source || "department";
         const status = normalizeEquipmentStatus(body.status);
-        const reservable = source === "fantasy_lab" ? false : body.reservable !== false && equipmentReservableForStatus(status);
+        const inquiryOnlyRequested = source === "fantasy_lab"
+          || String(body.status || "").trim() === "문의"
+          || body.inquiryOnly === true
+          || body.inquiryOnly === "true"
+          || body.reservable === false;
+        const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
         const created = [];
         for (let index = 1; index <= quantity; index += 1) {
           created.push({
@@ -2104,7 +1248,9 @@ export async function handleApiRequest(ctx) {
             source,
             category: body.category,
             name: body.name,
-            code: `${base}-${String(index).padStart(2, "0")}`,
+            brand: String(body.brand || ""),
+            model: String(body.model || ""),
+            code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
             status,
             reservable,
             inquiryOnly: !reservable,
@@ -2146,10 +1292,16 @@ export async function handleApiRequest(ctx) {
           const category = row.category || "Other";
           const source = row.source || (row.facility === "판타지랩" ? "fantasy_lab" : "department");
           const status = normalizeEquipmentStatus(row.status);
-          const reservable = source === "fantasy_lab"
-            ? false
-            : equipmentReservableForStatus(status) && (row.reservable === true || row.reservable === "true" || row.inquiry_only !== "true");
-          const base = row.code_prefix || row.codePrefix || codeBase(category, row.name, db.equipment.length + 1);
+          const inquiryOnlyRequested = source === "fantasy_lab"
+            || String(row.status || "").trim() === "문의"
+            || row.inquiryOnly === true
+            || row.inquiryOnly === "true"
+            || row.inquiry_only === "true"
+            || row.reservable === false
+            || row.reservable === "false";
+          const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
+          const requestedCodePrefix = String(row.code_prefix || row.codePrefix || row.code || "").trim();
+          const base = requestedCodePrefix || codeBase(category, row.name, db.equipment.length + 1);
           for (let index = 1; index <= quantity; index += 1) {
             const item = {
               id: id("eq"),
@@ -2159,7 +1311,7 @@ export async function handleApiRequest(ctx) {
               name: row.name,
               brand: row.brand || "",
               model: row.model || "",
-              code: `${base}-${String(index).padStart(2, "0")}`,
+              code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
               status,
               reservable,
               inquiryOnly: !reservable,
@@ -2309,18 +1461,8 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/admin/notices") {
         requireAdmin(authorization, db);
-        if (hasNoticeListQuery(searchParams)) {
-          const { items, collectionTotal } = filterAdminNotices(db, Object.fromEntries(searchParams.entries()));
-          return ok({
-            items,
-            total: items.length,
-            page: 1,
-            pageSize: items.length,
-            hasMore: false,
-            collectionTotal
-          });
-        }
-        return ok(db.notices);
+        if (hasNoticeListQuery(searchParams)) return ok(adminNoticeList(db, searchParams));
+        return ok(db.notices.map(noticeWithActive));
       }
 
       if (routeKey(method, pathname) === "DELETE /api/admin/notices/bulk") {
@@ -2332,17 +1474,31 @@ export async function handleApiRequest(ctx) {
         return ok(result.summary);
       }
 
+      const noticeDeleteMatch = pathname.match(/^\/api\/admin\/notices\/([^/]+)$/);
+      if (method === "DELETE" && noticeDeleteMatch) {
+        const admin = requireAdmin(authorization, db);
+        const noticeId = noticeDeleteMatch[1];
+        const notice = db.notices.find((item) => item.id === noticeId);
+        if (!notice) throw Object.assign(new Error("공지를 찾을 수 없습니다."), { status: 404 });
+        db.notices = db.notices.filter((item) => item.id !== noticeId);
+        audit(db, admin, "notice.deleted", noticeId, { title: notice.title });
+        await saveDb();
+        return ok({ id: noticeId, deletedNotices: 1 });
+      }
+
       if (routeKey(method, pathname) === "POST /api/admin/notices") {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["title", "body"]);
+        const active = body.active !== false;
         const notice = {
           id: id("notice"),
           title: body.title,
           category: body.category || "일반",
           body: body.body,
           pinned: body.pinned === true,
-          status: "published",
+          active,
+          status: active ? "published" : "draft",
           link: sanitizeHttpUrl(body.link || "", "공지 링크"),
           createdAt: nowIso(),
           updatedAt: nowIso()

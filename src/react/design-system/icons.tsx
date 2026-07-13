@@ -1,4 +1,10 @@
 import React from "react";
+import { Icon as AstryxIcon, type IconName as AstryxIconName } from "@astryxdesign/core";
+
+type AstryxGjuIconName = Extract<
+  AstryxIconName,
+  "calendar" | "chevronLeft" | "chevronRight" | "info" | "warning" | "wrench"
+>;
 
 export type GjuIconName =
   | "refresh"
@@ -11,7 +17,8 @@ export type GjuIconName =
   | "fileText"
   | "userPlus"
   | "edit"
-  | "plus";
+  | "plus"
+  | AstryxGjuIconName;
 
 type GjuIconProps = {
   name: GjuIconName;
@@ -120,10 +127,28 @@ function iconPaths(name: GjuIconName): React.ReactNode[] {
         path("M12 5v14", "plus-1"),
         path("M5 12h14", "plus-2")
       ];
+    case "calendar":
+    case "chevronLeft":
+    case "chevronRight":
+    case "info":
+    case "warning":
+    case "wrench":
+      return [];
   }
 }
 
 export function GjuIcon({ name, className, title }: GjuIconProps) {
+  if (["calendar", "chevronLeft", "chevronRight", "info", "warning", "wrench"].includes(name)) {
+    return React.createElement(AstryxIcon, {
+      icon: name as AstryxGjuIconName,
+      size: "sm",
+      className,
+      "aria-hidden": title ? undefined : true,
+      "aria-label": title,
+      role: title ? "img" : "presentation"
+    });
+  }
+
   const children: React.ReactNode[] = [...iconPaths(name)];
   if (title) {
     children.unshift(React.createElement("title", { key: "title" }, title));

@@ -1,7 +1,7 @@
 import { state } from "./state.js?v=20260704-student-icon-nav";
 import { api } from "./api.js?v=20260704-student-icon-nav";
 import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260704-student-icon-nav";
-import { disableNativeReservationNotifications, notifyNativeReservationCreated } from "./native-notifications.js?v=20260704-student-icon-nav";
+import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20260704-student-icon-nav";
 import { render, toast } from "./renderer.js?v=20260704-student-icon-nav";
 import {
   areSlotsConsecutive,
@@ -32,7 +32,12 @@ import {
 
 export async function login(form) {
   const data = formData(form);
+  const previousUserId = state.user?.id || "";
   const result = await api("/api/auth/login", { method: "POST", body: data });
+  let notificationWarning = "";
+  if (previousUserId && previousUserId !== result.user?.id) {
+    notificationWarning = await clearNativeAccountSafely(previousUserId);
+  }
   const rememberLogin = data.rememberLogin === "true";
   state.token = result.token;
   state.user = result.user;
@@ -52,7 +57,8 @@ export async function login(form) {
     await loadMyReservations();
     await loadLectures();
   }
-  toast("로그인되었습니다.");
+  await handleNativeNotificationResume();
+  toast(`로그인되었습니다.${notificationWarning}`);
 }
 
 export async function signup(form) {
@@ -62,8 +68,18 @@ export async function signup(form) {
   toast("가입 신청이 접수되었습니다. 학과 관리자 승인 후 예약할 수 있습니다.");
 }
 
+async function clearNativeAccountSafely(userId) {
+  if (!userId) return "";
+  try {
+    await clearNativeNotificationAccount(userId);
+    return "";
+  } catch (error) {
+    return ` 기기 알림 정리는 다음 앱 실행 때 다시 시도합니다 (${error.message || "취소 실패"}).`;
+  }
+}
+
 export async function logout() {
-  await disableNativeReservationNotifications().catch(() => null);
+  const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   await api("/api/auth/logout", { method: "POST", body: { token: state.token } }).catch(() => null);
   state.token = "";
   state.user = null;
@@ -85,6 +101,7 @@ export async function logout() {
   localStorage.removeItem("gju_token");
   sessionStorage.removeItem("gju_token");
   render();
+  if (notificationWarning) toast(`로그아웃되었습니다.${notificationWarning}`);
 }
 
 export function downloadLectureCsv() {
@@ -314,6 +331,7 @@ export async function changePassword(form) {
       newPassword: data.newPassword
     }
   });
+  const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   form.reset();
   state.token = "";
   state.user = null;
@@ -325,7 +343,7 @@ export async function changePassword(form) {
   state.adminView = "dashboard";
   localStorage.removeItem("gju_token");
   sessionStorage.removeItem("gju_token");
-  toast("비밀번호가 변경되었습니다. 모든 기기에서 로그아웃되었습니다.");
+  toast(`비밀번호가 변경되었습니다. 모든 기기에서 로그아웃되었습니다.${notificationWarning}`);
 }
 
 export async function deleteAccount(form) {
@@ -334,7 +352,6 @@ export async function deleteAccount(form) {
     throw new Error("확인 문구에 '계정 삭제'를 입력하세요.");
   }
   if (!confirm("계정을 영구 삭제할까요?\n예약·보고서·특강 신청 기록도 함께 삭제되며 되돌릴 수 없습니다.")) return;
-  await disableNativeReservationNotifications().catch(() => null);
   const result = await api("/api/me", {
     method: "DELETE",
     body: {
@@ -342,6 +359,7 @@ export async function deleteAccount(form) {
       confirmText: data.confirmText
     }
   });
+  const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   state.token = "";
   state.user = null;
   state.myReservations = [];
@@ -356,5 +374,5 @@ export async function deleteAccount(form) {
   localStorage.removeItem("gju_token");
   sessionStorage.removeItem("gju_token");
   render();
-  toast(`계정이 삭제되었습니다.${result.removedReservations ? ` 예약 ${result.removedReservations}건도 함께 삭제했습니다.` : ""}`);
+  toast(`계정이 삭제되었습니다.${result.removedReservations ? ` 예약 ${result.removedReservations}건도 함께 삭제했습니다.` : ""}${notificationWarning}`);
 }

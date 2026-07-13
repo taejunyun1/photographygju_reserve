@@ -8,13 +8,11 @@ let mountedRoot: HTMLElement | null = null;
 let rootInstance: Root | null = null;
 
 function renderAdmin(options: ReactAdminMountOptions) {
-  const legacyMarkup = options.legacyRenderAdminContent();
   if (!rootInstance) return;
   rootInstance.render(
     React.createElement(AdminApp, {
       state: options.state,
-      actions: options.actions,
-      legacyRenderAdminContent: () => legacyMarkup
+      actions: options.actions
     })
   );
 }

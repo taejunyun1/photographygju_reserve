@@ -46,9 +46,4 @@ export function setupAdminRefreshHandlers() {
     pendingRefreshScrollState = null;
     await runRefresh(scrollState);
   });
-
-  document.addEventListener("gju-react-admin-refresh", async () => {
-    const scrollState = captureScrollState();
-    await runRefresh(scrollState);
-  });
 }

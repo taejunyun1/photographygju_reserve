@@ -79,19 +79,56 @@ export function actionRow(actions = "", className = "") {
   return content ? `<div class="${cx("row-actions", "ui-action-row", className)}">${content}</div>` : "";
 }
 
-export function tabs(items, { active = "", dataset = "", className = "wrap", ariaLabel = "탭" } = {}) {
-  const buttons = items.map((item) => {
+function idToken(value, fallback = "item") {
+  const normalized = normalizeUnicodeText(value).trim().toLowerCase();
+  const ascii = normalized
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (ascii) return ascii;
+  const codePoints = [...normalized].map((character) => character.codePointAt(0).toString(36)).join("-");
+  return codePoints || fallback;
+}
+
+export function tabIds({ id = "", dataset = "", ariaLabel = "탭" } = {}) {
+  const base = idToken(id || dataset || ariaLabel, "tabs");
+  return {
+    tablistId: `${base}-tablist`,
+    panelId: `${base}-tabpanel`,
+    tabId(key, index = 0) {
+      return `${base}-tab-${idToken(key, String(index + 1))}-${index + 1}`;
+    }
+  };
+}
+
+export function tabs(items, {
+  active = "",
+  dataset = "",
+  className = "wrap",
+  ariaLabel = "탭",
+  id = "",
+  panelId = "",
+  orientation = "horizontal"
+} = {}) {
+  const ids = tabIds({ id, dataset, ariaLabel });
+  const buttons = items.map((item, index) => {
     const key = item.key ?? item[0];
     const label = item.label ?? item[1];
     const count = item.count ?? item[2];
     const attrs = item.attrs || (dataset ? `data-${dataset}="${escapeHtml(key)}"` : "");
+    const selected = String(active) === String(key);
+    const tabId = ids.tabId(key, index);
     return `
-      <button class="tab-button ${active === key ? "active" : ""}" type="button" ${attrs}>
+      <button class="tab-button ${selected ? "active" : ""}" type="button" role="tab" id="${tabId}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}" ${panelId ? `aria-controls="${escapeHtml(panelId)}"` : ""} data-roving-tab ${attrs}>
         ${escapeHtml(label)}${count !== undefined ? ` <span>${escapeHtml(count)}</span>` : ""}
       </button>
     `;
   }).join("");
-  return `<div class="${cx("tab-row", className)}" aria-label="${escapeHtml(ariaLabel)}">${buttons}</div>`;
+  return `<div class="${cx("tab-row", className)}" role="tablist" id="${escapeHtml(ids.tablistId)}" aria-label="${escapeHtml(ariaLabel)}" aria-orientation="${orientation === "vertical" ? "vertical" : "horizontal"}" data-roving-tablist>${buttons}</div>`;
+}
+
+export function tabPanel({ id = "", labelledBy = "", body = "", className = "", hidden = false } = {}) {
+  const panelId = id || "tabs-tabpanel";
+  return `<section class="${cx("ui-tab-panel", className)}" role="tabpanel" id="${escapeHtml(panelId)}" ${labelledBy ? `aria-labelledby="${escapeHtml(labelledBy)}"` : ""} tabindex="0" ${hidden ? "hidden" : ""}>${body}</section>`;
 }
 
 export function statCard({ label, value, caption = "", attrs = "", tone = "" }) {
@@ -117,11 +154,12 @@ export function propertyList(items, { compact = false, className = "" } = {}) {
   `;
 }
 
-export function searchField({ value = "", placeholder = "검색", dataset = "", label = "" }) {
+export function searchField({ value = "", placeholder = "검색", dataset = "", label = "", id = "" }) {
+  const inputId = id || `search-${idToken(dataset || label || placeholder)}`;
   return `
     <div class="field ui-search-field">
-      ${label ? `<label>${escapeHtml(label)}</label>` : ""}
-      <input class="input" type="text" role="searchbox" inputmode="search" enterkeyhint="search" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(normalizeUnicodeText(value))}" ${dataset} autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
+      ${label ? `<label for="${escapeHtml(inputId)}">${escapeHtml(label)}</label>` : ""}
+      <input class="input" id="${escapeHtml(inputId)}" type="text" role="searchbox" inputmode="search" enterkeyhint="search" aria-label="${escapeHtml(label || placeholder)}" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(normalizeUnicodeText(value))}" ${dataset} autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" />
     </div>
   `;
 }

@@ -49,6 +49,8 @@ import {
   propertyList,
   searchField,
   sectionHeader,
+  tabIds,
+  tabPanel,
   tabs
 } from "./ui.js?v=20260704-student-icon-nav";
 
@@ -71,21 +73,21 @@ export function authView() {
         ${
           isLogin
             ? `<form data-form="login">
-                <div class="field"><label>아이디</label><input class="input" name="loginId" placeholder="이메일/학번" autocomplete="username" required /></div>
-                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" autocomplete="current-password" required /></div>
+                <div class="field"><label for="login-id">아이디</label><input class="input" id="login-id" name="loginId" placeholder="이메일/학번" autocomplete="username" required /></div>
+                <div class="field"><label for="login-password">비밀번호</label><input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required /></div>
                 <label class="field consent"><span><input type="checkbox" name="rememberLogin" value="true" checked /> 로그인 유지하기</span></label>
                 <button class="button primary full" type="submit">${icon("logIn")}접속</button>
               </form>`
             : `<form data-form="signup">
-                <div class="field"><label>이름</label><input class="input" name="name" required /></div>
-                <div class="field"><label>학번</label><input class="input" name="studentId" placeholder="교수(강사)는 소속명 입력 가능" /></div>
-                <div class="field"><label>학년</label><input class="input" name="grade" placeholder="1학년, 2학년..." /></div>
-                <div class="field"><label>재학상태</label><select class="select" name="studentStatus" required>
+                <div class="field"><label for="signup-name">이름</label><input class="input" id="signup-name" name="name" required /></div>
+                <div class="field"><label for="signup-student-id">학번</label><input class="input" id="signup-student-id" name="studentId" placeholder="교수(강사)는 소속명 입력 가능" /></div>
+                <div class="field"><label for="signup-grade">학년</label><input class="input" id="signup-grade" name="grade" placeholder="1학년, 2학년..." /></div>
+                <div class="field"><label for="signup-status">재학상태</label><select class="select" id="signup-status" name="studentStatus" required>
                   ${["재학생", "휴학생", "졸업생", "대학원생", "교수(강사)"].map((item) => `<option>${item}</option>`).join("")}
                 </select></div>
-                <div class="field"><label>연락처</label><input class="input" name="phone" inputmode="tel" required /></div>
-                <div class="field"><label>이메일</label><input class="input" name="email" type="email" required /></div>
-                <div class="field"><label>비밀번호</label><input class="input" name="password" type="password" autocomplete="new-password" minlength="8" required /></div>
+                <div class="field"><label for="signup-phone">연락처</label><input class="input" id="signup-phone" name="phone" inputmode="tel" required /></div>
+                <div class="field"><label for="signup-email">이메일</label><input class="input" id="signup-email" name="email" type="email" required /></div>
+                <div class="field"><label for="signup-password">비밀번호</label><input class="input" id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required /></div>
                 <button class="button primary full" type="submit">${icon("userPlus")}가입 신청</button>
                 <p class="muted">승인 전에도 공지는 볼 수 있지만 예약은 불가합니다.</p>
               </form>`
@@ -1376,27 +1378,33 @@ export function myReservationsView() {
   const searched = Boolean((state.myReservationSearch || "").trim());
   const pastTitle = activeCategory === "all" ? "지난 예약·비교과" : `지난 ${categoryLabel}`;
   const pastSummary = activeCategory === "all" ? `5일 이전 예약·비교과 ${past.length}건` : `5일 이전 ${categoryLabel} ${past.length}건`;
+  const categoryTabs = myReservationCategoryTabs();
+  const categoryTabIds = tabIds({ id: "my-reservation-category-tabs" });
+  const activeCategoryIndex = Math.max(0, categoryTabs.findIndex((item) => String(item.key ?? item[0]) === String(activeCategory)));
+  const reservationPanel = `
+    <div class="reservation-section-head">
+      ${sectionHeader({ title, subtitle })}
+      <span class="tag blue">${recent.length}건</span>
+    </div>
+    ${recent.length ? recent.map(reservationCard).join("") : emptyState({ title: searched ? "검색 결과가 없습니다." : emptyRecentTitle, body: searched ? "검색어를 지우거나 카테고리를 변경하세요." : "" })}
+    <div class="past-reservation-panel ${pastOpen ? "open" : ""}">
+      <button class="past-reservation-toggle" type="button" data-past-reservations-toggle aria-expanded="${pastOpen ? "true" : "false"}">
+        <span>
+          <strong>${pastTitle}</strong>
+          <em>${pastSummary}</em>
+        </span>
+        <b>${pastOpen ? "접기" : "펼치기"}</b>
+      </button>
+      ${pastOpen ? `<div class="past-reservation-list">${past.length ? past.map(reservationCard).join("") : emptyState({ title: emptyPastTitle })}</div>` : ""}
+    </div>
+  `;
   return `
     <section class="grid">
       <div class="list-control-panel">
         ${searchField({ value: state.myReservationSearch || "", placeholder: "날짜·종류·상태·장비·장소 검색", dataset: "data-my-reservation-search", label: "내 예약 검색" })}
-        ${tabs(myReservationCategoryTabs(), { active: activeCategory, dataset: "my-reservation-category", className: "wrap my-reservation-tabs", ariaLabel: "내 예약 카테고리" })}
+        ${tabs(categoryTabs, { active: activeCategory, dataset: "my-reservation-category", className: "wrap my-reservation-tabs", ariaLabel: "내 예약 카테고리", id: "my-reservation-category-tabs", panelId: categoryTabIds.panelId })}
       </div>
-      <div class="reservation-section-head">
-        ${sectionHeader({ title, subtitle })}
-        <span class="tag blue">${recent.length}건</span>
-      </div>
-      ${recent.length ? recent.map(reservationCard).join("") : emptyState({ title: searched ? "검색 결과가 없습니다." : emptyRecentTitle, body: searched ? "검색어를 지우거나 카테고리를 변경하세요." : "" })}
-      <div class="past-reservation-panel ${pastOpen ? "open" : ""}">
-        <button class="past-reservation-toggle" type="button" data-past-reservations-toggle aria-expanded="${pastOpen ? "true" : "false"}">
-          <span>
-            <strong>${pastTitle}</strong>
-            <em>${pastSummary}</em>
-          </span>
-          <b>${pastOpen ? "접기" : "펼치기"}</b>
-        </button>
-        ${pastOpen ? `<div class="past-reservation-list">${past.length ? past.map(reservationCard).join("") : emptyState({ title: emptyPastTitle })}</div>` : ""}
-      </div>
+      ${tabPanel({ id: categoryTabIds.panelId, labelledBy: categoryTabIds.tabId(activeCategory, activeCategoryIndex), body: reservationPanel, className: "my-reservation-tabpanel" })}
     </section>
   `;
 }
@@ -1531,6 +1539,8 @@ export function lecturesView() {
       count: lectures.filter((lecture) => lectureYear(lecture) === year).length
     }))
   ];
+  const lectureTabIds = tabIds({ id: "lecture-year-tabs" });
+  const activeYearIndex = Math.max(0, yearTabs.findIndex((item) => String(item.key) === String(activeYear)));
   return `
     <section class="lecture-page">
       ${card({
@@ -1540,7 +1550,7 @@ export function lecturesView() {
         body: `
           <div class="lecture-filter-panel">
             ${searchField({ value: state.lectureSearch || "", placeholder: "특강명·강사·장소·연도 검색", dataset: "data-lecture-search", label: "특강 검색" })}
-            ${yearTabs.length > 1 ? tabs(yearTabs, { active: activeYear, dataset: "lecture-year-filter", className: "wrap lecture-year-tabs", ariaLabel: "특강 연도 필터" }) : ""}
+            ${yearTabs.length > 1 ? tabs(yearTabs, { active: activeYear, dataset: "lecture-year-filter", className: "wrap lecture-year-tabs", ariaLabel: "특강 연도 필터", id: "lecture-year-tabs", panelId: lectureTabIds.panelId }) : ""}
           </div>
           <div class="lecture-metrics" aria-label="비교과 특강 요약">
             <div class="lecture-metric"><span>표시 특강</span><strong>${escapeHtml(filteredLectures.length)}</strong></div>
@@ -1549,12 +1559,18 @@ export function lecturesView() {
           </div>
         `
       })}
-      <div class="lecture-card-list">
-        ${filteredLectures.length ? filteredLectures.map(lectureCard).join("") : emptyState({
+      ${yearTabs.length > 1 ? tabPanel({
+        id: lectureTabIds.panelId,
+        labelledBy: lectureTabIds.tabId(activeYear, activeYearIndex),
+        className: "lecture-card-list",
+        body: filteredLectures.length ? filteredLectures.map(lectureCard).join("") : emptyState({
           title: lectures.length ? "조건에 맞는 비교과 특강이 없습니다." : "등록된 비교과 특강이 없습니다.",
           body: lectures.length ? "검색어나 연도 필터를 조정해 주세요." : ""
-        })}
-      </div>
+        })
+      }) : `<div class="lecture-card-list">${filteredLectures.length ? filteredLectures.map(lectureCard).join("") : emptyState({
+        title: lectures.length ? "조건에 맞는 비교과 특강이 없습니다." : "등록된 비교과 특강이 없습니다.",
+        body: lectures.length ? "검색어나 연도 필터를 조정해 주세요." : ""
+      })}</div>`}
     </section>
   `;
 }
@@ -1666,7 +1682,7 @@ function lectureDateParts(value) {
 export function noticeCard(notice, options = {}) {
   const preview = options.compact ? noticePreview(notice.body) : noticePreview(notice.body);
   return `
-    <button class="${options.compact ? "notice-strip-row" : "card notice notice-card-button"}" type="button" data-notice-open="${notice.id}">
+    <button class="${options.compact ? "notice-strip-row" : "card notice notice-card-button"}" type="button" data-notice-open="${notice.id}" aria-haspopup="dialog">
       <div class="chips"><span class="tag blue">${escapeHtml(notice.category)}</span>${notice.pinned ? `<span class="tag yellow">고정</span>` : ""}</div>
       <h3 class="card-title card-title-spaced">${escapeHtml(notice.title)}</h3>
       <p class="muted notice-preview">${escapeHtml(preview)}</p>

@@ -1,13 +1,18 @@
 import React from "react";
 
-import { GjuAppShell, GjuIconButton } from "../design-system";
+import { GjuAppShell, GjuDialog, GjuIconButton } from "../design-system";
 import { adminHeaderActions } from "../platform/adminActions";
 import { adminNavItems, adminTitle, type AdminNavKey } from "../platform/adminNav";
 import type { ReactAdminMountOptions } from "../platform/types";
-import { LegacyAdminPanel } from "./LegacyAdminPanel";
+import { AdminAccount } from "./screens/AdminAccount";
 import { AdminDashboard } from "./screens/AdminDashboard";
 import { AdminEquipment } from "./screens/AdminEquipment";
+import { AdminLectures } from "./screens/AdminLectures";
 import { AdminLogs } from "./screens/AdminLogs";
+import { AdminNotices } from "./screens/AdminNotices";
+import { AdminReports } from "./screens/AdminReports";
+import { AdminReservations } from "./screens/AdminReservations";
+import { AdminSettings } from "./screens/AdminSettings";
 import { AdminUsers } from "./screens/AdminUsers";
 
 type AdminAppProps = Omit<ReactAdminMountOptions, "root">;
@@ -18,14 +23,28 @@ function handleAction(action: () => Promise<void> | void) {
   };
 }
 
-function renderNavigation(
+const MOBILE_PRIMARY_NAV = [
+  ["dashboard", "대시보드", "fileText"],
+  ["users", "학생", "user"],
+  ["reservations", "예약", "check"],
+  ["equipment", "기자재", "camera"]
+] as const;
+
+const MORE_NAV = [
+  ["reports", "보고서"],
+  ["lectures", "비교과 특강"],
+  ["notices", "공지사항"],
+  ["logs", "로그/세션"],
+  ["settings", "설정"]
+] as const;
+
+function renderDesktopNavigation(
   view: string,
-  onChange: (nextView: AdminNavKey) => void,
-  className: string
+  onChange: (nextView: AdminNavKey) => void
 ) {
   return React.createElement(
     "nav",
-    { className, "aria-label": "관리자 메뉴" },
+    { className: "gju-admin-nav gju-admin-nav--sidebar", "aria-label": "관리자 메뉴" },
     ...adminNavItems.map(([key, label]) =>
       React.createElement(
         "button",
@@ -40,6 +59,85 @@ function renderNavigation(
         label
       )
     )
+  );
+}
+
+function renderMoreSheet(
+  open: boolean,
+  view: string,
+  onChange: (nextView: AdminNavKey) => void,
+  onClose: () => void
+) {
+  return React.createElement(
+    GjuDialog,
+    {
+      open,
+      title: "더보기",
+      cancelLabel: "닫기",
+      confirmLabel: "닫기",
+      onClose,
+      onCancel: onClose,
+      onConfirm: onClose
+    },
+    React.createElement(
+      "nav",
+      { className: "gju-mobile-more-nav", "aria-label": "추가 관리자 메뉴" },
+      ...MORE_NAV.map(([key, label]) =>
+        React.createElement(
+          "button",
+          {
+            key,
+            type: "button",
+            className: "gju-mobile-more-nav__item",
+            "aria-current": view === key ? "page" : undefined,
+            onClick: () => {
+              onChange(key);
+              onClose();
+            }
+          },
+          label
+        )
+      )
+    )
+  );
+}
+
+function renderMobileBottomNavigation(
+  view: string,
+  onChange: (nextView: AdminNavKey) => void,
+  moreOpen: boolean,
+  onOpenMore: () => void,
+  onCloseMore: () => void
+) {
+  const moreActive = MORE_NAV.some(([key]) => key === view);
+  return React.createElement(
+    React.Fragment,
+    null,
+    React.createElement(
+      "nav",
+      { className: "gju-admin-nav gju-admin-nav--bottom", "aria-label": "관리자 모바일 메뉴" },
+      ...MOBILE_PRIMARY_NAV.map(([key, label, icon]) =>
+        React.createElement(GjuIconButton, {
+          key,
+          label,
+          icon,
+          className: "gju-admin-nav__item gju-admin-nav__item--icon",
+          "aria-current": view === key ? "page" : undefined,
+          onClick: () => onChange(key)
+        })
+      ),
+      React.createElement(GjuIconButton, {
+        key: "more",
+        label: "더보기",
+        icon: "plus",
+        className: "gju-admin-nav__item gju-admin-nav__item--icon",
+        "aria-current": moreActive ? "page" : undefined,
+        "aria-haspopup": "dialog",
+        "aria-expanded": moreOpen ? "true" : "false",
+        onClick: onOpenMore
+      })
+    ),
+    renderMoreSheet(moreOpen, view, onChange, onCloseMore)
   );
 }
 
@@ -68,9 +166,9 @@ function renderHeader(title: string, actions: ReturnType<typeof adminHeaderActio
 
 export function AdminApp({
   state,
-  actions,
-  legacyRenderAdminContent
+  actions
 }: AdminAppProps) {
+  const [moreOpen, setMoreOpen] = React.useState(false);
   const view = state.adminView || "dashboard";
   const headerActions = adminHeaderActions(actions, {
     refreshing: Boolean(state.adminRefresh?.refreshing)
@@ -84,22 +182,40 @@ export function AdminApp({
   if (view === "dashboard") {
     content = React.createElement(AdminDashboard, { state, actions });
   } else if (view === "users") {
-    content = React.createElement(AdminUsers, { state });
+    content = React.createElement(AdminUsers, { state, actions });
+  } else if (view === "reservations") {
+    content = React.createElement(AdminReservations, { state, actions });
   } else if (view === "equipment") {
-    content = React.createElement(AdminEquipment, { state, legacyRenderAdminContent });
+    content = React.createElement(AdminEquipment, { state, actions });
+  } else if (view === "reports") {
+    content = React.createElement(AdminReports, { state, actions });
+  } else if (view === "lectures") {
+    content = React.createElement(AdminLectures, { state, actions });
+  } else if (view === "notices") {
+    content = React.createElement(AdminNotices, { state, actions });
   } else if (view === "logs") {
-    content = React.createElement(AdminLogs, { state });
+    content = React.createElement(AdminLogs, { state, actions });
+  } else if (view === "settings") {
+    content = React.createElement(AdminSettings, { state, actions });
+  } else if (view === "account") {
+    content = React.createElement(AdminAccount, { state, actions });
   } else {
-    content = React.createElement(LegacyAdminPanel, { renderHtml: legacyRenderAdminContent });
+    content = React.createElement(AdminDashboard, { state, actions });
   }
 
   return React.createElement(
     GjuAppShell,
     {
-      desktopNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--sidebar"),
+      desktopNav: renderDesktopNavigation(view, navigate),
       header: renderHeader(title, headerActions),
       mobileHeader: renderHeader(title, headerActions),
-      mobileBottomNav: renderNavigation(view, navigate, "gju-admin-nav gju-admin-nav--bottom")
+      mobileBottomNav: renderMobileBottomNavigation(
+        view,
+        navigate,
+        moreOpen,
+        () => setMoreOpen(true),
+        () => setMoreOpen(false)
+      )
     },
     content
   );

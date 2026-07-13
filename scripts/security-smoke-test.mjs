@@ -484,6 +484,42 @@ assert.equal(db.notices.length, bulkCountsBeforeRejectedFiltered.notices);
 
 db.reservations.push(
   {
+    id: "res_exact_delete",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-05-01", reportStatus: "submitted" },
+    history: [],
+    createdAt: "2026-05-01T00:00:00.000Z",
+    updatedAt: "2026-05-01T00:00:00.000Z"
+  },
+  {
+    id: "res_exact_delete_extra",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: { reservedDate: "2026-05-02", reportStatus: "submitted" },
+    history: [],
+    createdAt: "2026-05-02T00:00:00.000Z",
+    updatedAt: "2026-05-02T00:00:00.000Z"
+  }
+);
+db.reports.push(
+  { id: "report_exact_delete", type: "studio", reservationId: "res_exact_delete", userId: "user_admin", fields: {}, submittedAt: "2026-05-01T00:00:00.000Z" },
+  { id: "report_exact_delete_extra", type: "studio", reservationId: "res_exact_delete_extra", userId: "user_admin", fields: {}, submittedAt: "2026-05-02T00:00:00.000Z" }
+);
+const exactReservationDelete = await api("DELETE", "/api/admin/reservations/res_exact_delete", {}, adminToken);
+assert.equal(exactReservationDelete.status, 200);
+assert.equal(exactReservationDelete.body.data.id, "res_exact_delete");
+assert.equal(exactReservationDelete.body.data.deletedReservations, 1);
+assert.equal(exactReservationDelete.body.data.deletedReports, 1);
+assert.equal(db.reservations.some((item) => item.id === "res_exact_delete"), false);
+assert.equal(db.reports.some((item) => item.reservationId === "res_exact_delete"), false);
+assert.equal(db.reservations.some((item) => item.id === "res_exact_delete_extra"), true);
+assert.equal(db.reports.some((item) => item.reservationId === "res_exact_delete_extra"), true);
+
+db.reservations.push(
+  {
     id: "res_bulk_keep_s1",
     type: "studio",
     status: "auto_confirmed",
@@ -764,6 +800,28 @@ const saturdayEquipmentReservation = await api("POST", "/api/reservations", {
 }, studentLogin.body.data.token);
 assert.equal(saturdayEquipmentReservation.status, 400);
 assert.match(saturdayEquipmentReservation.body.error, /토요일|일요일|주말/);
+
+const returnedEquipmentReservation = await api("POST", "/api/reservations", {
+  type: "equipment",
+  fields: {
+    reservedDate: nextFriday,
+    period: "당일",
+    rentalTime: "10:15",
+    returnTime: "17:10",
+    phone: "01039546412",
+    equipmentItemIds: [weekendEquipmentItem.id]
+  }
+}, studentLogin.body.data.token);
+assert.equal(returnedEquipmentReservation.status, 200);
+const markEquipmentReturned = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
+  status: "returned"
+}, adminToken);
+assert.equal(markEquipmentReturned.status, 200);
+const cancelReturnedEquipment = await api("POST", `/api/reservations/${returnedEquipmentReservation.body.data.id}/cancel`, {
+  reason: "반납 완료 예약 취소 방지 테스트"
+}, studentLogin.body.data.token);
+assert.equal(cancelReturnedEquipment.status, 409);
+assert.equal(db.reservations.find((item) => item.id === returnedEquipmentReservation.body.data.id)?.status, "returned");
 
 const studioReservationForReport = await withMockedRandomUuids([
   "11111111-2222-3333-4444-555555555555",

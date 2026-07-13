@@ -3,13 +3,16 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
-  GjuIcon,
-  GjuTable
+  GjuIconButton,
+  GjuTable,
+  GjuTabs
 } from "../../design-system";
-import type { LegacyState } from "../../platform/types";
+import type { LegacyState, ReactAdminActions } from "../../platform/types";
+import { runAdminAction } from "./adminScreenUtils";
 
 type AdminLogsProps = {
   state: LegacyState;
+  actions: ReactAdminActions;
 };
 
 type AdminSession = {
@@ -51,6 +54,24 @@ const LOG_FILTERS = [
   ["notice", "공지"],
   ["settings", "설정"]
 ] as const;
+const LOG_PAGE_SIZE = 50;
+
+function pageItems<T>(items: T[], page: number) {
+  const start = (page - 1) * LOG_PAGE_SIZE;
+  return items.slice(start, start + LOG_PAGE_SIZE);
+}
+
+function LocalPager({ page, total, onPage, label }: { page: number; total: number; onPage: (page: number) => void; label: string }) {
+  const pages = Math.max(1, Math.ceil(total / LOG_PAGE_SIZE));
+  if (pages <= 1) return null;
+  return (
+    <nav className="pagination admin-list-pagination" aria-label={label}>
+      <button className="button compact" type="button" disabled={page <= 1} onClick={() => onPage(page - 1)}>이전</button>
+      <span className="pagination-summary">{page} / {pages}</span>
+      <button className="button compact" type="button" disabled={page >= pages} onClick={() => onPage(page + 1)}>다음</button>
+    </nav>
+  );
+}
 
 function normalizeSearchText(value: unknown) {
   return String(value || "").trim().toLowerCase();
@@ -130,9 +151,11 @@ function auditActionLabel(action: string) {
     "reservation.cancelled": "예약 취소",
     "reservation.updated": "예약 수정",
     "reservation.status_changed": "예약 상태 변경",
+    "reservations.bulk_deleted": "예약 일괄 삭제",
     "lecture.applied": "특강 신청",
     "lecture.cancelled": "특강 신청 취소",
     "studio_report.created": "보고서 제출",
+    "reports.bulk_deleted": "보고서 일괄 삭제",
     "user.password_changed": "비밀번호 변경",
     "user.password_reset": "비밀번호 리셋",
     "user.approval_changed": "학생 상태 변경",
@@ -143,6 +166,8 @@ function auditActionLabel(action: string) {
     "equipment.imported": "장비 CSV 등록",
     "equipment.updated": "장비 수정",
     "notice.created": "공지 작성",
+    "notices.bulk_deleted": "공지 일괄 삭제",
+    "lectures.bulk_deleted": "특강 일괄 삭제",
     "settings.updated": "설정 변경",
     "maintenance.cleanup": "보관정책 정리",
     "maintenance.semester_close": "학기 종료 데이터 정리"
@@ -162,13 +187,28 @@ function logActionGroup(action = "") {
 }
 
 function auditDetailText(log: AdminLogRecord) {
-  const detail = log.detail || {};
-  const parts = [
-    detail && typeof detail === "object" ? String((detail as Record<string, unknown>).status || "") : "",
-    detail && typeof detail === "object" ? String((detail as Record<string, unknown>).reason || "") : "",
-    detail && typeof detail === "object" ? String((detail as Record<string, unknown>).ip || (detail as Record<string, unknown>).targetIp || "") : "",
-    detail && typeof detail === "object" ? String((detail as Record<string, unknown>).device || (detail as Record<string, unknown>).targetDevice || "") : ""
-  ].filter(Boolean);
+  const detail = log.detail && typeof log.detail === "object" ? log.detail : {};
+  const fields: Array<[string, unknown]> = [
+    ["로그인 ID", detail.loginId],
+    ["유형", detail.type],
+    ["해제 세션", detail.revokedSessions],
+    ["대상 사용자", detail.targetUserId],
+    ["상태", detail.status],
+    ["사유", detail.reason],
+    ["IP", detail.ip || detail.targetIp],
+    ["기기", detail.device || detail.targetDevice],
+    ["범위", detail.scope],
+    ["필터", detail.filters && typeof detail.filters === "object" ? JSON.stringify(detail.filters) : detail.filters],
+    ["삭제 예약", detail.deletedReservations],
+    ["삭제 보고서", detail.deletedReports],
+    ["삭제 특강", detail.deletedLectures],
+    ["삭제 신청", detail.deletedApplications],
+    ["삭제 공지", detail.deletedNotices],
+    ["보고서 상태 복원", detail.resetReservations]
+  ];
+  const parts = fields
+    .filter(([, value]) => value !== undefined && value !== null && String(value) !== "")
+    .map(([label, value]) => `${label} ${String(value)}`);
 
   return parts.join(" · ") || "-";
 }
@@ -227,15 +267,9 @@ function filteredSortedLogs(logs: AdminLogRecord[], filter: string, direction: s
     });
 }
 
-function renderLogOutIcon() {
-  return (
-    <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
-      <GjuIcon name="logOut" className="button-icon icon" />
-    </span>
-  );
-}
-
-export function AdminLogs({ state }: AdminLogsProps) {
+export function AdminLogs({ state, actions }: AdminLogsProps) {
+  const [sessionPage, setSessionPage] = React.useState(1);
+  const [logPage, setLogPage] = React.useState(1);
   const sessionQuery = normalizeSearchText(state.adminSessionSearch);
   const logQuery = normalizeSearchText(state.adminLogSearch);
   const sessionSort = String(state.adminSessionSort || "createdAt");
@@ -250,43 +284,36 @@ export function AdminLogs({ state }: AdminLogsProps) {
     logFilter,
     logSort
   );
+  React.useEffect(() => setSessionPage(1), [sessionQuery, sessionSort]);
+  React.useEffect(() => setLogPage(1), [logFilter, logQuery, logSort]);
+  const visibleSessions = pageItems(sessions, sessionPage);
+  const visibleLogs = pageItems(logs, logPage);
 
   return (
     <section className="grid">
-      <GjuCard title="현재 로그인 세션" eyebrow="React Admin">
+      <GjuCard title="현재 로그인 세션" eyebrow="React Admin" surface="workspace">
         <div className="list-control-panel compact">
           <input
-            key={`admin-session-search:${String(state.adminSessionSearch || "")}`}
             className="input"
-            defaultValue={String(state.adminSessionSearch || "")}
+            value={String(state.adminSessionSearch || "")}
             placeholder="사용자·IP·기기 검색"
             aria-label="세션 검색"
-            data-admin-session-search
+            onChange={(event) => void actions.setAdminFilters("logs", { sessionQuery: event.currentTarget.value })}
           />
         </div>
-        <div className="tab-row wrap" role="tablist" aria-label="세션 정렬">
-          <button
-            className={`tab-button ${sessionSort === "createdAt" ? "active" : ""}`}
-            type="button"
-            data-admin-session-sort="createdAt"
-          >
-            최근 로그인
-          </button>
-          <button
-            className={`tab-button ${sessionSort === "expiresAt" ? "active" : ""}`}
-            type="button"
-            data-admin-session-sort="expiresAt"
-          >
-            만료 임박
-          </button>
-          <button
-            className={`tab-button ${sessionSort === "user" ? "active" : ""}`}
-            type="button"
-            data-admin-session-sort="user"
-          >
-            사용자명
-          </button>
-        </div>
+        <GjuTabs
+          id="admin-session-sort-tabs"
+          ariaLabel="세션 정렬"
+          className="tab-row wrap"
+          tabClassName="tab-button"
+          items={[
+            { key: "createdAt", label: "최근 로그인" },
+            { key: "expiresAt", label: "만료 임박" },
+            { key: "user", label: "사용자명" }
+          ]}
+          activeKey={sessionSort}
+          onChange={(sessionSort) => void actions.setAdminFilters("logs", { sessionSort: sessionSort as "createdAt" | "expiresAt" | "user" })}
+        />
         <div className="table-wrap embedded">
           <GjuTable>
             <thead>
@@ -300,8 +327,8 @@ export function AdminLogs({ state }: AdminLogsProps) {
               </tr>
             </thead>
             <tbody>
-              {sessions.length ? (
-                sessions.map((session) => (
+              {visibleSessions.length ? (
+                visibleSessions.map((session) => (
                   <tr key={session.id}>
                     <td>
                       <strong>{session.user?.name || "-"}</strong>
@@ -317,15 +344,12 @@ export function AdminLogs({ state }: AdminLogsProps) {
                     <td>{formatDateTime(session.createdAt)}</td>
                     <td>{formatDateTime(session.expiresAt)}</td>
                     <td>
-                      <button
-                        className="button danger compact icon-only-action"
-                        type="button"
-                        data-session-revoke={session.id}
-                        aria-label="로그아웃"
-                        title="로그아웃"
-                      >
-                        {renderLogOutIcon()}
-                      </button>
+                      <GjuIconButton
+                        label="로그아웃"
+                        icon="logOut"
+                        tone="danger"
+                        onClick={() => runAdminAction(() => actions.revokeSession(session.id))}
+                      />
                     </td>
                   </tr>
                 ))
@@ -341,38 +365,36 @@ export function AdminLogs({ state }: AdminLogsProps) {
             </tbody>
           </GjuTable>
         </div>
+        <LocalPager page={sessionPage} total={sessions.length} onPage={setSessionPage} label="세션 페이지 이동" />
       </GjuCard>
-      <GjuCard title="활동 로그" eyebrow="React Admin">
+      <GjuCard title="활동 로그" eyebrow="React Admin" surface="workspace">
         <div className="list-control-panel compact">
           <input
-            key={`admin-log-search:${String(state.adminLogSearch || "")}`}
             className="input"
-            defaultValue={String(state.adminLogSearch || "")}
+            value={String(state.adminLogSearch || "")}
             placeholder="작업·사용자·대상·상세 검색"
             aria-label="로그 검색"
-            data-admin-log-search
+            onChange={(event) => void actions.setAdminFilters("logs", { logQuery: event.currentTarget.value })}
           />
         </div>
-        <div className="tab-row wrap" role="tablist" aria-label="활동 로그 작업 필터">
-          {LOG_FILTERS.map(([key, label]) => (
-            <button
-              key={key}
-              className={`tab-button ${logFilter === key ? "active" : ""}`}
-              type="button"
-              data-admin-log-action-filter={key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="tab-row wrap" role="tablist" aria-label="활동 로그 정렬">
-          <button className={`tab-button ${logSort === "desc" ? "active" : ""}`} type="button" data-admin-log-sort="desc">
-            최신순
-          </button>
-          <button className={`tab-button ${logSort === "asc" ? "active" : ""}`} type="button" data-admin-log-sort="asc">
-            오래된순
-          </button>
-        </div>
+        <GjuTabs
+          id="admin-log-action-tabs"
+          ariaLabel="활동 로그 작업 필터"
+          className="tab-row wrap"
+          tabClassName="tab-button"
+          items={LOG_FILTERS.map(([key, label]) => ({ key, label }))}
+          activeKey={logFilter}
+          onChange={(logAction) => void actions.setAdminFilters("logs", { logAction })}
+        />
+        <GjuTabs
+          id="admin-log-sort-tabs"
+          ariaLabel="활동 로그 정렬"
+          className="tab-row wrap"
+          tabClassName="tab-button"
+          items={[{ key: "desc", label: "최신순" }, { key: "asc", label: "오래된순" }]}
+          activeKey={logSort}
+          onChange={(logDirection) => void actions.setAdminFilters("logs", { logDirection: logDirection as "asc" | "desc" })}
+        />
         <div className="table-wrap embedded">
           <GjuTable>
             <thead>
@@ -385,8 +407,8 @@ export function AdminLogs({ state }: AdminLogsProps) {
               </tr>
             </thead>
             <tbody>
-              {logs.length ? (
-                logs.map((log, index) => (
+              {visibleLogs.length ? (
+                visibleLogs.map((log, index) => (
                   <tr key={log.id || `${log.action || "log"}:${index}`}>
                     <td>{formatDateTime(log.createdAt)}</td>
                     <td>{auditActionLabel(String(log.action || ""))}</td>
@@ -405,6 +427,7 @@ export function AdminLogs({ state }: AdminLogsProps) {
             </tbody>
           </GjuTable>
         </div>
+        <LocalPager page={logPage} total={logs.length} onPage={setLogPage} label="활동 로그 페이지 이동" />
       </GjuCard>
     </section>
   );

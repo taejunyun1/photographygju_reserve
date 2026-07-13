@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -28,11 +29,14 @@ const indexHtml = read("public/index.html");
 const publicConfig = read("public/config.js");
 const stateSource = read("public/js/state.js");
 const rendererSource = read("public/js/renderer.js");
+const dataSource = read("public/js/data.js");
 const buildStatic = read("scripts/build-static.js");
 const gitignore = read(".gitignore");
 const platformTypes = read("src/react/platform/types.ts");
 const reactAdminMain = read("src/react/admin/main.tsx");
+const adminActionsSource = read("src/react/platform/adminActions.ts");
 const designSystemCss = read("src/react/design-system/react-admin.css");
+const legacyCss = read("public/styles.css");
 const iconsSource = read("src/react/design-system/icons.tsx");
 const motionSource = read("src/react/design-system/motion.ts");
 const buttonSource = read("src/react/design-system/Button.tsx");
@@ -45,6 +49,21 @@ const toastSource = read("src/react/design-system/Toast.tsx");
 const renderTestSource = read("scripts/react-admin-render-test.mjs");
 const adminUsersSource = read("src/react/admin/screens/AdminUsers.tsx");
 const adminEquipmentSource = read("src/react/admin/screens/AdminEquipment.tsx");
+const adminReservationsSource = read("src/react/admin/screens/AdminReservations.tsx");
+assert(adminReservationsSource.includes("function activeReservationFilters"), "React reservations must normalize list and deletion filters through one helper");
+assert(adminReservationsSource.includes('status: nextTab === "equipment" ? statusFilter : "all"'), "Leaving the equipment tab must clear the equipment-only status filter");
+const adminAccountSource = read("src/react/admin/screens/AdminAccount.tsx");
+assert(adminAccountSource.includes("await actions.changeAccountPassword"), "Admin password form must wait for a successful mutation before resetting");
+assert(!adminAccountSource.includes("void actions.changeAccountPassword"), "Admin password form must not reset while its mutation is still pending");
+assert(!read("public/js/renderer.js").includes('api("/api/admin/export")\n      const lectures'), "Lecture CSV must not download the unrelated full Admin backup");
+const adminLogsSource = read("src/react/admin/screens/AdminLogs.tsx");
+assert(adminLogsSource.includes("const LOG_PAGE_SIZE = 50"), "Admin logs must page large session and audit collections");
+for (const file of ["AdminReservations.tsx", "AdminReports.tsx", "AdminLectures.tsx", "AdminLogs.tsx"]) {
+  assert(read(`src/react/admin/screens/${file}`).includes("GjuTabs"), `${file} must use the shared roving-tab implementation`);
+}
+const adminReportsSource = read("src/react/admin/screens/AdminReports.tsx");
+const adminLecturesSource = read("src/react/admin/screens/AdminLectures.tsx");
+const adminNoticesSource = read("src/react/admin/screens/AdminNotices.tsx");
 const adminEquipmentLegacySource = read("public/js/admin-equipment.js");
 const { equipmentStatusButtons } = await import("../public/js/admin-equipment.js?v=20260704-student-icon-nav");
 
@@ -82,21 +101,53 @@ assert(indexHtml.includes("/js/react-admin.generated.js?v="), "index.html must l
 assert(indexHtml.includes("/css/react-admin.generated.css?v="), "index.html must load React Admin generated CSS");
 assert(publicConfig.includes("window.GJU_REACT_ADMIN_ENABLED = true"), "public config must enable React Admin by default");
 assert(stateSource.includes("reactAdminEnabled"), "state must expose reactAdminEnabled");
-assert(rendererSource.includes("const adminMarkup = adminContent();"), "legacy renderer must compute legacy admin content for React Admin mounts");
-assert(rendererSource.includes("legacyRenderAdminContent: () => adminMarkup"), "legacy renderer must pass legacy admin content fallback into React Admin mounts");
-assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-refresh\"))"), "renderer bridge must dispatch a refresh event for React Admin");
+assert(!rendererSource.includes("adminContent"), "React Admin renderer path must not import or calculate legacy Admin content");
+assert(!rendererSource.includes("legacyRenderAdminContent"), "renderer must not pass a legacy HTML callback into React");
+assert(rendererSource.includes("adminShell()"), "renderer must preserve the legacy Admin shell fallback");
+assert(rendererSource.includes("loadAdminView"), "renderer bridge must load the active Admin view directly");
+assert(rendererSource.includes("/api/admin/reservations/${encodeURIComponent(reservationId)}"), "single reservation deletion must use an exact-ID endpoint");
+assert(!rendererSource.includes("gju-react-admin-refresh"), "React refresh must not depend on a document event listener");
 assert(rendererSource.includes("document.dispatchEvent(new CustomEvent(\"gju-react-admin-logout\"))"), "renderer bridge must dispatch a logout event for React Admin");
 assert(rendererSource.includes("updateReactAdminChrome"), "renderer bridge must update React Admin chrome without replacing the mounted shell");
+assert(rendererSource.includes("toastAnnouncementSequence"), "toast bridge must sequence live-region announcements");
+assert(rendererSource.includes('aria-live="off"'), "repeat renders of a visible toast must use an inert live region");
 assert(buildStatic.includes("build-react-admin.mjs"), "static build must produce React Admin generated assets");
 assert(gitignore.includes("public/js/react-admin.generated.js"), "generated React Admin JS must be ignored");
 assert(gitignore.includes("public/css/react-admin.generated.css"), "generated React Admin CSS must be ignored");
-assert(platformTypes.includes("legacyRenderAdminContent: () => string;"), "React Admin platform types must declare the legacy content fallback");
+assert(!platformTypes.includes("legacyRenderAdminContent"), "React Admin platform types must remove the legacy HTML callback");
 assert(platformTypes.includes("refreshAdminData(): Promise<void>;"), "React Admin actions contract must include refreshAdminData");
 assert(platformTypes.includes("logout(): Promise<void> | void;"), "React Admin actions contract must include logout");
+for (const action of [
+  "deleteAllReservations",
+  "deleteAllReports",
+  "deleteAllLectures",
+  "deleteAllNotices",
+  "downloadLectureCsv",
+  "downloadAdminBackup",
+  "enableNativeNotifications",
+  "disableNativeNotifications",
+  "syncNativeNotifications"
+]) {
+  assert(platformTypes.includes(`${action}(`), `React Admin typed actions must include ${action}`);
+}
 assert(reactAdminMain.includes("window.GJUReactAdmin = { mount, unmount }"), "React Admin bundle entry must expose mount/unmount globals");
 assert(reactAdminMain.includes("mountedRoot"), "React Admin bundle must track the mounted root between bridge updates");
-assert(reactAdminMain.includes("options.legacyRenderAdminContent()"), "React Admin mount must call the legacy admin content fallback");
+assert(!reactAdminMain.includes("legacyRenderAdminContent"), "React Admin mount must not parse or render legacy Admin HTML");
 assert(!reactAdminMain.includes("React Admin 준비중"), "React Admin entry must not replace the admin UI with a placeholder in this milestone");
+assert(!adminActionsSource.includes("fetch("), "React platform helpers must not create a second fetch client");
+assert(!adminActionsSource.includes("adminApi"), "React screens must use typed bridge actions instead of a React API envelope parser");
+for (const [name, source, matcher] of [
+  ["users", adminUsersSource, "matchesUserQuery"],
+  ["reservations", adminReservationsSource, "matchesReservation"],
+  ["reports", adminReportsSource, "matchesReport"],
+  ["lectures", adminLecturesSource, "matchesLecture"],
+  ["notices", adminNoticesSource, "matchesNotice"]
+]) {
+  assert(!source.includes(matcher), `${name} screen must render the exact server-filtered page so destructive scope matches visible rows`);
+}
+assert(dataSource.includes("export async function loadAdminView"), "Admin data module must expose view-scoped loading");
+assert(dataSource.includes("sort:"), "Admin list requests must include sort state");
+assert(dataSource.includes("direction:"), "Admin list requests must include sort direction");
 assert(fs.existsSync("src/react/design-system/Button.tsx"), "Task 3 must provide the button wrapper");
 assert(fs.existsSync("src/react/design-system/Card.tsx"), "Task 3 must provide the card wrapper");
 assert(fs.existsSync("src/react/design-system/StatusBadge.tsx"), "Task 3 must provide the status badge wrapper");
@@ -147,6 +198,10 @@ for (const className of [
 ]) {
   assert(designSystemCss.includes(`.${className}`), `Design system CSS must define .${className}`);
 }
+assert(
+  designSystemCss.includes(".gju-icon-button > * {\n  grid-area: 1 / 1;\n}"),
+  "Icon button children must share one grid cell so Astryx status content cannot push the glyph off center"
+);
 for (const token of [
   "--gju-motion-duration-instant: 80ms;",
   "--gju-motion-duration-fast: 120ms;",
@@ -158,6 +213,7 @@ for (const token of [
 }
 assert(designSystemCss.includes(".gju-motion-screen {\n  animation: gju-screen-enter var(--gju-motion-duration-normal) var(--gju-motion-ease-standard);\n}"), "Screen motion class must use the Task 3 animation contract");
 assert(designSystemCss.includes("@media (prefers-reduced-motion: reduce)"), "Design system CSS must include reduced-motion handling");
+assert(/\.loading-overlay\s*\{[^}]*pointer-events:\s*auto;/s.test(legacyCss), "loading overlay must block destructive clicks while admin filters are loading");
 const reactRootRule = cssRule(designSystemCss, "#react-admin-root {");
 for (const token of ["min-height: 100vh;", "min-height: 100dvh;"]) {
   assert(reactRootRule.includes(token), `React Admin root container must fill the viewport to avoid clipped admin surfaces: ${token}`);
@@ -250,14 +306,26 @@ for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavi
   assert(mobileContentScrollableRule.includes(token), `Mobile React Admin tables must keep horizontal overflow inside the table region: ${token}`);
 }
 const mobileContentControlsRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row,", mobileMediaStart);
-for (const token of ["width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
+for (const token of ["display: flex;", "flex-wrap: nowrap;", "width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
   assert(mobileContentControlsRule.includes(token), `Mobile React Admin tab/control rows must stay within screen width: ${token}`);
 }
 const mobileContentGridRule = cssRule(designSystemCss, "  .gju-app-shell__content .grid {", mobileMediaStart);
 assert(mobileContentGridRule.includes("grid-template-columns: minmax(0, 1fr);"), "Mobile React Admin legacy grids must use a single shrinkable column inside the React shell");
-const mobileReservationTabsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-reservation-type-tabs,", mobileMediaStart);
-for (const token of ["grid-template-columns: repeat(auto-fit, minmax(0, 1fr));", "grid-auto-columns: auto;", "overflow-x: hidden;"]) {
-  assert(mobileReservationTabsRule.includes(token), `Mobile reservation tabs must fit within the screen without horizontal overflow: ${token}`);
+const mobileTabButtonRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row .tab-button,", mobileMediaStart);
+for (const token of ["flex: 0 0 auto;", "width: auto;", "min-width: max-content;", "max-width: none;", "white-space: nowrap;", "overflow-wrap: normal;"]) {
+  assert(mobileTabButtonRule.includes(token), `Mobile tabs must stay on one horizontally scrollable row: ${token}`);
+}
+const mobileGjuTabRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .gju-tabs.tab-row.wrap,", mobileMediaStart);
+for (const token of ["display: flex;", "flex-wrap: nowrap;", "overflow-x: auto;", "overflow-y: hidden;"]) {
+  assert(mobileGjuTabRowRule.includes(token), `Shared mobile tabs must override legacy wrapping rules: ${token}`);
+}
+const mobileWorkspaceControlsRule = cssRule(
+  designSystemCss,
+  '  .gju-app-shell__content .gju-card[data-surface="workspace"] .list-control-panel {',
+  mobileMediaStart
+);
+for (const token of ["padding: 0;", "border: 0;", "background: transparent;", "overflow: visible;"]) {
+  assert(mobileWorkspaceControlsRule.includes(token), `Flat mobile workspaces must remove the second control-panel inset: ${token}`);
 }
 const mobileContentTextRule = cssRule(designSystemCss, "  .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {", mobileMediaStart);
 for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-wrap: anywhere;"]) {
@@ -272,7 +340,7 @@ assert(mobileShellBottomNavRule.includes("max(var(--gju-app-shell-mobile-edge), 
 const mobileBottomNavItemsRule = cssRule(designSystemCss, "  .gju-admin-nav--bottom {", mobileMediaStart);
 assert(mobileBottomNavItemsRule.includes("scroll-padding-inline: var(--gju-app-shell-mobile-edge);"), "Mobile React Admin bottom nav scroll area must respect the shared edge spacing");
 const mobileAdminCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .gju-card {", mobileMediaStart);
-for (const token of ["border-radius: 16px;", "box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);"]) {
+for (const token of ["border-radius: 8px;", "box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);"]) {
   assert(mobileAdminCardRule.includes(token), `Mobile Admin cards must use the compact Astryx card treatment: ${token}`);
 }
 const mobileAdminUserTableWrapperRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table-wrap .gju-table {", mobileMediaStart);
@@ -280,11 +348,11 @@ for (const token of ["border: 0;", "background: transparent;", "box-shadow: none
   assert(mobileAdminUserTableWrapperRule.includes(token), `Mobile student approval cards must not be double-framed by the table wrapper: ${token}`);
 }
 const mobileAdminUserInfoRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table .admin-user-info-row {", mobileMediaStart);
-for (const token of ["border-radius: 16px 16px 0 0;", "border-bottom: 0;", "box-shadow: none;"]) {
+for (const token of ["border-radius: 8px 8px 0 0;", "border-bottom: 0;", "box-shadow: none;"]) {
   assert(mobileAdminUserInfoRowRule.includes(token), `Mobile student info rows must attach to their action panel: ${token}`);
 }
 const mobileAdminUserActionRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table .admin-user-actions-row {", mobileMediaStart);
-for (const token of ["border-top: 0;", "border-radius: 0 0 16px 16px;", "margin-bottom: 14px;"]) {
+for (const token of ["border-top: 0;", "border-radius: 0 0 8px 8px;", "margin-bottom: 14px;"]) {
   assert(mobileAdminUserActionRowRule.includes(token), `Mobile student action rows must finish the same card: ${token}`);
 }
 const mobileAdminUserActionPanelRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-action-panel {", mobileMediaStart);
@@ -302,7 +370,7 @@ for (const token of ["display: block;", "min-width: 0;"]) {
   assert(mobileEquipmentTableDisplayRule.includes(token), `Mobile equipment table must collapse into cards: ${token}`);
 }
 const mobileEquipmentRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact tbody tr {", mobileMediaStart);
-for (const token of ["border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);", "overflow: hidden;"]) {
+for (const token of ["border-radius: 8px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);", "overflow: hidden;"]) {
   assert(mobileEquipmentRowRule.includes(token), `Mobile equipment rows must render as tactile cards: ${token}`);
 }
 const mobileEquipmentLabelRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-list-card.compact td[data-label]::before {", mobileMediaStart);
@@ -320,7 +388,7 @@ for (const token of ["display: grid;", "gap: 12px;"]) {
 const mobileAdminUserDesktopTableRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-table-wrap {", mobileMediaStart);
 assert(mobileAdminUserDesktopTableRule.includes("display: none;"), "Mobile student approvals must hide the desktop table layout");
 const mobileAdminUserCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-card {", mobileMediaStart);
-for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
+for (const token of ["display: grid;", "border-radius: 8px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
   assert(mobileAdminUserCardRule.includes(token), `Mobile student approval cards must be cohesive touch cards: ${token}`);
 }
 const mobileAdminUserMetaRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-user-mobile-meta {", mobileMediaStart);
@@ -337,7 +405,7 @@ for (const token of ["display: grid;", "gap: 12px;"]) {
 const mobileEquipmentDesktopTableRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-table-wrap {", mobileMediaStart);
 assert(mobileEquipmentDesktopTableRule.includes("display: none;"), "Mobile equipment must hide the desktop table layout");
 const mobileEquipmentCardRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-card {", mobileMediaStart);
-for (const token of ["display: grid;", "border-radius: 16px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
+for (const token of ["display: grid;", "border-radius: 8px;", "box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);"]) {
   assert(mobileEquipmentCardRule.includes(token), `Mobile equipment cards must be cohesive touch cards: ${token}`);
 }
 const mobileEquipmentToolsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-equipment-mobile-tools {", mobileMediaStart);
@@ -358,7 +426,7 @@ const mobileEquipmentSpecificStatusButtonsRule = cssRule(
   mobileMediaStart
 );
 assert(mobileEquipmentSpecificStatusButtonsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"), "Mobile equipment status actions must override the older two-column table-card specificity");
-assert(adminEquipmentSource.includes("data-tone={equipmentStatusTone(status)}"), "React equipment status actions must expose the mapped color tone on data-tone");
+assert(adminEquipmentSource.includes("data-status-tone={equipmentStatusTone(status)}"), "React equipment icon actions must expose the mapped status color independently from their button tone");
 for (const token of ['가능: "green"', '수리중: "amber"', '파손: "red"', '문의: "blue"']) {
   assert(adminEquipmentSource.includes(token), `React equipment status actions must map status tone ${token}`);
 }
@@ -429,5 +497,23 @@ const nonWrapperReactSources = readTree("src/react")
 for (const { file, source } of nonWrapperReactSources) {
   assert(!source.includes("@astryxdesign"), `Feature React source must not import Astryx directly outside wrappers: ${file}`);
 }
+
+const adminScreenSources = readTree("src/react/admin/screens");
+const delegatedInteractionAttribute = /\bdata-(?:action|admin-(?:dashboard-card|target-view|user-search|user-status-filter|users-page|session-search|session-sort|log-search|log-action-filter|log-sort|equipment-(?:panel-tab|search|tab|category-tab))|user-(?:sort|reset|delete|approval|warn|warn-reset|limit-duration)|equipment-(?:status-action|select(?:-all)?|bulk-status|bulk-remove|remove-admin)|session-revoke)\b/;
+for (const { file, source } of adminScreenSources) {
+  assert(!delegatedInteractionAttribute.test(source), `React Admin interactions must not emit delegated data attributes: ${file}`);
+  assert(!source.includes("document.addEventListener"), `React Admin screens must not register document event delegation: ${file}`);
+  assert(!source.includes("adminApi"), `React Admin screens must call typed bridge actions: ${file}`);
+  assert(!source.includes("runAdminMutation"), `React Admin screens must not own network mutation orchestration: ${file}`);
+  assert(!source.includes("refreshAdminState"), `React Admin screens must not own view refresh orchestration: ${file}`);
+}
+assert(adminUsersSource.includes("actions: ReactAdminActions"), "React users must accept typed actions");
+assert(read("src/react/admin/screens/AdminLogs.tsx").includes("actions: ReactAdminActions"), "React logs must accept typed actions");
+
+const dataTest = spawnSync(process.execPath, ["scripts/react-admin-data-test.mjs"], { stdio: "inherit" });
+assert.equal(dataTest.status, 0, "React Admin scoped data and server sort checks must pass");
+
+const bridgeTest = spawnSync(process.execPath, ["scripts/react-admin-bridge-test.mjs"], { stdio: "inherit" });
+assert.equal(bridgeTest.status, 0, "React Admin typed mutation and shell bridge checks must pass");
 
 console.log("React Admin contract checks passed.");

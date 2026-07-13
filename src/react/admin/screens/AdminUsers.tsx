@@ -3,14 +3,18 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
-  GjuIcon,
+  GjuIconButton,
   GjuStatusBadge,
-  GjuTable
+  GjuTable,
+  GjuTabs,
+  gjuTabId
 } from "../../design-system";
-import type { LegacyState } from "../../platform/types";
+import type { LegacyState, ReactAdminActions } from "../../platform/types";
+import { runAdminAction } from "./adminScreenUtils";
 
 type AdminUsersProps = {
   state: LegacyState;
+  actions: ReactAdminActions;
 };
 
 type AdminUserWarningRecord = {
@@ -65,43 +69,12 @@ const USER_LIMIT_OPTIONS = [
   ["semester", "대여금지 · 1학기"]
 ] as const;
 
-function normalizeSearchText(value: unknown) {
-  return String(value || "").trim().toLowerCase();
-}
-
 function asUsers(value: unknown): AdminUser[] {
   return Array.isArray(value) ? (value as AdminUser[]) : [];
 }
 
 function asWarningRecords(value: unknown): AdminUserWarningRecord[] {
   return Array.isArray(value) ? (value as AdminUserWarningRecord[]) : [];
-}
-
-function warningSearchText(user: AdminUser) {
-  return asWarningRecords(user.warningRecords)
-    .flatMap((record) => [record.reason, record.createdAt, record.count])
-    .filter(Boolean)
-    .join(" ");
-}
-
-function matchesUserQuery(user: AdminUser, query: string) {
-  if (!query) return true;
-  return [
-    user.name,
-    user.email,
-    user.studentId,
-    user.grade,
-    user.studentStatus,
-    user.phone,
-    user.approvalStatus,
-    statusLabel(String(user.approvalStatus || "")),
-    user.blockedUntil,
-    warningSearchText(user)
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .includes(query);
 }
 
 function statusLabel(status: string) {
@@ -144,30 +117,20 @@ function getUserSortState(state: LegacyState): AdminUserSortState {
   return { field: "approvalStatus", direction: "asc" };
 }
 
-function userSortValue(user: AdminUser, field: AdminUserSortField) {
-  if (field === "approvalStatus") return statusLabel(String(user.approvalStatus || ""));
-  return String(user[field] || "");
-}
-
-function sortUsers(users: AdminUser[], sortState: AdminUserSortState) {
-  const multiplier = sortState.direction === "desc" ? -1 : 1;
-  return [...users].sort((left, right) => (
-    userSortValue(left, sortState.field).toLocaleLowerCase().localeCompare(
-      userSortValue(right, sortState.field).toLocaleLowerCase(),
-      "ko"
-    ) * multiplier
-  ));
-}
-
 function sortButtonClassName(active: boolean) {
   return `table-sort ${active ? "active" : ""}`;
 }
 
-function renderUserSortButton(sortState: AdminUserSortState, field: AdminUserSortField, label: string) {
+function renderUserSortButton(
+  sortState: AdminUserSortState,
+  field: AdminUserSortField,
+  label: string,
+  onSort: (field: AdminUserSortField) => void
+) {
   const active = sortState.field === field;
   const directionLabel = active ? (sortState.direction === "asc" ? " ↑" : " ↓") : "";
   return (
-    <button className={sortButtonClassName(active)} type="button" data-user-sort={field}>
+    <button className={sortButtonClassName(active)} type="button" onClick={() => onSort(field)}>
       {label}
       {directionLabel}
     </button>
@@ -192,7 +155,7 @@ function visiblePageItems(currentPage: number, pageCount: number) {
   return items;
 }
 
-function renderUsersPager(page: AdminUsersPageState) {
+function renderUsersPager(page: AdminUsersPageState, onPage: (page: number) => void) {
   const pageCount = totalPages(page);
   if (pageCount <= 1) return null;
   const currentPage = Math.max(1, Number(page.page || 1));
@@ -201,8 +164,8 @@ function renderUsersPager(page: AdminUsersPageState) {
       <button
         className="button compact pagination-button"
         type="button"
-        data-admin-users-page={Math.max(1, currentPage - 1)}
         disabled={currentPage <= 1}
+        onClick={() => onPage(Math.max(1, currentPage - 1))}
       >
         이전
       </button>
@@ -216,8 +179,8 @@ function renderUsersPager(page: AdminUsersPageState) {
             key={item}
             className={`button compact pagination-button ${item === currentPage ? "is-active" : ""}`}
             type="button"
-            data-admin-users-page={item}
             aria-current={item === currentPage ? "page" : "false"}
+            onClick={() => onPage(item)}
           >
             {item}
           </button>
@@ -226,8 +189,8 @@ function renderUsersPager(page: AdminUsersPageState) {
       <button
         className="button compact pagination-button"
         type="button"
-        data-admin-users-page={Math.min(pageCount, currentPage + 1)}
         disabled={currentPage >= pageCount}
+        onClick={() => onPage(Math.min(pageCount, currentPage + 1))}
       >
         다음
       </button>
@@ -235,56 +198,50 @@ function renderUsersPager(page: AdminUsersPageState) {
   );
 }
 
-function renderDeleteIcon() {
+function renderPasswordResetButton(user: AdminUser, actions: ReactAdminActions) {
   return (
-    <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
-      <GjuIcon name="trash" className="button-icon icon" />
-    </span>
+    <GjuIconButton
+      className="admin-user-small-action"
+      label="비밀번호 초기화"
+      icon="refresh"
+      onClick={() => runAdminAction(() => actions.resetUserPassword(user.id))}
+    />
   );
 }
 
-function renderPlusIcon() {
-  return <GjuIcon name="plus" className="button-icon icon" />;
-}
-
-function renderPasswordResetButton(user: AdminUser) {
+function renderUserDeleteButton(user: AdminUser, actions: ReactAdminActions) {
   return (
-    <button className="button compact admin-user-small-action" type="button" data-user-reset={user.id}>
-      비번 리셋
-    </button>
+    <GjuIconButton
+      className="admin-user-delete-button"
+      label="학생 삭제"
+      icon="trash"
+      tone="danger"
+      onClick={() => runAdminAction(() => actions.deleteUser(user.id, user.name))}
+    />
   );
 }
 
-function renderUserDeleteButton(user: AdminUser) {
-  return (
-    <button
-      className="button danger compact admin-user-delete-button icon-only-action"
-      type="button"
-      data-user-delete={user.id}
-      data-user-name={user.name || ""}
-      aria-label="삭제"
-      title="삭제"
-    >
-      {renderDeleteIcon()}
-    </button>
-  );
-}
-
-function renderApprovalAction(user: AdminUser) {
+function renderApprovalAction(user: AdminUser, actions: ReactAdminActions) {
   const approvedLike = user.approvalStatus === "approved" || user.approvalStatus === "blocked";
 
   if (approvedLike) {
     return (
-      <button className="button danger compact" type="button" data-user-approval={user.id} data-status="rejected">
-        반려
-      </button>
+      <GjuIconButton
+        label="학생 반려"
+        icon="x"
+        tone="danger"
+        onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "rejected"))}
+      />
     );
   }
 
   return (
-    <button className="button primary compact" type="button" data-user-approval={user.id} data-status="approved">
-      승인
-    </button>
+    <GjuIconButton
+      label="학생 승인"
+      icon="check"
+      tone="success"
+      onClick={() => runAdminAction(() => actions.setUserApproval(user.id, "approved"))}
+    />
   );
 }
 
@@ -301,7 +258,7 @@ function formatDateTime(value: unknown) {
   }).format(date);
 }
 
-function renderWarningMemo(user: AdminUser) {
+function renderWarningMemo(user: AdminUser, actions: ReactAdminActions) {
   const records = asWarningRecords(user.warningRecords);
 
   if (!records.length) {
@@ -309,10 +266,12 @@ function renderWarningMemo(user: AdminUser) {
       <div className="admin-user-warning-memo is-empty">
         <div className="admin-user-warning-memo-head">
           <strong>경고 메모 기록 없음</strong>
-          <button className="button warn compact admin-user-memo-add" type="button" data-user-warn={user.id}>
-            {renderPlusIcon()}
-            메모 추가
-          </button>
+          <GjuIconButton
+            className="admin-user-memo-add"
+            label="메모 추가"
+            icon="plus"
+            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
+          />
         </div>
         <span>저장된 메모가 없습니다.</span>
       </div>
@@ -328,13 +287,18 @@ function renderWarningMemo(user: AdminUser) {
       <div className="admin-user-warning-memo-head">
         <strong>최근 경고 메모 {count}건</strong>
         <div className="admin-user-warning-actions">
-          <button className="button warn compact admin-user-memo-add" type="button" data-user-warn={user.id}>
-            {renderPlusIcon()}
-            메모 추가
-          </button>
-          <button className="button ghost compact admin-user-memo-reset" type="button" data-user-warn-reset={user.id}>
-            초기화
-          </button>
+          <GjuIconButton
+            className="admin-user-memo-add"
+            label="메모 추가"
+            icon="plus"
+            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
+          />
+          <GjuIconButton
+            className="admin-user-memo-reset"
+            label="메모 초기화"
+            icon="refresh"
+            onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))}
+          />
         </div>
       </div>
       <span>
@@ -346,7 +310,7 @@ function renderWarningMemo(user: AdminUser) {
   );
 }
 
-function renderUserLimitSelect(user: AdminUser, keyPrefix = "user-limit") {
+function renderUserLimitSelect(user: AdminUser, actions: ReactAdminActions, keyPrefix = "user-limit") {
   return (
     <select
       key={`${keyPrefix}:${user.id}:${user.approvalStatus || ""}:${user.blockDuration || ""}`}
@@ -357,7 +321,11 @@ function renderUserLimitSelect(user: AdminUser, keyPrefix = "user-limit") {
           : ""
       }
       aria-label={`${user.name || "학생"} 대여금지 기간`}
-      data-user-limit-duration={user.id}
+      onChange={(event) => {
+        const duration = event.currentTarget.value;
+        if (!duration) return;
+        runAdminAction(() => actions.setUserApproval(user.id, duration === "unblock" ? "approved" : "blocked", duration));
+      }}
     >
       <option value="">대여금지 설정</option>
       {user.approvalStatus === "blocked" ? <option value="unblock">대여금지 해제</option> : null}
@@ -370,28 +338,28 @@ function renderUserLimitSelect(user: AdminUser, keyPrefix = "user-limit") {
   );
 }
 
-function renderUserSecondaryActions(user: AdminUser) {
+function renderUserSecondaryActions(user: AdminUser, actions: ReactAdminActions) {
   return (
     <div className="admin-user-action-group admin-user-secondary-group">
-      {renderPasswordResetButton(user)}
-      {renderUserDeleteButton(user)}
+      {renderPasswordResetButton(user, actions)}
+      {renderUserDeleteButton(user, actions)}
     </div>
   );
 }
 
-function renderUserMobilePrimaryActions(user: AdminUser) {
+function renderUserMobilePrimaryActions(user: AdminUser, actions: ReactAdminActions) {
   return (
     <div className="admin-user-action-group admin-user-mobile-primary-actions">
-      {renderApprovalAction(user)}
-      {renderPasswordResetButton(user)}
-      {renderUserDeleteButton(user)}
+      {renderApprovalAction(user, actions)}
+      {renderPasswordResetButton(user, actions)}
+      {renderUserDeleteButton(user, actions)}
     </div>
   );
 }
 
-function renderUserMobileCard(user: AdminUser) {
+function renderUserMobileCard(user: AdminUser, actions: ReactAdminActions) {
   return (
-    <article className="admin-user-mobile-card" data-user-mobile-card={user.id}>
+    <article className="admin-user-mobile-card">
       <div className="admin-user-mobile-head">
         <div className="admin-user-mobile-identity">
           <strong className="admin-user-name" title={user.name || ""}>
@@ -424,72 +392,83 @@ function renderUserMobileCard(user: AdminUser) {
         </div>
       </dl>
       <div className="admin-user-mobile-actions">
-        {renderUserMobilePrimaryActions(user)}
+        {renderUserMobilePrimaryActions(user, actions)}
         <div className="admin-user-action-group admin-user-limit-group">
-          {renderUserLimitSelect(user, "mobile-user-limit")}
+          {renderUserLimitSelect(user, actions, "mobile-user-limit")}
         </div>
-        {renderWarningMemo(user)}
+        {renderWarningMemo(user, actions)}
       </div>
     </article>
   );
 }
 
-export function AdminUsers({ state }: AdminUsersProps) {
-  const query = normalizeSearchText(state.adminUserSearch);
+export function AdminUsers({ state, actions }: AdminUsersProps) {
+  const [searchDraft, setSearchDraft] = React.useState(String(state.adminUserSearch || ""));
+  const hasQuery = Boolean(String(state.adminUserSearch || "").trim());
   const activeFilter = String(state.adminUserStatusFilter || "all");
   const sortState = getUserSortState(state);
   const page = getUsersPageState(state);
   const allUsers = asUsers(state.adminUsers).filter((user) => user.role !== "admin");
-  const filteredUsers = allUsers.filter((user) => {
-    if (activeFilter !== "all" && user.approvalStatus !== activeFilter) {
-      return false;
-    }
-    return matchesUserQuery(user, query);
-  });
-  const users = sortUsers(filteredUsers, sortState);
+  const users = allUsers;
   const total = Number(page.total || allUsers.length || 0);
   const shown = Math.min(allUsers.length, total);
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void actions.setAdminFilters("users", { q: searchDraft, page: 1 });
+  };
+  const setSort = (field: AdminUserSortField) => {
+    const direction = sortState.field === field && sortState.direction === "asc" ? "desc" : "asc";
+    void actions.setAdminFilters("users", { sort: field, direction, page: 1 });
+  };
+  const setPage = (nextPage: number) => {
+    void actions.setAdminFilters("users", { page: nextPage });
+  };
+  const statusTabsId = "admin-users-status";
+  const usersPanelId = "admin-users-results";
 
   return (
     <section className="grid">
-      <GjuCard title="학생 승인" eyebrow="React Admin">
-        <div className="list-control-panel">
+      <GjuCard title="학생 승인" eyebrow="React Admin" surface="workspace">
+        <form className="list-control-panel" onSubmit={submitSearch}>
           <input
-            key={`admin-user-search:${String(state.adminUserSearch || "")}`}
             className="input"
-            defaultValue={String(state.adminUserSearch || "")}
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.currentTarget.value)}
             placeholder="이름·학번·연락처·이메일 검색"
             aria-label="학생 검색"
-            data-admin-user-search
           />
-          <div className="tab-row wrap" role="tablist" aria-label="학생 승인 상태 필터">
-            {USER_STATUS_FILTERS.map(([key, label]) => (
-              <button
-                key={key}
-                className={`tab-button ${activeFilter === key ? "active" : ""}`}
-                type="button"
-                data-admin-user-status-filter={key}
-                aria-current={activeFilter === key ? "true" : undefined}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="muted list-page-summary">
-          현재 {shown}건 표시 / 전체 {total}건
-          {query ? ` · 검색 결과 ${users.length}건(현재 표시 데이터 기준)` : ""}
-          {page.hasMore ? " · 다음 페이지에 기록이 더 있습니다" : ""}
-        </p>
-        <div className="table-wrap admin-user-table-wrap">
+          <button className="button primary compact" type="submit">검색</button>
+          <GjuTabs
+            id={statusTabsId}
+            panelId={usersPanelId}
+            ariaLabel="학생 승인 상태 필터"
+            className="tab-row wrap"
+            tabClassName="tab-button"
+            items={USER_STATUS_FILTERS.map(([key, label]) => ({ key, label }))}
+            activeKey={activeFilter}
+            onChange={(key) => void actions.setAdminFilters("users", { status: key, page: 1 })}
+          />
+        </form>
+        <div
+          id={usersPanelId}
+          role="tabpanel"
+          aria-labelledby={gjuTabId(statusTabsId, activeFilter)}
+          tabIndex={0}
+        >
+          <p className="muted list-page-summary">
+            현재 {shown}건 표시 / 전체 {total}건
+            {hasQuery ? ` · 검색 결과 ${users.length}건(현재 페이지)` : ""}
+            {page.hasMore ? " · 다음 페이지에 기록이 더 있습니다" : ""}
+          </p>
+          <div className="table-wrap admin-user-table-wrap">
           <GjuTable className="admin-user-table">
             <thead>
               <tr>
-                <th className="admin-user-name-head">{renderUserSortButton(sortState, "name", "이름")}</th>
-                <th>{renderUserSortButton(sortState, "studentId", "학번")}</th>
-                <th>{renderUserSortButton(sortState, "studentStatus", "신분")}</th>
+                <th className="admin-user-name-head">{renderUserSortButton(sortState, "name", "이름", setSort)}</th>
+                <th>{renderUserSortButton(sortState, "studentId", "학번", setSort)}</th>
+                <th>{renderUserSortButton(sortState, "studentStatus", "신분", setSort)}</th>
                 <th>연락처</th>
-                <th className="admin-user-status-head">{renderUserSortButton(sortState, "approvalStatus", "상태")}</th>
+                <th className="admin-user-status-head">{renderUserSortButton(sortState, "approvalStatus", "상태", setSort)}</th>
               </tr>
             </thead>
             <tbody>
@@ -518,13 +497,13 @@ export function AdminUsers({ state }: AdminUsersProps) {
                       <td colSpan={5}>
                         <div className="admin-user-action-panel">
                           <div className="admin-user-action-group admin-user-core-group">
-                            {renderApprovalAction(user)}
+                            {renderApprovalAction(user, actions)}
                           </div>
                           <div className="admin-user-action-group admin-user-limit-group">
-                            {renderUserLimitSelect(user)}
+                            {renderUserLimitSelect(user, actions)}
                           </div>
-                          {renderWarningMemo(user)}
-                          {renderUserSecondaryActions(user)}
+                          {renderWarningMemo(user, actions)}
+                          {renderUserSecondaryActions(user, actions)}
                         </div>
                       </td>
                     </tr>
@@ -534,26 +513,27 @@ export function AdminUsers({ state }: AdminUsersProps) {
                 <tr>
                   <td colSpan={5}>
                     <GjuEmptyState
-                      title={query ? "검색 결과가 없습니다." : "학생이 없습니다."}
-                      message={query ? "검색어를 지우거나 상태 필터를 변경하세요." : undefined}
+                      title={hasQuery ? "검색 결과가 없습니다." : "학생이 없습니다."}
+                      message={hasQuery ? "검색어를 지우거나 상태 필터를 변경하세요." : undefined}
                     />
                   </td>
                 </tr>
               )}
             </tbody>
           </GjuTable>
+          </div>
+          <div className="admin-user-mobile-list" aria-label="학생 승인 모바일 목록">
+            {users.length ? (
+              users.map((user) => <React.Fragment key={`mobile:${user.id}`}>{renderUserMobileCard(user, actions)}</React.Fragment>)
+            ) : (
+              <GjuEmptyState
+                title={hasQuery ? "검색 결과가 없습니다." : "학생이 없습니다."}
+                message={hasQuery ? "검색어를 지우거나 상태 필터를 변경하세요." : undefined}
+              />
+            )}
+          </div>
+          {renderUsersPager(page, setPage)}
         </div>
-        <div className="admin-user-mobile-list" aria-label="학생 승인 모바일 목록">
-          {users.length ? (
-            users.map((user) => <React.Fragment key={`mobile:${user.id}`}>{renderUserMobileCard(user)}</React.Fragment>)
-          ) : (
-            <GjuEmptyState
-              title={query ? "검색 결과가 없습니다." : "학생이 없습니다."}
-              message={query ? "검색어를 지우거나 상태 필터를 변경하세요." : undefined}
-            />
-          )}
-        </div>
-        {renderUsersPager(page)}
       </GjuCard>
     </section>
   );

@@ -141,6 +141,14 @@
 .gju-app-shell__content .equipment-status-buttons,
 .gju-app-shell__content .admin-equipment-mobile-tools,
 .gju-app-shell__content .button-row,
+.gju-app-shell__content .admin-react-screen,
+.gju-app-shell__content .admin-react-toolbar,
+.gju-app-shell__content .admin-react-form-grid,
+.gju-app-shell__content .admin-react-card-list,
+.gju-app-shell__content .admin-react-list-card,
+.gju-app-shell__content .admin-react-action-row,
+.gju-app-shell__content .calendar-card,
+.gju-app-shell__content .calendar-grid-large,
 .gju-app-shell__content .admin-settings-card,
 .gju-app-shell__content .blocked-list,
 .gju-app-shell__content .blocked-item,
@@ -172,48 +180,56 @@
   display: none;
 }
 
-.gju-app-shell__content .status-button[data-tone="green"] {
+.gju-app-shell__content .status-button[data-tone="green"],
+.gju-app-shell__content .status-button[data-status-tone="green"] {
   border-color: rgba(31, 122, 76, 0.24);
   color: var(--gju-color-success);
 }
 
-.gju-app-shell__content .status-button[data-tone="amber"] {
+.gju-app-shell__content .status-button[data-tone="amber"],
+.gju-app-shell__content .status-button[data-status-tone="amber"] {
   border-color: rgba(154, 95, 0, 0.24);
   color: var(--gju-color-warning);
 }
 
-.gju-app-shell__content .status-button[data-tone="red"] {
+.gju-app-shell__content .status-button[data-tone="red"],
+.gju-app-shell__content .status-button[data-status-tone="red"] {
   border-color: rgba(201, 63, 67, 0.26);
   color: var(--gju-color-danger);
 }
 
-.gju-app-shell__content .status-button[data-tone="blue"] {
+.gju-app-shell__content .status-button[data-tone="blue"],
+.gju-app-shell__content .status-button[data-status-tone="blue"] {
   border-color: rgba(21, 84, 183, 0.24);
   color: var(--gju-color-info);
 }
 
-.gju-app-shell__content .status-button[data-tone="green"].active {
+.gju-app-shell__content .status-button[data-tone="green"].active,
+.gju-app-shell__content .status-button[data-status-tone="green"].active {
   border-color: rgba(31, 122, 76, 0.42);
   background: rgba(34, 197, 94, 0.16);
   color: var(--gju-color-success);
   box-shadow: inset 0 0 0 1px rgba(31, 122, 76, 0.22);
 }
 
-.gju-app-shell__content .status-button[data-tone="amber"].active {
+.gju-app-shell__content .status-button[data-tone="amber"].active,
+.gju-app-shell__content .status-button[data-status-tone="amber"].active {
   border-color: rgba(154, 95, 0, 0.42);
   background: rgba(245, 158, 11, 0.17);
   color: var(--gju-color-warning);
   box-shadow: inset 0 0 0 1px rgba(154, 95, 0, 0.2);
 }
 
-.gju-app-shell__content .status-button[data-tone="red"].active {
+.gju-app-shell__content .status-button[data-tone="red"].active,
+.gju-app-shell__content .status-button[data-status-tone="red"].active {
   border-color: rgba(201, 63, 67, 0.44);
   background: rgba(255, 59, 79, 0.14);
   color: var(--gju-color-danger);
   box-shadow: inset 0 0 0 1px rgba(201, 63, 67, 0.2);
 }
 
-.gju-app-shell__content .status-button[data-tone="blue"].active {
+.gju-app-shell__content .status-button[data-tone="blue"].active,
+.gju-app-shell__content .status-button[data-status-tone="blue"].active {
   border-color: rgba(21, 84, 183, 0.42);
   background: rgba(37, 99, 235, 0.14);
   color: var(--gju-color-info);
@@ -353,8 +369,15 @@
 .gju-icon-button {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  max-width: 40px;
+  padding: 0;
   display: inline-grid;
   place-items: center;
+  flex: 0 0 40px;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   color: var(--gju-color-text);
   background: var(--gju-color-surface);
@@ -363,6 +386,19 @@
 
 .gju-icon-button__busy {
   display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+}
+
+.gju-icon-button > * {
+  grid-area: 1 / 1;
+}
+
+.gju-icon-button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .gju-icon-button[data-tone="danger"] {
@@ -399,6 +435,21 @@
   padding: 20px;
 }
 
+.gju-card[data-surface="workspace"] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gju-card[data-surface="workspace"] .gju-card__header {
+  padding: 0;
+}
+
+.gju-card[data-surface="workspace"] .gju-card__body {
+  padding: 16px 0 0;
+}
+
 .gju-card__eyebrow {
   margin-bottom: 4px;
   font-size: 12px;
@@ -414,17 +465,26 @@
 }
 
 .gju-tabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   padding: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   border-radius: 8px;
   background: var(--gju-color-surface);
   border: 1px solid var(--gju-color-border);
 }
 
 .gju-tabs__tab {
+  flex: 0 0 auto;
   min-height: 36px;
   padding: 0 12px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -524,6 +584,179 @@
 .gju-status-badge[data-tone="blue"] {
   color: #184f9b;
   background: #dfeafe;
+}
+
+.admin-react-screen {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-react-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.admin-react-toolbar label,
+.admin-react-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--gju-color-text-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-react-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-react-form-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-react-check {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-react-action-row,
+.admin-react-danger-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-react-action-row .button,
+.admin-react-danger-row .button,
+.admin-react-form-grid .button,
+.admin-react-toolbar .button,
+.gju-mobile-more-nav__item {
+  min-height: 44px;
+}
+
+.admin-react-card-list {
+  display: none;
+  gap: 12px;
+}
+
+.admin-react-list-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.admin-settings-react-screen .admin-react-card-list {
+  display: grid;
+}
+
+.admin-react-body-text {
+  margin: 0;
+  color: var(--gju-color-text-muted);
+  line-height: 1.5;
+}
+
+.calendar-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  box-shadow: var(--gju-shadow-panel);
+}
+
+.calendar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.calendar-head h2,
+.calendar-head p {
+  margin: 0;
+}
+
+.calendar-weekdays,
+.calendar-grid-large {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-weekdays span {
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  color: var(--gju-color-text-muted);
+  font-weight: 800;
+}
+
+.calendar-day {
+  min-height: 72px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  color: var(--gju-color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-day.outside {
+  opacity: 0.48;
+}
+
+.calendar-day.blocked {
+  border-color: rgba(201, 63, 67, 0.3);
+  background: rgba(253, 227, 228, 0.42);
+}
+
+.calendar-day span {
+  font-weight: 900;
+}
+
+.calendar-day small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gju-color-danger);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.gju-mobile-more-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.gju-mobile-more-nav__item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+  color: var(--gju-color-text);
+  font: inherit;
+}
+
+.gju-mobile-more-nav__item[aria-current="page"] {
+  border-color: var(--gju-color-primary);
+  color: var(--gju-color-primary);
+  background: rgba(36, 87, 255, 0.08);
 }
 
 .admin-user-mobile-list,
@@ -648,6 +881,8 @@
 
   .gju-app-shell__content .tab-row,
   .gju-app-shell__content .admin-inner-tabs {
+    display: flex;
+    flex-wrap: nowrap;
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
@@ -663,19 +898,35 @@
 
   .gju-app-shell__content .tab-row .tab-button,
   .gju-app-shell__content .admin-inner-tabs .tab-button {
-    min-width: 0;
-    max-width: 100%;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .gju-app-shell__content .gju-tabs.tab-row.wrap,
+  .gju-app-shell__content .gju-tabs.tab-row,
+  .gju-app-shell__content .gju-tabs.admin-inner-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .gju-app-shell__content .list-control-panel .gju-tabs.tab-row .gju-tabs__tab,
+  .gju-app-shell__content .gju-tabs.admin-inner-tabs .gju-tabs__tab {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 
   .gju-app-shell__content .grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .gju-app-shell__content .admin-reservation-type-tabs,
-  .gju-app-shell__content .admin-reservation-status-tabs {
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    grid-auto-columns: auto;
-    overflow-x: hidden;
   }
 
   .gju-app-shell__content .bulk-actions,
@@ -697,7 +948,7 @@
   }
 
   .gju-app-shell__content .gju-card {
-    border-radius: 16px;
+    border-radius: 8px;
     box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
   }
 
@@ -711,29 +962,44 @@
     padding: 16px 18px 18px;
   }
 
+  .gju-app-shell__content .gju-card[data-surface="workspace"] {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .gju-card__header {
+    padding: 0;
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .gju-card__body {
+    padding: 12px 0 0;
+  }
+
   .gju-app-shell__content .list-control-panel {
     display: grid;
     gap: 10px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 8px;
     background: rgba(248, 251, 255, 0.72);
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .list-control-panel {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
   }
 
   .gju-app-shell__content .list-control-panel .input {
     min-height: 44px;
-    border-radius: 14px;
-  }
-
-  .gju-app-shell__content .tab-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-    gap: 8px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .tab-row .tab-button,
   .gju-app-shell__content .admin-inner-tabs .tab-button {
     min-height: 44px;
-    border-radius: 12px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .admin-user-table-wrap {
@@ -774,7 +1040,7 @@
   .gju-app-shell__content .admin-user-table .admin-user-info-row {
     border: 1px solid var(--glass-border);
     border-bottom: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: 8px 8px 0 0;
     background: var(--surface-lowest, #fff);
     box-shadow: none;
     overflow: hidden;
@@ -785,7 +1051,7 @@
     margin-bottom: 14px;
     border: 1px solid var(--glass-border);
     border-top: 0;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 8px 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     overflow: hidden;
@@ -868,7 +1134,7 @@
 
   .gju-app-shell__content .admin-user-warning-memo {
     gap: 6px;
-    border-radius: 14px;
+    border-radius: 8px;
     padding: 10px 12px;
     background: rgba(255, 255, 255, 0.72);
   }
@@ -897,7 +1163,7 @@
     display: grid;
     gap: 10px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     padding: 12px;
@@ -927,7 +1193,7 @@
   .gju-app-shell__content .admin-equipment-mobile-meta div {
     min-width: 0;
     border: 1px solid var(--line-soft);
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(248, 251, 255, 0.7);
     padding: 8px 9px;
   }
@@ -1038,7 +1304,7 @@
   .gju-app-shell__content .admin-equipment-list-card.compact tbody tr {
     margin: 0 0 14px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     overflow: hidden;
@@ -1103,7 +1369,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 8px;
   }
 
   .gju-app-shell__content .equipment-bulk-bar .bulk-actions {
@@ -1140,7 +1406,7 @@
     display: grid;
     gap: 12px;
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: 8px;
     background: var(--surface-lowest, #fff);
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
     padding: 14px;
@@ -1242,6 +1508,50 @@
     justify-self: end;
   }
 
+  .gju-app-shell__content .admin-react-toolbar,
+  .gju-app-shell__content .admin-react-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gju-app-shell__content .admin-react-form-wide {
+    grid-column: auto;
+  }
+
+  .gju-app-shell__content .admin-react-desktop-table {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-react-card-list {
+    display: grid;
+  }
+
+  .gju-app-shell__content .admin-react-list-card {
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .calendar-card {
+    padding: 12px;
+  }
+
+  .gju-app-shell__content .calendar-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gju-app-shell__content .calendar-month-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gju-app-shell__content .calendar-day {
+    min-height: 58px;
+    padding: 6px;
+  }
+
+  .gju-app-shell__content .calendar-day small {
+    display: none;
+  }
+
   .gju-app-shell__content--with-mobile-bottom-nav {
     padding-bottom: calc(20px + var(--gju-app-shell-mobile-nav-height) + var(--gju-safe-area-bottom));
   }
@@ -1267,10 +1577,9 @@
 
   .gju-admin-nav--bottom {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(72px, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 2px;
     scroll-padding-inline: var(--gju-app-shell-mobile-edge);
     scrollbar-width: none;
@@ -1281,9 +1590,12 @@
   }
 
   .gju-admin-nav--bottom .gju-admin-nav__item {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
     min-height: 44px;
     justify-content: center;
-    padding: 0 10px;
+    padding: 0;
     white-space: nowrap;
   }
 }

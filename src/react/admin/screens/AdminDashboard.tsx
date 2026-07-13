@@ -1,7 +1,7 @@
 import React from "react";
 
-import { GjuCard, GjuStatusBadge, motionClass } from "../../design-system";
-import type { ReactAdminActions, LegacyState } from "../../platform/types";
+import { GjuCard, motionClass } from "../../design-system";
+import type { AdminReservationRecord, AdminView, AdminViewFilterMap, ReactAdminActions, LegacyState } from "../../platform/types";
 
 type DashboardCardTone = "blue" | "amber" | "green" | "neutral" | "red";
 
@@ -11,7 +11,8 @@ type DashboardCardConfig = {
   caption: string;
   badge: string;
   tone: DashboardCardTone;
-  targetView: string;
+  targetView: AdminView;
+  filters?: Record<string, string | number>;
 };
 
 type AdminDashboardProps = {
@@ -26,7 +27,7 @@ const styles = {
   },
   intro: {
     margin: 0,
-    color: "var(--gju-color-text-muted)"
+    color: "#344054"
   },
   grid: {
     display: "grid",
@@ -50,9 +51,45 @@ const styles = {
   },
   caption: {
     margin: "8px 0 0",
-    color: "var(--gju-color-text-muted)"
+    color: "#344054"
+  },
+  badge: {
+    color: "#344054",
+    fontSize: "13px",
+    fontWeight: 700
+  },
+  list: {
+    display: "grid",
+    gap: "10px",
+    margin: 0,
+    padding: 0,
+    listStyle: "none"
+  },
+  listItem: {
+    display: "grid",
+    gap: "4px",
+    padding: "12px 0",
+    borderBottom: "1px solid var(--line-soft)"
+  },
+  metrics: {
+    display: "grid",
+    gap: "12px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))"
   }
 } satisfies Record<string, React.CSSProperties>;
+
+function navigateDashboardCard(card: DashboardCardConfig, actions: ReactAdminActions) {
+  if (card.targetView === "users") {
+    return actions.setAdminView("users", card.filters as Partial<AdminViewFilterMap["users"]>);
+  }
+  if (card.targetView === "reservations") {
+    return actions.setAdminView("reservations", card.filters as Partial<AdminViewFilterMap["reservations"]>);
+  }
+  if (card.targetView === "reports") {
+    return actions.setAdminView("reports", card.filters as Partial<AdminViewFilterMap["reports"]>);
+  }
+  return actions.setAdminView(card.targetView);
+}
 
 function renderActionCard(card: DashboardCardConfig, actions: ReactAdminActions) {
   return React.createElement(
@@ -62,22 +99,79 @@ function renderActionCard(card: DashboardCardConfig, actions: ReactAdminActions)
       type: "button",
       style: styles.button,
       className: motionClass.screen,
-      "data-admin-dashboard-card": card.label,
-      "data-admin-target-view": card.targetView,
       onClick: () => {
-        void actions.setAdminView(card.targetView);
+        void navigateDashboardCard(card, actions);
       }
     },
     React.createElement(
       GjuCard,
       {
         title: card.label,
-        eyebrow: "오늘 처리할 일",
-        actions: React.createElement(GjuStatusBadge, { tone: card.tone }, card.badge)
+        actions: React.createElement("span", { style: styles.badge }, card.badge)
       },
       React.createElement("p", { style: styles.count }, card.value),
       React.createElement("p", { style: styles.caption }, card.caption)
     )
+  );
+}
+
+function reservationTypeLabel(type: string) {
+  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력" }[type] || type || "예약";
+}
+
+function reservationTime(reservation: AdminReservationRecord) {
+  const fields = reservation.fields || {};
+  if (reservation.queueAt) {
+    const date = new Date(reservation.queueAt);
+    if (!Number.isNaN(date.getTime())) {
+      return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).format(date);
+    }
+  }
+  if (reservation.queueAction === "return") return String(fields.returnTime || "시간 미정");
+  return String(fields.rentalTime || fields.startTime || fields.timeSlots?.[0] || "시간 미정");
+}
+
+function queueActionLabel(reservation: AdminReservationRecord) {
+  if (reservation.queueAction === "checkout") return "대여";
+  if (reservation.queueAction === "return") return "반납";
+  return "";
+}
+
+function reservationUser(reservation: AdminReservationRecord) {
+  const user = reservation.user || reservation.student;
+  return user?.name || user?.studentId || "학생";
+}
+
+function queueList(items: AdminReservationRecord[], empty: string) {
+  if (!items.length) return React.createElement("p", { style: styles.caption }, empty);
+  return React.createElement(
+    "ul",
+    { style: styles.list },
+    ...items.map((reservation) => React.createElement(
+      "li",
+      { key: `${reservation.id}:${reservation.queueAction || "schedule"}`, style: styles.listItem },
+      React.createElement("strong", null, `${reservationUser(reservation)} · ${reservationTypeLabel(String(reservation.type || ""))}`),
+      React.createElement(
+        "span",
+        { style: styles.caption },
+        `${reservation.fields?.reservedDate || "-"} · ${queueActionLabel(reservation) ? `${queueActionLabel(reservation)} ` : ""}${reservationTime(reservation)}`
+      )
+    ))
+  );
+}
+
+function metric(label: string, value: React.ReactNode, detail = "") {
+  return React.createElement(
+    "div",
+    { key: label, className: "admin-metric-card" },
+    React.createElement("span", { style: styles.badge }, label),
+    React.createElement("strong", null, value),
+    detail ? React.createElement("small", { style: styles.badge }, detail) : null
   );
 }
 
@@ -96,7 +190,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       caption: "학생 승인으로 이동",
       badge: "학생 승인",
       tone: "blue",
-      targetView: "users"
+      targetView: "users",
+      filters: { status: "approval_pending", q: "", page: 1 }
     },
     {
       label: "대여완료",
@@ -104,7 +199,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       caption: "기자재 대여 상태",
       badge: "예약 관리",
       tone: "amber",
-      targetView: "reservations"
+      targetView: "reservations",
+      filters: { type: "equipment", status: "checked_out", q: "", page: 1 }
     },
     {
       label: "반납완료",
@@ -112,7 +208,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       caption: "기자재 반납 상태",
       badge: "예약 관리",
       tone: "green",
-      targetView: "reservations"
+      targetView: "reservations",
+      filters: { type: "equipment", status: "returned", q: "", page: 1 }
     },
     {
       label: "대여취소",
@@ -120,7 +217,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       caption: "기자재 취소 상태",
       badge: "예약 관리",
       tone: "neutral",
-      targetView: "reservations"
+      targetView: "reservations",
+      filters: { type: "equipment", status: "cancelled", q: "", page: 1 }
     },
     {
       label: "보고서 확인 필요",
@@ -128,9 +226,17 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       caption: "보고서로 이동",
       badge: "보고서",
       tone: "red",
-      targetView: "reports"
+      targetView: "reports",
+      filters: { q: "", semester: "all", page: 1 }
     }
   ];
+
+  const todaySchedule = Array.isArray(summary.todaySchedule) ? summary.todaySchedule : [];
+  const checkoutReturnQueue = Array.isArray(summary.checkoutReturnQueue) ? summary.checkoutReturnQueue : [];
+  const metrics = summary.metrics || {};
+  const typeCounts = metrics.typeCounts || {};
+  const popularEquipment = Array.isArray(metrics.popularEquipment) ? metrics.popularEquipment : [];
+  const typeTotal = Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0);
 
   return React.createElement(
     "section",
@@ -139,7 +245,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       GjuCard,
       {
         title: "오늘 처리할 일",
-        eyebrow: "React Admin"
+        surface: "workspace"
       },
       React.createElement(
         "p",
@@ -147,6 +253,69 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
         "학생 승인과 기자재 3상태, 보고서 확인 대상을 빠르게 확인합니다."
       )
     ),
-    React.createElement("section", { style: styles.grid }, cards.map((card) => renderActionCard(card, actions)))
+    React.createElement("section", { style: styles.grid }, cards.map((card) => renderActionCard(card, actions))),
+    React.createElement(
+      GjuCard,
+      { title: "운영 큐" },
+      React.createElement(
+        "div",
+        { style: styles.grid },
+        React.createElement(
+          "section",
+          null,
+          React.createElement("h3", null, "오늘 예약 타임라인"),
+          queueList(todaySchedule, "오늘 예약 상세 데이터가 없습니다.")
+        ),
+        React.createElement(
+          "section",
+          null,
+          React.createElement("h3", null, "대여/반납 큐"),
+          queueList(checkoutReturnQueue, "오늘 처리할 대여/반납 항목이 없습니다.")
+        )
+      )
+    ),
+    React.createElement(
+      GjuCard,
+      { title: "운영 지표" },
+      React.createElement(
+        "div",
+        { style: styles.metrics },
+        metric("이번 주 예약 수", Number(metrics.weekReservations || 0)),
+        metric("기자재 가용률", `${Number(metrics.equipmentAvailableRate || 0)}%`, `가능 ${Number(metrics.availableEquipment || 0)} / 전체 ${Number(metrics.activeEquipment || 0)}`),
+        metric("수리중 기자재", Number(metrics.repairEquipment || 0)),
+        metric("취소/반려 예약", Number(metrics.cancelledReservations || 0)),
+        metric("보고서 확인 큐", Number(metrics.reportQueueCount || 0)),
+        metric("모집중 특강", Number(metrics.openLectures || 0))
+      ),
+      React.createElement(
+        "div",
+        { className: "admin-dashboard-insight-grid" },
+        React.createElement(
+          "section",
+          { className: "admin-insight-panel" },
+          React.createElement("h3", null, "예약 유형별 비중"),
+          ...Object.entries(typeCounts).map(([type, count]) => React.createElement(
+            "p",
+            { key: type, style: styles.caption },
+            `${reservationTypeLabel(type)} ${typeTotal ? Math.round((Number(count) / typeTotal) * 100) : 0}%`
+          ))
+        ),
+        React.createElement(
+          "section",
+          { className: "admin-insight-panel" },
+          React.createElement("h3", null, "인기 기자재 Top 5"),
+          popularEquipment.length
+            ? React.createElement("ul", null, ...popularEquipment.map((item) => React.createElement("li", { key: item.name, style: styles.caption }, `${item.name} ${item.count}회`)))
+            : React.createElement("p", { style: styles.caption }, "선택 기자재 데이터 없음")
+        ),
+        React.createElement(
+          "section",
+          { className: "admin-insight-panel" },
+          React.createElement("h3", null, "공지/특강 상태"),
+          React.createElement("p", { style: styles.caption }, `${Number(metrics.openLectures || 0)}개 특강 모집중`),
+          React.createElement("p", { style: styles.caption }, metrics.latestNotice?.title || "최근 공지 없음")
+        )
+      )
+    )
   );
 }

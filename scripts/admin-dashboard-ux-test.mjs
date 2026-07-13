@@ -268,7 +268,9 @@ assert(viewsSource.includes("export function adminContent"), "legacy Admin conte
 assert(rendererSource.includes("react-admin-root"), "renderer must include React Admin root");
 assert(rendererSource.includes("window.GJUReactAdmin?.mount"), "renderer must mount React Admin when available");
 assert(rendererSource.includes("window.GJUReactAdmin?.unmount"), "renderer must unmount React Admin when leaving Admin");
-assert(rendererSource.includes("legacyRenderAdminContent"), "renderer must pass legacy Admin content fallback to React");
+assert(!rendererSource.includes("legacyRenderAdminContent"), "renderer must not pass legacy Admin HTML into React");
+assert(!rendererSource.includes("adminContent"), "React renderer path must not calculate legacy Admin content");
+assert(rendererSource.includes("adminShell()"), "renderer must preserve the legacy Admin shell fallback");
 assert(rendererSource.includes("state.reactAdminEnabled !== false"), "renderer must guard React Admin with state.reactAdminEnabled");
 assert(lecturesView.includes("admin-lecture-status-chip"), "admin lecture cards must render compact status chip");
 assert(lecturesView.includes("admin-lecture-status-dot"), "admin lecture status must use a small dot indicator");
@@ -292,20 +294,26 @@ assertIconOnlyAction(equipmentView, "data-equipment-bulk-remove", "선택 기자
 assertIconOnlyAction(equipmentView, 'data-equipment-remove-admin="e1"', "기자재 제거", "equipment row remove");
 assertIconOnlyAction(usersView, 'data-user-delete="user1"', "삭제", "student approval user delete");
 assertIconOnlyAction(logsView, 'data-session-revoke="session1"', "로그아웃", "session revoke");
-assert(reactUsersSource.includes("data-user-delete"), "React users screen must keep delegated delete contract");
-assert(reactUsersSource.includes("data-user-sort"), "React users screen must keep delegated sort contract");
-assert(reactUsersSource.includes("data-admin-users-page"), "React users screen must keep delegated pagination contract");
-assert(reactUsersSource.includes("data-user-warn"), "React users screen must keep delegated warning memo add contract");
-assert(reactUsersSource.includes("data-user-warn-reset"), "React users screen must keep delegated warning memo reset contract");
+for (const token of ["data-user-delete", "data-user-sort", "data-admin-users-page", "data-user-warn", "data-user-warn-reset"]) {
+  assert(!reactUsersSource.includes(token), `React users screen must remove delegated interaction contract ${token}`);
+}
+assert(reactUsersSource.includes("actions: ReactAdminActions"), "React users screen must accept typed actions");
+assert(reactUsersSource.includes("onClick"), "React users screen must use React click handlers");
+assert(reactUsersSource.includes("onChange"), "React users screen must use React change handlers");
 assert(reactUsersSource.includes("warningRecords"), "React users screen must include warning memo records in its rendering/search path");
-assert(reactEquipmentSource.includes("data-equipment-remove-admin"), "React equipment screen must keep delegated remove contract");
-assert(reactEquipmentSource.includes('data-equipment-bulk-status="문의"'), "React equipment screen must expose inquiry status");
-assert(reactEquipmentSource.includes("data-admin-equipment-panel-tab"), "React equipment screen must keep panel-tab controls in the React manage view");
-assert(reactEquipmentSource.includes("LegacyAdminPanel"), "React equipment screen must route unconverted workflows through the legacy panel bridge");
+for (const token of ["data-equipment-remove-admin", "data-equipment-bulk-status", "data-admin-equipment-panel-tab"]) {
+  assert(!reactEquipmentSource.includes(token), `React equipment screen must remove delegated interaction contract ${token}`);
+}
+assert(!reactEquipmentSource.includes("LegacyAdminPanel"), "React equipment screen must remain React-owned");
+assert(reactEquipmentSource.includes("onClick"), "React equipment screen must use React click handlers");
+assert(reactEquipmentSource.includes("onChange"), "React equipment screen must use React change handlers");
 assert(reactEquipmentSource.includes("item.brand"), "React equipment search must include brand");
 assert(reactEquipmentSource.includes("item.model"), "React equipment search must include model");
 assert(reactEquipmentSource.includes('"예약가능"'), "React equipment search must include the reservable token");
-assert(reactLogsSource.includes("data-session-revoke"), "React logs screen must keep delegated revoke contract");
+assert(!reactLogsSource.includes("data-session-revoke"), "React logs screen must remove delegated revoke contract");
+assert(reactLogsSource.includes("actions: ReactAdminActions"), "React logs screen must accept typed actions");
+assert(reactLogsSource.includes("onClick"), "React logs screen must use React click handlers");
+assert(reactLogsSource.includes("onChange"), "React logs screen must use React change handlers");
 assert(reactLogsSource.includes("actor?.name"), "React logs screen must render actor object names");
 assert(reactLogsSource.includes("actor?.studentId"), "React logs screen must render actor object student ids");
 assert(reactLogsSource.includes("actor?.email"), "React logs search/render must include actor email");
@@ -387,7 +395,7 @@ assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefres
 assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();\n  restoreScrollState(scrollState);'), "admin refresh busy render must restore the pre-refresh scroll snapshot");
 assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();\n    restoreScrollState(scrollState);'), "admin refresh clear render must restore the pre-refresh scroll snapshot");
 assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
-assert(adminRefreshSource.includes("await runRefresh(scrollState);"), "React Admin refresh must reuse the legacy runRefresh helper");
+assert(!adminRefreshSource.includes("gju-react-admin-refresh"), "React Admin refresh must not depend on a document event listener");
 assert(!adminRefreshSource.includes("includeMe: true"), "React Admin refresh must not bypass legacy refresh semantics with a special includeMe path");
 assert(!adminRefreshSource.includes('document.addEventListener("pointermove"'), "Admin refresh must not bind pointermove scroll gestures");
 assert(!adminRefreshSource.includes('document.addEventListener("pointerup"'), "Admin refresh must not bind pointerup scroll gestures");
@@ -411,7 +419,7 @@ assert(!adminEventSource.includes('toast("선택된 기자재가 없습니다.")
 assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개의 상태를 변경했습니다.`);'), "bulk equipment status toast must not be plain");
 assert(!adminEventSource.includes('toast("기자재를 제거했습니다.");'), "equipment removal toast must not be plain");
 assert(!adminEventSource.includes('toast(`선택 기자재 ${updated.length}개를 제거했습니다.`);'), "bulk equipment removal toast must not be plain");
-assert(formsSource.includes('toast(error.message, { preserveScroll: true })'), "form error toasts must preserve scroll");
+assert(formsSource.includes('toast(error.message, { preserveScroll: true, tone: "error" })'), "form error toasts must preserve scroll and announce an error tone");
 assert(!formsSource.includes('toast(error.message);'), "form error toasts must not use plain toast");
 
 {
@@ -481,10 +489,10 @@ assert(searchSource.includes('"adminNoticeSearch"') && searchSource.includes("ad
 assert(searchSource.includes('document.addEventListener("focusout", (event) => {'), "server-backed search focusout handler must not block the following click event");
 assert(searchSource.includes('setTimeout(() => {\n      if (searchRenderInProgress) return;\n      commitSearchInput(target, binding, { restoreFocus: false });'), "search focusout commit must be deferred until after the current click sequence");
 assert(searchSource.includes('resetAdminPage("adminLecturesPage")'), "lecture server-backed search must reset lecture paging");
-assert(dataSource.includes("function adminNoticesPath()"), "notice admin data must load through a dedicated path helper");
-assert(dataSource.includes("q: state.adminNoticeSearch"), "notice admin data path must forward the notice search query");
-assert(dataSource.includes("api(adminNoticesPath())"), "notice admin data load must use the query-aware notices path");
-assert(dataSource.includes("adminNotices: pagedItems(notices)"), "notice admin data must support paged notice payloads");
+assert(dataSource.includes("function adminNoticesPath"), "notice admin data must load through a dedicated path helper");
+assert(dataSource.includes('q: filterValue(filters, "q", state.adminNoticeSearch)'), "notice admin data path must forward the notice search query");
+assert(dataSource.includes("loadAdminView"), "Admin navigation and refresh must use view-scoped data loading");
+assert(dataSource.includes("adminNotices"), "notice admin data must support paged notice payloads");
 assert(dataSource.includes("collectionTotal"), "admin list page metadata must preserve unfiltered collection totals for guarded full delete");
 assert(adminEventSource.includes("effectiveBulkFilters"), "bulk delete click handler must reject all-equivalent filtered deletes before API calls");
 assert(adminEventSource.includes("현재 필터 결과가 전체 데이터와 같습니다"), "bulk delete click handler must stop filtered deletes that equal full collection");

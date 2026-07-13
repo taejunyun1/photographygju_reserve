@@ -22,7 +22,11 @@ export async function api(path, options = {}) {
       body: requestOptions.body && typeof requestOptions.body !== "string" ? JSON.stringify(requestOptions.body) : requestOptions.body
     });
     const payload = await response.json().catch(() => ({ ok: false, error: "서버 응답을 읽을 수 없습니다." }));
-    if (!payload.ok) throw new Error(payload.error || "요청 실패");
+    if (!payload.ok) {
+      const error = new Error(payload.error || "요청 실패");
+      error.status = response.status;
+      throw error;
+    }
     return payload.data;
   } finally {
     if (loading) setLoading(-1);

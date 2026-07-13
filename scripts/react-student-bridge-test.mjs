@@ -1,0 +1,149 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const { createStudentReactActions, studentReactSnapshot } = await import("../public/js/react-student-adapter.js");
+
+function baseState() {
+  return {
+    token: "token",
+    user: { id: "student-1", role: "student", name: "학생", email: "student@example.com", approvalStatus: "approved" },
+    bootstrap: { settings: {}, notices: [], equipment: [], darkroomChemicals: [], reservations: [] },
+    view: "home",
+    reservationType: "",
+    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
+    selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
+    selectedEquipmentItemIds: [],
+    selectedStudioSlots: [],
+    selectedDarkroomSlots: [],
+    selectedDarkroomProcessTypes: [],
+    selectedDarkroomChemicals: {},
+    selectedPrintTypes: [],
+    selectedPrintPapers: [],
+    selectedPrintSizes: [],
+    myReservations: [],
+    lectures: [],
+    nativeNotifications: { supported: true, enabled: false, permission: "prompt", pendingCount: 0 }
+  };
+}
+
+function harness(overrides = {}) {
+  const state = baseState();
+  const calls = [];
+  let apiImplementation = async (path, options = {}) => ({ id: "created-1", type: options.body?.type, fields: options.body?.fields || {} });
+  const dependencies = {
+    state,
+    api: (...args) => {
+      calls.push(["api", ...args]);
+      return apiImplementation(...args);
+    },
+    render: () => calls.push(["render"]),
+    toast: (message, options) => calls.push(["toast", message, options]),
+    loadBootstrap: async () => calls.push(["loadBootstrap"]),
+    loadMyReservations: async () => calls.push(["loadMyReservations"]),
+    loadLectures: async () => calls.push(["loadLectures"]),
+    notifyNativeReservationCreated: async (reservation) => calls.push(["notifyCreated", reservation.id]),
+    clearNativeNotificationAccount: async (userId) => calls.push(["clearNotifications", userId]),
+    enableNativeReservationNotifications: async () => ({ enabled: true }),
+    disableNativeReservationNotifications: async () => ({ enabled: false }),
+    syncNativeReservationNotifications: async () => ({ scheduled: 2 }),
+    handleNativeNotificationResume: async () => calls.push(["notificationResume"]),
+    logout: async () => calls.push(["logout"]),
+    confirm: () => true,
+    ...overrides
+  };
+  if (overrides.apiImplementation) apiImplementation = overrides.apiImplementation;
+  return { state, calls, actions: createStudentReactActions(dependencies) };
+}
+
+const snapshotState = baseState();
+snapshotState.reservationType = "studio";
+snapshotState.selectedDates.studio = "2099-01-05";
+const snapshot = studentReactSnapshot(snapshotState, "2099-01-01");
+assert.equal(snapshot.today, "2099-01-01");
+assert.equal(snapshot.reservationType, "studio");
+assert.equal(snapshot.selectedDates.studio, "2099-01-05");
+assert.equal(snapshot.user.name, "학생");
+
+for (const type of ["equipment", "studio", "darkroom", "print"]) {
+  const test = harness();
+  const draft = { type, fields: { reservedDate: "2099-01-05", phone: "01012345678" } };
+  await test.actions.submitReservation(draft);
+  const request = test.calls.find(([kind]) => kind === "api");
+  assert.equal(request[1], "/api/reservations");
+  assert.deepEqual(request[2], { method: "POST", body: draft });
+  assert.equal(test.state.view, "mine");
+  assert.equal(test.state.myReservations[0].type, type);
+  assert(test.calls.some(([kind]) => kind === "notifyCreated"), `${type} should trigger the native confirmation bridge`);
+
+  const rejected = harness({ apiImplementation: async () => { throw new Error(`${type}-rejected`); } });
+  await assert.rejects(() => rejected.actions.submitReservation(draft), new RegExp(`${type}-rejected`));
+  assert.equal(rejected.state.view, "home", `${type} rejection must preserve the current view`);
+  assert.equal(rejected.state.myReservations.length, 0, `${type} rejection must not append optimistic data`);
+}
+
+const navigation = harness();
+await navigation.actions.setView("mine");
+await navigation.actions.setView("reports");
+await navigation.actions.setView("lectures");
+assert.equal(navigation.calls.filter(([kind]) => kind === "loadMyReservations").length, 2);
+assert.equal(navigation.calls.filter(([kind]) => kind === "loadLectures").length, 1);
+
+const reservationNavigation = harness();
+reservationNavigation.state.reservationType = "studio";
+await reservationNavigation.actions.setView("reserve");
+assert.equal(reservationNavigation.state.view, "reserve");
+assert.equal(reservationNavigation.state.reservationType, "", "returning to reservation types must close the active form");
+
+const reportRefreshFailure = harness({
+  loadBootstrap: async () => { throw new Error("refresh failed"); },
+  apiImplementation: async () => ({ id: "report-1" })
+});
+reportRefreshFailure.state.activeReportReservationId = "studio-1";
+reportRefreshFailure.state.myReservations = [{ id: "studio-1", type: "studio", fields: { reportStatus: "required" } }];
+await reportRefreshFailure.actions.submitReport("studio-1", { actualTime: "10:00-11:00", participants: "2", cleanupConfirmed: true });
+assert.equal(reportRefreshFailure.state.activeReportReservationId, "", "a saved report must close even when the follow-up refresh fails");
+assert.equal(reportRefreshFailure.state.myReservations[0].fields.reportStatus, "submitted", "a saved report must update the local reservation immediately");
+assert(reportRefreshFailure.calls.some(([kind, message]) => kind === "toast" && message === "스튜디오 보고서가 제출되었습니다."));
+assert(reportRefreshFailure.calls.some(([kind, message]) => kind === "toast" && /최신 목록/.test(message)), "refresh failure must be reported separately from mutation success");
+
+const lectureRefreshFailure = harness({
+  loadBootstrap: async () => { throw new Error("refresh failed"); },
+  apiImplementation: async (_path, options) => ({
+    id: "lecture-1",
+    title: "테스트 특강",
+    applied: options.method === "POST",
+    applicationCount: options.method === "POST" ? 1 : 0
+  })
+});
+lectureRefreshFailure.state.lectures = [{ id: "lecture-1", title: "테스트 특강", applied: false, applicationCount: 0 }];
+await lectureRefreshFailure.actions.applyLecture("lecture-1");
+assert.equal(lectureRefreshFailure.state.lectures[0].applied, true, "successful lecture application must update local state before refresh");
+assert(lectureRefreshFailure.calls.some(([kind, message]) => kind === "toast" && message === "특강 신청이 완료되었습니다."));
+
+const password = harness({
+  api: async (path, options) => {
+    password.calls.push(["api", path, options]);
+    return {};
+  }
+});
+await password.actions.changePassword({ currentPassword: "old-password", newPassword: "new-password" });
+assert(password.calls.some(([kind, userId]) => kind === "clearNotifications" && userId === "student-1"));
+assert.equal(password.state.user, null);
+assert.equal(password.state.token, "");
+
+const studentRuntimeSource = fs.readFileSync("src/react/app/student-main.tsx", "utf8");
+const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
+const indexSource = fs.readFileSync("public/index.html", "utf8");
+const configSource = fs.readFileSync("public/config.js", "utf8");
+const stateSource = fs.readFileSync("public/js/state.js", "utf8");
+for (const method of ["mount", "update", "unmount"]) {
+  assert(studentRuntimeSource.includes(method), `student browser runtime must expose ${method}`);
+}
+assert(rendererSource.includes("window.GJUReactStudent?.mount"), "renderer must mount the Student React island");
+assert(rendererSource.includes("studentReactSnapshot"), "renderer must pass a typed student snapshot instead of mutable legacy state");
+assert(indexSource.includes("react-student.generated.js"), "index must load the generated Student React bundle");
+assert(indexSource.includes("react-student.generated.css"), "index must load Student React styles");
+assert(configSource.includes("GJU_REACT_STUDENT_ENABLED"), "config must expose the Student React runtime guard");
+assert(stateSource.includes("reactStudentEnabled"), "legacy state must default the Student React guard on unless explicitly disabled");
+
+console.log("Student React bridge checks passed.");

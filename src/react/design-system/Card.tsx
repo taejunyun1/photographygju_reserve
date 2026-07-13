@@ -8,12 +8,14 @@ export type GjuCardProps = React.HTMLAttributes<HTMLElement> & {
   title?: React.ReactNode;
   eyebrow?: React.ReactNode;
   actions?: React.ReactNode;
+  surface?: "card" | "workspace";
 };
 
 export function GjuCard({
   title,
   eyebrow,
   actions,
+  surface = "card",
   className,
   children,
   ...props
@@ -25,7 +27,8 @@ export function GjuCard({
     {
       ...props,
       padding: 0,
-      className: cx("gju-card", motionClass.panel, className)
+      className: cx("gju-card", surface === "card" && motionClass.panel, className),
+      "data-surface": surface
     },
     hasHeader
       ? React.createElement(
