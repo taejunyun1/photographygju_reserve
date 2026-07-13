@@ -109,21 +109,19 @@ export function GjuIconButton({
   ...props
 }: GjuIconButtonProps) {
   const busyState = props["aria-busy"];
-  const button = React.createElement(
-    AstryxIconButton,
-    {
-      ...props,
-      type,
-      variant: tone === "danger" ? "destructive" : "ghost",
-      isDisabled: disabled,
-      className: cx("gju-icon-button", className),
-      "data-tone": tone,
-      "aria-label": label,
-      label,
-      icon: React.createElement(GjuIcon, { name: icon })
-    },
-    null
-  );
+  const iconButtonProps = {
+    ...props,
+    type,
+    variant: tone === "danger" ? "destructive" as const : "ghost" as const,
+    isDisabled: disabled,
+    className: cx("gju-icon-button", className),
+    "data-tone": tone,
+    "aria-label": label,
+    title: props.title || label,
+    label,
+    icon: React.createElement(GjuIcon, { name: icon })
+  };
+  const button = React.createElement(AstryxIconButton, iconButtonProps, null);
 
   if (!busyState) {
     return button;

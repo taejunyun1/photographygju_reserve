@@ -15,6 +15,7 @@ const renderEntry = await build({
       export { GjuEmptyState } from "../src/react/design-system/EmptyState.tsx";
       export { GjuStatusBadge } from "../src/react/design-system/StatusBadge.tsx";
       export { GjuTable } from "../src/react/design-system/Table.tsx";
+      export { GjuTabs } from "../src/react/design-system/Tabs.tsx";
       export { GjuToast } from "../src/react/design-system/Toast.tsx";
       export { AdminApp } from "../src/react/admin/AdminApp.tsx";
       export { AdminDashboard } from "../src/react/admin/screens/AdminDashboard.tsx";
@@ -131,6 +132,7 @@ const iconButton = renderToStaticMarkup(
   React.createElement(renderModule.GjuIconButton, { label: "삭제", icon: "trash", tone: "danger" })
 );
 assert(iconButton.includes('aria-label="삭제"'), "icon button must keep accessible label");
+assert(iconButton.includes('title="삭제"'), "icon button must expose its label as a native tooltip");
 assert(!iconButton.includes(">삭제<"), "icon button must not render visible label text");
 assert(iconButton.includes("gju-icon-button"), "icon button must use shared class");
 assert(iconButton.includes("astryx-button"), "icon button wrapper must adapt Astryx IconButton");
@@ -141,6 +143,25 @@ const card = renderToStaticMarkup(
 assert(card.includes("테스트 카드"), "card must render title");
 assert(card.includes("gju-card"), "card must use shared class");
 assert(card.includes("astryx-card"), "card wrapper must adapt Astryx Card");
+
+const workspaceCard = renderToStaticMarkup(
+  React.createElement(renderModule.GjuCard, { title: "학생 목록", surface: "workspace" }, "내용")
+);
+assert(workspaceCard.includes('data-surface="workspace"'), "workspace card must expose its flat surface contract");
+
+const tabs = renderToStaticMarkup(
+  React.createElement(renderModule.GjuTabs, {
+    id: "status-tabs",
+    activeKey: "pending",
+    items: [
+      { key: "pending", label: "승인 대기" },
+      { key: "approved", label: "승인 완료" }
+    ]
+  })
+);
+assert(tabs.includes('role="tablist"'), "tabs must expose a tablist role");
+assert.equal((tabs.match(/role="tab"/g) || []).length, 2, "tabs must expose one tab role per item");
+assert(tabs.includes('data-orientation="horizontal"'), "tabs must expose its orientation for responsive styling");
 
 const badge = renderToStaticMarkup(
   React.createElement(renderModule.GjuStatusBadge, { tone: "green" }, "가능")

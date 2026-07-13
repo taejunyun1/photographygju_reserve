@@ -361,8 +361,15 @@
 .gju-icon-button {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  max-width: 40px;
+  padding: 0;
   display: inline-grid;
   place-items: center;
+  flex: 0 0 40px;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   color: var(--gju-color-text);
   background: var(--gju-color-surface);
@@ -371,6 +378,15 @@
 
 .gju-icon-button__busy {
   display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+}
+
+.gju-icon-button svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .gju-icon-button[data-tone="danger"] {
@@ -407,6 +423,21 @@
   padding: 20px;
 }
 
+.gju-card[data-surface="workspace"] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gju-card[data-surface="workspace"] .gju-card__header {
+  padding: 0;
+}
+
+.gju-card[data-surface="workspace"] .gju-card__body {
+  padding: 16px 0 0;
+}
+
 .gju-card__eyebrow {
   margin-bottom: 4px;
   font-size: 12px;
@@ -422,17 +453,26 @@
 }
 
 .gju-tabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   padding: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   border-radius: 8px;
   background: var(--gju-color-surface);
   border: 1px solid var(--gju-color-border);
 }
 
 .gju-tabs__tab {
+  flex: 0 0 auto;
   min-height: 36px;
   padding: 0 12px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -890,6 +930,19 @@
     display: grid;
     gap: 12px;
     padding: 16px 18px 18px;
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .gju-card__header {
+    padding: 0;
+  }
+
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .gju-card__body {
+    padding: 12px 0 0;
   }
 
   .gju-app-shell__content .list-control-panel {

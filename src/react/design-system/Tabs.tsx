@@ -72,7 +72,8 @@ export function GjuTabs({
       role: "tablist",
       id: tablistId,
       "aria-label": ariaLabel,
-      "aria-orientation": orientation
+      "aria-orientation": orientation,
+      "data-orientation": orientation
     },
     ...items.map((item) =>
       React.createElement(
