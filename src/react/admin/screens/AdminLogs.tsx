@@ -3,7 +3,7 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
-  GjuIcon,
+  GjuIconButton,
   GjuTable,
   GjuTabs
 } from "../../design-system";
@@ -267,14 +267,6 @@ function filteredSortedLogs(logs: AdminLogRecord[], filter: string, direction: s
     });
 }
 
-function renderLogOutIcon() {
-  return (
-    <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
-      <GjuIcon name="logOut" className="button-icon icon" />
-    </span>
-  );
-}
-
 export function AdminLogs({ state, actions }: AdminLogsProps) {
   const [sessionPage, setSessionPage] = React.useState(1);
   const [logPage, setLogPage] = React.useState(1);
@@ -352,15 +344,12 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
                     <td>{formatDateTime(session.createdAt)}</td>
                     <td>{formatDateTime(session.expiresAt)}</td>
                     <td>
-                      <button
-                        className="button danger compact icon-only-action"
-                        type="button"
+                      <GjuIconButton
+                        label="로그아웃"
+                        icon="logOut"
+                        tone="danger"
                         onClick={() => runAdminAction(() => actions.revokeSession(session.id))}
-                        aria-label="로그아웃"
-                        title="로그아웃"
-                      >
-                        {renderLogOutIcon()}
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))

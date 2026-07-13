@@ -180,48 +180,56 @@
   display: none;
 }
 
-.gju-app-shell__content .status-button[data-tone="green"] {
+.gju-app-shell__content .status-button[data-tone="green"],
+.gju-app-shell__content .status-button[data-status-tone="green"] {
   border-color: rgba(31, 122, 76, 0.24);
   color: var(--gju-color-success);
 }
 
-.gju-app-shell__content .status-button[data-tone="amber"] {
+.gju-app-shell__content .status-button[data-tone="amber"],
+.gju-app-shell__content .status-button[data-status-tone="amber"] {
   border-color: rgba(154, 95, 0, 0.24);
   color: var(--gju-color-warning);
 }
 
-.gju-app-shell__content .status-button[data-tone="red"] {
+.gju-app-shell__content .status-button[data-tone="red"],
+.gju-app-shell__content .status-button[data-status-tone="red"] {
   border-color: rgba(201, 63, 67, 0.26);
   color: var(--gju-color-danger);
 }
 
-.gju-app-shell__content .status-button[data-tone="blue"] {
+.gju-app-shell__content .status-button[data-tone="blue"],
+.gju-app-shell__content .status-button[data-status-tone="blue"] {
   border-color: rgba(21, 84, 183, 0.24);
   color: var(--gju-color-info);
 }
 
-.gju-app-shell__content .status-button[data-tone="green"].active {
+.gju-app-shell__content .status-button[data-tone="green"].active,
+.gju-app-shell__content .status-button[data-status-tone="green"].active {
   border-color: rgba(31, 122, 76, 0.42);
   background: rgba(34, 197, 94, 0.16);
   color: var(--gju-color-success);
   box-shadow: inset 0 0 0 1px rgba(31, 122, 76, 0.22);
 }
 
-.gju-app-shell__content .status-button[data-tone="amber"].active {
+.gju-app-shell__content .status-button[data-tone="amber"].active,
+.gju-app-shell__content .status-button[data-status-tone="amber"].active {
   border-color: rgba(154, 95, 0, 0.42);
   background: rgba(245, 158, 11, 0.17);
   color: var(--gju-color-warning);
   box-shadow: inset 0 0 0 1px rgba(154, 95, 0, 0.2);
 }
 
-.gju-app-shell__content .status-button[data-tone="red"].active {
+.gju-app-shell__content .status-button[data-tone="red"].active,
+.gju-app-shell__content .status-button[data-status-tone="red"].active {
   border-color: rgba(201, 63, 67, 0.44);
   background: rgba(255, 59, 79, 0.14);
   color: var(--gju-color-danger);
   box-shadow: inset 0 0 0 1px rgba(201, 63, 67, 0.2);
 }
 
-.gju-app-shell__content .status-button[data-tone="blue"].active {
+.gju-app-shell__content .status-button[data-tone="blue"].active,
+.gju-app-shell__content .status-button[data-status-tone="blue"].active {
   border-color: rgba(21, 84, 183, 0.42);
   background: rgba(37, 99, 235, 0.14);
   color: var(--gju-color-info);

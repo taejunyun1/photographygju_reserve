@@ -410,7 +410,7 @@ const mobileEquipmentSpecificStatusButtonsRule = cssRule(
   mobileMediaStart
 );
 assert(mobileEquipmentSpecificStatusButtonsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"), "Mobile equipment status actions must override the older two-column table-card specificity");
-assert(adminEquipmentSource.includes("data-tone={equipmentStatusTone(status)}"), "React equipment status actions must expose the mapped color tone on data-tone");
+assert(adminEquipmentSource.includes("data-status-tone={equipmentStatusTone(status)}"), "React equipment icon actions must expose the mapped status color independently from their button tone");
 for (const token of ['가능: "green"', '수리중: "amber"', '파손: "red"', '문의: "blue"']) {
   assert(adminEquipmentSource.includes(token), `React equipment status actions must map status tone ${token}`);
 }

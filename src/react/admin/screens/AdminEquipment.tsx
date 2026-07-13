@@ -3,8 +3,9 @@ import React from "react";
 import {
   GjuCard,
   GjuEmptyState,
-  GjuIcon,
-  GjuTable
+  GjuIconButton,
+  GjuTable,
+  type GjuIconName
 } from "../../design-system";
 import type { AdminEquipmentStatus, LegacyState, ReactAdminActions } from "../../platform/types";
 import { fieldValue, numberValue, runAdminAction, stopSubmit } from "./adminScreenUtils";
@@ -94,14 +95,6 @@ function selectedEquipmentSet(state: LegacyState) {
   return new Set(ids.map((value) => String(value)));
 }
 
-function renderTrashIcon() {
-  return (
-    <span aria-hidden="true" style={{ pointerEvents: "none", display: "inline-flex" }}>
-      <GjuIcon name="trash" className="button-icon icon" />
-    </span>
-  );
-}
-
 function equipmentStatusTone(status: "가능" | "수리중" | "파손" | "문의") {
   return {
     가능: "green",
@@ -109,6 +102,22 @@ function equipmentStatusTone(status: "가능" | "수리중" | "파손" | "문의
     파손: "red",
     문의: "blue"
   }[status];
+}
+
+function equipmentStatusIcon(status: AdminEquipmentStatus): GjuIconName {
+  return {
+    가능: "check",
+    수리중: "wrench",
+    파손: "warning",
+    문의: "info"
+  }[status] as GjuIconName;
+}
+
+function equipmentStatusButtonTone(status: AdminEquipmentStatus) {
+  if (status === "가능") return "success" as const;
+  if (status === "파손") return "danger" as const;
+  if (status === "문의") return "primary" as const;
+  return "neutral" as const;
 }
 
 function renderStatusButton(
@@ -121,16 +130,16 @@ function renderStatusButton(
     : item.status === status && (status !== "가능" || !isInquiry(item));
 
   return (
-    <button
+    <GjuIconButton
       key={status}
       className={`status-button ${active ? "active" : ""}`}
-      type="button"
-      data-tone={equipmentStatusTone(status)}
+      label={`${status} 상태로 변경`}
+      icon={equipmentStatusIcon(status)}
+      tone={equipmentStatusButtonTone(status)}
+      data-status-tone={equipmentStatusTone(status)}
       aria-pressed={active ? "true" : "false"}
       onClick={() => onStatus(item.id, status)}
-    >
-      {status}
-    </button>
+    />
   );
 }
 
@@ -191,15 +200,12 @@ function renderEquipmentMobileCard(
           <span className="admin-equipment-mobile-reservable">
             {renderReservableTag(item)}
           </span>
-          <button
-            className="button danger compact icon-only-action"
-            type="button"
+          <GjuIconButton
+            label="기자재 제거"
+            icon="trash"
+            tone="danger"
             onClick={() => onRemove(item.id)}
-            aria-label="기자재 제거"
-            title="기자재 제거"
-          >
-            {renderTrashIcon()}
-          </button>
+          />
         </div>
       </div>
       {item.notes ? <p className="admin-equipment-mobile-note">{item.notes}</p> : null}
@@ -523,28 +529,25 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
             {selected.size}개 선택
           </span>
           <div className="bulk-actions" aria-label="선택 기자재 상태 변경">
-            <button className="button compact status-button" type="button" data-tone="green" disabled={!selected.size} onClick={() => runAdminAction(() => actions.updateEquipmentStatus([...selected], "가능"))}>
-              가능
-            </button>
-            <button className="button compact status-button" type="button" data-tone="amber" disabled={!selected.size} onClick={() => runAdminAction(() => actions.updateEquipmentStatus([...selected], "수리중"))}>
-              수리중
-            </button>
-            <button className="button compact status-button" type="button" data-tone="red" disabled={!selected.size} onClick={() => runAdminAction(() => actions.updateEquipmentStatus([...selected], "파손"))}>
-              파손
-            </button>
-            <button className="button compact status-button" type="button" data-tone="blue" disabled={!selected.size} onClick={() => runAdminAction(() => actions.updateEquipmentStatus([...selected], "문의"))}>
-              문의
-            </button>
-            <button
-              className="button danger compact icon-only-action"
-              type="button"
+            {(["가능", "수리중", "파손", "문의"] as const).map((status) => (
+              <GjuIconButton
+                key={status}
+                className="status-button"
+                label={`선택 기자재 ${status} 상태로 변경`}
+                icon={equipmentStatusIcon(status)}
+                tone={equipmentStatusButtonTone(status)}
+                data-status-tone={equipmentStatusTone(status)}
+                disabled={!selected.size}
+                onClick={() => runAdminAction(() => actions.updateEquipmentStatus([...selected], status))}
+              />
+            ))}
+            <GjuIconButton
+              label="선택 기자재 제거"
+              icon="trash"
+              tone="danger"
               disabled={!selected.size}
               onClick={() => runAdminAction(() => actions.deleteEquipment([...selected]))}
-              aria-label="선택 기자재 제거"
-              title="선택 기자재 제거"
-            >
-              {renderTrashIcon()}
-            </button>
+            />
           </div>
         </div>
         <div className="table-wrap embedded admin-equipment-scroll-region admin-equipment-table-wrap">
@@ -597,15 +600,12 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
                     </td>
                     <td data-label="예약">{renderReservableTag(item)}</td>
                     <td data-label="작업">
-                      <button
-                        className="button danger compact icon-only-action"
-                        type="button"
+                      <GjuIconButton
+                        label="기자재 제거"
+                        icon="trash"
+                        tone="danger"
                         onClick={() => runAdminAction(() => actions.deleteEquipment([item.id]))}
-                        aria-label="기자재 제거"
-                        title="기자재 제거"
-                      >
-                        {renderTrashIcon()}
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))

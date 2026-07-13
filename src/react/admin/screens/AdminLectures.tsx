@@ -1,6 +1,6 @@
 import React from "react";
 
-import { GjuCard, GjuEmptyState, GjuStatusBadge, GjuTable, GjuTabs } from "../../design-system";
+import { GjuCard, GjuEmptyState, GjuIconButton, GjuStatusBadge, GjuTable, GjuTabs } from "../../design-system";
 import type { AdminLectureRecord, LegacyState, ReactAdminActions } from "../../platform/types";
 import {
   bulkDeleteAvailability,
@@ -85,6 +85,19 @@ function lectureApplications(lecture: AdminLectureRecord) {
 
 function deleteLecture(actions: ReactAdminActions, lecture: AdminLectureRecord) {
   runAdminAction(() => actions.deleteLecture(lecture.id, lecture.title || lecture.id));
+}
+
+function renderLectureActions(
+  lecture: AdminLectureRecord,
+  actions: ReactAdminActions,
+  onEdit: (lectureId: string) => void
+) {
+  return (
+    <div className="admin-react-action-row">
+      <GjuIconButton label="특강 수정" icon="edit" onClick={() => onEdit(lecture.id)} />
+      <GjuIconButton label="특강 삭제" icon="trash" tone="danger" onClick={() => deleteLecture(actions, lecture)} />
+    </div>
+  );
 }
 
 function bulkDeleteLectures(state: LegacyState, actions: ReactAdminActions) {
@@ -268,14 +281,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
                   </td>
                   <td>{lectureApplications(lecture)}</td>
                   <td>
-                    <div className="admin-react-action-row">
-                      <button className="button compact" type="button" onClick={() => setEditingId(lecture.id)}>
-                        수정
-                      </button>
-                      <button className="button danger compact" type="button" onClick={() => deleteLecture(actions, lecture)}>
-                        삭제
-                      </button>
-                    </div>
+                    {renderLectureActions(lecture, actions, setEditingId)}
                   </td>
                 </tr>
               )) : (
@@ -309,14 +315,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
                 {property("비고", lecture.notes || "-")}
               </dl>
               {lectureApplications(lecture)}
-              <div className="admin-react-action-row">
-                <button className="button compact" type="button" onClick={() => setEditingId(lecture.id)}>
-                  수정
-                </button>
-                <button className="button danger compact" type="button" onClick={() => deleteLecture(actions, lecture)}>
-                  삭제
-                </button>
-              </div>
+              {renderLectureActions(lecture, actions, setEditingId)}
             </article>
           )) : <GjuEmptyState title="특강이 없습니다." message="검색어와 학기 필터를 확인하세요." />}
         </div>

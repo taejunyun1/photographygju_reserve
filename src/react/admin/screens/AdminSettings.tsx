@@ -1,6 +1,6 @@
 import React from "react";
 
-import { GjuCard, GjuEmptyState } from "../../design-system";
+import { GjuCard, GjuEmptyState, GjuIconButton } from "../../design-system";
 import {
   adminSettings,
   blockedSchedules
@@ -163,15 +163,9 @@ function renderCalendar(
           <h2>{monthTitle(month)}</h2>
         </div>
         <div className="row-actions calendar-month-actions">
-          <button className="button compact" type="button" aria-label="이전 달" title="이전 달" onClick={() => onMonth(addMonths(month, -1))}>
-            ‹
-          </button>
-          <button className="button compact" type="button" aria-label="오늘" title="오늘" onClick={() => onMonth(dateKey(new Date()).slice(0, 7))}>
-            오늘
-          </button>
-          <button className="button compact" type="button" aria-label="다음 달" title="다음 달" onClick={() => onMonth(addMonths(month, 1))}>
-            ›
-          </button>
+          <GjuIconButton label="이전 달" icon="chevronLeft" onClick={() => onMonth(addMonths(month, -1))} />
+          <GjuIconButton label="오늘" icon="calendar" onClick={() => onMonth(dateKey(new Date()).slice(0, 7))} />
+          <GjuIconButton label="다음 달" icon="chevronRight" onClick={() => onMonth(addMonths(month, 1))} />
         </div>
       </div>
       <div className="calendar-weekdays">
@@ -335,9 +329,12 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
                 <span className="tag blue">{TYPE_LABEL[String(item.type || "")] || item.type || "-"}</span>
               </div>
               <p className="admin-react-body-text">{item.target || "운영 차단"}</p>
-              <button className="button danger compact" type="button" onClick={() => removeBlockedSchedule(state, actions, item)}>
-                삭제
-              </button>
+              <GjuIconButton
+                label="차단 일정 삭제"
+                icon="trash"
+                tone="danger"
+                onClick={() => removeBlockedSchedule(state, actions, item)}
+              />
             </article>
           )) : <GjuEmptyState title="등록된 차단 일정이 없습니다." message="캘린더 날짜를 눌러 일정을 빠르게 입력하세요." />}
         </div>

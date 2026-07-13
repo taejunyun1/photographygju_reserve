@@ -546,6 +546,10 @@ assert(!equipmentMarkup.includes("data-admin-equipment-panel-tab"), "React equip
 assert(equipmentMarkup.includes("문의"), "React equipment screen must include inquiry status action");
 assert(equipmentMarkup.includes("장비추가"), "React equipment manage view must keep access to the add workflow tab");
 assert(equipmentMarkup.includes('data-surface="workspace"'), "React equipment list must use the flat workspace surface");
+for (const label of ["가능 상태로 변경", "수리중 상태로 변경", "파손 상태로 변경", "문의 상태로 변경", "기자재 제거"]) {
+  assert(equipmentMarkup.includes(`aria-label="${label}"`), `React equipment ${label} action must be icon-only accessible`);
+  assert(equipmentMarkup.includes(`title="${label}"`), `React equipment ${label} action must expose a native tooltip`);
+}
 
 const equipmentBrandMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -680,6 +684,10 @@ assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke mus
 assert(logsMarkup.includes("관리자"), "React logs screen must render actor object names");
 assert(logsMarkup.includes("20260001"), "React logs screen must render actor object student ids");
 assert(!logsMarkup.includes("[object Object]"), "React logs screen must not stringify actor objects");
+assert(
+  /<button(?=[^>]*gju-icon-button)(?=[^>]*aria-label="로그아웃")[^>]*>/.test(logsMarkup),
+  "React session logout must use the shared icon button"
+);
 assert.equal(
   (logsMarkup.match(/data-surface="workspace"/g) || []).length,
   2,
@@ -887,6 +895,10 @@ for (const value of ["2026년 2학기", "담당교수", "대상 학년", "비고
   assert(lecturesMarkup.includes(value), `lecture parity must render ${value}`);
 }
 assert(lecturesMarkup.includes('data-surface="workspace"'), "React lectures list must use the flat workspace surface");
+for (const label of ["특강 수정", "특강 삭제"]) {
+  assert(lecturesMarkup.includes(`aria-label="${label}"`), `React lectures ${label} action must be icon-only accessible`);
+  assert(lecturesMarkup.includes(`title="${label}"`), `React lectures ${label} action must expose a native tooltip`);
+}
 
 const noticesMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -904,13 +916,20 @@ assert(noticesMarkup.includes("필터 결과 공지 삭제"), "notice screen mus
 assert(noticesMarkup.includes("전체 공지 삭제"), "notice screen must expose full deletion separately");
 assert(noticesMarkup.includes("2"), "notice pager must use the server page metadata");
 assert(noticesMarkup.includes('data-surface="workspace"'), "React notices list must use the flat workspace surface");
+assert(noticesMarkup.includes('aria-label="공지 삭제"'), "React notice deletion must be icon-only accessible");
+assert(noticesMarkup.includes('title="공지 삭제"'), "React notice deletion must expose a native tooltip");
 
 const settingsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
     state: {
       adminView: "settings",
       user: { role: "admin" },
-      bootstrap: { settings: { studioReportDeadlineHours: 48, blockedSchedules: [] } },
+      bootstrap: {
+        settings: {
+          studioReportDeadlineHours: 48,
+          blockedSchedules: [{ id: "block-1", type: "studio", day: "monday", from: "2026-07-01", to: "2026-07-31", start: "10:30", end: "12:00", target: "Studio A" }]
+        }
+      },
       nativeNotifications: { supported: true, enabled: true, effective: true, permission: "granted", pendingCount: 3, syncedAt: "2026-07-11T00:00:00.000Z" }
     },
     actions: noopActions
@@ -919,6 +938,14 @@ const settingsMarkup = renderToStaticMarkup(
 for (const value of ["스튜디오 보고서 제출 기한", "방학 모드", "백업 JSON", "운영 알림", "동기화", "알림 끄기"]) {
   assert(settingsMarkup.includes(value), `settings parity must render ${value}`);
 }
+for (const label of ["이전 달", "오늘", "다음 달"]) {
+  assert(settingsMarkup.includes(`aria-label="${label}"`), `settings ${label} action must be icon-only accessible`);
+  assert(settingsMarkup.includes(`title="${label}"`), `settings ${label} action must expose a native tooltip`);
+}
+assert(settingsMarkup.includes('aria-label="차단 일정 삭제"'), "settings blocked schedule deletion must be icon-only accessible");
+assert(settingsMarkup.includes('title="차단 일정 삭제"'), "settings blocked schedule deletion must expose a native tooltip");
+assert(!settingsMarkup.includes(">‹</button>"), "settings calendar must not use a text symbol for previous month");
+assert(!settingsMarkup.includes(">›</button>"), "settings calendar must not use a text symbol for next month");
 assert(!settingsMarkup.includes("예약 안내"), "settings must not claim to save an unsupported reservationNotice field");
 assert(!settingsMarkup.includes("기자재 안내"), "settings must not claim to save an unsupported equipmentNotice field");
 

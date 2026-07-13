@@ -1,6 +1,6 @@
 import React from "react";
 
-import { GjuCard, GjuEmptyState, GjuStatusBadge, GjuTable } from "../../design-system";
+import { GjuCard, GjuEmptyState, GjuIconButton, GjuStatusBadge, GjuTable } from "../../design-system";
 import type { AdminNoticeRecord, LegacyState, ReactAdminActions } from "../../platform/types";
 import {
   bulkDeleteAvailability,
@@ -35,6 +35,17 @@ function noticePayload(form: HTMLFormElement) {
 
 function bulkDeleteNotices(state: LegacyState, actions: ReactAdminActions) {
   runAdminAction(() => actions.bulkDeleteNotices({ q: state.adminNoticeSearch || "" }));
+}
+
+function renderNoticeDeleteAction(notice: AdminNoticeRecord, actions: ReactAdminActions) {
+  return (
+    <GjuIconButton
+      label="공지 삭제"
+      icon="trash"
+      tone="danger"
+      onClick={() => runAdminAction(() => actions.deleteNotice(notice.id, notice.title))}
+    />
+  );
 }
 
 export function AdminNotices({ state, actions }: AdminNoticesProps) {
@@ -144,11 +155,7 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
                     {notice.pinned ? <span className="tag blue">고정</span> : null}
                   </td>
                   <td>{formatDateTime(notice.createdAt || notice.updatedAt)}</td>
-                  <td>
-                    <button className="button danger compact" type="button" onClick={() => runAdminAction(() => actions.deleteNotice(notice.id, notice.title))}>
-                      삭제
-                    </button>
-                  </td>
+                  <td>{renderNoticeDeleteAction(notice, actions)}</td>
                 </tr>
               )) : (
                 <tr>
@@ -178,9 +185,7 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
                 {property("링크", notice.link || notice.linkUrl || "-")}
                 {property("작성일", formatDateTime(notice.createdAt || notice.updatedAt))}
               </dl>
-              <button className="button danger compact" type="button" onClick={() => runAdminAction(() => actions.deleteNotice(notice.id, notice.title))}>
-                삭제
-              </button>
+              {renderNoticeDeleteAction(notice, actions)}
             </article>
           )) : <GjuEmptyState title="공지사항이 없습니다." message="검색어를 확인하세요." />}
         </div>
