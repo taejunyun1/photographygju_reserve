@@ -198,6 +198,10 @@ for (const className of [
 ]) {
   assert(designSystemCss.includes(`.${className}`), `Design system CSS must define .${className}`);
 }
+assert(
+  designSystemCss.includes(".gju-icon-button > * {\n  grid-area: 1 / 1;\n}"),
+  "Icon button children must share one grid cell so Astryx status content cannot push the glyph off center"
+);
 for (const token of [
   "--gju-motion-duration-instant: 80ms;",
   "--gju-motion-duration-fast: 120ms;",
@@ -302,14 +306,26 @@ for (const token of ["max-width: 100%;", "overflow-x: auto;", "overscroll-behavi
   assert(mobileContentScrollableRule.includes(token), `Mobile React Admin tables must keep horizontal overflow inside the table region: ${token}`);
 }
 const mobileContentControlsRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row,", mobileMediaStart);
-for (const token of ["width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
+for (const token of ["display: flex;", "flex-wrap: nowrap;", "width: 100%;", "max-width: 100%;", "overflow-x: auto;"]) {
   assert(mobileContentControlsRule.includes(token), `Mobile React Admin tab/control rows must stay within screen width: ${token}`);
 }
 const mobileContentGridRule = cssRule(designSystemCss, "  .gju-app-shell__content .grid {", mobileMediaStart);
 assert(mobileContentGridRule.includes("grid-template-columns: minmax(0, 1fr);"), "Mobile React Admin legacy grids must use a single shrinkable column inside the React shell");
-const mobileReservationTabsRule = cssRule(designSystemCss, "  .gju-app-shell__content .admin-reservation-type-tabs,", mobileMediaStart);
-for (const token of ["grid-template-columns: repeat(auto-fit, minmax(0, 1fr));", "grid-auto-columns: auto;", "overflow-x: hidden;"]) {
-  assert(mobileReservationTabsRule.includes(token), `Mobile reservation tabs must fit within the screen without horizontal overflow: ${token}`);
+const mobileTabButtonRule = cssRule(designSystemCss, "  .gju-app-shell__content .tab-row .tab-button,", mobileMediaStart);
+for (const token of ["flex: 0 0 auto;", "width: auto;", "min-width: max-content;", "max-width: none;", "white-space: nowrap;", "overflow-wrap: normal;"]) {
+  assert(mobileTabButtonRule.includes(token), `Mobile tabs must stay on one horizontally scrollable row: ${token}`);
+}
+const mobileGjuTabRowRule = cssRule(designSystemCss, "  .gju-app-shell__content .gju-tabs.tab-row.wrap,", mobileMediaStart);
+for (const token of ["display: flex;", "flex-wrap: nowrap;", "overflow-x: auto;", "overflow-y: hidden;"]) {
+  assert(mobileGjuTabRowRule.includes(token), `Shared mobile tabs must override legacy wrapping rules: ${token}`);
+}
+const mobileWorkspaceControlsRule = cssRule(
+  designSystemCss,
+  '  .gju-app-shell__content .gju-card[data-surface="workspace"] .list-control-panel {',
+  mobileMediaStart
+);
+for (const token of ["padding: 0;", "border: 0;", "background: transparent;", "overflow: visible;"]) {
+  assert(mobileWorkspaceControlsRule.includes(token), `Flat mobile workspaces must remove the second control-panel inset: ${token}`);
 }
 const mobileContentTextRule = cssRule(designSystemCss, "  .gju-app-shell__content :where(td, th, p, span, strong, small, em, label, input, select, textarea, button, a) {", mobileMediaStart);
 for (const token of ["min-width: 0;", "max-width: 100%;", "overflow-wrap: anywhere;"]) {

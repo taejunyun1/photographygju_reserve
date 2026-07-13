@@ -391,6 +391,10 @@
   place-items: center;
 }
 
+.gju-icon-button > * {
+  grid-area: 1 / 1;
+}
+
 .gju-icon-button svg {
   display: block;
   width: 18px;
@@ -877,6 +881,8 @@
 
   .gju-app-shell__content .tab-row,
   .gju-app-shell__content .admin-inner-tabs {
+    display: flex;
+    flex-wrap: nowrap;
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
@@ -892,19 +898,35 @@
 
   .gju-app-shell__content .tab-row .tab-button,
   .gju-app-shell__content .admin-inner-tabs .tab-button {
-    min-width: 0;
-    max-width: 100%;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .gju-app-shell__content .gju-tabs.tab-row.wrap,
+  .gju-app-shell__content .gju-tabs.tab-row,
+  .gju-app-shell__content .gju-tabs.admin-inner-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .gju-app-shell__content .list-control-panel .gju-tabs.tab-row .gju-tabs__tab,
+  .gju-app-shell__content .gju-tabs.admin-inner-tabs .gju-tabs__tab {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 
   .gju-app-shell__content .grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .gju-app-shell__content .admin-reservation-type-tabs,
-  .gju-app-shell__content .admin-reservation-status-tabs {
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    grid-auto-columns: auto;
-    overflow-x: hidden;
   }
 
   .gju-app-shell__content .bulk-actions,
@@ -961,15 +983,17 @@
     background: rgba(248, 251, 255, 0.72);
   }
 
+  .gju-app-shell__content .gju-card[data-surface="workspace"] .list-control-panel {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
   .gju-app-shell__content .list-control-panel .input {
     min-height: 44px;
     border-radius: 8px;
-  }
-
-  .gju-app-shell__content .tab-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-    gap: 8px;
   }
 
   .gju-app-shell__content .tab-row .tab-button,

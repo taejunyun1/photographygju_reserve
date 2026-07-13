@@ -619,8 +619,12 @@ assert(
   "student mobile header must keep title and account action on one responsive row"
 );
 assert(
-  studentCssSource.includes(".student-react-mobile-header h1:focus:not(:focus-visible)"),
+  studentCssSource.includes('.student-react-mobile-header h1[tabindex="-1"]:focus'),
   "programmatic mobile heading focus must not look like keyboard focus"
+);
+assert(
+  studentCssSource.includes('.student-react-view h1[tabindex="-1"]:focus'),
+  "programmatic content heading focus must not look like keyboard focus"
 );
 
 // Student React remains bridge-driven and must not create a second transport or DOM event system.

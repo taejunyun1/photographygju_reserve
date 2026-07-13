@@ -105,7 +105,11 @@
   white-space: nowrap;
 }
 
-.student-react-mobile-header h1:focus:not(:focus-visible) {
+.student-react-mobile-header h1[tabindex="-1"]:focus {
+  outline: none;
+}
+
+.student-react-view h1[tabindex="-1"]:focus {
   outline: none;
 }
 
