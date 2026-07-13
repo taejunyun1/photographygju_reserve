@@ -426,7 +426,7 @@ export function AdminUsers({ state, actions }: AdminUsersProps) {
 
   return (
     <section className="grid">
-      <GjuCard title="학생 승인" eyebrow="React Admin">
+      <GjuCard title="학생 승인" eyebrow="React Admin" surface="workspace">
         <form className="list-control-panel" onSubmit={submitSearch}>
           <input
             className="input"

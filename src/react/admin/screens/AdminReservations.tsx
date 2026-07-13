@@ -291,6 +291,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
         title="예약 관리"
         eyebrow="React Admin"
         actions={<span className="tag blue">{reservations.length}건</span>}
+        surface="workspace"
       >
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>

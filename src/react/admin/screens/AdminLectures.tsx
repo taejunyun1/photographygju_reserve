@@ -136,7 +136,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
 
   return (
     <section className="grid admin-react-screen">
-      <GjuCard title="비교과 특강" eyebrow="React Admin" actions={<span className="tag blue">{filtered.length}건</span>}>
+      <GjuCard title="비교과 특강" eyebrow="React Admin" actions={<span className="tag blue">{filtered.length}건</span>} surface="workspace">
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>
             <span className="sr-only">특강 검색</span>

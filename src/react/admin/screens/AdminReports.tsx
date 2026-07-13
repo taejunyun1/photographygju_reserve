@@ -133,6 +133,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
       <GjuCard
         title="보고서"
         eyebrow="React Admin"
+        surface="workspace"
         actions={<span className="tag blue">{reports.length}건</span>}
       >
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>

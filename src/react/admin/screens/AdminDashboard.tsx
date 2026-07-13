@@ -244,7 +244,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
     React.createElement(
       GjuCard,
       {
-        title: "오늘 처리할 일"
+        title: "오늘 처리할 일",
+        surface: "workspace"
       },
       React.createElement(
         "p",

@@ -332,6 +332,7 @@ assert(dashboardMarkup.includes("반납완료"), "dashboard must render returned
 assert(dashboardMarkup.includes("대여취소"), "dashboard must render cancelled card");
 assert(dashboardMarkup.includes("보고서 확인 필요"), "dashboard must render report card");
 assert(!dashboardMarkup.includes("legacy"), "dashboard must be React-owned");
+assert(dashboardMarkup.includes('data-surface="workspace"'), "dashboard introduction must use the flat workspace surface");
 
 const dashboardNavigationCalls = [];
 const dashboardTree = renderModule.AdminDashboard({
@@ -442,6 +443,7 @@ for (const label of ["이름", "학번", "신분", "상태", "이전", "다음"]
 }
 assert(usersMarkup.includes('aria-label="삭제"'), "React users delete must be icon-only accessible");
 assert(!usersMarkup.includes(">삭제</button>"), "React users delete must not render visible delete text");
+assert(usersMarkup.includes('data-surface="workspace"'), "React users list must use the flat workspace surface");
 
 const usersWarningMemoMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -535,6 +537,7 @@ assert(!equipmentMarkup.includes("data-equipment-bulk-status"), "React equipment
 assert(!equipmentMarkup.includes("data-admin-equipment-panel-tab"), "React equipment tabs must use onClick handlers");
 assert(equipmentMarkup.includes("문의"), "React equipment screen must include inquiry status action");
 assert(equipmentMarkup.includes("장비추가"), "React equipment manage view must keep access to the add workflow tab");
+assert(equipmentMarkup.includes('data-surface="workspace"'), "React equipment list must use the flat workspace surface");
 
 const equipmentBrandMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -669,6 +672,11 @@ assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke mus
 assert(logsMarkup.includes("관리자"), "React logs screen must render actor object names");
 assert(logsMarkup.includes("20260001"), "React logs screen must render actor object student ids");
 assert(!logsMarkup.includes("[object Object]"), "React logs screen must not stringify actor objects");
+assert.equal(
+  (logsMarkup.match(/data-surface="workspace"/g) || []).length,
+  2,
+  "React sessions and activity logs must each use a flat workspace surface"
+);
 
 const logsSearchMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -753,6 +761,7 @@ for (const label of ["기자재", "암실", "스튜디오", "출력", "2026년 2
 }
 assert(!studioReservationMarkup.includes(">대여완료<"), "studio reservations must not expose the equipment checked_out transition");
 assert(!studioReservationMarkup.includes(">반납완료<"), "studio reservations must not expose the equipment returned transition");
+assert(studioReservationMarkup.includes('data-surface="workspace"'), "React reservations list must use the flat workspace surface");
 
 const reservationDetailsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -823,6 +832,7 @@ const reportsMarkup = renderToStaticMarkup(
 for (const value of ["2026년 2학기", "2026-09-10 · Studio A Front", "10:40-11:50", "2명", "Profoto B10", "소프트박스", "https://example.com/result.jpg", "스탠드 잠금 불량", "조교 확인 요청", "필터 결과 보고서 삭제", "전체 보고서 삭제"]) {
   assert(reportsMarkup.includes(value), `report detail parity must render ${value}`);
 }
+assert(reportsMarkup.includes('data-surface="workspace"'), "React reports list must use the flat workspace surface");
 
 const lecturesMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -859,6 +869,7 @@ const lecturesMarkup = renderToStaticMarkup(
 for (const value of ["2026년 2학기", "담당교수", "대상 학년", "비고", "박교수", "2, 3학년", "삼각대 지참", "신청학생", "20260010", "010-1234-5678", "student@example.com", "CSV 내보내기", "필터 결과 특강 삭제", "전체 특강 삭제"]) {
   assert(lecturesMarkup.includes(value), `lecture parity must render ${value}`);
 }
+assert(lecturesMarkup.includes('data-surface="workspace"'), "React lectures list must use the flat workspace surface");
 
 const noticesMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -875,6 +886,7 @@ assert(noticesMarkup.includes("숨김"), "notice status must derive active=false
 assert(noticesMarkup.includes("필터 결과 공지 삭제"), "notice screen must expose filtered deletion separately");
 assert(noticesMarkup.includes("전체 공지 삭제"), "notice screen must expose full deletion separately");
 assert(noticesMarkup.includes("2"), "notice pager must use the server page metadata");
+assert(noticesMarkup.includes('data-surface="workspace"'), "React notices list must use the flat workspace surface");
 
 const settingsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

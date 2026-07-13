@@ -299,7 +299,7 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
 
   return (
     <section className="grid">
-      <GjuCard title="현재 로그인 세션" eyebrow="React Admin">
+      <GjuCard title="현재 로그인 세션" eyebrow="React Admin" surface="workspace">
         <div className="list-control-panel compact">
           <input
             className="input"
@@ -378,7 +378,7 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
         </div>
         <LocalPager page={sessionPage} total={sessions.length} onPage={setSessionPage} label="세션 페이지 이동" />
       </GjuCard>
-      <GjuCard title="활동 로그" eyebrow="React Admin">
+      <GjuCard title="활동 로그" eyebrow="React Admin" surface="workspace">
         <div className="list-control-panel compact">
           <input
             className="input"

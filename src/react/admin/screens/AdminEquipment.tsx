@@ -464,6 +464,7 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
         className="admin-equipment-list-card compact"
         title="등록된 전체 기자재"
         eyebrow="React Admin"
+        surface="workspace"
         actions={
           <span className="tag blue">
             {filtered.length}개
