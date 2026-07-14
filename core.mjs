@@ -378,6 +378,10 @@ function normalizeReservationStatus(reservation) {
   return false;
 }
 
+function isOperationalReservation(reservation) {
+  return !RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(reservation?.status);
+}
+
 function studioSpaces(fields = {}) {
   if (Array.isArray(fields.studioSpaces) && fields.studioSpaces.length) return fields.studioSpaces;
   return fields.studioSpace ? [fields.studioSpace] : [];
@@ -624,7 +628,7 @@ export async function handleApiRequest(ctx) {
           notices: db.notices.map(noticeWithActive).filter((notice) => notice.active),
           reservations: user
             ? db.reservations
-              .filter((reservation) => !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status))
+              .filter(isOperationalReservation)
               .map((reservation) => publicReservationSummary(db, reservation))
             : []
         });
@@ -949,7 +953,7 @@ export async function handleApiRequest(ctx) {
         const weekFrom = addDaysToDateKey(today, -(weekday === 0 ? 6 : weekday - 1));
         const weekTo = addDaysToDateKey(weekFrom, 6);
         const todaySchedule = detailedReservations
-          .filter((item) => item.fields?.reservedDate === today)
+          .filter((item) => item.fields?.reservedDate === today && isOperationalReservation(item))
           .sort((left, right) => String(left.fields?.rentalTime || left.fields?.startTime || left.fields?.timeSlots?.[0] || "")
             .localeCompare(String(right.fields?.rentalTime || right.fields?.startTime || right.fields?.timeSlots?.[0] || "")));
         const seoulDateKey = (value) => {
