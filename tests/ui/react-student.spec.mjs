@@ -168,6 +168,13 @@ test("Student React reservation cards align actions and summarize the schedule o
   expect(metrics.cancelHeight).toBe(44);
   expect(metrics.titleFontSize).toBe("17px");
   expect(metrics.titleMargin).toBe("0px");
+  const accessibility = await new AxeBuilder({ page })
+    .include(".student-react-mine")
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(accessibility.violations.filter((violation) => (
+    ["serious", "critical"].includes(violation.impact)
+  ))).toEqual([]);
 });
 
 test("Student React My screen has labelled controls and no serious axe violations", async ({ page }) => {
@@ -198,6 +205,41 @@ test("Student React reservation filters control a labelled panel", async ({ page
   await expect(panel).toHaveAttribute("aria-labelledby", await active.getAttribute("id"));
   await active.press("ArrowRight");
   await expect(tablist.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
+});
+
+test("Student React Mine filters show all six tabs without horizontal clipping", async ({ page }) => {
+  const viewport = page.viewportSize();
+  test.skip(!viewport || viewport.width > 430, "phone filter contract");
+  await loginReactStudent(page);
+  await page.locator(".student-react-bottom-nav").getByRole("button", { name: "내 예약" }).click();
+  const tabs = page.getByRole("tablist", { name: "내 예약 카테고리" });
+  await expect(tabs.getByRole("tab")).toHaveCount(6);
+  const metrics = await tabs.evaluate((element) => {
+    const parent = element.getBoundingClientRect();
+    return {
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      display: getComputedStyle(element).display,
+      columns: getComputedStyle(element).gridTemplateColumns.split(" ").length,
+      children: [...element.children].map((child) => {
+        const box = child.getBoundingClientRect();
+        return {
+          left: box.left,
+          right: box.right,
+          parentLeft: parent.left,
+          parentRight: parent.right
+        };
+      })
+    };
+  });
+  expect(metrics.display).toBe("grid");
+  expect(metrics.columns).toBe(3);
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+  for (const item of metrics.children) {
+    expect(item.left).toBeGreaterThanOrEqual(item.parentLeft - 1);
+    expect(item.right).toBeLessThanOrEqual(item.parentRight + 1);
+  }
+  await expectNoHorizontalOverflow(page);
 });
 
 test("Student React report submission keeps the form open and announces server errors", async ({ page }) => {

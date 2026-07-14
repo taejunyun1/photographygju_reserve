@@ -642,6 +642,22 @@
 }
 
 @media (max-width: 700px) {
+  .student-react-filter-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .student-react-filter-tabs .gju-tabs__tab {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+  }
+
   .student-react-screen-header {
     align-items: stretch;
     flex-direction: column;
