@@ -465,6 +465,93 @@
   color: var(--student-muted);
 }
 
+.student-react-reservation-card {
+  gap: 12px;
+}
+
+.student-react-reservation-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.student-react-reservation-card__head .chips {
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.student-react-reservation-card__head .gju-icon-button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
+.student-react-reservation-card h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.student-react-reservation-card__schedule {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.student-react-reservation-card__schedule-item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-soft);
+}
+
+.student-react-reservation-card__schedule-item:only-child {
+  grid-column: 1 / -1;
+}
+
+.student-react-reservation-card__schedule-item dt,
+.student-react-reservation-card__schedule-item dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.student-react-reservation-card__schedule-item dt {
+  color: var(--student-muted);
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.student-react-reservation-card__schedule-item dd {
+  color: var(--student-ink);
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.student-react-reservation-card__equipment,
+.student-react-reservation-card__fallback {
+  min-width: 0;
+  margin: 0;
+  color: var(--student-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .student-react-past-reservations {
   display: grid;
   gap: 12px;

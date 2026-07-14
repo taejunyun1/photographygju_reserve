@@ -56,19 +56,43 @@ function reservationStatusLabel(status = "") {
   return RESERVATION_STATUS_LABELS[status] || status || "접수";
 }
 
-function reservationMeta(reservation: StudentReservation) {
+function formatReservationDate(value: unknown) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+  if (!match) return String(value || "");
+  const [, year, month, day] = match;
+  const weekday = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    weekday: "short"
+  }).format(new Date(`${year}-${month}-${day}T00:00:00+09:00`));
+  return `${Number(year)}. ${Number(month)}. ${Number(day)}. (${weekday})`;
+}
+
+function reservationDisplayMeta(reservation: StudentReservation) {
   const fields = reservation.fields;
-  const values = [
-    fields.reservedDate,
+  const date = formatReservationDate(fields.reservedDate || reservation.lecture?.lectureDate);
+  const time = fields.rentalTime && fields.returnTime
+    ? `${fields.rentalTime}–${fields.returnTime}`
+    : fields.startTime && fields.endTime
+      ? `${fields.startTime}–${fields.endTime}`
+      : (fields.timeSlots || []).join(", ") || String(reservation.lecture?.time || "");
+  const equipment = (reservation.equipmentItems || [])
+    .map((item) => item.code || item.name)
+    .filter(Boolean);
+  const equipmentSummary = equipment.length > 2
+    ? `${equipment.slice(0, 2).join(", ")} 외 ${equipment.length - 2}개`
+    : equipment.join(", ");
+  const details = [
+    fields.period,
     reservation.type === "lecture" ? reservation.lecture?.title : "",
     fields.studioSpace || (fields.studioSpaces || []).join(", "),
-    (fields.timeSlots || []).join(", "),
-    fields.rentalTime && fields.returnTime ? `${fields.rentalTime}-${fields.returnTime}` : "",
-    fields.startTime && fields.endTime ? `${fields.startTime}-${fields.endTime}` : "",
-    fields.period,
-    (reservation.equipmentItems || []).map((item) => item.code || item.name).filter(Boolean).join(", ")
-  ].filter(Boolean);
-  return values.join(" · ") || "상세 정보 없음";
+    equipmentSummary
+  ].filter(Boolean).map(String);
+  return {
+    date,
+    time,
+    details: details.join(" · "),
+    fallback: !date && !time && !details.length ? "상세 정보 없음" : ""
+  };
 }
 
 export function ScreenHeader({ title, description, action }: { title: string; description?: string; action?: React.ReactNode }) {
@@ -131,6 +155,7 @@ export function ReservationCard({
   const canCancel = !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status || "");
   const reportDue = isReportDue(reservation, today);
   const lectureId = reservation.type === "lecture" ? reservation.lecture?.id : undefined;
+  const displayMeta = reservationDisplayMeta(reservation);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
 
@@ -161,11 +186,30 @@ export function ReservationCard({
         ) : null}
       </div>
       <h2>{String(reservation.fields.title || `${label} 예약`)}</h2>
-      <p className="muted">{reservationMeta(reservation)}</p>
+      {displayMeta.date || displayMeta.time ? (
+        <dl className="student-react-reservation-card__schedule">
+          {displayMeta.date ? (
+            <div className="student-react-reservation-card__schedule-item">
+              <dt>날짜</dt>
+              <dd>{displayMeta.date}</dd>
+            </div>
+          ) : null}
+          {displayMeta.time ? (
+            <div className="student-react-reservation-card__schedule-item">
+              <dt>시간</dt>
+              <dd>{displayMeta.time}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+      {displayMeta.details ? <p className="student-react-reservation-card__equipment">{displayMeta.details}</p> : null}
+      {displayMeta.fallback ? <p className="muted student-react-reservation-card__fallback">{displayMeta.fallback}</p> : null}
       {cancelError ? <p className="student-react-submit-error" role="alert">{cancelError}</p> : null}
-      <div className="student-react-reservation-card__actions">
-        {onReport && reportDue ? <GjuButton icon="fileText" variant="outline" onClick={() => onReport(reservation.id)}>보고서 작성</GjuButton> : null}
-      </div>
+      {onReport && reportDue ? (
+        <div className="student-react-reservation-card__actions">
+          <GjuButton icon="fileText" variant="outline" onClick={() => onReport(reservation.id)}>보고서 작성</GjuButton>
+        </div>
+      ) : null}
     </article>
   );
 }

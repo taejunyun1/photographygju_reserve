@@ -104,6 +104,72 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   }
 });
 
+test("Student React reservation cards align actions and summarize the schedule on mobile", async ({ page }) => {
+  const viewport = page.viewportSize();
+  test.skip(!viewport || viewport.width > 430, "phone card contract");
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    state.view = "mine";
+    state.myReservations = [{
+      id: "mobile-card-fixture",
+      type: "equipment",
+      status: "approval_pending",
+      fields: {
+        reservedDate: "2026-07-27",
+        rentalTime: "12:00",
+        returnTime: "17:10",
+        period: "1박2일"
+      },
+      equipmentItems: [
+        { id: "e1", code: "CAM-750D-03", name: "캐논 750D" },
+        { id: "e2", code: "LEN-1855-03", name: "캐논 EF-S 18-55" },
+        { id: "e3", code: "LEN-1855-02", name: "캐논 EF-S 18-55" },
+        { id: "e4", code: "LGT-430EX-02", name: "캐논 430EX" },
+        { id: "e5", code: "LGT-430EX-01", name: "캐논 430EX" }
+      ]
+    }];
+    render();
+  });
+
+  const card = page.locator(".student-react-reservation-card").first();
+  const header = card.locator(".student-react-reservation-card__head");
+  const date = card.locator(".student-react-reservation-card__schedule-item", { hasText: "날짜" });
+  const time = card.locator(".student-react-reservation-card__schedule-item", { hasText: "시간" });
+  const equipment = card.locator(".student-react-reservation-card__equipment");
+
+  await expect(date).toContainText("2026. 7. 27. (월)");
+  await expect(time).toContainText("12:00–17:10");
+  await expect(equipment).toHaveText("1박2일 · CAM-750D-03, LEN-1855-03 외 3개");
+  await expect(equipment).not.toContainText("LGT-430EX-01");
+
+  const metrics = await page.evaluate(() => {
+    const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+    const cardRect = rect(".student-react-reservation-card");
+    const badgeRect = rect(".student-react-reservation-card__head .chips");
+    const cancelRect = rect(".student-react-reservation-card__head .gju-icon-button");
+    const titleElement = document.querySelector(".student-react-reservation-card h2");
+    const titleStyle = titleElement ? getComputedStyle(titleElement) : null;
+    return {
+      badgeTop: badgeRect?.top,
+      cancelTop: cancelRect?.top,
+      cancelRight: cancelRect?.right,
+      contentRight: cardRect ? cardRect.right - 15 : undefined,
+      cancelWidth: cancelRect?.width,
+      cancelHeight: cancelRect?.height,
+      titleFontSize: titleStyle?.fontSize,
+      titleMargin: titleStyle?.margin
+    };
+  });
+  expect(Math.abs((metrics.badgeTop || 0) - (metrics.cancelTop || 0))).toBeLessThanOrEqual(8);
+  expect(Math.abs((metrics.cancelRight || 0) - (metrics.contentRight || 0))).toBeLessThanOrEqual(2);
+  expect(metrics.cancelWidth).toBe(44);
+  expect(metrics.cancelHeight).toBe(44);
+  expect(metrics.titleFontSize).toBe("17px");
+  expect(metrics.titleMargin).toBe("0px");
+});
+
 test("Student React My screen has labelled controls and no serious axe violations", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await loginReactStudent(page);
