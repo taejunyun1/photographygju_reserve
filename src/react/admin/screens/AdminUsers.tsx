@@ -428,7 +428,7 @@ export function AdminUsers({ state, actions }: AdminUsersProps) {
 
   return (
     <section className="grid">
-      <GjuCard title="학생 승인" eyebrow="React Admin" surface="workspace">
+      <GjuCard title="학생 승인" surface="workspace">
         <form className="list-control-panel" onSubmit={submitSearch}>
           <input
             className="input"
@@ -460,7 +460,7 @@ export function AdminUsers({ state, actions }: AdminUsersProps) {
             {hasQuery ? ` · 검색 결과 ${users.length}건(현재 페이지)` : ""}
             {page.hasMore ? " · 다음 페이지에 기록이 더 있습니다" : ""}
           </p>
-          <div className="table-wrap admin-user-table-wrap">
+          <div className="table-wrap admin-user-table-wrap admin-react-desktop-table">
           <GjuTable className="admin-user-table">
             <thead>
               <tr>

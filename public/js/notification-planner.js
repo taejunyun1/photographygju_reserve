@@ -241,9 +241,11 @@ function nextAdminDigestTime(now) {
 export function planAdminNotifications({ userId = "admin", summary = {}, now = new Date() } = {}) {
   const counts = [
     ["가입 승인", Number(summary.pendingUsers || 0)],
-    ["대여완료", Number(summary.equipmentCheckedOut ?? summary.pendingEquipment ?? 0)],
-    ["반납완료", Number(summary.equipmentReturned || 0)],
-    ["대여취소", Number(summary.equipmentCancelled || 0)],
+    ["기자재 승인 대기", Number(summary.equipmentPendingApproval ?? summary.pendingEquipment ?? 0)],
+    ["승인 완료", Number(summary.equipmentApproved || 0)],
+    ["대여 중", Number(summary.equipmentCheckedOut || 0)],
+    ["반납 완료", Number(summary.equipmentReturned || 0)],
+    ["취소/반려", Number(summary.equipmentCancelled || 0)],
     ["오늘 예약", Number(summary.todayReservations || 0)],
     ["보고서 확인", Number(summary.missingReports || 0)]
   ].filter(([, count]) => count > 0);

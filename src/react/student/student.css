@@ -179,7 +179,7 @@
   min-width: 0;
 }
 
-.student-react-screen-header h1 {
+.student-react-screen-header h2 {
   margin: 0;
   font-size: 24px;
   line-height: 1.25;
@@ -263,6 +263,72 @@
   margin-top: 16px;
 }
 
+.student-react-equipment-manifest {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--student-line);
+  border-left: 4px solid var(--student-accent);
+  border-radius: 8px;
+  background: var(--student-surface);
+}
+
+.student-react-equipment-manifest__head,
+.student-react-equipment-manifest__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.student-react-equipment-manifest__head span,
+.student-react-equipment-result-count {
+  color: var(--student-muted);
+  font-size: 13px;
+}
+
+.student-react-equipment-manifest__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.student-react-equipment-manifest__item {
+  min-width: 0;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-soft);
+}
+
+.student-react-equipment-manifest__item > span {
+  display: grid;
+  min-width: 0;
+}
+
+.student-react-equipment-manifest__item strong,
+.student-react-equipment-manifest__item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-react-equipment-manifest__item small {
+  color: var(--student-muted);
+}
+
+.student-react-equipment-manifest__item .gju-icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex-basis: 44px;
+}
+
+.student-react-equipment-result-count {
+  margin: 12px 0 8px;
+}
+
 .student-react-reservation-review {
   border: 1px solid var(--student-line);
   box-shadow: none;
@@ -298,6 +364,47 @@
 .student-react-drive-panel p,
 .student-react-equipment-recommendations p {
   margin: 4px 0 0;
+}
+
+.student-react-drive-panel__missing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--student-muted);
+  font-size: 13px;
+}
+
+.student-react-review-properties > div,
+.student-react-account-properties > div {
+  display: grid;
+  grid-template-columns: minmax(84px, 0.32fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.student-react-review-properties__label,
+.student-react-account-properties > div > span:first-child {
+  color: var(--student-muted);
+}
+
+.student-react-review-properties strong,
+.student-react-account-properties strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.student-react-darkroom-equipment-group {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--student-line);
+}
+
+.student-react-darkroom-equipment-group h3,
+.student-react-darkroom-equipment-group p {
+  margin: 0;
 }
 
 .student-react-equipment-recommendation-list {
@@ -425,7 +532,7 @@
     flex-direction: column;
   }
 
-  .student-react-screen-header h1 {
+  .student-react-screen-header h2 {
     font-size: 21px;
   }
 
@@ -462,6 +569,21 @@
   .student-react-flow-actions > * {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  .student-react-reservation-step .student-react-flow-actions {
+    position: sticky;
+    z-index: 3;
+    bottom: calc(var(--gju-student-bottom-nav-height) + var(--safe-area-bottom));
+    margin: 8px -8px -8px;
+    padding: 10px 8px;
+    border-top: 1px solid var(--student-line);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+  }
+
+  .student-react-equipment-manifest__items {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

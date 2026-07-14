@@ -77,7 +77,8 @@ function renderMoreSheet(
       confirmLabel: "닫기",
       onClose,
       onCancel: onClose,
-      onConfirm: onClose
+      onConfirm: onClose,
+      showActions: false
     },
     React.createElement(
       "nav",

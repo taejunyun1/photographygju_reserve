@@ -261,12 +261,14 @@ export function adminDashboardView() {
   return `
     <section class="grid">
       <section class="admin-dashboard-section">
-        ${sectionHeader({ title: "오늘 처리할 일", subtitle: "학생 승인과 기자재 3상태를 우선 확인합니다." })}
+        ${sectionHeader({ title: "오늘 처리할 일", subtitle: "학생 승인과 기자재 승인·대여 흐름을 우선 확인합니다." })}
         <div class="stat-grid admin-dashboard-grid">
           ${adminActionCard({ label: "가입 승인 대기", value: metrics.pendingUsers, caption: "학생 승인으로 이동", attrs: `data-admin-view="users"`, tone: "blue", iconName: "userPlus" })}
-          ${adminActionCard({ label: "대여완료", value: metrics.equipmentCheckedOut, caption: "기자재 대여 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="checked_out"`, tone: "yellow", iconName: "camera" })}
-          ${adminActionCard({ label: "반납완료", value: metrics.equipmentReturned, caption: "기자재 반납 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="returned"`, tone: "green", iconName: "check" })}
-          ${adminActionCard({ label: "대여취소", value: metrics.equipmentCancelled, caption: "기자재 취소 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="cancelled"`, tone: "gray", iconName: "x" })}
+          ${adminActionCard({ label: "기자재 승인 대기", value: metrics.equipmentPendingApproval, caption: "승인 요청 확인", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="pending_approval"`, tone: "yellow", iconName: "camera" })}
+          ${adminActionCard({ label: "승인 완료", value: metrics.equipmentApproved, caption: "인계 전 예약", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="approved"`, tone: "blue", iconName: "check" })}
+          ${adminActionCard({ label: "대여 중", value: metrics.equipmentCheckedOut, caption: "반납 대기 장비", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="checked_out"`, tone: "yellow", iconName: "camera" })}
+          ${adminActionCard({ label: "반납 완료", value: metrics.equipmentReturned, caption: "기자재 반납 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="returned"`, tone: "green", iconName: "check" })}
+          ${adminActionCard({ label: "취소/반려", value: metrics.equipmentCancelled, caption: "기자재 종료 상태", attrs: `data-admin-view="reservations" data-admin-reservation-tab="equipment" data-admin-equipment-reservation-status="cancelled_or_rejected"`, tone: "gray", iconName: "x" })}
           ${adminActionCard({ label: "보고서 확인 필요", value: metrics.missingReports, caption: "보고서로 이동", attrs: `data-admin-view="reports"`, tone: "red", iconName: "fileText" })}
         </div>
       </section>
@@ -358,16 +360,20 @@ export function adminDashboardMetrics() {
   const equipment = activeAdminEquipment();
   const availableEquipment = equipment.filter((item) => item.status === "가능").length;
   const repairEquipment = equipment.filter((item) => item.status === "수리중").length;
+  const equipmentPendingApproval = Number(s.equipmentPendingApproval ?? s.pendingEquipment ?? reservations.filter((reservation) => reservation.type === "equipment" && reservation.status === "pending_approval").length);
+  const equipmentApproved = Number(s.equipmentApproved ?? reservations.filter((reservation) => reservation.type === "equipment" && reservation.status === "approved").length);
   const equipmentCheckedOut = Number(s.equipmentCheckedOut ?? reservations.filter((reservation) => reservation.type === "equipment" && reservation.status === "checked_out").length);
   const equipmentReturned = Number(s.equipmentReturned ?? reservations.filter((reservation) => reservation.type === "equipment" && reservation.status === "returned").length);
-  const equipmentCancelled = Number(s.equipmentCancelled ?? reservations.filter((reservation) => reservation.type === "equipment" && reservation.status === "cancelled").length);
+  const equipmentCancelled = Number(s.equipmentCancelled ?? reservations.filter((reservation) => reservation.type === "equipment" && ["cancelled", "rejected"].includes(reservation.status)).length);
   const cancelledReservations = reservations.filter((reservation) => reservationStatusIn(reservation, ["cancelled", "admin_cancelled", "rejected"])).length;
   const checkoutReturnNeeded = equipmentCheckedOut;
   const typeCounts = adminReservationTypeCounts(reservations);
   const latestNotice = [...(state.adminNotices || [])].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
   return {
     pendingUsers: Number(s.pendingUsers || 0),
-    pendingEquipment: equipmentCheckedOut,
+    pendingEquipment: equipmentPendingApproval,
+    equipmentPendingApproval,
+    equipmentApproved,
     todayReservations: Number(s.todayReservations || todayAdminReservations().length || 0),
     missingReports: Number(s.missingReports || 0),
     checkoutReturnNeeded,
@@ -721,7 +727,9 @@ export function adminReservationsView() {
     : state.adminReservations.filter((reservation) => reservation.type === state.adminReservationTab);
   const equipmentReservations = state.adminReservations.filter((reservation) => reservation.type === "equipment");
   const statusFilteredReservations = isEquipmentTab && equipmentStatusFilter !== "all"
-    ? tabReservations.filter((reservation) => reservation.status === equipmentStatusFilter)
+    ? tabReservations.filter((reservation) => equipmentStatusFilter === "cancelled_or_rejected"
+      ? ["cancelled", "rejected"].includes(reservation.status)
+      : reservation.status === equipmentStatusFilter)
     : tabReservations;
   // 최신순(예약 생성일 내림차순)으로 정렬해 최근 예약을 위에 노출
   const reservations = query
@@ -754,7 +762,7 @@ export function adminReservationsView() {
         ${reservations.length ? reservations.map(adminReservationCard).join("") : emptyState({ title: query ? "검색 결과가 없습니다." : "해당 탭의 예약이 없습니다." })}
       </div>
       ${adminPager(state.adminReservationsPage, "admin-reservations-page")}
-      ${adminGuide("예약관리 사용 가이드", "최신 예약이 위에 표시됩니다. 검색창에 이름·학번·날짜(YYYY-MM-DD)·기자재 코드·스튜디오를 입력하면 전체 예약에서 찾을 수 있습니다. 기자재는 대여완료, 반납완료, 대여취소 3가지 상태로만 관리합니다.")}
+      ${adminGuide("예약관리 사용 가이드", "최신 예약이 위에 표시됩니다. 기자재는 승인 대기, 승인 완료, 대여 중, 반납 완료 순서로 처리하며 반려와 예약 취소는 종료 상태로 관리합니다.")}
     </section>
   `;
 }
@@ -799,10 +807,15 @@ export function adminReservationCard(reservation) {
   const f = reservation.fields || {};
   const rows = adminReservationDetail(reservation);
   const completionButton = reservation.type === "equipment" ? "" : `<button class="button" data-res-status="${reservation.id}" data-status="completed">${icon("check")}완료</button>`;
-  const equipmentStatusAction = (status, label, iconName, danger = false) => {
-    const current = reservation.status === status;
-    return `<button class="button${danger ? " danger" : ""}${current ? " is-current" : ""}" data-res-status="${reservation.id}" data-status="${status}" ${current ? 'disabled aria-current="true"' : ""}>${icon(iconName)}${label}</button>`;
+  const equipmentStatusAction = (status, label, iconName, danger = false) => `<button class="button${danger ? " danger" : ""}" data-res-status="${reservation.id}" data-status="${status}">${icon(iconName)}${label}</button>`;
+  const equipmentTransitions = {
+    pending_approval: [["approved", "승인", "check", false], ["rejected", "반려", "x", true]],
+    approved: [["checked_out", "대여 처리", "check", false], ["cancelled", "예약 취소", "x", true]],
+    checked_out: [["returned", "반납 처리", "check", false], ["cancelled", "예약 취소", "x", true]]
   };
+  const equipmentActions = (equipmentTransitions[reservation.status] || [])
+    .map(([status, label, iconName, danger]) => equipmentStatusAction(status, label, iconName, danger))
+    .join("");
   return `
     <article class="admin-reservation-card">
       <div class="reservation-card-head">
@@ -816,7 +829,7 @@ export function adminReservationCard(reservation) {
         ${rows.map(([key, value]) => `<div class="prop"><span class="key">${escapeHtml(key)}</span><span>${escapeHtml(value)}</span></div>`).join("")}
       </div>
       <div class="row-actions">
-        ${reservation.type === "equipment" ? `${equipmentStatusAction("checked_out", "대여완료", "arrowUpRight")}${equipmentStatusAction("returned", "반납완료", "check")}${equipmentStatusAction("cancelled", "대여취소", "x", true)}` : ""}
+        ${reservation.type === "equipment" ? equipmentActions : ""}
         ${completionButton}
         ${reservation.type === "equipment" ? "" : `<button class="button danger" data-res-status="${reservation.id}" data-status="admin_cancelled">${icon("x")}취소</button>`}
       </div>

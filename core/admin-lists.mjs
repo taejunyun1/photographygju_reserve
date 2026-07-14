@@ -158,7 +158,10 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
     const items = source
       .filter((item) => !params.semester || params.semester === "all" || dateMatchesAcademicSemester(reservationDate(item), params.semester))
       .filter((item) => !params.type || item.type === params.type)
-      .filter((item) => !params.status || item.status === params.status)
+      .filter((item) => !params.status
+        || (params.status === "cancelled_or_rejected"
+          ? ["cancelled", "rejected"].includes(item.status)
+          : item.status === params.status))
       .filter((item) => dateInRange(reservationDate(item), params.from, params.to))
       .filter((item) => !params.q || searchableRecord({
         id: item.id,

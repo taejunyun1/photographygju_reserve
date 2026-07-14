@@ -6,6 +6,18 @@ import { build } from "esbuild";
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 
+const reactAdminCssSource = fs.readFileSync("src/react/design-system/react-admin.css", "utf8");
+const adminScreenSource = [
+  "AdminUsers.tsx",
+  "AdminReservations.tsx",
+  "AdminEquipment.tsx",
+  "AdminReports.tsx",
+  "AdminLectures.tsx",
+  "AdminNotices.tsx",
+  "AdminLogs.tsx",
+  "AdminSettings.tsx"
+].map((file) => fs.readFileSync(path.join("src/react/admin/screens", file), "utf8")).join("\n");
+
 const renderEntry = await build({
   stdin: {
     contents: `
@@ -220,6 +232,19 @@ closeEvents.length = 0;
 dialogBehaviorModule.buttonCalls[0].onClick();
 assert.deepEqual(closeEvents, ["close"], "dialog cancel button must prefer onClose over onCancel");
 
+const iconCallCountBeforeHeaderOnlyDialog = dialogBehaviorModule.iconButtonCalls.length;
+const buttonCallCountBeforeHeaderOnlyDialog = dialogBehaviorModule.buttonCalls.length;
+renderToStaticMarkup(
+  React.createElement(dialogBehaviorModule.GjuDialog, {
+    open: true,
+    title: "정보",
+    showActions: false,
+    onClose() {}
+  })
+);
+assert.equal(dialogBehaviorModule.iconButtonCalls.length, iconCallCountBeforeHeaderOnlyDialog + 1, "header-only dialog must keep one close icon");
+assert.equal(dialogBehaviorModule.buttonCalls.length, buttonCallCountBeforeHeaderOnlyDialog, "header-only dialog must not render duplicate footer close buttons");
+
 const emptyState = renderToStaticMarkup(
   React.createElement(renderModule.GjuEmptyState, {
     title: "비어 있음",
@@ -312,6 +337,8 @@ const dashboardMarkup = renderToStaticMarkup(
       user: { role: "admin" },
       summary: {
         pendingUsers: 2,
+        equipmentPendingApproval: 6,
+        equipmentApproved: 2,
         equipmentCheckedOut: 1,
         equipmentReturned: 3,
         equipmentCancelled: 4,
@@ -327,18 +354,25 @@ const dashboardMarkup = renderToStaticMarkup(
   })
 );
 assert(dashboardMarkup.includes("가입 승인 대기"), "dashboard must render pending users card");
-assert(dashboardMarkup.includes("대여완료"), "dashboard must render checked-out card");
-assert(dashboardMarkup.includes("반납완료"), "dashboard must render returned card");
-assert(dashboardMarkup.includes("대여취소"), "dashboard must render cancelled card");
+assert(dashboardMarkup.includes("기자재 승인 대기"), "dashboard must render pending equipment approval card");
+assert(dashboardMarkup.includes("승인 완료"), "dashboard must render approved equipment card");
+assert(dashboardMarkup.includes("대여 중"), "dashboard must render checked-out card");
+assert(dashboardMarkup.includes("반납 완료"), "dashboard must render returned card");
+assert(dashboardMarkup.includes("취소/반려"), "dashboard must render cancelled card");
 assert(dashboardMarkup.includes("보고서 확인 필요"), "dashboard must render report card");
 assert(!dashboardMarkup.includes("legacy"), "dashboard must be React-owned");
 assert(dashboardMarkup.includes('data-surface="workspace"'), "dashboard introduction must use the flat workspace surface");
+assert(dashboardMarkup.includes("admin-dashboard-action-grid"), "dashboard action cards must use the compact responsive grid");
+assert(dashboardMarkup.includes("admin-dashboard-action-card"), "dashboard action cards must expose a density styling hook");
+assert(reactAdminCssSource.includes("grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile dashboard actions must use two compact columns");
 
 const dashboardNavigationCalls = [];
 const dashboardTree = renderModule.AdminDashboard({
   state: {
     summary: {
       pendingUsers: 2,
+      equipmentPendingApproval: 6,
+      equipmentApproved: 2,
       equipmentCheckedOut: 1,
       equipmentReturned: 3,
       equipmentCancelled: 4,
@@ -378,12 +412,16 @@ const dashboardButtons = reactElements(dashboardTree, (element) => element.type 
 dashboardButtons[1].props.onClick();
 dashboardButtons[2].props.onClick();
 dashboardButtons[3].props.onClick();
+dashboardButtons[4].props.onClick();
+dashboardButtons[5].props.onClick();
 assert.deepEqual(
   dashboardNavigationCalls,
   [
+    ["reservations", { type: "equipment", status: "pending_approval", q: "", page: 1 }],
+    ["reservations", { type: "equipment", status: "approved", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "checked_out", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "returned", q: "", page: 1 }],
-    ["reservations", { type: "equipment", status: "cancelled", q: "", page: 1 }]
+    ["reservations", { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }]
   ],
   "dashboard reservation cards must pass their target filters through the typed navigation action"
 );
@@ -436,6 +474,7 @@ const usersMarkup = renderToStaticMarkup(
     actions: noopActions
   })
 );
+assert(usersMarkup.includes("admin-user-table-wrap admin-react-desktop-table"), "student approval desktop table must use the shared responsive ownership class");
 assert(!usersMarkup.includes("data-user-"), "React users screen must not emit delegated user action attributes");
 assert(!usersMarkup.includes("data-admin-users-page"), "React users pagination must use React handlers");
 for (const label of ["이름", "학번", "신분", "상태", "이전", "다음"]) {
@@ -540,6 +579,7 @@ const equipmentMarkup = renderToStaticMarkup(
     actions: noopActions
   })
 );
+assert(equipmentMarkup.includes("admin-equipment-table-wrap admin-react-desktop-table"), "equipment desktop table must use the shared responsive ownership class");
 assert(!equipmentMarkup.includes("data-equipment-remove-admin"), "React equipment remove must use an onClick handler");
 assert(!equipmentMarkup.includes("data-equipment-bulk-status"), "React equipment bulk status must use onClick handlers");
 assert(!equipmentMarkup.includes("data-admin-equipment-panel-tab"), "React equipment tabs must use onClick handlers");
@@ -684,6 +724,14 @@ assert(!logsMarkup.includes(">로그아웃</button>"), "React session revoke mus
 assert(logsMarkup.includes("관리자"), "React logs screen must render actor object names");
 assert(logsMarkup.includes("20260001"), "React logs screen must render actor object student ids");
 assert(!logsMarkup.includes("[object Object]"), "React logs screen must not stringify actor objects");
+assert(!logsMarkup.includes('<span class="muted">UA</span>'), "session tables must not render the raw User-Agent as visible card text");
+assert.equal(
+  (logsMarkup.match(/table-wrap embedded admin-react-desktop-table/g) || []).length,
+  2,
+  "session and activity-log tables must use the shared desktop ownership class"
+);
+assert(logsMarkup.includes('aria-label="로그인 세션 목록"'), "sessions must render a mobile-owned card list");
+assert(logsMarkup.includes('aria-label="활동 로그 목록"'), "activity logs must render a mobile-owned card list");
 assert(
   /<button(?=[^>]*gju-icon-button)(?=[^>]*aria-label="로그아웃")[^>]*>/.test(logsMarkup),
   "React session logout must use the shared icon button"
@@ -819,10 +867,31 @@ const reservationDetailsMarkup = renderToStaticMarkup(
 for (const value of ["CAM-FX3-01", "졸업작품", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
 }
-for (const label of ["대여완료", "반납완료", "대여취소", "예약 삭제"]) {
+for (const label of ["반납 처리", "예약 취소", "예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(`aria-label="${label}"`), `equipment reservation ${label} action must be icon-only accessible`);
   assert(reservationDetailsMarkup.includes(`title="${label}"`), `equipment reservation ${label} action must expose a native tooltip`);
 }
+
+const equipmentApprovalMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "reservations",
+      user: { role: "admin" },
+      adminReservationTab: "equipment",
+      adminReservationsPage: { total: 2, collectionTotal: 2, page: 1, pageSize: 20 },
+      adminReservations: [
+        { id: "equipment-pending", type: "equipment", status: "pending_approval", fields: { reservedDate: "2026-09-14" } },
+        { id: "equipment-approved", type: "equipment", status: "approved", fields: { reservedDate: "2026-09-15" } }
+      ]
+    },
+    actions: noopActions
+  })
+);
+for (const label of ["승인", "반려", "대여 처리", "예약 취소"]) {
+  assert(equipmentApprovalMarkup.includes(`aria-label="${label}"`), `equipment approval lifecycle must expose ${label}`);
+}
+assert(equipmentApprovalMarkup.includes("승인 대기"), "equipment approval lifecycle must render the pending state");
+assert(equipmentApprovalMarkup.includes("승인 완료"), "equipment approval lifecycle must render the approved state");
 
 const reportsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -895,6 +964,8 @@ for (const value of ["2026년 2학기", "담당교수", "대상 학년", "비고
   assert(lecturesMarkup.includes(value), `lecture parity must render ${value}`);
 }
 assert(lecturesMarkup.includes('data-surface="workspace"'), "React lectures list must use the flat workspace surface");
+assert(lecturesMarkup.includes("특강 등록 열기"), "lecture create form must be collapsed behind an explicit disclosure action");
+assert(!lecturesMarkup.includes('name="capacity"'), "collapsed lecture create form must not occupy the default list workspace");
 for (const label of ["특강 수정", "특강 삭제"]) {
   assert(lecturesMarkup.includes(`aria-label="${label}"`), `React lectures ${label} action must be icon-only accessible`);
   assert(lecturesMarkup.includes(`title="${label}"`), `React lectures ${label} action must expose a native tooltip`);
@@ -916,8 +987,20 @@ assert(noticesMarkup.includes("필터 결과 공지 삭제"), "notice screen mus
 assert(noticesMarkup.includes("전체 공지 삭제"), "notice screen must expose full deletion separately");
 assert(noticesMarkup.includes("2"), "notice pager must use the server page metadata");
 assert(noticesMarkup.includes('data-surface="workspace"'), "React notices list must use the flat workspace surface");
+assert(noticesMarkup.includes("공지 등록 열기"), "notice create form must be collapsed behind an explicit disclosure action");
+assert(!noticesMarkup.includes('name="linkUrl"'), "collapsed notice create form must not occupy the default list workspace");
 assert(noticesMarkup.includes('aria-label="공지 삭제"'), "React notice deletion must be icon-only accessible");
 assert(noticesMarkup.includes('title="공지 삭제"'), "React notice deletion must expose a native tooltip");
+assert(!adminScreenSource.includes('eyebrow="React Admin"'), "Admin pages must not expose implementation labels in the product UI");
+assert(
+  reactAdminCssSource.includes(".gju-icon-button {\n  width: 44px;")
+    && reactAdminCssSource.includes("min-height: 44px;"),
+  "shared Admin icon actions must use a 44px preferred touch target"
+);
+assert(
+  reactAdminCssSource.includes(".admin-react-check {\n  display: inline-flex;\n  align-items: center;"),
+  "Admin notice checkbox labels must align checkbox and text on one row"
+);
 
 const settingsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -935,6 +1018,8 @@ const settingsMarkup = renderToStaticMarkup(
     actions: noopActions
   })
 );
+assert.equal((settingsMarkup.match(/class="admin-settings-disclosure"/g) || []).length, 4, "secondary Admin settings sections must be collapsed into four disclosures");
+assert(settingsMarkup.includes("운영값·출력·기자재 규칙"), "settings disclosure summaries must explain their contents");
 for (const value of ["스튜디오 보고서 제출 기한", "방학 모드", "백업 JSON", "운영 알림", "동기화", "알림 끄기"]) {
   assert(settingsMarkup.includes(value), `settings parity must render ${value}`);
 }

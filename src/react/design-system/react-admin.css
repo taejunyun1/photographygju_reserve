@@ -367,15 +367,15 @@
 }
 
 .gju-icon-button {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  max-width: 40px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 44px;
   padding: 0;
   display: inline-grid;
   place-items: center;
-  flex: 0 0 40px;
+  flex: 0 0 44px;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
@@ -386,8 +386,8 @@
 
 .gju-icon-button__busy {
   display: inline-grid;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   place-items: center;
 }
 
@@ -616,10 +616,92 @@
 }
 
 .admin-react-check {
-  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
+  color: var(--gju-color-text);
+}
+
+.admin-react-check input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 0;
+}
+
+.admin-react-disclosure-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-dashboard-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.admin-dashboard-action {
+  min-width: 0;
+}
+
+.admin-dashboard-action.is-empty {
+  opacity: 0.7;
+}
+
+.admin-dashboard-action-card {
+  min-height: 104px;
+}
+
+.gju-app-shell__content .admin-dashboard-action-card .gju-card__header {
+  padding: 14px 14px 0;
+}
+
+.gju-app-shell__content .admin-dashboard-action-card .gju-card__body {
+  padding: 10px 14px 14px;
+}
+
+.admin-react-create-form {
+  padding: 16px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+}
+
+.admin-settings-disclosure {
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+}
+
+.admin-settings-disclosure > summary {
+  display: list-item;
+  min-height: 56px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.admin-settings-disclosure > summary span {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-settings-disclosure > summary small {
+  color: var(--gju-color-text-muted);
+}
+
+.admin-settings-disclosure__body {
+  display: grid;
+  gap: 12px;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--gju-color-border);
+  padding-top: 16px;
+}
+
+.admin-settings-disclosure[data-tone="danger"] {
+  border-color: rgba(201, 63, 67, 0.34);
 }
 
 .admin-react-action-row,
@@ -765,6 +847,41 @@
 }
 
 @media (max-width: 900px) {
+  .admin-dashboard-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-dashboard-action-card {
+    min-height: 96px;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__header {
+    padding: 12px 12px 0;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__actions {
+    display: none;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__title {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__body {
+    padding: 8px 12px 12px;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__body > p:first-child {
+    font-size: 28px !important;
+  }
+
+  .gju-app-shell__content .admin-dashboard-action-card .gju-card__body > p:last-child {
+    margin-top: 4px !important;
+    font-size: 12px;
+  }
+
   .gju-app-shell {
     grid-template-columns: 1fr;
     min-height: 100vh;
@@ -1375,7 +1492,7 @@
   .gju-app-shell__content .equipment-bulk-bar .bulk-actions {
     grid-column: 1 / -1;
     display: none;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 44px;
     gap: 6px;
     margin-left: 0;
   }
@@ -1387,13 +1504,13 @@
   .gju-app-shell__content .equipment-bulk-bar .bulk-actions .icon-only-action {
     grid-column: auto;
     justify-self: end;
-    width: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .gju-app-shell__content .equipment-bulk-bar .bulk-actions .button {
-    min-height: 40px;
+    min-height: 44px;
     padding-inline: 4px;
   }
 

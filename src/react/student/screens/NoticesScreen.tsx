@@ -28,6 +28,7 @@ export function NoticesScreen({ state, actions }: { state: StudentState; actions
         onClose={closeNotice}
         onCancel={closeNotice}
         onConfirm={closeNotice}
+        showActions={false}
       >
         {selected ? (
           <div className="student-react-notice-dialog">
@@ -40,7 +41,12 @@ export function NoticesScreen({ state, actions }: { state: StudentState; actions
       <GjuCard title="공지 검색">
         <div className="field"><label htmlFor="student-notice-search">공지 검색</label><input id="student-notice-search" className="input" value={query} placeholder="제목·분류·본문 검색" onChange={(event) => setQuery(event.target.value)} /></div>
       </GjuCard>
-      {notices.length ? <NoticeList notices={notices} onOpen={(id) => void actions.openNotice(id)} /> : <GjuEmptyState title="검색 결과가 없습니다." message="검색어를 지우면 전체 공지를 볼 수 있습니다." />}
+      {notices.length ? <NoticeList notices={notices} onOpen={(id) => void actions.openNotice(id)} /> : (
+        <GjuEmptyState
+          title={query.trim() ? "검색 결과가 없습니다." : "등록된 공지사항이 없습니다."}
+          message={query.trim() ? "검색어를 지우면 전체 공지를 볼 수 있습니다." : "새 공지가 등록되면 이 화면에 표시됩니다."}
+        />
+      )}
     </section>
   );
 }

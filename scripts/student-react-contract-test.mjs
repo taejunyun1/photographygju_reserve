@@ -200,7 +200,8 @@ const reservations = [
 ];
 
 const chemicals = [
-  { id: "chem-d76", process: "현상", name: "Kodak D-76", options: ["500ml", "1000ml"] }
+  { id: "chem-d76", process: "현상", name: "Kodak D-76", options: ["500ml", "1000ml"] },
+  { id: "lens-schneider-50", process: "확대기 렌즈", name: "Schneider componon-s 50mm f2.8", options: ["1개"] }
 ];
 
 function makeState(overrides = {}) {
@@ -316,6 +317,37 @@ assert(markup.includes("disabled"), "non-reservable and conflicting equipment co
 for (const text of ["기자재 검색", "카테고리", "Canon 렌즈 추천", "온라인 예약불가 기자재", "Fantasy Camera"]) {
   assert(markup.includes(text), `React equipment picker must retain ${text}`);
 }
+for (const text of ["선택 목록", "1개 선택", "Camera", "검색 결과"]) {
+  assert(markup.includes(text), `React equipment picker must expose the ${text} manifest contract`);
+}
+
+const expandedEquipment = [
+  ...equipment,
+  ...Array.from({ length: 25 }, (_, index) => ({
+    id: `extra-${index + 1}`,
+    code: `EXTRA-${String(index + 1).padStart(2, "0")}`,
+    name: `Extra ${index + 1}`,
+    category: "Other",
+    status: "가능",
+    active: true,
+    reservable: true
+  }))
+];
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    view: "reserve",
+    reservationType: "equipment",
+    bootstrap: { ...availabilityBootstrap, equipment: expandedEquipment },
+    reservationFlowStep: { equipment: "select", studio: "date", darkroom: "date", print: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    selectedEquipmentPeriod: "당일",
+    selectedEquipmentRentalTime: "10:15",
+    selectedEquipmentReturnTime: "12:00"
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("더 보기"), "long equipment results must expose a progressive load-more action");
+assert(!markup.includes("Extra 25"), "the initial equipment result DOM must not render the full catalog");
 
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
@@ -327,6 +359,18 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
 }));
 assert(markup.includes("출력 파일 업로드"), "print reservation must explain the upload prerequisite");
 assert(markup.includes(settings.googleDriveUrl), "print reservation must expose the configured Google Drive link");
+
+const missingDrivePrintState = makeState({
+  view: "reserve",
+  reservationType: "print",
+  bootstrap: { ...makeState().bootstrap, settings: { ...settings, googleDriveUrl: "" } },
+  reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" }
+});
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: missingDrivePrintState,
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("출력 예약을 시작할 수 없습니다."), "print reservations must expose a blocking recovery state when Drive is missing");
 
 assert.deepEqual(student.reservationSelectionPatchForDate("studio", "2026-07-22"), {
   type: "studio",
@@ -373,6 +417,15 @@ const validDetails = {
   darkroom: { purpose: "필름 현상", phone: "010-1111-2222", darkroomPolicyConfirmed: true },
   print: { count: 2, memo: "A 파일", phone: "010-1111-2222" }
 };
+
+assert.throws(
+  () => student.buildReservationDraft("print", {
+    ...validStates.print,
+    bootstrap: { ...validStates.print.bootstrap, settings: { ...settings, googleDriveUrl: "" } }
+  }, validDetails.print),
+  /드라이브/,
+  "print draft validation must reject missing Drive configuration"
+);
 
 const expectedDraftFields = {
   equipment: ["reservedDate", "period", "rentalTime", "returnTime", "equipmentItemIds", "cameraBagConfirmed", "phone", "purpose", "equipmentPolicyConfirmed"],
@@ -459,6 +512,20 @@ button("닫기").onClick();
 assert(recorded.calls.some(([name, value]) => name === "openReport" && value === null), "report close must clear the controlled ID with null");
 assert(fs.readFileSync("src/react/student/screens/ReportsScreen.tsx", "utf8").includes("key={active.id}"), "report form must be keyed by reservation ID so its draft resets");
 
+student.resetCaptures();
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    view: "reports",
+    bootstrap: { ...makeState().bootstrap, settings: { ...settings, googleDriveUrl: "" } },
+    myReservations: [pastReport],
+    activeReportReservationId: "report-past"
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("보고서 작성을 시작할 수 없습니다."), "reports must explain how to recover when Drive is missing");
+assert(!markup.includes("실제 사용 시간"), "reports must not open the submission form without a Drive destination");
+assert.equal(button("작성")?.disabled, true, "report compose actions must be disabled while Drive is missing");
+
 // Notice detail is controlled by activeNoticeId and closes through openNotice(null).
 student.resetCaptures();
 recorded = actionRecorder();
@@ -468,6 +535,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
 }));
 assert.equal(student.captures.dialogs.length, 1, "active notice must render one GjuDialog");
 assert.equal(student.captures.dialogs[0].open, true);
+assert.equal(student.captures.dialogs[0].showActions, false, "notice detail must expose only the dialog header close action");
 assert(markup.includes("공지 본문"), "controlled notice dialog must render its body");
 student.captures.dialogs[0].onClose();
 assert.deepEqual(recorded.calls, [["openNotice", null]], "notice close must clear the controlled notice ID");
@@ -596,6 +664,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
 for (const text of ["개인정보 수정", "비밀번호 변경", "계정 삭제", "개인정보 처리방침", "계정 및 데이터 삭제 안내", "로그아웃", "3개", "승인 완료", "허용됨"]) {
   assert(markup.includes(text), `My screen must render ${text}`);
 }
+assert(markup.includes("student-react-account-properties"), "My account metadata must use an explicit label/value layout");
 
 // Root must render StudentApp and keep the student mobile navigation icon-only.
 student.resetCaptures();
@@ -612,8 +681,12 @@ assert(
   shellSource.includes('<GjuIconButton label="마이 페이지" icon="user"'),
   "student mobile account action must use the shared icon-only button"
 );
+assert(!shellSource.includes('["lectures", "특강", "plus"]'), "student lecture navigation must not use the generic add icon");
+const primitiveSource = fs.readFileSync("src/react/student/components/StudentPrimitives.tsx", "utf8");
+assert(primitiveSource.includes("<h2>{title}</h2>"), "the screen header must use h2 beneath the shell page h1");
 
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
+assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),
   "student mobile header must keep title and account action on one responsive row"

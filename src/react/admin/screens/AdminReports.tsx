@@ -132,7 +132,6 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
     <section className="grid admin-react-screen">
       <GjuCard
         title="보고서"
-        eyebrow="React Admin"
         surface="workspace"
         actions={<span className="tag blue">{reports.length}건</span>}
       >
@@ -159,14 +158,14 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
           activeKey={semesterFilter}
           onChange={setSemester}
         />
-        <div className="admin-react-danger-row">
+        {deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
           <button className="button danger compact" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteReports(state, actions)}>
             필터 결과 보고서 삭제
           </button>
           <button className="button danger compact" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllReports(deleteAvailability.collectionTotal))}>
             전체 보고서 삭제
           </button>
-        </div>
+        </div> : null}
         <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>

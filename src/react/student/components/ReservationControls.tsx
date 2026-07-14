@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { GjuButton, GjuCard, GjuStatusBadge, GjuTabs } from "../../design-system";
+import { GjuButton, GjuCard, GjuIconButton, GjuStatusBadge, GjuTabs } from "../../design-system";
 import {
   darkroomSlotAvailability,
   equipmentItemAvailability,
@@ -52,6 +52,8 @@ const FLOW_STEPS: Record<ReservationType, readonly ReservationStep[]> = {
   darkroom: ["date", "schedule", "process", "details"],
   print: ["date", "schedule", "options", "details"]
 };
+
+const EQUIPMENT_RESULT_PAGE_SIZE = 20;
 
 function values(items: readonly string[] | undefined, fallback: readonly string[] = []) {
   return items?.length ? items : fallback;
@@ -227,6 +229,7 @@ function EquipmentScheduleStep({ state, actions }: Omit<ReservationControlsProps
 function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type">) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const [visibleLimit, setVisibleLimit] = useState(EQUIPMENT_RESULT_PAGE_SIZE);
   const equipment = (state.bootstrap.equipment || []).filter((item) => item.active !== false);
   const inquiryEquipment = equipment.filter((item) => item.source === "fantasy_lab" || item.inquiryOnly);
   const onlineEquipment = equipment.filter((item) => item.source !== "fantasy_lab" && !item.inquiryOnly);
@@ -272,6 +275,9 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
   const selectedItems = selected
     .map((id) => onlineEquipment.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  useEffect(() => {
+    setVisibleLimit(EQUIPMENT_RESULT_PAGE_SIZE);
+  }, [category, query]);
   const selectedBodyBrands = [...new Set(selectedItems
     .filter((item) => String(item.category || "").toLowerCase() === "body")
     .map((item) => String(item.brand || "").trim().toLowerCase())
@@ -286,6 +292,26 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
   return (
     <div className="student-react-equipment-picker">
       <p className="muted">필요한 장비를 여러 개 선택할 수 있습니다.</p>
+      <aside className="student-react-equipment-manifest" aria-live="polite">
+        <div className="student-react-equipment-manifest__head">
+          <strong>선택 목록</strong>
+          <span>{selectedItems.length}개 선택</span>
+        </div>
+        {selectedItems.length ? (
+          <div className="student-react-equipment-manifest__items">
+            {selectedItems.map((item) => (
+              <span key={item.id} className="student-react-equipment-manifest__item">
+                <span><strong>{item.name || item.code || "기자재"}</strong><small>{item.code || item.category || ""}</small></span>
+                <GjuIconButton
+                  label={`${item.name || item.code || "기자재"} 선택 해제`}
+                  icon="x"
+                  onClick={() => update(actions, "equipment", { equipmentItemIds: selected.filter((id) => id !== item.id) })}
+                />
+              </span>
+            ))}
+          </div>
+        ) : <p className="muted">목록에서 필요한 장비를 선택하세요.</p>}
+      </aside>
       <div className="field">
         <label htmlFor="student-equipment-search">기자재 검색</label>
         <input
@@ -307,15 +333,21 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
         className="student-react-filter-tabs"
       />
       <div id="student-equipment-results" role="tabpanel">
+        <p className="student-react-equipment-result-count">검색 결과 {items.length}개 · {Math.min(items.length, visibleLimit)}개 표시</p>
         <ChoiceGrid
           label="기자재 선택 결과"
           name="equipmentItemIds"
-          items={items}
+          items={items.slice(0, visibleLimit)}
           selected={selected}
           onChange={(value, checked) => update(actions, "equipment", {
             equipmentItemIds: checked ? [...selected, value] : selected.filter((id) => id !== value)
           })}
         />
+        {visibleLimit < items.length ? (
+          <GjuButton variant="outline" onClick={() => setVisibleLimit((current) => current + EQUIPMENT_RESULT_PAGE_SIZE)}>
+            더 보기 ({items.length - visibleLimit}개)
+          </GjuButton>
+        ) : null}
         {!items.length ? <p className="muted">검색 조건에 맞는 기자재가 없습니다.</p> : null}
       </div>
       {recommendedLenses.length ? (
@@ -357,7 +389,7 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
 }
 
 function PrintDrivePanel({ state }: { state: StudentState }) {
-  const driveUrl = String(state.bootstrap.settings.googleDriveUrl || "");
+  const driveUrl = String(state.bootstrap.settings.googleDriveUrl || "").trim();
   return (
     <aside className="student-react-drive-panel">
       <div>
@@ -366,7 +398,12 @@ function PrintDrivePanel({ state }: { state: StudentState }) {
       </div>
       {driveUrl ? (
         <a className="button primary compact" href={driveUrl} target="_blank" rel="noopener noreferrer">구글 드라이브 열기</a>
-      ) : <GjuStatusBadge tone="amber">링크 등록 필요</GjuStatusBadge>}
+      ) : (
+        <div className="student-react-drive-panel__missing" role="alert">
+          <GjuStatusBadge tone="amber">링크 등록 필요</GjuStatusBadge>
+          <span>관리자 설정에서 드라이브 링크를 등록해 주세요.</span>
+        </div>
+      )}
     </aside>
   );
 }
@@ -456,6 +493,8 @@ function DarkroomProcessStep({ state, actions }: Omit<ReservationControlsProps, 
   const selected = state.selectedDarkroomProcessTypes;
   const chemicals = state.bootstrap.darkroomChemicals || [];
   const selectedChemicals = state.selectedDarkroomChemicals;
+  const chemicalSupplies = chemicals.filter((chemical) => chemical.process !== "확대기 렌즈");
+  const enlargerLenses = chemicals.filter((chemical) => chemical.process === "확대기 렌즈");
   const participantCount = state.selectedDarkroomParticipantCount || "1";
   const invalidSlot = state.selectedDarkroomSlots
     .map((slot) => ({ slot, result: darkroomSlotAvailability(state.bootstrap, state.selectedDates.darkroom, slot, Number(participantCount)) }))
@@ -485,9 +524,9 @@ function DarkroomProcessStep({ state, actions }: Omit<ReservationControlsProps, 
         })}
       />
       <fieldset className="field">
-        <legend>사용 약품 및 예정량</legend>
+        <legend>사용 약품 및 기자재</legend>
         <div className="student-react-chemical-grid">
-          {chemicals.map((chemical) => (
+          {chemicalSupplies.map((chemical) => (
             <SelectField
               key={chemical.id}
               id={`darkroom-chemical-${chemical.id}`}
@@ -500,6 +539,26 @@ function DarkroomProcessStep({ state, actions }: Omit<ReservationControlsProps, 
             />
           ))}
         </div>
+        {enlargerLenses.length ? (
+          <div className="student-react-darkroom-equipment-group">
+            <h3>확대기 렌즈</h3>
+            <p className="muted">약품과 구분해 사용할 렌즈 수량을 선택하세요.</p>
+            <div className="student-react-chemical-grid">
+              {enlargerLenses.map((chemical) => (
+                <SelectField
+                  key={chemical.id}
+                  id={`darkroom-chemical-${chemical.id}`}
+                  label={chemical.name}
+                  value={selectedChemicals[chemical.id] || ""}
+                  items={chemical.options}
+                  onChange={(amount) => update(actions, "darkroom", {
+                    darkroomChemicals: { ...selectedChemicals, [chemical.id]: amount }
+                  })}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </fieldset>
     </>
   );
@@ -648,10 +707,10 @@ function ReservationReview({ type, state }: { type: ReservationType; state: Stud
   };
   return (
     <GjuCard title="예약 내용 확인" className="student-react-reservation-review">
-      <div className="property-list">
-        <div><span>사용일</span><strong>{state.selectedDates[type] || "-"}</strong></div>
-        <div><span>예약 대상</span><strong>{labels[type]}</strong></div>
-        <div><span>상태</span><GjuStatusBadge tone="blue">제출 전</GjuStatusBadge></div>
+      <div className="property-list student-react-review-properties">
+        <div><span className="student-react-review-properties__label">사용일</span><strong>{state.selectedDates[type] || "-"}</strong></div>
+        <div><span className="student-react-review-properties__label">예약 대상</span><strong>{labels[type]}</strong></div>
+        <div><span className="student-react-review-properties__label">상태</span><GjuStatusBadge tone="blue">제출 전</GjuStatusBadge></div>
       </div>
     </GjuCard>
   );
@@ -686,7 +745,7 @@ function DetailActions({ type, actions, submitting }: { type: ReservationType; a
   return (
     <div className="row-actions student-react-flow-actions">
       <GjuButton variant="ghost" disabled={submitting} onClick={() => void actions.setReservationStep(type, steps[steps.length - 2])}>이전</GjuButton>
-      <GjuButton type="submit" icon="check" loading={submitting}>예약 신청</GjuButton>
+      <GjuButton type="submit" icon="check" loading={submitting}>{type === "equipment" ? "승인 요청" : "예약 신청"}</GjuButton>
     </div>
   );
 }

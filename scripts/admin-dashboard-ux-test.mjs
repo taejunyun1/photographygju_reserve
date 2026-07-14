@@ -57,9 +57,11 @@ state.bootstrap = { settings: {
   equipmentCameraBagNotice: "가방 지참",
   blockedSchedules: []
 } };
-state.summary = { pendingUsers: 2, pendingEquipment: 99, equipmentCheckedOut: 1, equipmentReturned: 1, equipmentCancelled: 1, todayReservations: 4, missingReports: 1 };
+state.summary = { pendingUsers: 2, pendingEquipment: 2, equipmentPendingApproval: 2, equipmentApproved: 1, equipmentCheckedOut: 1, equipmentReturned: 1, equipmentCancelled: 1, todayReservations: 6, missingReports: 1 };
 state.nativeNotifications = { supported: true, permission: "granted", syncedAt: "2026-06-26T08:00:00.000Z", error: "" };
 state.adminReservations = [
+  { id: "r0", type: "equipment", status: "pending_approval", user: { name: "승인대기학생" }, fields: { reservedDate: today, rentalTime: "09:00", returnDate: today } },
+  { id: "r0b", type: "equipment", status: "approved", user: { name: "승인학생" }, fields: { reservedDate: today, rentalTime: "09:30", returnDate: today } },
   { id: "r1", type: "equipment", status: "checked_out", user: { name: "김학생" }, fields: { reservedDate: today, rentalTime: "10:00", returnDate: today } },
   { id: "r2", type: "equipment", status: "returned", user: { name: "이학생" }, fields: { reservedDate: today, rentalTime: "13:00", returnDate: today } },
   { id: "r3", type: "equipment", status: "cancelled", user: { name: "박학생" }, fields: { reservedDate: today, rentalTime: "15:00", returnDate: today } },
@@ -212,11 +214,12 @@ assert(!dashboard.includes("운영 네이티브 알림"), "dashboard must not re
 assert(dashboard.includes("오늘 처리할 일"), "dashboard must render today's action section");
 assert(dashboard.includes("운영 큐"), "dashboard must render operations queue");
 assert(dashboard.includes("운영 지표"), "dashboard must render quantitative metrics");
-assert(dashboard.includes("대여완료"), "dashboard must include equipment checked-out work");
-assert(dashboard.includes("반납완료"), "dashboard must include equipment returned work");
-assert(dashboard.includes("대여취소"), "dashboard must include equipment cancelled work");
-assert.equal(countOccurrences(dashboard, "admin-action-card"), 5, "top action cards must use the visual admin card treatment");
-assert.equal(countOccurrences(dashboard, "admin-action-icon"), 5, "top action cards must show visible icon badges");
+assert(dashboard.includes("대여 중"), "dashboard must include equipment checked-out work");
+assert(dashboard.includes("반납 완료"), "dashboard must include equipment returned work");
+assert(dashboard.includes("취소/반려"), "dashboard must include equipment cancelled work");
+assert(dashboard.includes('data-admin-equipment-reservation-status="cancelled_or_rejected"'), "dashboard terminal card must open the combined cancelled/rejected queue");
+assert.equal(countOccurrences(dashboard, "admin-action-card"), 7, "top action cards must use the visual admin card treatment");
+assert.equal(countOccurrences(dashboard, "admin-action-icon"), 7, "top action cards must show visible icon badges");
 assert.equal(countOccurrences(dashboard, "admin-queue-item"), 0, "operations queue must not repeat top KPI cards");
 assert(dashboard.includes("admin-queue-sheet-grid"), "operations queue must render clickable sheet entry cards");
 assert(dashboard.includes('data-admin-queue-sheet="today"'), "today timeline queue must open a bottom sheet");
@@ -225,7 +228,7 @@ assert(!dashboard.includes("admin-queue-detail-grid"), "operations queue must no
 assert(dashboard.includes('admin-action-card tone-yellow'), "dashboard checked-out equipment action must use the yellow tone");
 assert(dashboardWithQueueSheet.includes("bottom-sheet admin-queue-sheet"), "operations queue click must render a bottom sheet");
 assert(dashboardWithQueueSheet.includes("admin-queue-sheet-list"), "operations queue bottom sheet must render a detail list");
-assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여완료</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
+assert(dashboardWithQueueSheet.includes('<span class="tag yellow">대여 중</span>'), "queue sheet checked-out equipment status must use the shared yellow status tag");
 assert(adminShell().includes('data-action="admin-refresh"'), "Admin shell must render a top refresh button");
 assert(adminShell().includes('aria-label="새로고침"'), "Admin refresh icon button must keep an accessible label");
 assert(adminShell().includes('aria-label="내 정보"'), "Admin account icon button must keep an accessible label");
@@ -236,13 +239,13 @@ assert(!adminShell().includes("내 정보</button>"), "Admin account button must
 assert(!adminShell().includes("나가기</button>"), "Admin mobile logout button must not render visible text");
 assert(!adminShell().includes("로그아웃</button>"), "Admin desktop logout button must not render visible text");
 assert(!adminShell().includes("admin-refresh-indicator"), "Admin shell must not render a pull-to-refresh indicator");
-assert(reservationsView.includes('<span class="tag green">반납완료</span>'), "reservation management returned equipment status must use green");
-assert(reservationsView.includes('<span class="tag gray">대여취소</span>'), "reservation management cancelled equipment status must use gray");
-assert(!dashboard.includes("승인 완료"), "equipment dashboard must not show legacy approval status");
-assert(!dashboard.includes("기자재 승인 대기"), "equipment dashboard must not show legacy pending equipment status");
-assert(reservationsView.includes("대여완료"), "equipment reservation filter/action must include checked-out status");
-assert(reservationsView.includes("반납완료"), "equipment reservation filter/action must include returned status");
-assert(reservationsView.includes("대여취소"), "equipment reservation filter/action must include cancelled status");
+assert(reservationsView.includes('<span class="tag green">반납 완료</span>'), "reservation management returned equipment status must use green");
+assert(reservationsView.includes('<span class="tag gray">예약 취소</span>'), "reservation management cancelled equipment status must use gray");
+assert(dashboard.includes("승인 완료"), "equipment dashboard must show approved equipment status");
+assert(dashboard.includes("기자재 승인 대기"), "equipment dashboard must show pending equipment approval");
+for (const label of ["승인 대기", "승인 완료", "대여 중", "반납 완료", "예약 취소"]) {
+  assert(reservationsView.includes(label), `equipment reservation filter/action must include ${label}`);
+}
 assert(reservationsView.includes("2026년 1학기"), "reservation management must render semester filter labels");
 assert(reservationsView.includes('data-admin-reservation-semester="2026-S1"'), "reservation semester filter must expose data attribute");
 assert(reservationsView.includes("admin-reservation-type-tabs"), "reservation type filters must expose a mobile fitting class");
@@ -250,13 +253,9 @@ assert(reservationsView.includes("admin-reservation-status-tabs"), "reservation 
 assert(reservationsView.includes('data-admin-bulk-delete="reservations:filtered"'), "reservation management must expose filtered bulk delete");
 assert(reservationsView.includes('data-admin-bulk-delete="reservations:all"'), "reservation management must expose guarded full delete");
 assert(!reservationsView.includes('data-admin-bulk-delete="users'), "student approval must not expose user bulk delete");
-assert(reservationsView.includes('data-status="checked_out"'), "equipment reservations must expose checked-out action");
-assert(reservationsView.includes('data-status="returned"'), "equipment reservations must expose returned action");
-assert(reservationsView.includes('data-status="cancelled"'), "equipment reservations must expose cancelled action");
-assert.match(reservationsView, /data-status="checked_out"[^>]*disabled[^>]*aria-current="true"/, "current checked-out equipment status action must be disabled and programmatically marked current");
-assert.match(reservationsView, /data-status="returned"[^>]*disabled[^>]*aria-current="true"/, "current returned equipment status action must be disabled and programmatically marked current");
-assert.match(reservationsView, /data-status="cancelled"[^>]*disabled[^>]*aria-current="true"/, "current cancelled equipment status action must be disabled and programmatically marked current");
-assert(!reservationsView.includes('data-status="approved"'), "equipment reservations must not expose legacy approval action");
+for (const status of ["approved", "rejected", "checked_out", "returned", "cancelled"]) {
+  assert(reservationsView.includes(`data-status="${status}"`), `equipment reservations must expose the ${status} lifecycle action`);
+}
 assert(!reservationsView.includes('data-status="admin_cancelled"'), "equipment reservations must not expose legacy admin cancellation action");
 assert(reportsView.includes('data-admin-report-semester="2026-S2"'), "reports must render semester filters");
 assert(reportsView.includes('data-admin-bulk-delete="reports:filtered"'), "reports must expose filtered bulk delete");
@@ -336,18 +335,21 @@ assert(adminEventSource.includes('[name="from"]'), "blocked calendar date click 
 assert(adminEventSource.includes('[name="to"]'), "blocked calendar date click must fill the form end date");
 assert(adminEventSource.includes('[name="day"]'), "blocked calendar date click must fill the form weekday");
 assert(adminEventSource.includes("form.querySelector('[name=\"from\"]')?.focus()"), "blocked calendar date click must focus the first date input after scrolling");
-assert.equal(metrics.weekReservations, 4, "metrics must count reservations from current state");
+assert.equal(metrics.weekReservations, 6, "metrics must count reservations from current state");
+assert.equal(metrics.equipmentPendingApproval, 2, "metrics must count pending equipment approvals separately");
+assert.equal(metrics.equipmentApproved, 1, "metrics must count approved equipment separately");
 assert.equal(metrics.equipmentCheckedOut, 1, "metrics must count checked-out equipment reservations");
 assert.equal(metrics.equipmentReturned, 1, "metrics must count returned equipment reservations");
 assert.equal(metrics.equipmentCancelled, 1, "metrics must count cancelled equipment reservations");
-assert.equal(metrics.pendingEquipment, 1, "legacy pendingEquipment metric must map to checked-out equipment count");
+assert.equal(metrics.pendingEquipment, 2, "legacy pendingEquipment metric must map to pending approval count");
 assert.equal(metrics.availableEquipment, 2, "metrics must count active available equipment");
 assert.equal(metrics.repairEquipment, 1, "metrics must count repair equipment");
 assert.equal(notifications.length, 1, "admin digest must be planned when summary has work");
-assert(notifications[0].body.includes("대여완료 1건"), "admin digest must include checked-out equipment count");
-assert(notifications[0].body.includes("반납완료 1건"), "admin digest must include returned equipment count");
-assert(notifications[0].body.includes("대여취소 1건"), "admin digest must include cancelled equipment count");
-assert(!notifications[0].body.includes("기자재 승인"), "admin digest must not use legacy equipment approval wording");
+assert(notifications[0].body.includes("기자재 승인 대기 2건"), "admin digest must include pending equipment approval count");
+assert(notifications[0].body.includes("승인 완료 1건"), "admin digest must include approved equipment count");
+assert(notifications[0].body.includes("대여 중 1건"), "admin digest must include checked-out equipment count");
+assert(notifications[0].body.includes("반납 완료 1건"), "admin digest must include returned equipment count");
+assert(notifications[0].body.includes("취소/반려 1건"), "admin digest must include cancelled and rejected equipment count");
 assert(css.includes(".admin-dashboard-section"), "dashboard section styles must exist");
 assert(css.includes(".admin-action-card"), "admin action card styles must exist");
 assert(css.includes(".admin-action-icon"), "admin action icon styles must exist");

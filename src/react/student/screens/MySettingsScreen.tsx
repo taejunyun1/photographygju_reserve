@@ -229,7 +229,7 @@ export function MySettingsScreen({ state, actions }: { state: StudentState; acti
     <section className="grid student-react-settings">
       <ScreenHeader title="마이" description="계정과 알림 설정을 관리합니다." />
       <GjuCard title={state.user.name}>
-        <div className="property-list">
+        <div className="property-list student-react-account-properties">
           <div><span>승인</span><GjuStatusBadge tone={approvalTone}>{APPROVAL_LABELS[state.user.approvalStatus || ""] || state.user.approvalStatus || "확인 중"}</GjuStatusBadge></div>
           <div><span>학번</span><strong>{state.user.studentId || "-"}</strong></div>
           <div><span>학년</span><strong>{state.user.grade || "-"}</strong></div>

@@ -299,6 +299,9 @@ export function createReservationValidationHelpers({
     }
 
     if (type === "print") {
+      if (!String(db.settings.googleDriveUrl || "").trim()) {
+        throw Object.assign(new Error("출력 파일 업로드용 구글 드라이브 링크가 등록되지 않았습니다."), { status: 409 });
+      }
       assertRequired(fields, ["reservedDate", "startTime", "endTime", "phone", "printType", "paper", "size"]);
       if (printDateOutsideUploadWindow(db.settings, fields.reservedDate)) throw Object.assign(new Error(`출력 업로드 가능 기간(${db.settings.printUploadStartDate || "제한 없음"} ~ ${db.settings.printUploadEndDate || "제한 없음"}) 밖의 날짜입니다.`), { status: 400 });
       const start = timeToMinutes(fields.startTime);

@@ -30,9 +30,7 @@ const styles = {
     color: "#344054"
   },
   grid: {
-    display: "grid",
-    gap: "16px",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
+    display: "grid"
   },
   button: {
     display: "block",
@@ -98,7 +96,7 @@ function renderActionCard(card: DashboardCardConfig, actions: ReactAdminActions)
       key: card.label,
       type: "button",
       style: styles.button,
-      className: motionClass.screen,
+      className: `${motionClass.screen} admin-dashboard-action${card.value === 0 ? " is-empty" : ""}`,
       onClick: () => {
         void navigateDashboardCard(card, actions);
       }
@@ -107,6 +105,7 @@ function renderActionCard(card: DashboardCardConfig, actions: ReactAdminActions)
       GjuCard,
       {
         title: card.label,
+        className: "admin-dashboard-action-card",
         actions: React.createElement("span", { style: styles.badge }, card.badge)
       },
       React.createElement("p", { style: styles.count }, card.value),
@@ -178,7 +177,9 @@ function metric(label: string, value: React.ReactNode, detail = "") {
 export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const summary = state.summary || {};
   const pendingUsers = Number(summary.pendingUsers || 0);
-  const checkedOut = Number(summary.equipmentCheckedOut || summary.pendingEquipment || 0);
+  const pendingApproval = Number(summary.equipmentPendingApproval || summary.pendingEquipment || 0);
+  const approved = Number(summary.equipmentApproved || 0);
+  const checkedOut = Number(summary.equipmentCheckedOut || 0);
   const returned = Number(summary.equipmentReturned || 0);
   const cancelled = Number(summary.equipmentCancelled || 0);
   const missingReports = Number(summary.missingReports || 0);
@@ -194,16 +195,34 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       filters: { status: "approval_pending", q: "", page: 1 }
     },
     {
-      label: "대여완료",
+      label: "기자재 승인 대기",
+      value: pendingApproval,
+      caption: "승인 요청 확인",
+      badge: "예약 관리",
+      tone: "amber",
+      targetView: "reservations",
+      filters: { type: "equipment", status: "pending_approval", q: "", page: 1 }
+    },
+    {
+      label: "승인 완료",
+      value: approved,
+      caption: "인계 전 예약",
+      badge: "예약 관리",
+      tone: "blue",
+      targetView: "reservations",
+      filters: { type: "equipment", status: "approved", q: "", page: 1 }
+    },
+    {
+      label: "대여 중",
       value: checkedOut,
-      caption: "기자재 대여 상태",
+      caption: "반납 대기 장비",
       badge: "예약 관리",
       tone: "amber",
       targetView: "reservations",
       filters: { type: "equipment", status: "checked_out", q: "", page: 1 }
     },
     {
-      label: "반납완료",
+      label: "반납 완료",
       value: returned,
       caption: "기자재 반납 상태",
       badge: "예약 관리",
@@ -212,13 +231,13 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       filters: { type: "equipment", status: "returned", q: "", page: 1 }
     },
     {
-      label: "대여취소",
+      label: "취소/반려",
       value: cancelled,
       caption: "기자재 취소 상태",
       badge: "예약 관리",
       tone: "neutral",
       targetView: "reservations",
-      filters: { type: "equipment", status: "cancelled", q: "", page: 1 }
+      filters: { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }
     },
     {
       label: "보고서 확인 필요",
@@ -250,10 +269,10 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       React.createElement(
         "p",
         { style: styles.intro },
-        "학생 승인과 기자재 3상태, 보고서 확인 대상을 빠르게 확인합니다."
+        "학생 승인과 기자재 승인·대여 흐름, 보고서 확인 대상을 빠르게 확인합니다."
       )
     ),
-    React.createElement("section", { style: styles.grid }, cards.map((card) => renderActionCard(card, actions))),
+    React.createElement("section", { className: "admin-dashboard-action-grid", style: styles.grid }, cards.map((card) => renderActionCard(card, actions))),
     React.createElement(
       GjuCard,
       { title: "운영 큐" },

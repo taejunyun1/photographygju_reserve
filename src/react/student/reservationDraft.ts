@@ -184,6 +184,9 @@ function darkroomDraft(state: StudentState, details: DarkroomReservationDetails)
 }
 
 function printDraft(state: StudentState, details: PrintReservationDetails): PrintReservationDraft {
+  if (!String(state.bootstrap.settings.googleDriveUrl || "").trim()) {
+    throw new Error("출력 파일을 올릴 구글 드라이브 링크가 등록되지 않았습니다.");
+  }
   const reservedDate = assertDate("print", state);
   const startTime = required(state.selectedPrintStartTime, "출력실 사용 시간을 선택하세요.");
   const endTime = required(state.selectedPrintEndTime, "출력실 사용 시간을 선택하세요.");

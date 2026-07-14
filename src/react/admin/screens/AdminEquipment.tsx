@@ -327,7 +327,7 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
 
   return (
     <section className="grid admin-equipment-add-panel">
-      <GjuCard title="장비추가" eyebrow="React Admin">
+      <GjuCard title="장비추가">
         <form className="admin-react-form-grid" onSubmit={submitEquipment}>
           <label>
             코드 / 접두어
@@ -469,7 +469,6 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
       <GjuCard
         className="admin-equipment-list-card compact"
         title="등록된 전체 기자재"
-        eyebrow="React Admin"
         surface="workspace"
         actions={
           <span className="tag blue">
@@ -550,7 +549,7 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
             />
           </div>
         </div>
-        <div className="table-wrap embedded admin-equipment-scroll-region admin-equipment-table-wrap">
+        <div className="table-wrap embedded admin-equipment-scroll-region admin-equipment-table-wrap admin-react-desktop-table">
           <GjuTable>
             <thead>
               <tr>

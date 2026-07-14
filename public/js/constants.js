@@ -26,7 +26,7 @@ export const statusLabel = {
   auto_confirmed: "자동 확정",
   cancelled: "취소",
   admin_cancelled: "관리자 취소",
-  checked_out: "대여 완료",
+  checked_out: "대여 중",
   returned: "반납 완료",
   completed: "사용 완료",
   lecture_applied: "신청완료",
@@ -41,17 +41,25 @@ export const typeLabel = {
   lecture: "특강"
 };
 
-export const equipmentReservationStatuses = ["checked_out", "returned", "cancelled"];
+export const equipmentReservationStatuses = ["pending_approval", "approved", "checked_out", "returned", "cancelled_or_rejected"];
 
 export const equipmentReservationStatusLabel = {
-  checked_out: "대여완료",
-  returned: "반납완료",
-  cancelled: "대여취소"
+  pending_approval: "승인 대기",
+  approved: "승인 완료",
+  checked_out: "대여 중",
+  returned: "반납 완료",
+  cancelled_or_rejected: "취소/반려",
+  rejected: "반려",
+  cancelled: "예약 취소"
 };
 
 export const equipmentReservationStatusColor = {
+  pending_approval: "yellow",
+  approved: "blue",
   checked_out: "yellow",
   returned: "green",
+  cancelled_or_rejected: "gray",
+  rejected: "red",
   cancelled: "gray"
 };
 

@@ -50,8 +50,11 @@ const renderTestSource = read("scripts/react-admin-render-test.mjs");
 const adminUsersSource = read("src/react/admin/screens/AdminUsers.tsx");
 const adminEquipmentSource = read("src/react/admin/screens/AdminEquipment.tsx");
 const adminReservationsSource = read("src/react/admin/screens/AdminReservations.tsx");
+const adminListsSource = read("core/admin-lists.mjs");
 assert(adminReservationsSource.includes("function activeReservationFilters"), "React reservations must normalize list and deletion filters through one helper");
 assert(adminReservationsSource.includes('status: nextTab === "equipment" ? statusFilter : "all"'), "Leaving the equipment tab must clear the equipment-only status filter");
+assert(adminReservationsSource.includes('["cancelled_or_rejected", "취소/반려"]'), "React equipment filters must expose the combined terminal status");
+assert(adminListsSource.includes('params.status === "cancelled_or_rejected"'), "Admin reservation filtering must support the combined cancelled/rejected terminal status");
 const adminAccountSource = read("src/react/admin/screens/AdminAccount.tsx");
 assert(adminAccountSource.includes("await actions.changeAccountPassword"), "Admin password form must wait for a successful mutation before resetting");
 assert(!adminAccountSource.includes("void actions.changeAccountPassword"), "Admin password form must not reset while its mutation is still pending");
@@ -460,7 +463,7 @@ for (const selector of [
 }
 const mobileEquipmentBulkActionsRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions {", mobileMediaStart);
 assert(mobileEquipmentBulkActionsRule.includes("display: none;"), "Mobile equipment bulk actions must stay hidden until equipment is selected");
-assert(mobileEquipmentBulkActionsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;"), "Mobile equipment bulk actions must keep status buttons and delete icon on one efficient row");
+assert(mobileEquipmentBulkActionsRule.includes("grid-template-columns: repeat(4, minmax(0, 1fr)) 44px;"), "Mobile equipment bulk actions must keep status buttons and a 44px delete icon on one efficient row");
 const mobileEquipmentBulkActionsActiveRule = cssRule(designSystemCss, "  .gju-app-shell__content .equipment-bulk-bar .bulk-actions:has(button:not(:disabled)) {", mobileMediaStart);
 assert(mobileEquipmentBulkActionsActiveRule.includes("display: grid;"), "Mobile equipment bulk actions must reappear after selecting equipment");
 for (const className of ["admin-user-mobile-list", "admin-user-mobile-card", "admin-user-mobile-meta", "admin-user-mobile-actions"]) {

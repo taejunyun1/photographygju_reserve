@@ -9,11 +9,11 @@ type StudentShellProps = {
   children: React.ReactNode;
 };
 
-const NAV_ITEMS: ReadonlyArray<readonly [StudentNavKey, string, "camera" | "refresh" | "fileText" | "plus" | "user"]> = [
+const NAV_ITEMS: ReadonlyArray<readonly [StudentNavKey, string, "camera" | "refresh" | "fileText" | "calendar" | "user"]> = [
   ["home", "홈", "camera"],
   ["mine", "내 예약", "refresh"],
   ["reports", "보고서", "fileText"],
-  ["lectures", "특강", "plus"],
+  ["lectures", "특강", "calendar"],
   ["notices", "공지", "fileText"]
 ];
 

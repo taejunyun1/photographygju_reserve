@@ -51,8 +51,8 @@ equipmentStatusDb.reservations.push(
 );
 normalizeDb(equipmentStatusDb);
 const normalizedEquipmentStatuses = Object.fromEntries(equipmentStatusDb.reservations.map((item) => [item.id, item.status]));
-assert.equal(normalizedEquipmentStatuses.eq_pending, "checked_out");
-assert.equal(normalizedEquipmentStatuses.eq_approved, "checked_out");
+assert.equal(normalizedEquipmentStatuses.eq_pending, "pending_approval");
+assert.equal(normalizedEquipmentStatuses.eq_approved, "approved");
 assert.equal(normalizedEquipmentStatuses.eq_admin_cancelled, "cancelled");
 assert.equal(normalizedEquipmentStatuses.eq_completed, "returned");
 assert.equal(normalizedEquipmentStatuses.studio_approved, "approved");
@@ -785,6 +785,23 @@ assert.equal(studentLogin.status, 200);
 const studentSession = db.sessions.find((session) => session.userId === studentLogin.body.data.user.id);
 assert.equal(Boolean(studentSession?.ip), true);
 
+const configuredGoogleDriveUrl = db.settings.googleDriveUrl;
+db.settings.googleDriveUrl = "";
+const printWithoutGoogleDrive = await api("POST", "/api/reservations", {
+  type: "print",
+  fields: {
+    reservedDate: nextFriday,
+    startTime: "10:00",
+    endTime: "11:00",
+    phone: "01039546412",
+    printType: "과제",
+    paper: "글로시",
+    size: "소형"
+  }
+}, studentLogin.body.data.token);
+assert.equal(printWithoutGoogleDrive.status, 409, "print reservations must remain blocked when the upload destination is not configured");
+db.settings.googleDriveUrl = configuredGoogleDriveUrl;
+
 const weekendEquipmentItem = db.equipment.find((item) => item.active !== false && item.reservable !== false && item.status === "가능" && !["Body", "Lens"].includes(item.category));
 assert.equal(Boolean(weekendEquipmentItem), true);
 const saturdayEquipmentReservation = await api("POST", "/api/reservations", {
@@ -813,6 +830,22 @@ const returnedEquipmentReservation = await api("POST", "/api/reservations", {
   }
 }, studentLogin.body.data.token);
 assert.equal(returnedEquipmentReservation.status, 200);
+assert.equal(returnedEquipmentReservation.body.data.status, "pending_approval", "new equipment reservations must wait for Admin approval");
+const skipEquipmentApproval = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
+  status: "returned"
+}, adminToken);
+assert.equal(skipEquipmentApproval.status, 409, "equipment reservations must not skip approval and checkout");
+assert.equal(db.reservations.find((item) => item.id === returnedEquipmentReservation.body.data.id)?.status, "pending_approval");
+const approveEquipmentReservation = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
+  status: "approved"
+}, adminToken);
+assert.equal(approveEquipmentReservation.status, 200);
+assert.equal(approveEquipmentReservation.body.data.status, "approved");
+const checkOutEquipmentReservation = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
+  status: "checked_out"
+}, adminToken);
+assert.equal(checkOutEquipmentReservation.status, 200);
+assert.equal(checkOutEquipmentReservation.body.data.status, "checked_out");
 const markEquipmentReturned = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
   status: "returned"
 }, adminToken);

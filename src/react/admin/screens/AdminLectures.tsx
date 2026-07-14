@@ -109,6 +109,7 @@ function bulkDeleteLectures(state: LegacyState, actions: ReactAdminActions) {
 
 export function AdminLectures({ state, actions }: AdminLecturesProps) {
   const [editingId, setEditingId] = React.useState<string>("");
+  const [formOpen, setFormOpen] = React.useState(false);
   const lectures = state.adminLectures || state.lectures || [];
   const semesterFilter = String(state.adminLectureSemesterFilter || "all");
   const semesters = semesterOptions(state.adminLectureSemesters);
@@ -134,10 +135,16 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
     await actions.saveLecture(editingLecture?.id || null, payload);
     if (editingLecture) {
       setEditingId("");
+      setFormOpen(false);
       return;
     }
     form.reset();
+    setFormOpen(false);
   });
+  const openEditForm = (lectureId: string) => {
+    setEditingId(lectureId);
+    setFormOpen(true);
+  };
 
   const setSemester = (semester: string) => {
     void actions.setAdminFilters("lectures", { semester, page: 1 });
@@ -149,7 +156,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
 
   return (
     <section className="grid admin-react-screen">
-      <GjuCard title="비교과 특강" eyebrow="React Admin" actions={<span className="tag blue">{filtered.length}건</span>} surface="workspace">
+      <GjuCard title="비교과 특강" actions={<span className="tag blue">{filtered.length}건</span>} surface="workspace">
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>
             <span className="sr-only">특강 검색</span>
@@ -173,7 +180,18 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
           activeKey={semesterFilter}
           onChange={setSemester}
         />
-        <form key={editingLecture?.id || "new"} className="admin-react-form-grid" onSubmit={submitLecture}>
+        <div className="admin-react-disclosure-row">
+          <button className="button primary compact" type="button" onClick={() => {
+            setEditingId("");
+            setFormOpen((current) => !current);
+          }}>
+            {formOpen ? (editingLecture ? "특강 수정 닫기" : "특강 등록 닫기") : "특강 등록 열기"}
+          </button>
+          <button className="button compact" type="button" onClick={() => runAdminAction(() => actions.downloadLectureCsv())}>
+            CSV 내보내기
+          </button>
+        </div>
+        {formOpen ? <form key={editingLecture?.id || "new"} className="admin-react-form-grid admin-react-create-form" onSubmit={submitLecture}>
           <label>
             제목
             <input className="input" name="title" defaultValue={editingLecture?.title || ""} required />
@@ -235,21 +253,23 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
               {editingLecture ? "특강 수정" : "특강 등록"}
             </button>
             {editingLecture ? (
-              <button className="button ghost" type="button" onClick={() => setEditingId("")}>
+              <button className="button ghost" type="button" onClick={() => {
+                setEditingId("");
+                setFormOpen(false);
+              }}>
                 취소
               </button>
             ) : null}
-            <button className="button" type="button" onClick={() => runAdminAction(() => actions.downloadLectureCsv())}>
-              CSV 내보내기
-            </button>
-            <button className="button danger" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteLectures(state, actions)}>
-              필터 결과 특강 삭제
-            </button>
-            <button className="button danger" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllLectures(deleteAvailability.collectionTotal))}>
-              전체 특강 삭제
-            </button>
           </div>
-        </form>
+        </form> : null}
+        {deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
+          <button className="button danger compact" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteLectures(state, actions)}>
+            필터 결과 특강 삭제
+          </button>
+          <button className="button danger compact" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllLectures(deleteAvailability.collectionTotal))}>
+            전체 특강 삭제
+          </button>
+        </div> : null}
         <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>
@@ -281,7 +301,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
                   </td>
                   <td>{lectureApplications(lecture)}</td>
                   <td>
-                    {renderLectureActions(lecture, actions, setEditingId)}
+                    {renderLectureActions(lecture, actions, openEditForm)}
                   </td>
                 </tr>
               )) : (
@@ -315,7 +335,7 @@ export function AdminLectures({ state, actions }: AdminLecturesProps) {
                 {property("비고", lecture.notes || "-")}
               </dl>
               {lectureApplications(lecture)}
-              {renderLectureActions(lecture, actions, setEditingId)}
+              {renderLectureActions(lecture, actions, openEditForm)}
             </article>
           )) : <GjuEmptyState title="특강이 없습니다." message="검색어와 학기 필터를 확인하세요." />}
         </div>

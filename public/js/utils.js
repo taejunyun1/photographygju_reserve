@@ -114,7 +114,7 @@ export function tag(value, color = "") {
 
 export function reservationStatusTag(reservation) {
   if (reservation?.type === "equipment") {
-    const status = reservation.status || "checked_out";
+    const status = reservation.status || "pending_approval";
     return `<span class="tag ${equipmentReservationStatusColor[status] || statusColor[status] || "gray"}">${escapeHtml(equipmentReservationStatusLabel[status] || statusLabel[status] || status)}</span>`;
   }
   return tag(reservation?.status || "상태 없음");

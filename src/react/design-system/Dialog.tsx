@@ -16,6 +16,7 @@ export type GjuDialogProps = {
   onCancel?: () => void;
   onClose?: () => void;
   tone?: "neutral" | "danger";
+  showActions?: boolean;
 };
 
 export function GjuDialog({
@@ -28,7 +29,8 @@ export function GjuDialog({
   onConfirm,
   onCancel,
   onClose,
-  tone = "neutral"
+  tone = "neutral",
+  showActions = true
 }: GjuDialogProps) {
   const titleId = `gju-dialog-title-${React.useId()}`;
   const dialogBody = body ?? children;
@@ -67,12 +69,14 @@ export function GjuDialog({
           })
         ),
         dialogBody ? React.createElement("div", { className: "gju-dialog__body" }, dialogBody) : null,
-        React.createElement(
-          "div",
-          { className: "gju-dialog__actions" },
-          React.createElement(GjuButton, { variant: "ghost", tone: "neutral", onClick: closeHandler }, cancelLabel),
-          React.createElement(GjuButton, { tone: tone === "danger" ? "danger" : "primary", onClick: onConfirm }, confirmLabel)
-        )
+        showActions
+          ? React.createElement(
+              "div",
+              { className: "gju-dialog__actions" },
+              React.createElement(GjuButton, { variant: "ghost", tone: "neutral", onClick: closeHandler }, cancelLabel),
+              React.createElement(GjuButton, { tone: tone === "danger" ? "danger" : "primary", onClick: onConfirm }, confirmLabel)
+            )
+          : null
       )
     }
   );

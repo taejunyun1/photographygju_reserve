@@ -37,16 +37,18 @@ const RESERVATION_TABS = [
 
 const EQUIPMENT_STATUS_FILTERS = [
   ["all", "전체"],
-  ["checked_out", "대여완료"],
-  ["returned", "반납완료"],
-  ["cancelled", "대여취소"]
+  ["pending_approval", "승인 대기"],
+  ["approved", "승인 완료"],
+  ["checked_out", "대여 중"],
+  ["returned", "반납 완료"],
+  ["cancelled_or_rejected", "취소/반려"]
 ] as const;
 
-const EQUIPMENT_STATUS_ACTIONS = [
-  ["checked_out", "대여완료"],
-  ["returned", "반납완료"],
-  ["cancelled", "대여취소"]
-] as const;
+const EQUIPMENT_STATUS_ACTIONS = {
+  pending_approval: [["approved", "승인"], ["rejected", "반려"]],
+  approved: [["checked_out", "대여 처리"], ["cancelled", "예약 취소"]],
+  checked_out: [["returned", "반납 처리"], ["cancelled", "예약 취소"]]
+} as const;
 
 const FACILITY_STATUS_ACTIONS = [
   ["completed", "완료"],
@@ -82,9 +84,9 @@ function reservationStatusLabel(status: string) {
     pending: "대기",
     pending_approval: "승인 대기",
     auto_confirmed: "자동 확정",
-    approved: "승인",
-    checked_out: "대여완료",
-    returned: "반납완료",
+    approved: "승인 완료",
+    checked_out: "대여 중",
+    returned: "반납 완료",
     completed: "완료",
     cancelled: "취소",
     admin_cancelled: "관리자 취소",
@@ -187,11 +189,13 @@ function reservationDetails(reservation: AdminReservationRecord) {
 }
 
 function statusActionsFor(reservation: AdminReservationRecord) {
-  return reservation.type === "equipment" ? EQUIPMENT_STATUS_ACTIONS : FACILITY_STATUS_ACTIONS;
+  if (reservation.type !== "equipment") return FACILITY_STATUS_ACTIONS;
+  const status = String(reservation.status || "") as keyof typeof EQUIPMENT_STATUS_ACTIONS;
+  return EQUIPMENT_STATUS_ACTIONS[status] || [];
 }
 
 function reservationStatusIcon(status: string): GjuIconName {
-  return status === "cancelled" || status === "admin_cancelled" ? "x" : "check";
+  return status === "cancelled" || status === "admin_cancelled" || status === "rejected" ? "x" : "check";
 }
 
 function updateReservationStatus(actions: ReactAdminActions, reservation: AdminReservationRecord, status: string) {
@@ -209,7 +213,7 @@ function renderReservationStatusActions(
       key={nextStatus}
       label={label}
       icon={reservationStatusIcon(nextStatus)}
-      tone={nextStatus === "cancelled" || nextStatus === "admin_cancelled" ? "danger" : "success"}
+      tone={nextStatus === "cancelled" || nextStatus === "admin_cancelled" || nextStatus === "rejected" ? "danger" : "success"}
       disabled={disableCurrent && nextStatus === currentStatus}
       aria-pressed={nextStatus === currentStatus ? "true" : "false"}
       onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
@@ -313,7 +317,6 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
     <section className="grid admin-react-screen">
       <GjuCard
         title="예약 관리"
-        eyebrow="React Admin"
         actions={<span className="tag blue">{reservations.length}건</span>}
         surface="workspace"
       >
@@ -360,14 +363,14 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
             onChange={setStatusFilter}
           />
         ) : null}
-        <div className="admin-react-danger-row">
+        {deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
           <button className="button danger compact" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteReservations(state, actions)}>
             필터 결과 예약 삭제
           </button>
           <button className="button danger compact" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllReservations(deleteAvailability.collectionTotal))}>
             전체 예약 삭제
           </button>
-        </div>
+        </div> : null}
         <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>

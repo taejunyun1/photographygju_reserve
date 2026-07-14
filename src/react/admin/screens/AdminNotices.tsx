@@ -49,6 +49,7 @@ function renderNoticeDeleteAction(notice: AdminNoticeRecord, actions: ReactAdmin
 }
 
 export function AdminNotices({ state, actions }: AdminNoticesProps) {
+  const [formOpen, setFormOpen] = React.useState(false);
   const notices = state.adminNotices || [];
   const noticeSort = state.adminNoticeSort || { field: "createdAt", direction: "desc" as const };
   const deleteFilters = { q: state.adminNoticeSearch || "" };
@@ -64,6 +65,7 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
   const submitNotice = stopSubmit(async (form) => {
     await actions.createNotice(noticePayload(form));
     form.reset();
+    setFormOpen(false);
   });
   const setSort = (field: "title" | "category" | "status" | "createdAt") => {
     const direction = noticeSort.field === field && noticeSort.direction === "asc" ? "desc" : "asc";
@@ -72,7 +74,7 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
 
   return (
     <section className="grid admin-react-screen">
-      <GjuCard title="공지사항" eyebrow="React Admin" actions={<span className="tag blue">{notices.length}건</span>} surface="workspace">
+      <GjuCard title="공지사항" actions={<span className="tag blue">{notices.length}건</span>} surface="workspace">
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>
             <span className="sr-only">공지 검색</span>
@@ -87,7 +89,12 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
             검색
           </button>
         </form>
-        <form className="admin-react-form-grid" onSubmit={submitNotice}>
+        <div className="admin-react-disclosure-row">
+          <button className="button primary compact" type="button" onClick={() => setFormOpen((current) => !current)}>
+            {formOpen ? "공지 등록 닫기" : "공지 등록 열기"}
+          </button>
+        </div>
+        {formOpen ? <form className="admin-react-form-grid admin-react-create-form" onSubmit={submitNotice}>
           <label>
             제목
             <input className="input" name="title" required />
@@ -116,14 +123,17 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
             <button className="button primary" type="submit">
               공지 등록
             </button>
-            <button className="button danger" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteNotices(state, actions)}>
-              필터 결과 공지 삭제
-            </button>
-            <button className="button danger" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllNotices(deleteAvailability.collectionTotal))}>
-              전체 공지 삭제
-            </button>
+            <button className="button ghost" type="button" onClick={() => setFormOpen(false)}>닫기</button>
           </div>
-        </form>
+        </form> : null}
+        {deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
+          <button className="button danger compact" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteNotices(state, actions)}>
+            필터 결과 공지 삭제
+          </button>
+          <button className="button danger compact" type="button" disabled={deleteAvailability.allDisabled} onClick={() => runAdminAction(() => actions.deleteAllNotices(deleteAvailability.collectionTotal))}>
+            전체 공지 삭제
+          </button>
+        </div> : null}
         <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>

@@ -39,7 +39,7 @@ const RESERVATION_STATUS_LABELS: Record<string, string> = {
   blocked: "대여금지",
   cancelled: "취소",
   admin_cancelled: "관리자 취소",
-  checked_out: "대여 완료",
+  checked_out: "대여 중",
   returned: "반납 완료",
   completed: "사용 완료",
   lecture_applied: "신청완료"
@@ -75,7 +75,7 @@ export function ScreenHeader({ title, description, action }: { title: string; de
   return (
     <header className="student-react-screen-header">
       <div>
-        <h1>{title}</h1>
+        <h2>{title}</h2>
         {description ? <p>{description}</p> : null}
       </div>
       {action ? <div className="student-react-screen-header__action">{action}</div> : null}

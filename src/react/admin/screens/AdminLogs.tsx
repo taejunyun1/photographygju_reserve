@@ -8,7 +8,7 @@ import {
   GjuTabs
 } from "../../design-system";
 import type { LegacyState, ReactAdminActions } from "../../platform/types";
-import { runAdminAction } from "./adminScreenUtils";
+import { property, runAdminAction } from "./adminScreenUtils";
 
 type AdminLogsProps = {
   state: LegacyState;
@@ -291,7 +291,7 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
 
   return (
     <section className="grid">
-      <GjuCard title="현재 로그인 세션" eyebrow="React Admin" surface="workspace">
+      <GjuCard title="현재 로그인 세션" surface="workspace">
         <div className="list-control-panel compact">
           <input
             className="input"
@@ -314,7 +314,7 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
           activeKey={sessionSort}
           onChange={(sessionSort) => void actions.setAdminFilters("logs", { sessionSort: sessionSort as "createdAt" | "expiresAt" | "user" })}
         />
-        <div className="table-wrap embedded">
+        <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>
               <tr>
@@ -338,8 +338,12 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
                     <td>{session.ip || "-"}</td>
                     <td>
                       <strong>{session.device || "-"}</strong>
-                      <br />
-                      <span className="muted">{session.userAgent || "-"}</span>
+                      {session.userAgent ? (
+                        <>
+                          <br />
+                          <span className="muted" title={session.userAgent}>브라우저 상세</span>
+                        </>
+                      ) : null}
                     </td>
                     <td>{formatDateTime(session.createdAt)}</td>
                     <td>{formatDateTime(session.expiresAt)}</td>
@@ -365,9 +369,33 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
             </tbody>
           </GjuTable>
         </div>
+        <div className="admin-react-card-list" aria-label="로그인 세션 목록">
+          {visibleSessions.length ? visibleSessions.map((session) => (
+            <article key={`mobile:${session.id}`} className="admin-react-list-card">
+              <div className="reservation-card-head">
+                <div>
+                  <strong>{session.user?.name || "-"}</strong>
+                  <span>{session.user?.studentId || session.user?.email || session.userId || ""}</span>
+                </div>
+                <GjuIconButton
+                  label="로그아웃"
+                  icon="logOut"
+                  tone="danger"
+                  onClick={() => runAdminAction(() => actions.revokeSession(session.id))}
+                />
+              </div>
+              <dl className="property-list compact">
+                {property("IP", session.ip || "-")}
+                {property("기기", <span title={session.userAgent || undefined}>{session.device || "-"}</span>)}
+                {property("로그인", formatDateTime(session.createdAt))}
+                {property("만료", formatDateTime(session.expiresAt))}
+              </dl>
+            </article>
+          )) : <GjuEmptyState title={sessionQuery ? "검색 결과가 없습니다." : "현재 로그인 세션이 없습니다."} />}
+        </div>
         <LocalPager page={sessionPage} total={sessions.length} onPage={setSessionPage} label="세션 페이지 이동" />
       </GjuCard>
-      <GjuCard title="활동 로그" eyebrow="React Admin" surface="workspace">
+      <GjuCard title="활동 로그" surface="workspace">
         <div className="list-control-panel compact">
           <input
             className="input"
@@ -395,7 +423,7 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
           activeKey={logSort}
           onChange={(logDirection) => void actions.setAdminFilters("logs", { logDirection: logDirection as "asc" | "desc" })}
         />
-        <div className="table-wrap embedded">
+        <div className="table-wrap embedded admin-react-desktop-table">
           <GjuTable>
             <thead>
               <tr>
@@ -426,6 +454,23 @@ export function AdminLogs({ state, actions }: AdminLogsProps) {
               )}
             </tbody>
           </GjuTable>
+        </div>
+        <div className="admin-react-card-list" aria-label="활동 로그 목록">
+          {visibleLogs.length ? visibleLogs.map((log, index) => (
+            <article key={`mobile:${log.id || `${log.action || "log"}:${index}`}`} className="admin-react-list-card">
+              <div className="reservation-card-head">
+                <div>
+                  <strong>{auditActionLabel(String(log.action || ""))}</strong>
+                  <span>{formatDateTime(log.createdAt)}</span>
+                </div>
+              </div>
+              <dl className="property-list compact">
+                {property("사용자", renderActorCell(log.actor))}
+                {property("대상", log.targetId || "-")}
+                {property("상세", auditDetailText(log))}
+              </dl>
+            </article>
+          )) : <GjuEmptyState title={logQuery ? "검색 결과가 없습니다." : "활동 로그가 없습니다."} />}
         </div>
         <LocalPager page={logPage} total={logs.length} onPage={setLogPage} label="활동 로그 페이지 이동" />
       </GjuCard>

@@ -47,6 +47,7 @@ function readEventSource() {
 
 const eventSource = readEventSource();
 const styleSource = fs.readFileSync("public/styles.css", "utf8");
+const reactStudentStyleSource = fs.readFileSync("src/react/student/student.css", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const designGuideSource = fs.readFileSync("docs/frontend-design-system.md", "utf8");
 
@@ -104,6 +105,17 @@ assert(mobileNavActiveRule.includes("background: rgba(11, 77, 162, 0.18);"), "st
 assert(facilityCardRule.includes("border-radius: var(--component-card-radius);"), "student facility cards must use the shared Astryx card radius");
 assert(cardRule.includes("border-radius: var(--component-card-radius);"), "student cards must use the shared Astryx card radius");
 assert(buttonRule.includes("border-radius: var(--component-button-radius);"), "student buttons must use the shared Astryx button radius");
+assert(reactStudentStyleSource.includes(".student-react-equipment-manifest"), "React equipment selection must style the selected manifest");
+assert(reactStudentStyleSource.includes("position: sticky;"), "React reservation flow actions must remain visible above the mobile navigation");
+assert(
+  reactStudentStyleSource.includes(".student-react-equipment-manifest__item .gju-icon-button")
+    && reactStudentStyleSource.includes("min-width: 44px;"),
+  "React equipment manifest remove actions must keep a 44px touch target"
+);
+assert(
+  cssRule(".input::placeholder,\n.textarea::placeholder").includes("color: var(--muted);"),
+  "search and form placeholders must retain readable muted-text contrast"
+);
 assert(viewSource.includes("function studentNavIconName("), "student views must map navigation labels to shared icons");
 assert(viewSource.includes("student-nav-icon"), "student navigation must render visible icons through the shared icon primitive");
 assert(viewSource.includes('aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"'), "student bottom nav icon-only buttons must keep accessible labels");

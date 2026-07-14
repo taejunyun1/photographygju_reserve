@@ -193,6 +193,30 @@ function renderCalendar(
   );
 }
 
+function SettingsDisclosure({
+  title,
+  description,
+  children,
+  danger = false
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <details className="admin-settings-disclosure" data-tone={danger ? "danger" : "neutral"}>
+      <summary>
+        <span>
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+      </summary>
+      <div className="admin-settings-disclosure__body">{children}</div>
+    </details>
+  );
+}
+
 export function AdminSettings({ state, actions }: AdminSettingsProps) {
   const settings = adminSettings(state);
   const schedules = blockedSchedules(state);
@@ -242,7 +266,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
   return (
     <section className="grid admin-react-screen admin-settings-react-screen">
       {renderCalendar(month, schedules, setMonth, onCalendarDate)}
-      <GjuCard title="수업/학기 차단 일정" eyebrow="React Admin">
+      <GjuCard title="수업/학기 차단 일정">
         <form className="admin-react-form-grid" onSubmit={submitBlockedSchedule}>
           <label>
             시설
@@ -339,7 +363,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
           )) : <GjuEmptyState title="등록된 차단 일정이 없습니다." message="캘린더 날짜를 눌러 일정을 빠르게 입력하세요." />}
         </div>
       </GjuCard>
-      <GjuCard title="운영 설정" eyebrow="React Admin">
+      <SettingsDisclosure title="운영 설정" description="운영값·출력·기자재 규칙">
         <form className="admin-react-form-grid" onSubmit={submitSettings}>
           <label className="admin-react-form-wide">
             출력비 계좌 안내
@@ -393,11 +417,11 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
             설정 저장
           </button>
         </form>
-      </GjuCard>
-      <GjuCard title="Slack" eyebrow="알림">
+      </SettingsDisclosure>
+      <SettingsDisclosure title="Slack" description="서버 알림 연결 안내">
         <p className="muted">Webhook URL은 코드가 아니라 서버 환경변수 SLACK_WEBHOOK_URL에 저장합니다.</p>
-      </GjuCard>
-      <GjuCard title="운영 알림" eyebrow="네이티브">
+      </SettingsDisclosure>
+      <SettingsDisclosure title="운영 알림" description="권한·예정 알림·동기화">
         <dl className="property-list">
           {property("지원", state.nativeNotifications?.supported ? "지원됨" : "앱에서 사용 가능")}
           {property("권한", ({
@@ -424,8 +448,8 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
             )}
           </div>
         ) : null}
-      </GjuCard>
-      <GjuCard title="보안 / 데이터 관리" eyebrow="위험 작업" className="admin-settings-danger-card">
+      </SettingsDisclosure>
+      <SettingsDisclosure title="보안 / 데이터 관리" description="백업·보관정책·학기 종료" danger>
         <p className="muted">보관정책 정리는 오래된 예약 개인정보를 익명화하고 만료된 보고서 HTML과 세션을 삭제합니다.</p>
         <p className="muted">
           <strong>학기 종료 데이터 정리</strong>는 모든 예약과 연결된 보고서, 모든 로그인 세션을 삭제하며 완료 후 즉시 로그아웃됩니다.
@@ -441,7 +465,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
             학기 종료 데이터 정리
           </button>
         </div>
-      </GjuCard>
+      </SettingsDisclosure>
     </section>
   );
 }

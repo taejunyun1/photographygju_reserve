@@ -285,6 +285,8 @@ export type AdminDashboardMetrics = {
 export type AdminDashboardSummary = Record<string, unknown> & {
   pendingUsers?: number;
   pendingEquipment?: number;
+  equipmentPendingApproval?: number;
+  equipmentApproved?: number;
   equipmentCheckedOut?: number;
   equipmentReturned?: number;
   equipmentCancelled?: number;

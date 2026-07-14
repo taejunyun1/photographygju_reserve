@@ -60,7 +60,22 @@ const LIMIT_DURATION_DAYS = {
   semester: 120
 };
 const APPROVAL_STATUSES = new Set(["approval_pending", "approved", "rejected", "blocked"]);
-const EQUIPMENT_RESERVATION_STATUSES = new Set(["checked_out", "returned", "cancelled"]);
+const EQUIPMENT_RESERVATION_STATUSES = new Set([
+  "pending_approval",
+  "approved",
+  "checked_out",
+  "returned",
+  "rejected",
+  "cancelled"
+]);
+const EQUIPMENT_RESERVATION_STATUS_TRANSITIONS = {
+  pending_approval: new Set(["approved", "rejected"]),
+  approved: new Set(["checked_out", "cancelled"]),
+  checked_out: new Set(["returned", "cancelled"]),
+  returned: new Set(),
+  rejected: new Set(),
+  cancelled: new Set()
+};
 const RESERVATION_CANCELLATION_TERMINAL_STATUSES = new Set(["cancelled", "admin_cancelled", "returned", "completed", "rejected"]);
 const ADMIN_RESERVATION_STATUS_BY_TYPE = {
   equipment: EQUIPMENT_RESERVATION_STATUSES,
@@ -343,14 +358,14 @@ function reservationTitle(type) {
 }
 
 function reservationStatusForType(type) {
-  return type === "equipment" ? "checked_out" : "auto_confirmed";
+  return type === "equipment" ? "pending_approval" : "auto_confirmed";
 }
 
 function normalizeEquipmentReservationStatus(status) {
   if (status === "returned" || status === "completed") return "returned";
-  if (status === "cancelled" || status === "admin_cancelled" || status === "rejected") return "cancelled";
-  if (status === "checked_out" || status === "pending_approval" || status === "approved" || status === "auto_confirmed") return "checked_out";
-  return EQUIPMENT_RESERVATION_STATUSES.has(status) ? status : "checked_out";
+  if (status === "cancelled" || status === "admin_cancelled") return "cancelled";
+  if (status === "auto_confirmed") return "approved";
+  return EQUIPMENT_RESERVATION_STATUSES.has(status) ? status : "pending_approval";
 }
 
 function normalizeReservationStatus(reservation) {
@@ -924,9 +939,11 @@ export async function handleApiRequest(ctx) {
         requireAdmin(authorization, db);
         const detailedReservations = db.reservations.map((item) => withReservationDetails(db, item));
         const pendingUsers = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approval_pending").length;
+        const equipmentPendingApproval = db.reservations.filter((item) => item.type === "equipment" && item.status === "pending_approval").length;
+        const equipmentApproved = db.reservations.filter((item) => item.type === "equipment" && item.status === "approved").length;
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
         const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned").length;
-        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && item.status === "cancelled").length;
+        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "rejected"].includes(item.status)).length;
         const today = todayKeySeoul();
         const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
         const weekFrom = addDaysToDateKey(today, -(weekday === 0 ? 6 : weekday - 1));
@@ -981,7 +998,9 @@ export async function handleApiRequest(ctx) {
           .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))[0] || null;
         return ok({
           pendingUsers,
-          pendingEquipment: equipmentCheckedOut,
+          pendingEquipment: equipmentPendingApproval,
+          equipmentPendingApproval,
+          equipmentApproved,
           equipmentCheckedOut,
           equipmentReturned,
           equipmentCancelled,
@@ -1209,6 +1228,12 @@ export async function handleApiRequest(ctx) {
         const allowedStatuses = ADMIN_RESERVATION_STATUS_BY_TYPE[reservation.type];
         if (!allowedStatuses?.has(body.status)) {
           throw Object.assign(new Error(`${reservationTitle(reservation.type)} 예약에서 지원하지 않는 상태입니다.`), { status: 400 });
+        }
+        if (
+          reservation.type === "equipment"
+          && !EQUIPMENT_RESERVATION_STATUS_TRANSITIONS[reservation.status]?.has(body.status)
+        ) {
+          throw Object.assign(new Error("현재 기자재 예약 상태에서는 요청한 상태로 변경할 수 없습니다."), { status: 409 });
         }
         reservation.status = body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
