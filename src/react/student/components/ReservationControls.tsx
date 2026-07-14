@@ -36,6 +36,7 @@ type ReservationControlsProps = {
   type: ReservationType;
   state: StudentState;
   actions: StudentActions;
+  overlayRoot?: Element | null;
 };
 
 const STEP_LABELS: Record<ReservationStep, string> = {
@@ -227,7 +228,7 @@ function EquipmentScheduleStep({ state, actions }: Omit<ReservationControlsProps
   );
 }
 
-function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type">) {
+function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControlsProps, "type">) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [visibleLimit, setVisibleLimit] = useState(EQUIPMENT_RESULT_PAGE_SIZE);
@@ -295,6 +296,7 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
       <p className="muted">필요한 장비를 여러 개 선택할 수 있습니다.</p>
       <EquipmentSelectionSurface
         items={selectedItems}
+        portalTarget={overlayRoot}
         onRemove={(id) => update(actions, "equipment", {
           equipmentItemIds: selected.filter((selectedId) => selectedId !== id)
         })}
@@ -839,11 +841,11 @@ function DetailsStep({ type, state, actions }: ReservationControlsProps) {
   return <PrintDetailsForm state={state} actions={actions} />;
 }
 
-function StepBody({ type, state, actions }: ReservationControlsProps) {
+function StepBody({ type, state, actions, overlayRoot }: ReservationControlsProps) {
   const step = state.reservationFlowStep[type] || "date";
   if (step === "date") return <DateStep type={type} state={state} actions={actions} />;
   if (type === "equipment" && step === "schedule") return <EquipmentScheduleStep state={state} actions={actions} />;
-  if (type === "equipment" && step === "select") return <EquipmentStep state={state} actions={actions} />;
+  if (type === "equipment" && step === "select") return <EquipmentStep state={state} actions={actions} overlayRoot={overlayRoot} />;
   if (type === "studio" && step === "select") return <StudioSpaceStep state={state} actions={actions} />;
   if (type === "studio" && step === "schedule") return <StudioTimeStep state={state} actions={actions} />;
   if (type === "darkroom" && step === "schedule") return <DarkroomTimeStep state={state} actions={actions} />;
@@ -853,7 +855,7 @@ function StepBody({ type, state, actions }: ReservationControlsProps) {
   return <DetailsStep key={`${type}:${state.selectedDates[type]}`} type={type} state={state} actions={actions} />;
 }
 
-export function ReservationControls({ type, state, actions }: ReservationControlsProps) {
+export function ReservationControls({ type, state, actions, overlayRoot }: ReservationControlsProps) {
   const step = state.reservationFlowStep[type] || "date";
   const flowRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -867,7 +869,7 @@ export function ReservationControls({ type, state, actions }: ReservationControl
       {type === "print" ? <PrintDrivePanel state={state} /> : null}
       <StepProgress type={type} state={state} actions={actions} />
       <GjuCard title="예약 정보" className="student-react-reservation-step">
-        <StepBody type={type} state={state} actions={actions} />
+        <StepBody type={type} state={state} actions={actions} overlayRoot={overlayRoot} />
         {step !== "details" ? <FlowActions type={type} step={step} state={state} actions={actions} /> : null}
       </GjuCard>
     </section>

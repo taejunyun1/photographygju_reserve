@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260714-mobile-overflow-r4";
+import { state } from "./state.js?v=20260714-mobile-dock-r5";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

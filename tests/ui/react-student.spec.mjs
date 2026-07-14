@@ -20,11 +20,28 @@ test("Student React mounts without legacy student content", async ({ page }) => 
   await expectNoHorizontalOverflow(page);
 });
 
-test("Student React mobile navigation is icon-only, reachable, and uses 44px targets", async ({ page }) => {
+test("Student React mobile navigation is an inset glass dock with visible 18px icons", async ({ page }) => {
   const viewport = page.viewportSize();
   test.skip(!viewport || viewport.width > 768, "mobile contract");
   await loginReactStudent(page);
   const nav = page.locator(".student-react-bottom-nav");
+  const navMetrics = await nav.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      left: box.left,
+      right: box.right,
+      viewportWidth: document.documentElement.clientWidth,
+      borderRadius: Number.parseFloat(style.borderRadius),
+      backgroundColor: style.backgroundColor,
+      backdropFilter: style.backdropFilter || style.webkitBackdropFilter
+    };
+  });
+  expect(navMetrics.left).toBeGreaterThanOrEqual(12);
+  expect(navMetrics.right).toBeLessThanOrEqual(navMetrics.viewportWidth - 12);
+  expect(navMetrics.borderRadius).toBeGreaterThanOrEqual(24);
+  expect(navMetrics.backgroundColor).toContain("0.82");
+  expect(navMetrics.backdropFilter).toContain("blur");
   const buttons = nav.getByRole("button");
   await expect(buttons).toHaveCount(5);
   for (let index = 0; index < await buttons.count(); index += 1) {
@@ -49,8 +66,8 @@ test("Student React mobile navigation is icon-only, reachable, and uses 44px tar
         svgHeight: svgBox?.height || 0
       };
     });
-    expect(metrics.width).toBeGreaterThanOrEqual(44);
-    expect(metrics.height).toBeGreaterThanOrEqual(44);
+    expect(metrics.width).toBe(48);
+    expect(metrics.height).toBe(48);
     expect(metrics.visibleText).toBe("");
     expect(metrics.iconFound).toBe(true);
     expect(metrics.iconWidth).toBe(18);
@@ -71,8 +88,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -127,8 +144,8 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
     state.myReservations = [{
@@ -165,8 +182,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -194,8 +211,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-      const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+      const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+      const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
       state.view = "reserve";
       state.reservationType = "";
       state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
@@ -213,8 +230,8 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -277,8 +294,8 @@ test("Student React mobile equipment selection uses an expandable dock above nav
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -325,9 +342,13 @@ test("Student React mobile equipment selection uses an expandable dock above nav
     ["serious", "critical"].includes(violation.impact)
   ))).toEqual([]);
 
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await panel.getByRole("button", { name: /선택 해제/ }).first().click();
   await expect(panel.locator(".student-react-equipment-manifest__item")).toHaveCount(3);
-  await page.keyboard.press("Escape");
+  await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expectNoHorizontalOverflow(page);
 });
@@ -343,8 +364,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

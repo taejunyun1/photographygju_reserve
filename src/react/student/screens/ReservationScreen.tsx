@@ -5,7 +5,15 @@ import { FacilityCard, ScreenHeader } from "../components/StudentPrimitives";
 import { ReservationControls } from "../components/ReservationControls";
 import type { ReservationType, StudentActions, StudentState } from "../types";
 
-export function ReservationScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
+export function ReservationScreen({
+  state,
+  actions,
+  overlayRoot
+}: {
+  state: StudentState;
+  actions: StudentActions;
+  overlayRoot?: Element | null;
+}) {
   if (state.user.approvalStatus !== "approved") {
     return <GjuCard title="예약 불가" className="notice"><p className="muted">학과 관리자 승인 후 예약할 수 있습니다.</p></GjuCard>;
   }
@@ -43,7 +51,7 @@ export function ReservationScreen({ state, actions }: { state: StudentState; act
         description="필요한 정보를 단계별로 입력하세요."
         action={<GjuButton variant="ghost" onClick={() => actions.setView("reserve")}>예약 종류</GjuButton>}
       />
-      <ReservationControls type={state.reservationType} state={state} actions={actions} />
+      <ReservationControls type={state.reservationType} state={state} actions={actions} overlayRoot={overlayRoot} />
     </section>
   );
 }

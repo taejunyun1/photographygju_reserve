@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260714-mobile-overflow-r4";
-import { state } from "./state.js?v=20260714-mobile-overflow-r4";
+import { statusLabel, typeLabel } from "./constants.js?v=20260714-mobile-dock-r5";
+import { state } from "./state.js?v=20260714-mobile-dock-r5";
 import {
   planAdminNotifications,
   planReservationNotifications,

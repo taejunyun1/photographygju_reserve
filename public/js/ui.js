@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260714-mobile-overflow-r4";
+import { escapeHtml, normalizeUnicodeText } from "./utils.js?v=20260714-mobile-dock-r5";
 
 export function cx(...classes) {
   return classes.flat().filter(Boolean).join(" ");

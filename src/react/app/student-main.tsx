@@ -16,7 +16,8 @@ let rootInstance: Root | null = null;
 function renderStudent(options: StudentMountOptions) {
   rootInstance?.render(React.createElement(StudentReactRoot, {
     state: options.state,
-    actions: options.actions
+    actions: options.actions,
+    overlayRoot: options.root.parentElement || options.root
   }));
 }
 

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260714-mobile-overflow-r4";
-import { api } from "./api.js?v=20260714-mobile-overflow-r4";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260714-mobile-overflow-r4";
+import { state } from "./state.js?v=20260714-mobile-dock-r5";
+import { api } from "./api.js?v=20260714-mobile-dock-r5";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260714-mobile-dock-r5";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();

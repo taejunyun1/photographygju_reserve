@@ -13,14 +13,15 @@ import type { StudentActions, StudentState } from "./types";
 export type StudentAppProps = {
   state: StudentState;
   actions: StudentActions;
+  overlayRoot?: Element | null;
 };
 
-export function StudentApp({ state, actions }: StudentAppProps) {
+export function StudentApp({ state, actions, overlayRoot }: StudentAppProps) {
   let content: React.ReactNode;
 
   switch (state.view) {
     case "reserve":
-      content = <ReservationScreen state={state} actions={actions} />;
+      content = <ReservationScreen state={state} actions={actions} overlayRoot={overlayRoot} />;
       break;
     case "mine":
       content = <MineScreen state={state} actions={actions} />;

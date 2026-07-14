@@ -88,8 +88,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -233,8 +233,8 @@ test("Student React mobile equipment selection uses an expandable dock above nav
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -678,3 +678,7 @@ git commit -m "2026-07-14 글라스 하단 내비게이션 및 모바일 캐시 
 ```
 
 Verify `git status --short` contains only the pre-existing untracked `.codex-audit/` directory.
+
+## Execution Correction
+
+Browser geometry inspection showed that the animated screen and panel transforms create a containing block for `position: fixed`, which initially placed the mobile selection dock inside the reservation card instead of above the viewport navigation. The final implementation therefore passes an `overlayRoot` from `student-main.tsx` through the student component tree and portals the dock into that stable root. Escape handling remains within React through `onKeyDown`, preserving the student source contract that forbids direct `document`, `window`, and manual event-listener access.

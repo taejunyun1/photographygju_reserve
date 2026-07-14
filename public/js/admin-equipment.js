@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260714-mobile-overflow-r4";
-import { api } from "./api.js?v=20260714-mobile-overflow-r4";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260714-mobile-overflow-r4";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260714-mobile-overflow-r4";
+import { state } from "./state.js?v=20260714-mobile-dock-r5";
+import { api } from "./api.js?v=20260714-mobile-dock-r5";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260714-mobile-dock-r5";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260714-mobile-dock-r5";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

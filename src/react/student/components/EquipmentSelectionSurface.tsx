@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
 
 import { GjuIconButton } from "../../design-system";
@@ -7,6 +7,7 @@ import type { StudentEquipment } from "../types";
 type EquipmentSelectionSurfaceProps = {
   items: readonly StudentEquipment[];
   onRemove(id: string): void;
+  portalTarget?: Element | null;
 };
 
 function SelectionItems({ items, onRemove }: EquipmentSelectionSurfaceProps) {
@@ -30,22 +31,18 @@ function SelectionItems({ items, onRemove }: EquipmentSelectionSurfaceProps) {
   );
 }
 
-export function EquipmentSelectionSurface({ items, onRemove }: EquipmentSelectionSurfaceProps) {
+export function EquipmentSelectionSurface({ items, onRemove, portalTarget }: EquipmentSelectionSurfaceProps) {
   const [open, setOpen] = useState(false);
   const panelId = "student-equipment-selection-panel";
-  const portalTarget = typeof document !== "undefined" ? document.body : null;
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
 
   const dock = (
-    <aside className={`student-react-equipment-dock${open ? " is-open" : ""}`} aria-live="polite">
+    <aside
+      className={`student-react-equipment-dock${open ? " is-open" : ""}`}
+      aria-live="polite"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") setOpen(false);
+      }}
+    >
       {open ? (
         <div id={panelId} className="student-react-equipment-dock__panel" role="region" aria-label="선택한 장비 목록">
           <div className="student-react-equipment-dock__head">

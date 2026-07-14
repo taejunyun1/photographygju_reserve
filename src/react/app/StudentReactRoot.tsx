@@ -7,12 +7,13 @@ import type { StudentActions, StudentState } from "../student/types";
 export type StudentReactRootProps = {
   state: StudentState;
   actions: StudentActions;
+  overlayRoot?: Element | null;
 };
 
 export type StudentReactRootComponent = React.ComponentType<StudentReactRootProps>;
 
-export function StudentReactRoot({ state, actions }: StudentReactRootProps) {
-  return <StudentApp state={state} actions={actions} />;
+export function StudentReactRoot({ state, actions, overlayRoot }: StudentReactRootProps) {
+  return <StudentApp state={state} actions={actions} overlayRoot={overlayRoot} />;
 }
 
 export { StudentApp };
