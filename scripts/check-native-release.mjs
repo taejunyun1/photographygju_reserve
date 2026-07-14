@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260714-full-flow-ux-r3";
+const requiredCacheVersion = "20260714-mobile-overflow-r4";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");

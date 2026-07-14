@@ -90,9 +90,10 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
-    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
     state.view = "reports";
+    state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
     state.myReservations = [{
       id: "report-error-fixture",
       type: "studio",
@@ -127,8 +128,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
-    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -156,10 +157,11 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
-      const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
+      const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+      const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
       state.view = "reserve";
       state.reservationType = "";
+      state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
       render();
     });
     await page.getByRole("button", { name: new RegExp(label) }).first().click();
@@ -167,6 +169,70 @@ test("Student React opens every reservation type without viewport overflow", asy
     await expect(page.getByLabel("사용일")).toBeVisible();
     await expectNoHorizontalOverflow(page);
   }
+});
+
+test("Student React equipment selection keeps card surfaces inside the mobile viewport", async ({ page }) => {
+  const viewport = page.viewportSize();
+  test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    state.view = "reserve";
+    state.reservationType = "equipment";
+    state.reservationFlowStep.equipment = "select";
+    state.selectedDates.equipment = "2099-07-20";
+    state.selectedEquipmentPeriod = "당일";
+    state.selectedEquipmentRentalTime = "10:15";
+    state.selectedEquipmentReturnTime = "17:10";
+    render();
+  });
+
+  await expect(page.getByRole("heading", { name: "예약 정보" })).toBeVisible();
+  await expect(page.getByRole("tablist", { name: "기자재 카테고리" })).toBeVisible();
+
+  const metrics = await page.locator(".student-react-reservation-step").evaluate((card) => {
+    const cardBox = card.getBoundingClientRect();
+    const selectors = [
+      ".gju-card__body",
+      ".student-react-equipment-picker",
+      ".student-react-equipment-manifest",
+      "#student-equipment-search",
+      "#student-equipment-category",
+      "#student-equipment-results > fieldset",
+      ".student-react-flow-actions"
+    ];
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      card: { left: cardBox.left, right: cardBox.right, width: cardBox.width, clientWidth: card.clientWidth, scrollWidth: card.scrollWidth },
+      surfaces: selectors.map((selector) => {
+        const element = card.querySelector(selector);
+        const box = element?.getBoundingClientRect();
+        return {
+          selector,
+          found: Boolean(element && box),
+          left: box?.left ?? 0,
+          right: box?.right ?? 0,
+          top: box?.top ?? 0,
+          bottom: box?.bottom ?? 0,
+          width: box?.width ?? 0,
+          clientWidth: element?.clientWidth ?? 0,
+          scrollWidth: element?.scrollWidth ?? 0
+        };
+      })
+    };
+  });
+
+  for (const surface of metrics.surfaces) {
+    expect(surface.found, JSON.stringify(metrics, null, 2)).toBe(true);
+    expect(surface.left, JSON.stringify(metrics, null, 2)).toBeGreaterThanOrEqual(-1);
+    expect(surface.right, JSON.stringify(metrics, null, 2)).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+  }
+  const equipmentPicker = metrics.surfaces.find((surface) => surface.selector === ".student-react-equipment-picker");
+  const flowActions = metrics.surfaces.find((surface) => surface.selector === ".student-react-flow-actions");
+  expect(flowActions.top, JSON.stringify(metrics, null, 2)).toBeGreaterThanOrEqual(equipmentPicker.bottom - 1);
+  expect(metrics.card.scrollWidth, JSON.stringify(metrics, null, 2)).toBeLessThanOrEqual(metrics.card.clientWidth + 1);
+  await expectNoHorizontalOverflow(page);
 });
 
 test("Student React reservation cancellation keeps the card and announces request errors", async ({ page }) => {
@@ -180,8 +246,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
-    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

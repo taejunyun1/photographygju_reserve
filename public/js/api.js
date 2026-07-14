@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260714-full-flow-ux-r3";
+import { state } from "./state.js?v=20260714-mobile-overflow-r4";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

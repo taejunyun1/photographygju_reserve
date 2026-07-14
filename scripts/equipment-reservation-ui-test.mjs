@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260714-full-flow-ux-r3");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260714-full-flow-ux-r3");
+const { state } = await import("../public/js/state.js?v=20260714-mobile-overflow-r4");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260714-mobile-overflow-r4");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -59,6 +59,14 @@ function cssRule(selector, startIndex = 0) {
   return styleSource.slice(start, end);
 }
 
+function reactCssRule(selector) {
+  const start = reactStudentStyleSource.indexOf(`${selector} {`);
+  assert(start !== -1, `${selector} React CSS rule must exist`);
+  const end = reactStudentStyleSource.indexOf("\n}", start);
+  assert(end !== -1, `${selector} React CSS rule must close`);
+  return reactStudentStyleSource.slice(start, end);
+}
+
 const rootRule = styleSource.slice(0, styleSource.indexOf("\n}\n\nhtml"));
 const brandGroupRule = cssRule(".brand,\n.appbar-brand");
 const brandMarkRule = cssRule(".brand-mark");
@@ -71,6 +79,8 @@ const mobileNavActiveRule = cssRule(".mobile-nav > button.active");
 const facilityCardRule = cssRule(".facility-card");
 const cardRule = cssRule(".card");
 const buttonRule = cssRule(".button");
+const equipmentPickerRule = reactCssRule(".student-react-equipment-picker");
+const mobileFlowActionsRule = reactCssRule("  .student-react-reservation-step .student-react-flow-actions");
 
 assert(designGuideSource.startsWith("# GJU-reserve Astryx Design System Guide"), "frontend design guide must be redefined around the Astryx design system");
 assert(!designGuideSource.includes("Figma MCP"), "frontend design guide must remove the previous Figma/Mobile reference framing");
@@ -106,7 +116,8 @@ assert(facilityCardRule.includes("border-radius: var(--component-card-radius);")
 assert(cardRule.includes("border-radius: var(--component-card-radius);"), "student cards must use the shared Astryx card radius");
 assert(buttonRule.includes("border-radius: var(--component-button-radius);"), "student buttons must use the shared Astryx button radius");
 assert(reactStudentStyleSource.includes(".student-react-equipment-manifest"), "React equipment selection must style the selected manifest");
-assert(reactStudentStyleSource.includes("position: sticky;"), "React reservation flow actions must remain visible above the mobile navigation");
+assert(equipmentPickerRule.includes("min-width: 0;"), "React equipment selection must shrink inside the reservation card");
+assert(!mobileFlowActionsRule.includes("position: sticky;"), "React reservation flow actions must not cover equipment search or results");
 assert(
   reactStudentStyleSource.includes(".student-react-equipment-manifest__item .gju-icon-button")
     && reactStudentStyleSource.includes("min-width: 44px;"),

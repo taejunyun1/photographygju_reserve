@@ -68,7 +68,7 @@ const adminReportsSource = read("src/react/admin/screens/AdminReports.tsx");
 const adminLecturesSource = read("src/react/admin/screens/AdminLectures.tsx");
 const adminNoticesSource = read("src/react/admin/screens/AdminNotices.tsx");
 const adminEquipmentLegacySource = read("public/js/admin-equipment.js");
-const { equipmentStatusButtons } = await import("../public/js/admin-equipment.js?v=20260714-full-flow-ux-r3");
+const { equipmentStatusButtons } = await import("../public/js/admin-equipment.js?v=20260714-mobile-overflow-r4");
 
 function readTree(rootDir) {
   const entries = [];

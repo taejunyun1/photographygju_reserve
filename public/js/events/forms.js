@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260714-full-flow-ux-r3";
-import { api } from "../api.js?v=20260714-full-flow-ux-r3";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260714-full-flow-ux-r3";
+import { state } from "../state.js?v=20260714-mobile-overflow-r4";
+import { api } from "../api.js?v=20260714-mobile-overflow-r4";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260714-mobile-overflow-r4";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260714-full-flow-ux-r3";
-import { toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260714-full-flow-ux-r3";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260714-full-flow-ux-r3";
+} from "../actions.js?v=20260714-mobile-overflow-r4";
+import { toast } from "../renderer.js?v=20260714-mobile-overflow-r4";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260714-mobile-overflow-r4";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260714-mobile-overflow-r4";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

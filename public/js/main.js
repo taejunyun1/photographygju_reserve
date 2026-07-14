@@ -1,10 +1,10 @@
-import { $app, state } from "./state.js?v=20260714-full-flow-ux-r3";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260714-full-flow-ux-r3";
-import { setupEventHandlers } from "./events.js?v=20260714-full-flow-ux-r3";
+import { $app, state } from "./state.js?v=20260714-mobile-overflow-r4";
+import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260714-mobile-overflow-r4";
+import { setupEventHandlers } from "./events.js?v=20260714-mobile-overflow-r4";
 import { createNativeAppResumeLifecycle } from "./native-app-lifecycle.js?v=20260711-native-resume";
-import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260714-full-flow-ux-r3";
-import { render } from "./renderer.js?v=20260714-full-flow-ux-r3";
-import { escapeHtml } from "./utils.js?v=20260714-full-flow-ux-r3";
+import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260714-mobile-overflow-r4";
+import { render } from "./renderer.js?v=20260714-mobile-overflow-r4";
+import { escapeHtml } from "./utils.js?v=20260714-mobile-overflow-r4";
 
 async function reloadActiveAccount() {
   await loadBootstrap();

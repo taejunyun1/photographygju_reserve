@@ -36,7 +36,7 @@ test("React Admin action toast is announced once across a follow-up render", asy
     window.__gjuToastObserver = observer;
   });
   await page.evaluate(async () => {
-    const module = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
+    const module = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
     module.toast("중복 알림 확인", { duration: 5_000 });
     module.render();
   });
@@ -94,24 +94,24 @@ test("React Admin review parity surfaces render from typed views", async ({ page
   for (const label of ["전체", "기자재", "암실", "스튜디오", "출력"]) {
     await expect(reservationTabs.getByRole("tab", { name: label, exact: true })).toBeVisible();
   }
-  await expect(page.getByRole("button", { name: "필터 결과 예약 삭제" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "전체 예약 삭제" })).toBeVisible();
+  await expect(page.getByText("예약이 없습니다.").first()).toBeVisible();
 
   await navigation.getByRole("button", { name: "보고서" }).click();
-  await expect(page.getByRole("button", { name: "필터 결과 보고서 삭제" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "전체 보고서 삭제" })).toBeVisible();
+  await expect(page.getByText("보고서가 없습니다.").first()).toBeVisible();
 
   await navigation.getByRole("button", { name: "비교과 특강" }).click();
+  await page.getByRole("button", { name: "특강 등록 열기" }).click();
   await expect(page.getByLabel("담당교수")).toBeVisible();
   await expect(page.getByLabel("대상 학년")).toBeVisible();
   await expect(page.getByLabel("비고")).toBeVisible();
   await expect(page.getByRole("button", { name: "CSV 내보내기" })).toBeVisible();
 
   await navigation.getByRole("button", { name: "공지사항" }).click();
-  await expect(page.getByRole("button", { name: "필터 결과 공지 삭제" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "전체 공지 삭제" })).toBeVisible();
+  await expect(page.getByText("공지사항이 없습니다.").first()).toBeVisible();
 
   await navigation.getByRole("button", { name: "설정" }).click();
+  await page.getByText("운영 알림", { exact: true }).click();
+  await page.getByText("보안 / 데이터 관리", { exact: true }).click();
   await expect(page.getByRole("button", { name: "백업 JSON" })).toBeVisible();
   await expect(page.getByText("운영 알림", { exact: true })).toBeVisible();
 });

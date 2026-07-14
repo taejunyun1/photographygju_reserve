@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260714-full-flow-ux-r3";
-import { logout } from "../actions.js?v=20260714-full-flow-ux-r3";
-import { render, toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260714-full-flow-ux-r3";
+import { state } from "../state.js?v=20260714-mobile-overflow-r4";
+import { logout } from "../actions.js?v=20260714-mobile-overflow-r4";
+import { render, toast } from "../renderer.js?v=20260714-mobile-overflow-r4";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260714-mobile-overflow-r4";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260714-full-flow-ux-r3";
+} from "../utils.js?v=20260714-mobile-overflow-r4";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260714-full-flow-ux-r3";
+} from "./scroll-state.js?v=20260714-mobile-overflow-r4";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

@@ -1,12 +1,12 @@
-import { $app, state } from "./state.js?v=20260714-full-flow-ux-r3";
-import { api } from "./api.js?v=20260714-full-flow-ux-r3";
+import { $app, state } from "./state.js?v=20260714-mobile-overflow-r4";
+import { api } from "./api.js?v=20260714-mobile-overflow-r4";
 import {
   invalidateAdminViewCache,
   loadAdminView,
   loadBootstrap,
   loadLectures,
   loadMyReservations
-} from "./data.js?v=20260714-full-flow-ux-r3";
+} from "./data.js?v=20260714-mobile-overflow-r4";
 import {
   clearNativeNotificationAccount,
   disableNativeReservationNotifications,
@@ -14,12 +14,12 @@ import {
   handleNativeNotificationResume,
   notifyNativeReservationCreated,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260714-full-flow-ux-r3";
+} from "./native-notifications.js?v=20260714-mobile-overflow-r4";
 import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260711-react-student";
-import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260714-full-flow-ux-r3";
-import { adminShell } from "./views-admin.js?v=20260714-full-flow-ux-r3";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260714-full-flow-ux-r3";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260714-full-flow-ux-r3";
+import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260714-mobile-overflow-r4";
+import { adminShell } from "./views-admin.js?v=20260714-mobile-overflow-r4";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260714-mobile-overflow-r4";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260714-mobile-overflow-r4";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

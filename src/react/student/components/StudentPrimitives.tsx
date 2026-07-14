@@ -75,7 +75,7 @@ export function ScreenHeader({ title, description, action }: { title: string; de
   return (
     <header className="student-react-screen-header">
       <div>
-        <h2>{title}</h2>
+        <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>
       {action ? <div className="student-react-screen-header__action">{action}</div> : null}

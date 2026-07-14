@@ -683,7 +683,7 @@ assert(
 );
 assert(!shellSource.includes('["lectures", "특강", "plus"]'), "student lecture navigation must not use the generic add icon");
 const primitiveSource = fs.readFileSync("src/react/student/components/StudentPrimitives.tsx", "utf8");
-assert(primitiveSource.includes("<h2>{title}</h2>"), "the screen header must use h2 beneath the shell page h1");
+assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must provide the primary content heading on desktop");
 
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");

@@ -179,7 +179,7 @@
   min-width: 0;
 }
 
-.student-react-screen-header h2 {
+.student-react-screen-header h1 {
   margin: 0;
   font-size: 24px;
   line-height: 1.25;
@@ -204,6 +204,11 @@
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+.student-react-equipment-picker {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .student-react-booking-progress {
@@ -532,7 +537,7 @@
     flex-direction: column;
   }
 
-  .student-react-screen-header h2 {
+  .student-react-screen-header h1 {
     font-size: 21px;
   }
 
@@ -572,14 +577,10 @@
   }
 
   .student-react-reservation-step .student-react-flow-actions {
-    position: sticky;
-    z-index: 3;
-    bottom: calc(var(--gju-student-bottom-nav-height) + var(--safe-area-bottom));
     margin: 8px -8px -8px;
     padding: 10px 8px;
     border-top: 1px solid var(--student-line);
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(10px);
+    background: var(--student-surface);
   }
 
   .student-react-equipment-manifest__items {

@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { state } from "../state.js?v=20260714-mobile-overflow-r4";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260714-full-flow-ux-r3";
+} from "../admin-equipment.js?v=20260714-mobile-overflow-r4";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260714-full-flow-ux-r3";
+} from "./shared.js?v=20260714-mobile-overflow-r4";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

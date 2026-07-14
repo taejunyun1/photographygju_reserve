@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260714-full-flow-ux-r3";
-import { loadAdminData } from "../data.js?v=20260714-full-flow-ux-r3";
-import { render } from "../renderer.js?v=20260714-full-flow-ux-r3";
-import { normalizeUnicodeText } from "../utils.js?v=20260714-full-flow-ux-r3";
-import { resetAdminPage } from "./shared.js?v=20260714-full-flow-ux-r3";
+import { state } from "../state.js?v=20260714-mobile-overflow-r4";
+import { loadAdminData } from "../data.js?v=20260714-mobile-overflow-r4";
+import { render } from "../renderer.js?v=20260714-mobile-overflow-r4";
+import { normalizeUnicodeText } from "../utils.js?v=20260714-mobile-overflow-r4";
+import { resetAdminPage } from "./shared.js?v=20260714-mobile-overflow-r4";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {
