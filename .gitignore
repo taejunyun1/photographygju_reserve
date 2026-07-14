@@ -16,6 +16,7 @@ android/release-signing.properties
 References/
 .wrangler/
 .claude/
+.worktrees/
 
 .superpowers/
 public/js/react-admin.generated.js
