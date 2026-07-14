@@ -3,7 +3,7 @@ import { Icon as AstryxIcon, type IconName as AstryxIconName } from "@astryxdesi
 
 type AstryxGjuIconName = Extract<
   AstryxIconName,
-  "calendar" | "chevronLeft" | "chevronRight" | "info" | "warning" | "wrench"
+  "chevronLeft" | "chevronRight" | "info" | "warning" | "wrench"
 >;
 
 export type GjuIconName =
@@ -18,6 +18,7 @@ export type GjuIconName =
   | "userPlus"
   | "edit"
   | "plus"
+  | "calendar"
   | AstryxGjuIconName;
 
 type GjuIconProps = {
@@ -128,6 +129,10 @@ function iconPaths(name: GjuIconName): React.ReactNode[] {
         path("M5 12h14", "plus-2")
       ];
     case "calendar":
+      return [
+        path("M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2", "calendar-1"),
+        path("M8 2v4M16 2v4M3 10h18", "calendar-2")
+      ];
     case "chevronLeft":
     case "chevronRight":
     case "info":
@@ -138,7 +143,7 @@ function iconPaths(name: GjuIconName): React.ReactNode[] {
 }
 
 export function GjuIcon({ name, className, title }: GjuIconProps) {
-  if (["calendar", "chevronLeft", "chevronRight", "info", "warning", "wrench"].includes(name)) {
+  if (["chevronLeft", "chevronRight", "info", "warning", "wrench"].includes(name)) {
     return React.createElement(AstryxIcon, {
       icon: name as AstryxGjuIconName,
       size: "sm",

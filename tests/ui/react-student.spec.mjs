@@ -29,18 +29,34 @@ test("Student React mobile navigation is icon-only, reachable, and uses 44px tar
   await expect(buttons).toHaveCount(5);
   for (let index = 0; index < await buttons.count(); index += 1) {
     const button = buttons.nth(index);
-    const metrics = await button.evaluate((element) => ({
-      width: element.getBoundingClientRect().width,
-      height: element.getBoundingClientRect().height,
-      visibleText: [...element.childNodes]
-        .filter((node) => node.nodeType === Node.TEXT_NODE || node.nodeName === "SPAN")
-        .map((node) => node.textContent || "")
-        .join("")
-        .trim()
-    }));
+    const metrics = await button.evaluate((element) => {
+      const icon = element.querySelector(".student-react-nav__icon");
+      const svg = icon?.matches("svg") ? icon : icon?.querySelector("svg");
+      const iconBox = icon?.getBoundingClientRect();
+      const svgBox = svg?.getBoundingClientRect();
+      return {
+        width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+        visibleText: [...element.childNodes]
+          .filter((node) => node.nodeType === Node.TEXT_NODE || node.nodeName === "SPAN")
+          .map((node) => node.textContent || "")
+          .join("")
+          .trim(),
+        iconFound: Boolean(icon),
+        iconWidth: iconBox?.width || 0,
+        iconHeight: iconBox?.height || 0,
+        svgWidth: svgBox?.width || 0,
+        svgHeight: svgBox?.height || 0
+      };
+    });
     expect(metrics.width).toBeGreaterThanOrEqual(44);
     expect(metrics.height).toBeGreaterThanOrEqual(44);
     expect(metrics.visibleText).toBe("");
+    expect(metrics.iconFound).toBe(true);
+    expect(metrics.iconWidth).toBe(18);
+    expect(metrics.iconHeight).toBe(18);
+    expect(metrics.svgWidth).toBeGreaterThan(0);
+    expect(metrics.svgHeight).toBeGreaterThan(0);
     await expect(button).toHaveAttribute("aria-label", /.+/);
   }
   await buttons.nth(1).click();
@@ -48,6 +64,27 @@ test("Student React mobile navigation is icon-only, reachable, and uses 44px tar
   await expect(heading).toBeVisible();
   await expect(heading).toBeFocused();
   await expectNoHorizontalOverflow(page);
+});
+
+test("Student React mobile booking progress uses circular 24px markers", async ({ page }) => {
+  const viewport = page.viewportSize();
+  test.skip(!viewport || viewport.width > 700, "phone progress contract");
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    state.view = "reserve";
+    state.reservationType = "equipment";
+    state.reservationFlowStep.equipment = "select";
+    render();
+  });
+  const markers = page.locator(".student-react-booking-progress button span");
+  await expect(markers).toHaveCount(4);
+  for (let index = 0; index < 4; index += 1) {
+    const box = await markers.nth(index).boundingBox();
+    expect(box?.width).toBe(24);
+    expect(box?.height).toBe(24);
+  }
 });
 
 test("Student React My screen has labelled controls and no serious axe violations", async ({ page }) => {

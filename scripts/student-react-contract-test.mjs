@@ -682,6 +682,9 @@ assert(
   "student mobile account action must use the shared icon-only button"
 );
 assert(!shellSource.includes('["lectures", "특강", "plus"]'), "student lecture navigation must not use the generic add icon");
+const iconSource = fs.readFileSync("src/react/design-system/icons.tsx", "utf8");
+assert(iconSource.includes('case "calendar":'), "student lecture navigation must render a local calendar SVG");
+assert(!iconSource.includes('["calendar", "chevronLeft"'), "calendar must not use the zero-size Astryx wrapper path");
 const primitiveSource = fs.readFileSync("src/react/student/components/StudentPrimitives.tsx", "utf8");
 assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must provide the primary content heading on desktop");
 
