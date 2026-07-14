@@ -114,7 +114,7 @@ globalThis.fetch = async (input) => {
   };
 };
 
-const { state } = await import("../public/js/state.js?v=20260714-mobile-dock-r5");
+const { state } = await import("../public/js/state.js?v=20260714-mobile-card-r6");
 const { loadAdminData, loadAdminView } = await import("../public/js/data.js?react-admin-data-test");
 
 state.user = { id: "admin-1", role: "admin" };

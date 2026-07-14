@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260714-mobile-dock-r5";
-import { api } from "../api.js?v=20260714-mobile-dock-r5";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260714-mobile-dock-r5";
-import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260714-mobile-dock-r5";
+import { state } from "../state.js?v=20260714-mobile-card-r6";
+import { api } from "../api.js?v=20260714-mobile-card-r6";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260714-mobile-card-r6";
+import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260714-mobile-card-r6";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260714-mobile-dock-r5";
-import { render, toast } from "../renderer.js?v=20260714-mobile-dock-r5";
-import { formData, parseCsv } from "../utils.js?v=20260714-mobile-dock-r5";
+} from "../admin-equipment.js?v=20260714-mobile-card-r6";
+import { render, toast } from "../renderer.js?v=20260714-mobile-card-r6";
+import { formData, parseCsv } from "../utils.js?v=20260714-mobile-card-r6";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260714-mobile-dock-r5";
+} from "./shared.js?v=20260714-mobile-card-r6";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

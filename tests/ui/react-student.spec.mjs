@@ -88,8 +88,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -109,8 +109,8 @@ test("Student React reservation cards align actions and summarize the schedule o
   test.skip(!viewport || viewport.width > 430, "phone card contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "mine";
     state.myReservations = [{
       id: "mobile-card-fixture",
@@ -252,8 +252,8 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
     state.myReservations = [{
@@ -290,8 +290,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -319,8 +319,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-      const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+      const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+      const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
       state.view = "reserve";
       state.reservationType = "";
       state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
@@ -338,8 +338,8 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -402,8 +402,8 @@ test("Student React mobile equipment selection uses an expandable dock above nav
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -472,8 +472,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260714-mobile-dock-r5");
-    const { render } = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

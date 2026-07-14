@@ -23,10 +23,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260714-mobile-dock-r5");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260714-mobile-dock-r5");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260714-mobile-dock-r5");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260714-mobile-dock-r5");
+const { state } = await import("../public/js/state.js?v=20260714-mobile-card-r6");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260714-mobile-card-r6");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260714-mobile-card-r6");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260714-mobile-card-r6");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {

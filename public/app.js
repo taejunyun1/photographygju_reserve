@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260714-mobile-dock-r5";
+import "./js/main.js?v=20260714-mobile-card-r6";

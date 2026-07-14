@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260714-mobile-dock-r5";
-import { loadAdminData } from "../data.js?v=20260714-mobile-dock-r5";
-import { render } from "../renderer.js?v=20260714-mobile-dock-r5";
-import { normalizeUnicodeText } from "../utils.js?v=20260714-mobile-dock-r5";
-import { resetAdminPage } from "./shared.js?v=20260714-mobile-dock-r5";
+import { state } from "../state.js?v=20260714-mobile-card-r6";
+import { loadAdminData } from "../data.js?v=20260714-mobile-card-r6";
+import { render } from "../renderer.js?v=20260714-mobile-card-r6";
+import { normalizeUnicodeText } from "../utils.js?v=20260714-mobile-card-r6";
+import { resetAdminPage } from "./shared.js?v=20260714-mobile-card-r6";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

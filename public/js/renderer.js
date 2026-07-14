@@ -1,12 +1,12 @@
-import { $app, state } from "./state.js?v=20260714-mobile-dock-r5";
-import { api } from "./api.js?v=20260714-mobile-dock-r5";
+import { $app, state } from "./state.js?v=20260714-mobile-card-r6";
+import { api } from "./api.js?v=20260714-mobile-card-r6";
 import {
   invalidateAdminViewCache,
   loadAdminView,
   loadBootstrap,
   loadLectures,
   loadMyReservations
-} from "./data.js?v=20260714-mobile-dock-r5";
+} from "./data.js?v=20260714-mobile-card-r6";
 import {
   clearNativeNotificationAccount,
   disableNativeReservationNotifications,
@@ -14,12 +14,12 @@ import {
   handleNativeNotificationResume,
   notifyNativeReservationCreated,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260714-mobile-dock-r5";
+} from "./native-notifications.js?v=20260714-mobile-card-r6";
 import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260711-react-student";
-import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260714-mobile-dock-r5";
-import { adminShell } from "./views-admin.js?v=20260714-mobile-dock-r5";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260714-mobile-dock-r5";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260714-mobile-dock-r5";
+import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260714-mobile-card-r6";
+import { adminShell } from "./views-admin.js?v=20260714-mobile-card-r6";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260714-mobile-card-r6";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260714-mobile-card-r6";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260714-mobile-dock-r5";
-import { render, toast } from "../renderer.js?v=20260714-mobile-dock-r5";
-import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260714-mobile-dock-r5";
+import { state } from "../state.js?v=20260714-mobile-card-r6";
+import { render, toast } from "../renderer.js?v=20260714-mobile-card-r6";
+import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260714-mobile-card-r6";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

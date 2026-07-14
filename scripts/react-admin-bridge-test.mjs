@@ -105,8 +105,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260714-mobile-dock-r5");
-const { render, toast } = await import("../public/js/renderer.js?v=20260714-mobile-dock-r5");
+const { state } = await import("../public/js/state.js?v=20260714-mobile-card-r6");
+const { render, toast } = await import("../public/js/renderer.js?v=20260714-mobile-card-r6");
 
 state.bootstrap = { settings: { blockedSchedules: [] } };
 state.user = { id: "admin1", role: "admin", name: "관리자", email: "admin@gju.local" };

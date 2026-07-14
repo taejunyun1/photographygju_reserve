@@ -36,7 +36,7 @@ test("React Admin action toast is announced once across a follow-up render", asy
     window.__gjuToastObserver = observer;
   });
   await page.evaluate(async () => {
-    const module = await import("/js/renderer.js?v=20260714-mobile-dock-r5");
+    const module = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     module.toast("중복 알림 확인", { duration: 5_000 });
     module.render();
   });

@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260714-mobile-dock-r5";
+import { state } from "../state.js?v=20260714-mobile-card-r6";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260714-mobile-dock-r5";
+} from "../admin-equipment.js?v=20260714-mobile-card-r6";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260714-mobile-dock-r5";
+} from "./shared.js?v=20260714-mobile-card-r6";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

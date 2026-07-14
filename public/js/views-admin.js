@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260714-mobile-dock-r5";
+import { state } from "./state.js?v=20260714-mobile-card-r6";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260714-mobile-dock-r5";
+} from "./constants.js?v=20260714-mobile-card-r6";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260714-mobile-dock-r5";
+} from "./utils.js?v=20260714-mobile-card-r6";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260714-mobile-dock-r5";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260714-mobile-dock-r5";
-import { noticeCard } from "./views-student.js?v=20260714-mobile-dock-r5";
+} from "./ui.js?v=20260714-mobile-card-r6";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260714-mobile-card-r6";
+import { noticeCard } from "./views-student.js?v=20260714-mobile-card-r6";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260714-mobile-dock-r5";
+} from "./admin-equipment.js?v=20260714-mobile-card-r6";
 
 export function adminShell() {
   return `
