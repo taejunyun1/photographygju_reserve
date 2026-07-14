@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
-const requiredCacheVersion = "20260704-student-icon-nav";
+const requiredCacheVersion = "20260714-full-flow-ux-r3";
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");

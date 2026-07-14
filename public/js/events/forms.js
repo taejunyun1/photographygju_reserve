@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
-import { api } from "../api.js?v=20260704-student-icon-nav";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { api } from "../api.js?v=20260714-full-flow-ux-r3";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260714-full-flow-ux-r3";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260704-student-icon-nav";
-import { toast } from "../renderer.js?v=20260704-student-icon-nav";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260704-student-icon-nav";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260704-student-icon-nav";
+} from "../actions.js?v=20260714-full-flow-ux-r3";
+import { toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260714-full-flow-ux-r3";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260714-full-flow-ux-r3";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

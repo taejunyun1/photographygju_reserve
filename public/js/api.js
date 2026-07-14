@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260714-full-flow-ux-r3";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

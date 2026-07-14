@@ -90,8 +90,8 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-    const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
     state.view = "reports";
     state.myReservations = [{
       id: "report-error-fixture",
@@ -127,8 +127,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-    const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -156,8 +156,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-      const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+      const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+      const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
       state.view = "reserve";
       state.reservationType = "";
       render();
@@ -180,8 +180,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-    const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

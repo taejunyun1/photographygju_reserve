@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
-import { api } from "../api.js?v=20260704-student-icon-nav";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260704-student-icon-nav";
-import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { api } from "../api.js?v=20260714-full-flow-ux-r3";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260714-full-flow-ux-r3";
+import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260714-full-flow-ux-r3";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260704-student-icon-nav";
-import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
-import { formData, parseCsv } from "../utils.js?v=20260704-student-icon-nav";
+} from "../admin-equipment.js?v=20260714-full-flow-ux-r3";
+import { render, toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
+import { formData, parseCsv } from "../utils.js?v=20260714-full-flow-ux-r3";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260704-student-icon-nav";
+} from "./shared.js?v=20260714-full-flow-ux-r3";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

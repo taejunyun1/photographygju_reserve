@@ -1,6 +1,6 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
-import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
-import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { render, toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
+import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260714-full-flow-ux-r3";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

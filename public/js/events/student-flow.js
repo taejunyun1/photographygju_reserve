@@ -1,21 +1,21 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
-import { api } from "../api.js?v=20260704-student-icon-nav";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260704-student-icon-nav";
-import { logout, openReport } from "../actions.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { api } from "../api.js?v=20260714-full-flow-ux-r3";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260714-full-flow-ux-r3";
+import { logout, openReport } from "../actions.js?v=20260714-full-flow-ux-r3";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260704-student-icon-nav";
-import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
-import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260704-student-icon-nav";
+} from "../native-notifications.js?v=20260714-full-flow-ux-r3";
+import { render, toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260714-full-flow-ux-r3";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260704-student-icon-nav";
+} from "./shared.js?v=20260714-full-flow-ux-r3";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {

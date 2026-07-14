@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
-import { logout } from "../actions.js?v=20260704-student-icon-nav";
-import { render, toast } from "../renderer.js?v=20260704-student-icon-nav";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
+import { logout } from "../actions.js?v=20260714-full-flow-ux-r3";
+import { render, toast } from "../renderer.js?v=20260714-full-flow-ux-r3";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260714-full-flow-ux-r3";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260704-student-icon-nav";
+} from "../utils.js?v=20260714-full-flow-ux-r3";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260704-student-icon-nav";
+} from "./scroll-state.js?v=20260714-full-flow-ux-r3";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

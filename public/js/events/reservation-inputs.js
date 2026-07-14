@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260704-student-icon-nav";
+import { state } from "../state.js?v=20260714-full-flow-ux-r3";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260704-student-icon-nav";
+} from "../admin-equipment.js?v=20260714-full-flow-ux-r3";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260704-student-icon-nav";
+} from "./shared.js?v=20260714-full-flow-ux-r3";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

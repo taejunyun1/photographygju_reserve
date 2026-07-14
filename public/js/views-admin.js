@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260714-full-flow-ux-r3";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260704-student-icon-nav";
+} from "./constants.js?v=20260714-full-flow-ux-r3";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260704-student-icon-nav";
+} from "./utils.js?v=20260714-full-flow-ux-r3";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260704-student-icon-nav";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260704-student-icon-nav";
-import { noticeCard } from "./views-student.js?v=20260704-student-icon-nav";
+} from "./ui.js?v=20260714-full-flow-ux-r3";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260714-full-flow-ux-r3";
+import { noticeCard } from "./views-student.js?v=20260714-full-flow-ux-r3";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260704-student-icon-nav";
+} from "./admin-equipment.js?v=20260714-full-flow-ux-r3";
 
 export function adminShell() {
   return `

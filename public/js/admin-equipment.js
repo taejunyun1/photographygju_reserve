@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260704-student-icon-nav";
-import { api } from "./api.js?v=20260704-student-icon-nav";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260704-student-icon-nav";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260714-full-flow-ux-r3";
+import { api } from "./api.js?v=20260714-full-flow-ux-r3";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260714-full-flow-ux-r3";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260714-full-flow-ux-r3";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

@@ -83,7 +83,7 @@ test("tabs expose relationships and support roving keyboard focus", async ({ pag
 test("roving tab focus survives a delayed render", async ({ page }) => {
   await openAuth(page);
   await page.evaluate(async () => {
-    const { tabs } = await import("/js/ui.js?v=20260704-student-icon-nav");
+    const { tabs } = await import("/js/ui.js?v=20260714-full-flow-ux-r3");
     const host = document.createElement("section");
     host.id = "delayed-tab-fixture";
     const renderTabs = (active) => {
@@ -114,7 +114,7 @@ test("roving tab focus survives a delayed render", async ({ page }) => {
 test("tab helper creates stable tab-to-panel relationships", async ({ page }) => {
   await openAuth(page);
   await page.evaluate(async () => {
-    const { tabIds, tabPanel, tabs } = await import("/js/ui.js?v=20260704-student-icon-nav");
+    const { tabIds, tabPanel, tabs } = await import("/js/ui.js?v=20260714-full-flow-ux-r3");
     const ids = tabIds({ id: "fixture-tabs" });
     const host = document.createElement("div");
     host.id = "semantic-tab-fixture";
@@ -141,8 +141,8 @@ test("tab helper creates stable tab-to-panel relationships", async ({ page }) =>
 test("production student tabs control a labelled panel", async ({ page }) => {
   await loginAs(page, "student");
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-    const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
     state.view = "mine";
     state.myReservations = [{
       id: "accessibility-reservation",
@@ -192,8 +192,8 @@ test("view replacement restores focus to a stable navigation target", async ({ p
 test("legacy dialogs receive focus and restore it to their trigger", async ({ page }) => {
   await loginAs(page, "student");
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260704-student-icon-nav");
-    const { render } = await import("/js/renderer.js?v=20260704-student-icon-nav");
+    const { state } = await import("/js/state.js?v=20260714-full-flow-ux-r3");
+    const { render } = await import("/js/renderer.js?v=20260714-full-flow-ux-r3");
     state.view = "notices";
     state.bootstrap.notices = [{
       id: "focus-notice",

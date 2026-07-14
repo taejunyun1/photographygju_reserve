@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260704-student-icon-nav";
-import { api } from "./api.js?v=20260704-student-icon-nav";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260714-full-flow-ux-r3";
+import { api } from "./api.js?v=20260714-full-flow-ux-r3";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260714-full-flow-ux-r3";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();

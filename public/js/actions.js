@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260704-student-icon-nav";
-import { api } from "./api.js?v=20260704-student-icon-nav";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260704-student-icon-nav";
-import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20260704-student-icon-nav";
-import { render, toast } from "./renderer.js?v=20260704-student-icon-nav";
+import { state } from "./state.js?v=20260714-full-flow-ux-r3";
+import { api } from "./api.js?v=20260714-full-flow-ux-r3";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260714-full-flow-ux-r3";
+import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20260714-full-flow-ux-r3";
+import { render, toast } from "./renderer.js?v=20260714-full-flow-ux-r3";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260704-student-icon-nav";
+} from "./utils.js?v=20260714-full-flow-ux-r3";
 
 export async function login(form) {
   const data = formData(form);
