@@ -30,6 +30,7 @@ import type {
   StudentReservationSelectionPatch,
   StudentState
 } from "../types";
+import { EquipmentSelectionSurface } from "./EquipmentSelectionSurface";
 
 type ReservationControlsProps = {
   type: ReservationType;
@@ -292,26 +293,12 @@ function EquipmentStep({ state, actions }: Omit<ReservationControlsProps, "type"
   return (
     <div className="student-react-equipment-picker">
       <p className="muted">필요한 장비를 여러 개 선택할 수 있습니다.</p>
-      <aside className="student-react-equipment-manifest" aria-live="polite">
-        <div className="student-react-equipment-manifest__head">
-          <strong>선택 목록</strong>
-          <span>{selectedItems.length}개 선택</span>
-        </div>
-        {selectedItems.length ? (
-          <div className="student-react-equipment-manifest__items">
-            {selectedItems.map((item) => (
-              <span key={item.id} className="student-react-equipment-manifest__item">
-                <span><strong>{item.name || item.code || "기자재"}</strong><small>{item.code || item.category || ""}</small></span>
-                <GjuIconButton
-                  label={`${item.name || item.code || "기자재"} 선택 해제`}
-                  icon="x"
-                  onClick={() => update(actions, "equipment", { equipmentItemIds: selected.filter((id) => id !== item.id) })}
-                />
-              </span>
-            ))}
-          </div>
-        ) : <p className="muted">목록에서 필요한 장비를 선택하세요.</p>}
-      </aside>
+      <EquipmentSelectionSurface
+        items={selectedItems}
+        onRemove={(id) => update(actions, "equipment", {
+          equipmentItemIds: selected.filter((selectedId) => selectedId !== id)
+        })}
+      />
       <div className="field">
         <label htmlFor="student-equipment-search">기자재 검색</label>
         <input

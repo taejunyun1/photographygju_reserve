@@ -48,6 +48,7 @@ function readEventSource() {
 const eventSource = readEventSource();
 const styleSource = fs.readFileSync("public/styles.css", "utf8");
 const reactStudentStyleSource = fs.readFileSync("src/react/student/student.css", "utf8");
+const selectionSurfaceSource = fs.readFileSync("src/react/student/components/EquipmentSelectionSurface.tsx", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const designGuideSource = fs.readFileSync("docs/frontend-design-system.md", "utf8");
 
@@ -118,6 +119,10 @@ assert(buttonRule.includes("border-radius: var(--component-button-radius);"), "s
 assert(reactStudentStyleSource.includes(".student-react-equipment-manifest"), "React equipment selection must style the selected manifest");
 assert(equipmentPickerRule.includes("min-width: 0;"), "React equipment selection must shrink inside the reservation card");
 assert(!mobileFlowActionsRule.includes("position: sticky;"), "React reservation flow actions must not cover equipment search or results");
+assert(selectionSurfaceSource.includes('aria-expanded={open}'), "mobile selection dock must expose expanded state");
+assert(selectionSurfaceSource.includes('event.key === "Escape"'), "mobile selection dock must close with Escape");
+assert(reactStudentStyleSource.includes("max-height: 45dvh;"), "mobile selection sheet must cap its viewport height");
+assert(reactStudentStyleSource.includes("student-react-equipment-manifest--inline"), "desktop selection manifest must remain available");
 assert(
   reactStudentStyleSource.includes(".student-react-equipment-manifest__item .gju-icon-button")
     && reactStudentStyleSource.includes("min-width: 44px;"),

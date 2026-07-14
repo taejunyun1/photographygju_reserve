@@ -272,6 +272,66 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   await expectNoHorizontalOverflow(page);
 });
 
+test("Student React mobile equipment selection uses an expandable dock above navigation", async ({ page }) => {
+  const viewport = page.viewportSize();
+  test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-overflow-r4");
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-overflow-r4");
+    const selected = (state.bootstrap.equipment || [])
+      .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
+      .slice(0, 4)
+      .map((item) => item.id);
+    state.view = "reserve";
+    state.reservationType = "equipment";
+    state.reservationFlowStep.equipment = "select";
+    state.selectedDates.equipment = "2099-07-20";
+    state.selectedEquipmentPeriod = "당일";
+    state.selectedEquipmentRentalTime = "10:15";
+    state.selectedEquipmentReturnTime = "17:10";
+    state.selectedEquipmentItemIds = selected;
+    render();
+  });
+
+  await expect(page.locator(".student-react-equipment-manifest--inline")).toBeHidden();
+  const dock = page.locator(".student-react-equipment-dock");
+  const toggle = dock.locator(".student-react-equipment-dock__toggle");
+  await expect(toggle).toHaveAccessibleName(/선택 장비 4개.*목록 보기/);
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#student-equipment-selection-panel")).toHaveCount(0);
+
+  const navBox = await page.locator(".student-react-bottom-nav").boundingBox();
+  const dockBox = await dock.boundingBox();
+  expect(navBox).not.toBeNull();
+  expect(dockBox).not.toBeNull();
+  expect(dockBox.y + dockBox.height).toBeLessThanOrEqual(navBox.y - 6);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toHaveAccessibleName(/선택 장비 4개.*목록 닫기/);
+  const panel = page.locator("#student-equipment-selection-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".student-react-equipment-manifest__item")).toHaveCount(4);
+  const sheetBox = await dock.boundingBox();
+  expect(sheetBox).not.toBeNull();
+  expect(sheetBox.height).toBeLessThanOrEqual(viewport.height * 0.45 + 1);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".student-react-equipment-dock")
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(accessibility.violations.filter((violation) => (
+    ["serious", "critical"].includes(violation.impact)
+  ))).toEqual([]);
+
+  await panel.getByRole("button", { name: /선택 해제/ }).first().click();
+  await expect(panel.locator(".student-react-equipment-manifest__item")).toHaveCount(3);
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expectNoHorizontalOverflow(page);
+});
+
 test("Student React reservation cancellation keeps the card and announces request errors", async ({ page }) => {
   await loginReactStudent(page);
   await page.route("**/api/reservations/cancel-error-fixture/cancel", async (route) => {
