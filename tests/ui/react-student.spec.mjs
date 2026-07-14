@@ -132,6 +132,9 @@ test("Student React reservation cards align actions and summarize the schedule o
     }];
     render();
   });
+  await page.locator(".student-react-mine").evaluate(async (element) => {
+    await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
+  });
 
   const card = page.locator(".student-react-reservation-card").first();
   const header = card.locator(".student-react-reservation-card__head");
@@ -164,8 +167,8 @@ test("Student React reservation cards align actions and summarize the schedule o
   });
   expect(Math.abs((metrics.badgeTop || 0) - (metrics.cancelTop || 0))).toBeLessThanOrEqual(8);
   expect(Math.abs((metrics.cancelRight || 0) - (metrics.contentRight || 0))).toBeLessThanOrEqual(2);
-  expect(metrics.cancelWidth).toBe(44);
-  expect(metrics.cancelHeight).toBe(44);
+  expect(Math.abs((metrics.cancelWidth || 0) - 44)).toBeLessThanOrEqual(0.1);
+  expect(Math.abs((metrics.cancelHeight || 0) - 44)).toBeLessThanOrEqual(0.1);
   expect(metrics.titleFontSize).toBe("17px");
   expect(metrics.titleMargin).toBe("0px");
   const accessibility = await new AxeBuilder({ page })
