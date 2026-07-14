@@ -30,7 +30,7 @@ const indexHtml = read("public/index.html");
 const cacheVersion = [...indexHtml.matchAll(/\?v=([0-9A-Za-z-]+)/g)].map((match) => match[1])[0];
 assert(cacheVersion, "local public/index.html must include a cache version");
 
-const { text: appJs } = await fetchText("/app.js");
+const { text: appJs } = await fetchText(`/app.js?v=${cacheVersion}`);
 assert(appJs.includes(`?v=${cacheVersion}`), `production app.js must reference cache version ${cacheVersion}`);
 ok(`production app.js cache version ${cacheVersion}`);
 
