@@ -219,6 +219,16 @@ await assert.rejects(
 );
 
 state.adminReportsPage = { total: 2, collectionTotal: 2, page: 1, pageSize: 100 };
+apiResponses.push(
+  { payload: { ok: true, data: { id: "report-review", status: "reviewed" } } },
+  { payload: { ok: true, data: { items: [{ id: "report-review", status: "reviewed" }], total: 1, collectionTotal: 1, page: 1, pageSize: 100, hasMore: false } } }
+);
+await adminActions.reviewReport("report-review");
+const reviewReportRequest = apiRequests.at(-2);
+assert.equal(reviewReportRequest.method, "PATCH");
+assert.equal(reviewReportRequest.path, "/api/admin/reports/report-review/status");
+assert.deepEqual(JSON.parse(reviewReportRequest.body), { status: "reviewed" });
+
 const unsafeFilteredRequestCount = apiRequests.length;
 await adminActions.bulkDeleteReports({ q: "", semester: "all" });
 assert.equal(apiRequests.length, unsafeFilteredRequestCount, "filtered deletion without an effective filter must stop before the API");

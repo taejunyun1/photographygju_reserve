@@ -98,6 +98,20 @@ function reportTone(status: string) {
   return "neutral" as const;
 }
 
+function reportReviewAction(report: AdminReportRecord, actions: ReactAdminActions) {
+  if (report.isMissing || reportStatus(report) !== "submitted") return null;
+  return (
+    <button
+      aria-label="보고서 확인 완료"
+      className="button compact"
+      type="button"
+      onClick={() => runAdminAction(() => actions.reviewReport(report.id))}
+    >
+      확인 완료
+    </button>
+  );
+}
+
 function bulkDeleteReports(state: LegacyState, actions: ReactAdminActions) {
   runAdminAction(() => actions.bulkDeleteReports({
     status: state.adminReportStatusFilter || "all",
@@ -172,7 +186,8 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
           items={[
             { key: "all", label: "전체" },
             { key: "missing", label: "제출 대기" },
-            { key: "submitted", label: "제출 완료" }
+            { key: "submitted", label: "확인 대기" },
+            { key: "reviewed", label: "확인 완료" }
           ]}
           activeKey={statusFilter}
           onChange={setStatus}
@@ -217,6 +232,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                       <GjuStatusBadge tone={reportTone(reportStatus(report))}>
                         {reportStatusLabel(reportStatus(report))}
                       </GjuStatusBadge>
+                      {reportReviewAction(report, actions)}
                     </td>
                     <td>{formatDateTime(report.submittedAt || report.createdAt)}</td>
                     <td>{reportDetails(report)}</td>
@@ -244,6 +260,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                   {reportStatusLabel(reportStatus(report))}
                 </GjuStatusBadge>
               </div>
+              {reportReviewAction(report, actions)}
               <dl className="property-list">
                 {property("학기", reportSemester(report))}
                 {property("예약", report.reservationId || report.reservation?.id || "-")}

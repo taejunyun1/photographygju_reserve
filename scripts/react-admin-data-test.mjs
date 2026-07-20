@@ -200,6 +200,21 @@ assert.deepEqual(
   [{ key: "2026-S2", label: "2026년 2학기" }],
   "object semester options must retain their key and label"
 );
+await loadAdminView("reservations", {
+  type: "equipment",
+  status: "returned",
+  from: "2026-07-20",
+  to: "2026-07-20",
+  force: true
+});
+let todayReservationsUrl = new URL(requests.at(-1), "https://admin.test");
+assert.equal(todayReservationsUrl.searchParams.get("from"), "2026-07-20");
+assert.equal(todayReservationsUrl.searchParams.get("to"), "2026-07-20");
+await loadAdminView("reservations", { page: 1, force: true });
+todayReservationsUrl = new URL(requests.at(-1), "https://admin.test");
+assert.equal(todayReservationsUrl.searchParams.get("from"), "2026-07-20", "today start filter must survive reservation paging and sorting");
+assert.equal(todayReservationsUrl.searchParams.get("to"), "2026-07-20", "today end filter must survive reservation paging and sorting");
+await loadAdminView("reservations", { from: "", to: "", force: true });
 await loadAdminView("reports", { force: true });
 assert.deepEqual(
   state.adminReportSemesters,

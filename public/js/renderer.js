@@ -292,7 +292,8 @@ const reactAdminActions = {
     state.adminView = view;
     renderWithScrollState(scrollState);
     try {
-      await loadAdminView(view, filters);
+      const nextFilters = view === "reservations" ? { from: "", to: "", ...filters } : filters;
+      await loadAdminView(view, nextFilters);
       renderWithScrollState(scrollState);
     } catch (error) {
       toast(actionErrorMessage(error), { tone: "error", scrollState });
@@ -554,6 +555,17 @@ const reactAdminActions = {
       }),
       "필터된 보고서를 삭제했습니다.",
       { invalidateViews: ["reports", "reservations", "dashboard"] }
+    );
+  },
+  async reviewReport(reportId) {
+    await runAdminMutation(
+      "reports",
+      () => api(`/api/admin/reports/${encodeURIComponent(reportId)}/status`, {
+        method: "PATCH",
+        body: { status: "reviewed" }
+      }),
+      "보고서 확인을 완료했습니다.",
+      { invalidateViews: ["reports", "dashboard"] }
     );
   },
   async deleteAllReports(collectionTotal) {

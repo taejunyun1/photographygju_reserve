@@ -1114,6 +1114,7 @@ export async function handleApiRequest(ctx) {
         const report = {
           id: id("report"),
           type: "studio",
+          status: "submitted",
           reservationId: reservation.id,
           userId: user.id,
           fields: {
@@ -1364,9 +1365,9 @@ export async function handleApiRequest(ctx) {
         const equipmentPendingApproval = db.reservations.filter((item) => item.type === "equipment" && item.status === "pending_approval").length;
         const equipmentApproved = db.reservations.filter((item) => item.type === "equipment" && item.status === "approved").length;
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
-        const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned").length;
-        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "rejected"].includes(item.status)).length;
         const today = todayKeySeoul();
+        const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned" && item.fields?.reservedDate === today).length;
+        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "rejected"].includes(item.status) && item.fields?.reservedDate === today).length;
         const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
         const weekFrom = addDaysToDateKey(today, -(weekday === 0 ? 6 : weekday - 1));
         const weekTo = addDaysToDateKey(weekFrom, 6);
@@ -1380,31 +1381,32 @@ export async function handleApiRequest(ctx) {
           return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(date);
         };
         const checkoutReturnQueue = detailedReservations
-          .filter((item) => item.type === "equipment" && item.status === "checked_out")
+          .filter((item) => item.type === "equipment" && ["approved", "checked_out"].includes(item.status))
           .flatMap((item) => {
-            const entries = [];
-            if (item.fields?.reservedDate === today) {
-              entries.push({ ...item, queueAction: "checkout", queueAt: item.timing?.startAt || "" });
+            if (item.status === "approved" && item.fields?.reservedDate === today) {
+              return [{ ...item, queueAction: "checkout", queueAt: item.timing?.startAt || "" }];
             }
-            if (seoulDateKey(item.timing?.endAt) === today) {
-              entries.push({ ...item, queueAction: "return", queueAt: item.timing?.endAt || "" });
+            if (item.status === "checked_out" && seoulDateKey(item.timing?.endAt) === today) {
+              return [{ ...item, queueAction: "return", queueAt: item.timing?.endAt || "" }];
             }
-            return entries;
+            return [];
           })
           .sort((left, right) => String(left.queueAt || "").localeCompare(String(right.queueAt || "")));
         const todayReservations = todaySchedule.length;
         const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
         const activeEquipment = db.equipment.filter((item) => item.active !== false);
-        const availableEquipment = activeEquipment.filter((item) => item.status === "가능").length;
+        const availableEquipment = activeEquipment.filter((item) => item.status === "가능" && item.reservable !== false && item.inquiryOnly !== true).length;
         const repairEquipment = activeEquipment.filter((item) => item.status === "수리중").length;
         const cancelledReservations = db.reservations.filter((item) => ["cancelled", "admin_cancelled", "rejected"].includes(item.status)).length;
-        const typeCounts = db.reservations.reduce((counts, item) => {
+        const excludedMetricStatuses = new Set(["cancelled", "admin_cancelled", "rejected"]);
+        const metricReservations = detailedReservations.filter((item) => !excludedMetricStatuses.has(item.status));
+        const typeCounts = metricReservations.reduce((counts, item) => {
           const type = item.type || "unknown";
           counts[type] = Number(counts[type] || 0) + 1;
           return counts;
         }, {});
         const equipmentUse = new Map();
-        for (const reservation of detailedReservations) {
+        for (const reservation of metricReservations) {
           for (const item of reservation.equipmentItems || []) {
             const name = String(item.name || item.code || "").trim();
             if (name) equipmentUse.set(name, Number(equipmentUse.get(name) || 0) + 1);
@@ -1431,7 +1433,7 @@ export async function handleApiRequest(ctx) {
           todaySchedule,
           checkoutReturnQueue,
           metrics: {
-            weekReservations: db.reservations.filter((item) => {
+            weekReservations: metricReservations.filter((item) => {
               const reservedDate = String(item.fields?.reservedDate || "");
               return reservedDate >= weekFrom && reservedDate <= weekTo;
             }).length,
@@ -1440,7 +1442,7 @@ export async function handleApiRequest(ctx) {
             repairEquipment,
             equipmentAvailableRate: activeEquipment.length ? Math.round((availableEquipment / activeEquipment.length) * 100) : 0,
             cancelledReservations,
-            reportQueueCount: db.reports.filter((report) => !["completed", "approved"].includes(report.status)).length,
+            reportQueueCount: db.reports.filter((report) => !report.status || report.status === "submitted").length,
             openLectures: db.lectures.filter((lecture) => lecture.status === "모집중").length,
             typeCounts,
             popularEquipment,
@@ -1816,6 +1818,23 @@ export async function handleApiRequest(ctx) {
         requireAdmin(authorization, db);
         if (hasListQuery(searchParams)) return ok(adminReportList(db, searchParams));
         return ok(db.reports.map((report) => reportWithDetails(db, report)));
+      }
+
+      const reportStatusMatch = pathname.match(/^\/api\/admin\/reports\/([^/]+)\/status$/);
+      if (method === "PATCH" && reportStatusMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        if (body.status !== "reviewed") {
+          throw Object.assign(new Error("지원하지 않는 보고서 상태입니다."), { status: 400 });
+        }
+        const report = db.reports.find((item) => item.id === reportStatusMatch[1]);
+        if (!report) throw Object.assign(new Error("보고서를 찾을 수 없습니다."), { status: 404 });
+        report.status = "reviewed";
+        report.reviewedAt = nowIso();
+        report.reviewedBy = admin.id;
+        audit(db, admin, "studio_report.reviewed", report.id, { reservationId: report.reservationId });
+        await saveDb();
+        return ok(reportWithDetails(db, report));
       }
 
       if (routeKey(method, pathname) === "DELETE /api/admin/reports/bulk") {

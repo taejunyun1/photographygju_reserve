@@ -27,6 +27,13 @@ type WarningNavigation = {
   filters: Record<string, string | number>;
 };
 
+const SEOUL_DATE_FORMATTER = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+});
+
 const styles = {
   screen: {
     display: "grid",
@@ -248,6 +255,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const returned = Number(summary.equipmentReturned || 0);
   const cancelled = Number(summary.equipmentCancelled || 0);
   const missingReports = Number(summary.missingReports || 0);
+  const today = SEOUL_DATE_FORMATTER.format(new Date());
 
   const cards: DashboardCardConfig[] = [
     {
@@ -293,7 +301,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       badge: "예약 관리",
       tone: "green",
       targetView: "reservations",
-      filters: { type: "equipment", status: "returned", q: "", page: 1 }
+      filters: { type: "equipment", status: "returned", q: "", from: today, to: today, page: 1 }
     },
     {
       label: "취소/반려",
@@ -302,7 +310,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       badge: "예약 관리",
       tone: "neutral",
       targetView: "reservations",
-      filters: { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }
+      filters: { type: "equipment", status: "cancelled_or_rejected", q: "", from: today, to: today, page: 1 }
     },
     {
       label: "보고서 확인 필요",

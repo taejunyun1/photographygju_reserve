@@ -172,6 +172,8 @@ function adminReservationsPath(filters = {}) {
     type,
     status,
     semester: filterValue(filters, "semester", state.adminReservationSemesterFilter),
+    from: filterValue(filters, "from", state.adminReservationDateFrom),
+    to: filterValue(filters, "to", state.adminReservationDateTo),
     q: query,
     ...sort
   })}`;
@@ -245,6 +247,8 @@ function applyFilterState(view, filters) {
     if ("type" in filters) state.adminReservationTab = String(filters.type || "all");
     if ("status" in filters) state.adminEquipmentReservationStatusFilter = String(filters.status || "all");
     if ("semester" in filters) state.adminReservationSemesterFilter = String(filters.semester || "all");
+    if ("from" in filters) state.adminReservationDateFrom = String(filters.from || "");
+    if ("to" in filters) state.adminReservationDateTo = String(filters.to || "");
     if ("page" in filters) setPage("adminReservationsPage", filters.page);
     if ("pageSize" in filters) setPageSize("adminReservationsPage", filters.pageSize);
     setSort("adminReservationSort", filters, "createdAt", "desc");

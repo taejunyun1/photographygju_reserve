@@ -32,6 +32,7 @@ const renderEntry = await build({
       export { AdminApp } from "../src/react/admin/AdminApp.tsx";
       export { AdminDashboard } from "../src/react/admin/screens/AdminDashboard.tsx";
       export { AdminCourseDemand } from "../src/react/admin/screens/AdminCourseDemand.tsx";
+      export { AdminReports } from "../src/react/admin/screens/AdminReports.tsx";
     `,
     resolveDir: path.join(process.cwd(), "scripts"),
     sourcefile: "scripts/react-admin-render-entry.tsx",
@@ -453,6 +454,7 @@ const dashboardTree = renderModule.AdminDashboard({
   }
 });
 const dashboardButtons = reactElements(dashboardTree, (element) => element.type === "button");
+const dashboardToday = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
 dashboardButtons[1].props.onClick();
 dashboardButtons[2].props.onClick();
 dashboardButtons[3].props.onClick();
@@ -465,8 +467,8 @@ assert.deepEqual(
     ["reservations", { type: "equipment", status: "pending_approval", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "approved", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "checked_out", q: "", page: 1 }],
-    ["reservations", { type: "equipment", status: "returned", q: "", page: 1 }],
-    ["reservations", { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }],
+    ["reservations", { type: "equipment", status: "returned", q: "", from: dashboardToday, to: dashboardToday, page: 1 }],
+    ["reservations", { type: "equipment", status: "cancelled_or_rejected", q: "", from: dashboardToday, to: dashboardToday, page: 1 }],
     ["reports", { status: "missing", q: "", semester: "all", page: 1 }]
   ],
   "dashboard action cards must pass their target filters through the typed navigation action"
@@ -973,6 +975,38 @@ for (const value of ["2026년 2학기", "2026-09-10 · Studio A Front", "10:40-1
   assert(reportsMarkup.includes(value), `report detail parity must render ${value}`);
 }
 assert(reportsMarkup.includes('data-surface="workspace"'), "React reports list must use the flat workspace surface");
+assert(reportsMarkup.includes('aria-label="보고서 확인 완료"'), "submitted reports must expose a review completion action");
+assert(reportsMarkup.includes("확인 완료"), "reports must expose the reviewed status tab");
+
+const reviewCalls = [];
+const submittedReportTree = renderModule.AdminReports({
+  state: {
+    adminReportsPage: { total: 1, collectionTotal: 1, page: 1, pageSize: 20 },
+    adminReports: [{ id: "report-review-action", status: "submitted", submittedAt: "2026-09-11T03:00:00.000Z" }]
+  },
+  actions: {
+    reviewReport(reportId) {
+      reviewCalls.push(reportId);
+    }
+  }
+});
+const reviewButtons = reactElements(submittedReportTree, (element) => element.props?.["aria-label"] === "보고서 확인 완료");
+assert.equal(reviewButtons.length, 2, "submitted report must expose the review action in desktop and mobile layouts");
+reviewButtons[0].props.onClick();
+await Promise.resolve();
+await Promise.resolve();
+assert.deepEqual(reviewCalls, ["report-review-action"]);
+
+const reviewedReportsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminReports, {
+    state: {
+      adminReportsPage: { total: 1, collectionTotal: 1, page: 1, pageSize: 20 },
+      adminReports: [{ id: "report-reviewed", status: "reviewed", submittedAt: "2026-09-11T03:00:00.000Z" }]
+    },
+    actions: noopActions
+  })
+);
+assert(!reviewedReportsMarkup.includes('aria-label="보고서 확인 완료"'), "reviewed reports must not expose a duplicate review action");
 
 const missingReportsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

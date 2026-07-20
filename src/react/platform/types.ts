@@ -468,6 +468,8 @@ export type AdminViewFilterMap = {
     type: string;
     status: string;
     semester: string;
+    from: string;
+    to: string;
     page: number;
     pageSize: number;
     sort: "createdAt" | "reservedDate" | "status" | "type" | "name" | "title";
@@ -589,6 +591,8 @@ export type LegacyState = Record<string, unknown> & {
   adminReservationTab?: string;
   adminEquipmentReservationStatusFilter?: string;
   adminReservationSemesterFilter?: string;
+  adminReservationDateFrom?: string;
+  adminReservationDateTo?: string;
   adminReservationSort?: { field?: string; direction?: AdminSortDirection };
   adminReservationsPage?: AdminPageMeta;
   adminReservationSemesters?: AdminSemesterOption[];
@@ -660,6 +664,7 @@ export type ReactAdminActions = {
   loadCourseDemandRecommendation(planId: string): Promise<AdminAnnualOfferingPlan>;
   bulkDeleteReports(filters: Partial<AdminViewFilterMap["reports"]>): Promise<void>;
   deleteAllReports(collectionTotal: number): Promise<void>;
+  reviewReport(reportId: string): Promise<void>;
   saveLecture(lectureId: string | null, input: AdminLectureInput): Promise<void>;
   deleteLecture(lectureId: string, title?: string): Promise<void>;
   bulkDeleteLectures(filters: Partial<AdminViewFilterMap["lectures"]>): Promise<void>;
