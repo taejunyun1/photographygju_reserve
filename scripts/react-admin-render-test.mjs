@@ -31,6 +31,7 @@ const renderEntry = await build({
       export { GjuToast } from "../src/react/design-system/Toast.tsx";
       export { AdminApp } from "../src/react/admin/AdminApp.tsx";
       export { AdminDashboard } from "../src/react/admin/screens/AdminDashboard.tsx";
+      export { AdminCourseDemand } from "../src/react/admin/screens/AdminCourseDemand.tsx";
     `,
     resolveDir: path.join(process.cwd(), "scripts"),
     sourcefile: "scripts/react-admin-render-entry.tsx",
@@ -365,6 +366,35 @@ assert(dashboardMarkup.includes('data-surface="workspace"'), "dashboard introduc
 assert(dashboardMarkup.includes("admin-dashboard-action-grid"), "dashboard action cards must use the compact responsive grid");
 assert(dashboardMarkup.includes("admin-dashboard-action-card"), "dashboard action cards must expose a density styling hook");
 assert(reactAdminCssSource.includes("grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile dashboard actions must use two compact columns");
+
+const courseDemandMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminCourseDemand, {
+    state: {
+      adminCoursePlanning: {
+        curriculumVersions: [],
+        annualPlans: [],
+        surveys: [],
+        courses: ["art", "documentary", "advertising", "video", "art", "video"].map((demandCategory, index) => ({
+          id: `course-${index + 1}`,
+          name: `전공선택 ${index + 1}`,
+          majorType: "전선",
+          targetYears: [2],
+          allowedTerms: ["fall"],
+          studentCredit: 3,
+          demandCategory,
+          isSurveyEligible: true,
+          active: true
+        }))
+      }
+    },
+    actions: noopActions
+  })
+);
+for (const label of ["설문 제목", "학년도", "학기", "현재 학년", "수강 대상 학년", "시작", "마감", "선택한 후보 0/6", "임시저장", "설문 공개"]) {
+  assert(courseDemandMarkup.includes(label), `course demand builder must render ${label}`);
+}
+assert(courseDemandMarkup.includes("전공선택 1"), "course demand builder must render matching elective candidates");
+assert(!courseDemandMarkup.includes("85학점"), "course demand builder must not expose annual operating-plan metrics");
 
 const dashboardNavigationCalls = [];
 const dashboardTree = renderModule.AdminDashboard({

@@ -5,7 +5,7 @@ export const adminNavItems = [
   ["equipment", "기자재"],
   ["reports", "보고서"],
   ["lectures", "비교과 특강"],
-  ["course-demand", "교과 편성"],
+  ["course-demand", "교과 수요조사"],
   ["notices", "공지사항"],
   ["logs", "로그/세션"],
   ["settings", "설정"]
@@ -21,7 +21,7 @@ export function adminTitle(view = "dashboard") {
     equipment: "기자재 관리",
     reports: "보고서",
     lectures: "비교과 특강",
-    "course-demand": "교과 편성",
+    "course-demand": "교과 수요조사",
     notices: "공지사항",
     logs: "로그/세션",
     settings: "설정",

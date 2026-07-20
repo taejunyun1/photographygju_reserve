@@ -53,13 +53,22 @@ const adminReservationsSource = read("src/react/admin/screens/AdminReservations.
 const adminDashboardSource = read("src/react/admin/screens/AdminDashboard.tsx");
 const adminAppSource = read("src/react/admin/AdminApp.tsx");
 const adminNavSource = read("src/react/platform/adminNav.ts");
+const adminCourseDemandSource = read("src/react/admin/screens/AdminCourseDemand.tsx");
 const adminListsSource = read("core/admin-lists.mjs");
 for (const label of ["운영 인사이트", "주의 필요", "혼잡 시간", "장비 가동률", "취소율", "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다."]) {
   assert(adminDashboardSource.includes(label), `Admin dashboard must render ${label}`);
 }
-assert(adminNavSource.includes("교과 편성"), "administrator navigation must expose course planning");
+assert(adminNavSource.includes("교과 수요조사"), "administrator navigation must expose course demand surveys");
 assert(adminAppSource.includes("AdminCourseDemand"), "administrator app must mount the course planning screen");
 assert(fs.existsSync("src/react/admin/screens/AdminCourseDemand.tsx"), "course planning screen must exist");
+for (const label of ["교과 수요조사", "설문안", "과목 관리", "결과", "예술", "다큐멘터리", "광고", "영상", "선택한 후보", "임시저장", "설문 공개"]) {
+  assert(adminCourseDemandSource.includes(label), `course demand builder must render ${label}`);
+}
+for (const removedLabel of ["편성안", "85학점", "130학점", "수요 기반 추천 만들기", "편성안 확정"]) {
+  assert(!adminCourseDemandSource.includes(removedLabel), `course demand builder must not render ${removedLabel}`);
+}
+assert(adminCourseDemandSource.includes('course.majorType === "전선"'), "course demand builder must only offer major electives");
+assert(adminCourseDemandSource.includes("course.demandCategory"), "course demand builder must filter and summarize categories");
 assert(adminReservationsSource.includes("function activeReservationFilters"), "React reservations must normalize list and deletion filters through one helper");
 assert(adminReservationsSource.includes('status: nextTab === "equipment" ? statusFilter : "all"'), "Leaving the equipment tab must clear the equipment-only status filter");
 assert(adminReservationsSource.includes('["cancelled_or_rejected", "취소/반려"]'), "React equipment filters must expose the combined terminal status");
