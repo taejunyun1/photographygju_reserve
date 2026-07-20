@@ -12,6 +12,7 @@ import {
 import { createAdminListHelpers } from "./core/admin-lists.mjs";
 import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
+import { buildOperationsInsights } from "./core/operations-insights.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -1026,7 +1027,8 @@ export async function handleApiRequest(ctx) {
             openLectures: db.lectures.filter((lecture) => lecture.status === "모집중").length,
             typeCounts,
             popularEquipment,
-            latestNotice
+            latestNotice,
+            insights: buildOperationsInsights({ reservations: detailedReservations, equipment: db.equipment, now: new Date() })
           }
         });
       }
