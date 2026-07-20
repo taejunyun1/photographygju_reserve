@@ -1,7 +1,7 @@
 import React from "react";
 
 import { GjuCard, motionClass } from "../../design-system";
-import type { AdminReservationRecord, AdminView, AdminViewFilterMap, ReactAdminActions, LegacyState } from "../../platform/types";
+import type { AdminOperationsWarning, AdminReservationRecord, AdminView, AdminViewFilterMap, ReactAdminActions, LegacyState } from "../../platform/types";
 
 type DashboardCardTone = "blue" | "amber" | "green" | "neutral" | "red";
 
@@ -18,6 +18,13 @@ type DashboardCardConfig = {
 type AdminDashboardProps = {
   state: LegacyState;
   actions: ReactAdminActions;
+};
+
+type WarningNavigation = {
+  title: string;
+  detail: string;
+  target: "reservations" | "equipment";
+  filters: Record<string, string | number>;
 };
 
 const styles = {
@@ -85,6 +92,9 @@ function navigateDashboardCard(card: DashboardCardConfig, actions: ReactAdminAct
   }
   if (card.targetView === "reports") {
     return actions.setAdminView("reports", card.filters as Partial<AdminViewFilterMap["reports"]>);
+  }
+  if (card.targetView === "equipment") {
+    return actions.setAdminView("equipment", card.filters as Partial<AdminViewFilterMap["equipment"]>);
   }
   return actions.setAdminView(card.targetView);
 }
@@ -174,6 +184,61 @@ function metric(label: string, value: React.ReactNode, detail = "") {
   );
 }
 
+function insightCard({
+  label,
+  value,
+  detail,
+  onClick
+}: {
+  label: string;
+  value: React.ReactNode;
+  detail: string;
+  onClick: () => void;
+}) {
+  return React.createElement(
+    "button",
+    {
+      key: label,
+      type: "button",
+      style: styles.button,
+      className: "admin-dashboard-insight-action",
+      "aria-label": `${label} ${value} · ${detail}`,
+      onClick
+    },
+    React.createElement(
+      GjuCard,
+      { title: label, className: "admin-dashboard-insight-card" },
+      React.createElement("strong", { style: styles.count }, value),
+      React.createElement("p", { style: styles.caption }, detail)
+    )
+  );
+}
+
+function warningCopy(warning: AdminOperationsWarning): WarningNavigation {
+  if (warning.kind === "overdue_return") {
+    return {
+      title: "반납 확인 필요",
+      detail: `${warning.equipmentName || "기자재"} 반납 예정 시간이 지났습니다.`,
+      target: "reservations" as const,
+      filters: { type: "equipment", status: "checked_out", q: "", page: 1 }
+    };
+  }
+  if (warning.kind === "shortage") {
+    return {
+      title: "장비 부족 위험",
+      detail: `${warning.name || warning.code || "기자재"} 가동률 ${Number(warning.utilizationPercent || 0)}%`,
+      target: "equipment" as const,
+      filters: { q: String(warning.name || warning.code || warning.category || "") }
+    };
+  }
+  return {
+    title: "수요 증가",
+    detail: `${warning.category || "기자재"} 최근 신청 ${Number(warning.recentRequests || 0)}건`,
+    target: "equipment" as const,
+    filters: { q: String(warning.category || "") }
+  };
+}
+
 export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const summary = state.summary || {};
   const pendingUsers = Number(summary.pendingUsers || 0);
@@ -256,6 +321,12 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const typeCounts = metrics.typeCounts || {};
   const popularEquipment = Array.isArray(metrics.popularEquipment) ? metrics.popularEquipment : [];
   const typeTotal = Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0);
+  const operationsInsights = metrics.insights;
+  const congestion = Array.isArray(operationsInsights?.congestion?.items) ? operationsInsights.congestion.items : [];
+  const utilization = Array.isArray(operationsInsights?.equipmentUtilization) ? operationsInsights.equipmentUtilization : [];
+  const cancellationRate = operationsInsights?.cancellationRate;
+  const warnings = Array.isArray(operationsInsights?.warnings) ? operationsInsights.warnings : [];
+  const hasOperationsInsights = congestion.length > 0 || utilization.length > 0 || Number(cancellationRate?.totalRequests || 0) >= 3;
 
   return React.createElement(
     "section",
@@ -292,6 +363,55 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
           queueList(checkoutReturnQueue, "오늘 처리할 대여/반납 항목이 없습니다.")
         )
       )
+    ),
+    React.createElement(
+      GjuCard,
+      { title: "운영 인사이트" },
+      hasOperationsInsights
+        ? React.createElement(
+          "div",
+          { className: "admin-dashboard-insights__grid" },
+          ...congestion.map((item) => insightCard({
+            label: "혼잡 시간",
+            value: `${item.time || "시간 미정"} · ${Number(item.count || 0)}건`,
+            detail: `${item.label || "예약"}의 최근 4주 예약 비중 ${Number(item.sharePercent || 0)}%`,
+            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "all", page: 1 }); }
+          })),
+          ...utilization.slice(0, 3).map((item) => insightCard({
+            label: "장비 가동률",
+            value: `${Number(item.utilizationPercent || 0)}%`,
+            detail: `${item.name || item.code || "기자재"} · 최근 ${Number(item.reservedDays || 0)}일 사용`,
+            onClick: () => { void actions.setAdminView("equipment", { q: String(item.name || item.code || "") }); }
+          })),
+          Number(cancellationRate?.totalRequests || 0) >= 3
+            ? insightCard({
+              label: "취소율",
+              value: `${Number(cancellationRate?.percent || 0)}%`,
+              detail: `최근 4주 ${Number(cancellationRate?.cancelledRequests || 0)}건 / ${Number(cancellationRate?.totalRequests || 0)}건`,
+              onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", page: 1 }); }
+            })
+            : null
+        )
+        : React.createElement("p", { style: styles.caption }, "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다.")
+    ),
+    React.createElement(
+      GjuCard,
+      { title: "주의 필요" },
+      warnings.length
+        ? React.createElement(
+          "div",
+          { className: "admin-dashboard-insights__grid" },
+          ...warnings.map((warning, index) => {
+            const copy = warningCopy(warning);
+            return insightCard({
+              label: copy.title,
+              value: "확인",
+              detail: copy.detail,
+              onClick: () => { void navigateDashboardCard({ label: copy.title, value: 1, caption: copy.detail, badge: "확인", tone: "amber", targetView: copy.target, filters: copy.filters }, actions); }
+            });
+          })
+        )
+        : React.createElement("p", { style: styles.caption }, "현재 확인이 필요한 운영 위험이 없습니다.")
     ),
     React.createElement(
       GjuCard,

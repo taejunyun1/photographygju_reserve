@@ -268,6 +268,31 @@ export type AdminNativeNotificationState = {
   error?: string;
 };
 
+export type AdminOperationsWarning = {
+  kind?: "demand_increase" | "shortage" | "overdue_return" | string;
+  reservationId?: string;
+  equipmentId?: string;
+  equipmentName?: string;
+  code?: string;
+  name?: string;
+  category?: string;
+  utilizationPercent?: number;
+  recentRequests?: number;
+  baselineRequests?: number;
+  dueAt?: string;
+};
+
+export type AdminOperationsInsights = {
+  period?: { from?: string; to?: string; days?: number };
+  congestion?: {
+    items?: Array<{ type?: string; time?: string; label?: string; count?: number; sharePercent?: number }>;
+    insufficientData?: boolean;
+  };
+  equipmentUtilization?: Array<{ equipmentId?: string; code?: string; name?: string; category?: string; reservedDays?: number; utilizationPercent?: number }>;
+  cancellationRate?: { totalRequests?: number; cancelledRequests?: number; percent?: number };
+  warnings?: AdminOperationsWarning[];
+};
+
 export type AdminDashboardMetrics = {
   weekReservations?: number;
   activeEquipment?: number;
@@ -280,6 +305,7 @@ export type AdminDashboardMetrics = {
   typeCounts?: Record<string, number>;
   popularEquipment?: Array<{ name: string; count: number }>;
   latestNotice?: AdminNoticeRecord | null;
+  insights?: AdminOperationsInsights;
 };
 
 export type AdminDashboardSummary = Record<string, unknown> & {
