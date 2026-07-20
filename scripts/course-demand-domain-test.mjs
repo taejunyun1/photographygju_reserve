@@ -336,6 +336,12 @@ apiDb.coursePlanning.annualPlans.push({
   status: "draft",
   semesterPlans: [{ id: "annual_2099_spring", term: "spring", targetYears: [3], offerings: [] }]
 });
+apiDb.coursePlanning.courses.push(...independentCandidates.map((course) => ({
+  ...course,
+  operatingCredit: 3,
+  facultyRecognizedCredit: 3,
+  deliveryPeriod: "semester"
+})));
 
 async function courseApi({ method = "GET", pathname, token = "", body = {} }) {
   return handleApiRequest({
@@ -360,21 +366,104 @@ const createdSurvey = await courseApi({
   pathname: "/api/admin/course-demand-surveys",
   token: "course-admin-token",
   body: {
-    semesterPlanId: "annual_2099_spring",
-    eligibleCurrentYears: [2],
+    ...validIndependentInput,
     opensAt: "2020-01-01T00:00:00.000Z",
     closesAt: "2100-01-01T00:00:00.000Z",
-    status: "open"
+    eligibleCurrentYears: [2],
+    targetStudentYears: [2]
   }
 });
 assert.equal(createdSurvey.status, 200);
-assert.equal(createdSurvey.body.data.catalogSnapshot.every((course) => course.targetYears.includes(3)), true, "survey snapshot must only contain its next-semester target courses");
+assert.equal(createdSurvey.body.data.semesterPlanId, undefined, "survey creation must not depend on an annual offering plan");
+assert.equal(createdSurvey.body.data.catalogSnapshot.length, 5);
+assert.deepEqual(createdSurvey.body.data.catalogSnapshot.map((course) => course.id), validIndependentInput.courseIds);
+
+const tooFewSurvey = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: { ...validIndependentInput, academicYear: 2097, courseIds: validIndependentInput.courseIds.slice(0, 4) }
+});
+assert.equal(tooFewSurvey.status, 400, "an open survey must have five or six candidates");
+
+const requiredCourse = apiDb.coursePlanning.courses.find((course) => course.majorType === "전필");
+const requiredSurvey = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: {
+    ...validIndependentInput,
+    academicYear: 2097,
+    term: requiredCourse.allowedTerms[0],
+    targetStudentYears: requiredCourse.targetYears,
+    courseIds: [requiredCourse.id, ...validIndependentInput.courseIds.slice(0, 4)]
+  }
+});
+assert.equal(requiredSurvey.status, 400, "major-required courses must not be survey candidates");
+
+const duplicateOpenSurvey = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: { ...validIndependentInput, opensAt: "2020-01-01T00:00:00.000Z", closesAt: "2100-01-01T00:00:00.000Z" }
+});
+assert.equal(duplicateOpenSurvey.status, 400, "only one open survey is allowed for the same year, term, and current grade");
+
+const mutateOpenSurvey = await courseApi({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${createdSurvey.body.data.id}`,
+  token: "course-admin-token",
+  body: { courseIds: independentCandidates.slice(1, 6).map((course) => course.id) }
+});
+assert.equal(mutateOpenSurvey.status, 400, "an open survey candidate snapshot must remain immutable");
+
+const extendedOpenSurvey = await courseApi({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${createdSurvey.body.data.id}`,
+  token: "course-admin-token",
+  body: { closesAt: "2100-02-01T00:00:00.000Z" }
+});
+assert.equal(extendedOpenSurvey.status, 200);
+assert.equal(extendedOpenSurvey.body.data.closesAt, "2100-02-01T00:00:00.000Z");
+
+const draftSurvey = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: {
+    ...validIndependentInput,
+    title: "2098학년도 2학년 2학기 수요조사",
+    academicYear: 2098,
+    opensAt: "2020-01-01T00:00:00.000Z",
+    closesAt: "2100-01-01T00:00:00.000Z",
+    status: "draft",
+    courseIds: []
+  }
+});
+assert.equal(draftSurvey.status, 200);
+assert.equal(draftSurvey.body.data.catalogSnapshot.length, 0);
+const publishedDraftSurvey = await courseApi({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${draftSurvey.body.data.id}`,
+  token: "course-admin-token",
+  body: { status: "open", courseIds: validIndependentInput.courseIds }
+});
+assert.equal(publishedDraftSurvey.status, 200, "a valid draft can be published later");
+assert.equal(publishedDraftSurvey.body.data.catalogSnapshot.length, 5);
+const closedDraftSurvey = await courseApi({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${draftSurvey.body.data.id}`,
+  token: "course-admin-token",
+  body: { status: "closed" }
+});
+assert.equal(closedDraftSurvey.status, 200);
+assert.equal(closedDraftSurvey.body.data.status, "closed");
 
 const invalidSurveyWindow = await courseApi({
   method: "POST",
   pathname: "/api/admin/course-demand-surveys",
   token: "course-admin-token",
-  body: { semesterPlanId: "annual_2099_spring", eligibleCurrentYears: [2], opensAt: "not-a-date", closesAt: "2100-01-01T00:00:00.000Z", status: "open" }
+  body: { ...validIndependentInput, academicYear: 2096, opensAt: "not-a-date" }
 });
 assert.equal(invalidSurveyWindow.status, 400, "invalid survey dates must be reported as client errors, not server failures");
 
@@ -404,7 +493,16 @@ assert.equal(duplicateResponse.status, 400, "duplicate course rankings must be r
 const surveySummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
 assert.equal(surveySummary.status, 200);
 assert.equal(surveySummary.body.data.responseCount, 1);
+assert.equal(Array.isArray(surveySummary.body.data.categories), true);
 assert.equal(JSON.stringify(surveySummary.body.data).includes("20260001"), false, "admin summary must remain anonymous");
+
+const enrichedPlanning = await courseApi({ pathname: "/api/admin/course-planning", token: "course-admin-token" });
+const enrichedSurvey = enrichedPlanning.body.data.surveys.find((survey) => survey.id === surveyId);
+assert.equal(enrichedSurvey.title, validIndependentInput.title);
+assert.equal(enrichedSurvey.academicYear, 2027);
+assert.equal(enrichedSurvey.term, "fall");
+assert.equal(enrichedSurvey.catalogSnapshot.length, 5);
+assert.equal(enrichedSurvey.summary.categories.length, 4);
 
 const recommendationResponse = await courseApi({ method: "POST", pathname: "/api/admin/annual-offering-plans/annual_2099/recommendations", token: "course-admin-token" });
 assert.equal(recommendationResponse.status, 200);

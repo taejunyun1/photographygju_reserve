@@ -323,6 +323,8 @@ export type AdminDashboardSummary = Record<string, unknown> & {
   metrics?: AdminDashboardMetrics;
 };
 
+export type CourseDemandCategory = "art" | "documentary" | "advertising" | "video";
+
 export type AdminCourseRecord = {
   id: string;
   courseCode?: string;
@@ -338,6 +340,7 @@ export type AdminCourseRecord = {
   requiredFrequencyYears?: number;
   deliveryPeriod?: string;
   isSurveyEligible?: boolean;
+  demandCategory?: CourseDemandCategory;
   active?: boolean;
 };
 
@@ -382,18 +385,45 @@ export type AdminCourseDemandSurveySummary = {
   eligibleStudentCount?: number;
   responseCount?: number;
   responseRate?: number;
-  courses?: Array<{ courseId: string; courseName?: string; selections?: number; demandScore?: number; rankCounts?: Record<number, number> }>;
+  courses?: Array<{ courseId: string; courseName?: string; demandCategory?: CourseDemandCategory; selections?: number; demandScore?: number; rankCounts?: Record<number, number> }>;
+  categories?: Array<{ category: CourseDemandCategory; selections?: number; demandScore?: number }>;
+};
+
+export type AdminCourseDemandCatalogCourse = {
+  id: string;
+  courseCode?: string;
+  name: string;
+  targetYears?: number[];
+  allowedTerms?: string[];
+  studentCredit?: number;
+  demandCategory: CourseDemandCategory;
+};
+
+export type AdminCourseDemandSurveyInput = {
+  title: string;
+  academicYear: number;
+  term: "spring" | "fall";
+  eligibleCurrentYears: number[];
+  targetStudentYears: number[];
+  opensAt: string;
+  closesAt: string;
+  status: "draft" | "open";
+  courseIds: string[];
 };
 
 export type AdminCourseDemandSurvey = {
   id: string;
-  semesterPlanId: string;
+  title?: string;
+  academicYear?: number;
+  term?: "spring" | "fall";
+  semesterPlanId?: string;
   eligibleCurrentYears?: number[];
   targetStudentYears?: number[];
   opensAt?: string;
   closesAt?: string;
   status?: "draft" | "open" | "closed" | string;
   catalogCount?: number;
+  catalogSnapshot?: AdminCourseDemandCatalogCourse[];
   summary?: AdminCourseDemandSurveySummary;
 };
 
@@ -620,15 +650,8 @@ export type ReactAdminActions = {
   saveEquipmentCategories(categories: string[]): Promise<void>;
   saveCoursePlanningCourses(courses: AdminCourseRecord[]): Promise<void>;
   saveAnnualOfferingPlan(plan: AdminAnnualOfferingPlan): Promise<AdminAnnualOfferingPlan>;
-  createCourseDemandSurvey(input: {
-    semesterPlanId: string;
-    eligibleCurrentYears: number[];
-    targetStudentYears?: number[];
-    opensAt: string;
-    closesAt: string;
-    status: "draft" | "open" | "closed";
-  }): Promise<void>;
-  updateCourseDemandSurvey(surveyId: string, input: { status?: "draft" | "open" | "closed"; closesAt?: string }): Promise<void>;
+  createCourseDemandSurvey(input: AdminCourseDemandSurveyInput): Promise<void>;
+  updateCourseDemandSurvey(surveyId: string, input: Omit<Partial<AdminCourseDemandSurveyInput>, "status"> & { status?: "draft" | "open" | "closed" }): Promise<void>;
   loadCourseDemandRecommendation(planId: string): Promise<AdminAnnualOfferingPlan>;
   bulkDeleteReports(filters: Partial<AdminViewFilterMap["reports"]>): Promise<void>;
   deleteAllReports(collectionTotal: number): Promise<void>;

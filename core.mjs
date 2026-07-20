@@ -22,6 +22,7 @@ import {
   publicSurveyForStudent,
   summarizeSurvey,
   validateAnnualPlan,
+  validateCourseDemandSurveyDefinition,
   validateCourseDemandResponse
 } from "./core/course-demand.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
@@ -1127,13 +1128,17 @@ export async function handleApiRequest(ctx) {
           const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
           return {
             id: survey.id,
-            semesterPlanId: survey.semesterPlanId,
+            title: survey.title || "교과 수요조사",
+            academicYear: survey.academicYear,
+            term: survey.term,
+            ...(survey.semesterPlanId ? { semesterPlanId: survey.semesterPlanId } : {}),
             eligibleCurrentYears: survey.eligibleCurrentYears || [],
             targetStudentYears: survey.targetStudentYears || [],
             opensAt: survey.opensAt,
             closesAt: survey.closesAt,
             status: survey.status,
             catalogCount: (survey.catalogSnapshot || []).length,
+            catalogSnapshot: survey.catalogSnapshot || [],
             summary: summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount })
           };
         });
@@ -1213,31 +1218,25 @@ export async function handleApiRequest(ctx) {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         const planning = coursePlanningForDb(db);
-        const target = coursePlanningSemester(planning, body.semesterPlanId);
-        if (!target) throw Object.assign(new Error("설문 대상 학기 편성안을 찾을 수 없습니다."), { status: 404 });
-        const eligibleCurrentYears = [...new Set((body.eligibleCurrentYears || []).map(Number).filter((year) => Number.isInteger(year) && year > 0))];
-        const targetStudentYears = [...new Set((body.targetStudentYears || target.semesterPlan.targetYears || []).map(Number).filter((year) => Number.isInteger(year) && year > 0))];
-        const opensAt = coursePlanningDate(body.opensAt, "설문 시작일");
-        const closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
-        if (!eligibleCurrentYears.length || new Date(opensAt) >= new Date(closesAt)) {
-          throw Object.assign(new Error("대상 학년과 올바른 설문 기간을 입력하세요."), { status: 400 });
-        }
-        const catalogSnapshot = coursePlanningSurveySnapshot(planning, target.semesterPlan, targetStudentYears);
-        if (!catalogSnapshot.length) throw Object.assign(new Error("설문에 노출할 수 있는 과목이 없습니다."), { status: 400 });
+        const definition = validateCourseDemandSurveyDefinition({
+          input: body,
+          courses: planning.courses,
+          existingSurveys: planning.surveys
+        });
         const survey = {
           id: id("course_survey"),
-          semesterPlanId: target.semesterPlan.id,
-          eligibleCurrentYears,
-          targetStudentYears,
-          opensAt,
-          closesAt,
-          status: ["draft", "open", "closed"].includes(body.status) ? body.status : "draft",
-          catalogSnapshot,
+          ...definition,
           createdAt: nowIso(),
           updatedAt: nowIso()
         };
         planning.surveys.push(survey);
-        audit(db, admin, "course_demand.survey_created", survey.id, { semesterPlanId: survey.semesterPlanId, eligibleCurrentYears: survey.eligibleCurrentYears, catalogCount: catalogSnapshot.length });
+        audit(db, admin, "course_demand.survey_created", survey.id, {
+          academicYear: survey.academicYear,
+          term: survey.term,
+          eligibleCurrentYears: survey.eligibleCurrentYears,
+          targetStudentYears: survey.targetStudentYears,
+          catalogCount: survey.catalogSnapshot.length
+        });
         await saveDb();
         return ok(survey);
       }
@@ -1249,11 +1248,45 @@ export async function handleApiRequest(ctx) {
         const planning = coursePlanningForDb(db);
         const survey = planning.surveys.find((item) => item.id === courseDemandSurveyMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
-        if (body.status !== undefined && !["draft", "open", "closed"].includes(body.status)) throw Object.assign(new Error("올바른 설문 상태가 아닙니다."), { status: 400 });
-        if (body.status !== undefined) survey.status = body.status;
-        if (body.closesAt !== undefined) survey.closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
-        survey.updatedAt = nowIso();
-        audit(db, admin, "course_demand.survey_updated", survey.id, { status: survey.status });
+        if (survey.status === "closed") throw Object.assign(new Error("마감된 수요조사는 수정할 수 없습니다."), { status: 400 });
+        if (survey.status === "open") {
+          const allowedKeys = new Set(["status", "closesAt"]);
+          if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
+            throw Object.assign(new Error("공개된 수요조사의 후보와 대상 조건은 변경할 수 없습니다."), { status: 400 });
+          }
+          if (body.status !== undefined && body.status !== "closed") {
+            throw Object.assign(new Error("공개된 수요조사는 마감만 할 수 있습니다."), { status: 400 });
+          }
+          if (body.closesAt !== undefined) {
+            const closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
+            if (new Date(closesAt).getTime() <= new Date(survey.closesAt).getTime()) {
+              throw Object.assign(new Error("설문 마감일은 기존 마감일보다 늦게 연장해야 합니다."), { status: 400 });
+            }
+            survey.closesAt = closesAt;
+          }
+          if (body.status === "closed") survey.status = "closed";
+          survey.updatedAt = nowIso();
+        } else {
+          if (body.status === "closed") throw Object.assign(new Error("임시저장 설문은 공개 후 마감할 수 있습니다."), { status: 400 });
+          const definition = validateCourseDemandSurveyDefinition({
+            input: {
+              ...survey,
+              ...body,
+              status: body.status || "draft",
+              courseIds: body.courseIds || (survey.catalogSnapshot || []).map((course) => course.id)
+            },
+            courses: planning.courses,
+            existingSurveys: planning.surveys,
+            currentSurveyId: survey.id
+          });
+          Object.assign(survey, definition, { updatedAt: nowIso() });
+        }
+        audit(db, admin, "course_demand.survey_updated", survey.id, {
+          status: survey.status,
+          academicYear: survey.academicYear,
+          term: survey.term,
+          catalogCount: (survey.catalogSnapshot || []).length
+        });
         await saveDb();
         return ok(survey);
       }

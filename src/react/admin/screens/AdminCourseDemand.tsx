@@ -122,16 +122,24 @@ export function AdminCourseDemand({ state, actions }: AdminCourseDemandProps) {
 
   async function createSurvey(form: HTMLFormElement) {
     const values = new FormData(form);
-    const semesterPlanId = String(values.get("semesterPlanId") || "");
     const currentYear = Number(values.get("eligibleCurrentYear") || 0);
     const targetYear = Number(values.get("targetStudentYear") || 0);
+    const term = selectedSemester?.term === "fall" ? "fall" : "spring";
+    const courseIds = planning.courses
+      .filter((course) => course.active !== false && course.isSurveyEligible !== false && course.majorType === "전선")
+      .filter((course) => (course.targetYears || []).includes(targetYear) && (course.allowedTerms || []).includes(term))
+      .slice(0, 6)
+      .map((course) => course.id);
     await actions.createCourseDemandSurvey({
-      semesterPlanId,
+      title: `${selectedPlan?.academicYear || new Date().getFullYear()}학년도 ${targetYear}학년 교과 수요조사`,
+      academicYear: selectedPlan?.academicYear || new Date().getFullYear(),
+      term,
       eligibleCurrentYears: [currentYear],
       targetStudentYears: [targetYear],
       opensAt: String(values.get("opensAt") || ""),
       closesAt: String(values.get("closesAt") || ""),
-      status: String(values.get("status") || "draft") as "draft" | "open" | "closed"
+      status: String(values.get("status") || "draft") as "draft" | "open",
+      courseIds
     });
     form.reset();
   }

@@ -427,7 +427,7 @@ export function validateAnnualPlan({ plan, courses = [], history = [] } = {}) {
 
 export function publicSurveyForStudent({ survey, student, response, now = new Date() } = {}) {
   const eligible = (survey?.eligibleCurrentYears || []).map(Number).includes(studentYear(student));
-  if (!eligible) return null;
+  if (!eligible || survey?.status === "draft" || (survey?.status === "closed" && !response)) return null;
   return {
     id: survey.id,
     semesterPlanId: survey.semesterPlanId,

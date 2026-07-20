@@ -520,7 +520,7 @@ const reactAdminActions = {
     await runAdminMutation(
       "course-demand",
       () => api("/api/admin/course-demand-surveys", { method: "POST", body: input }),
-      input?.status === "open" ? "수요조사를 공개했습니다." : "수요조사를 저장했습니다.",
+      input?.status === "open" ? "수요조사를 공개했습니다." : "설문안을 임시저장했습니다.",
       { invalidateViews: ["course-demand"] }
     );
   },
