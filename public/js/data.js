@@ -38,6 +38,7 @@ export async function loadMe() {
     state.adminLectures = [];
     state.adminSessions = [];
     state.adminLogs = [];
+    state.adminCoursePlanning = null;
     localStorage.removeItem("gju_token");
     sessionStorage.removeItem("gju_token");
   }
@@ -368,6 +369,13 @@ function adminViewDescriptor(view, filters) {
       apply: (settings) => {
         state.bootstrap = { ...(state.bootstrap || {}), settings };
       }
+    };
+  }
+  if (view === "course-demand") {
+    return {
+      key: "/api/admin/course-planning",
+      load: () => api("/api/admin/course-planning"),
+      apply: (coursePlanning) => { state.adminCoursePlanning = coursePlanning || null; }
     };
   }
   return null;

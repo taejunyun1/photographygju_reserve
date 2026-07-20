@@ -152,7 +152,7 @@ export function normalizeCoursePlanning(value) {
 }
 
 function studentYear(student) {
-  const value = Number(student?.studentYear ?? student?.year ?? String(student?.studentStatus || "").match(/\d+/)?.[0]);
+  const value = Number(student?.studentYear ?? student?.year ?? String(student?.grade || student?.studentStatus || "").match(/\d+/)?.[0]);
   return Number.isInteger(value) ? value : 0;
 }
 

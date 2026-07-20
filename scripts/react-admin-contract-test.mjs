@@ -51,10 +51,15 @@ const adminUsersSource = read("src/react/admin/screens/AdminUsers.tsx");
 const adminEquipmentSource = read("src/react/admin/screens/AdminEquipment.tsx");
 const adminReservationsSource = read("src/react/admin/screens/AdminReservations.tsx");
 const adminDashboardSource = read("src/react/admin/screens/AdminDashboard.tsx");
+const adminAppSource = read("src/react/admin/AdminApp.tsx");
+const adminNavSource = read("src/react/platform/adminNav.ts");
 const adminListsSource = read("core/admin-lists.mjs");
 for (const label of ["운영 인사이트", "주의 필요", "혼잡 시간", "장비 가동률", "취소율", "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다."]) {
   assert(adminDashboardSource.includes(label), `Admin dashboard must render ${label}`);
 }
+assert(adminNavSource.includes("교과 편성"), "administrator navigation must expose course planning");
+assert(adminAppSource.includes("AdminCourseDemand"), "administrator app must mount the course planning screen");
+assert(fs.existsSync("src/react/admin/screens/AdminCourseDemand.tsx"), "course planning screen must exist");
 assert(adminReservationsSource.includes("function activeReservationFilters"), "React reservations must normalize list and deletion filters through one helper");
 assert(adminReservationsSource.includes('status: nextTab === "equipment" ? statusFilter : "all"'), "Leaving the equipment tab must clear the equipment-only status filter");
 assert(adminReservationsSource.includes('["cancelled_or_rejected", "취소/반려"]'), "React equipment filters must expose the combined terminal status");

@@ -495,6 +495,51 @@ const reactAdminActions = {
       }
     );
   },
+  async saveCoursePlanningCourses(courses) {
+    await runAdminMutation(
+      "course-demand",
+      () => api("/api/admin/courses", { method: "PUT", body: { courses } }),
+      "과목 마스터를 저장했습니다.",
+      { invalidateViews: ["course-demand"] }
+    );
+  },
+  async saveAnnualOfferingPlan(plan) {
+    const existingPlans = Array.isArray(state.adminCoursePlanning?.annualPlans) ? state.adminCoursePlanning.annualPlans : [];
+    const exists = existingPlans.some((item) => item?.id === plan?.id);
+    const result = await runAdminMutation(
+      "course-demand",
+      () => exists
+        ? api(`/api/admin/annual-offering-plans/${encodeURIComponent(plan.id)}`, { method: "PUT", body: { plan } })
+        : api("/api/admin/annual-offering-plans", { method: "PUT", body: { annualPlans: [...existingPlans, plan] } }),
+      plan?.status === "confirmed" ? "편성안을 확정했습니다." : "편성안을 저장했습니다.",
+      { invalidateViews: ["course-demand"] }
+    );
+    return Array.isArray(result) ? (result.find((item) => item?.id === plan?.id) || plan) : result;
+  },
+  async createCourseDemandSurvey(input) {
+    await runAdminMutation(
+      "course-demand",
+      () => api("/api/admin/course-demand-surveys", { method: "POST", body: input }),
+      input?.status === "open" ? "수요조사를 공개했습니다." : "수요조사를 저장했습니다.",
+      { invalidateViews: ["course-demand"] }
+    );
+  },
+  async updateCourseDemandSurvey(surveyId, input) {
+    await runAdminMutation(
+      "course-demand",
+      () => api(`/api/admin/course-demand-surveys/${encodeURIComponent(surveyId)}`, { method: "PUT", body: input }),
+      input?.status === "closed" ? "수요조사를 마감했습니다." : "수요조사를 수정했습니다.",
+      { invalidateViews: ["course-demand"] }
+    );
+  },
+  async loadCourseDemandRecommendation(planId) {
+    try {
+      return await api(`/api/admin/annual-offering-plans/${encodeURIComponent(planId)}/recommendations`, { method: "POST" });
+    } catch (error) {
+      toast(actionErrorMessage(error), { tone: "error", preserveScroll: true });
+      throw error;
+    }
+  },
   async bulkDeleteReports(filters) {
     const body = guardedFilteredDeleteBody("reports", filters, ["q", "semester"]);
     if (!body) return;

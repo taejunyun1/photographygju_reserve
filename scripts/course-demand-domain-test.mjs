@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
+import { adminExportData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const {
   buildOfferingRecommendation,
@@ -47,6 +47,7 @@ assert.equal(initialCourseDb.coursePlanning?.courses.some((course) => course.nam
 const legacyCourseDb = { users: [], equipment: [], reservations: [] };
 normalizeDb(legacyCourseDb);
 assert.equal(legacyCourseDb.coursePlanning?.curriculumVersions?.[0]?.curriculumCreditLimit, 130, "legacy databases must gain a valid course planning singleton");
+assert.equal(adminExportData(initialCourseDb).coursePlanning?.courses.some((course) => course.name === "현장실습4"), true, "administrator backups must include course planning rules");
 
 const rankingSurvey = {
   id: "survey_1",
@@ -177,7 +178,7 @@ apiDb.users.push({
   role: "student",
   name: "수요조사 학생",
   studentId: "20260001",
-  studentYear: 2,
+  grade: "2학년",
   approvalStatus: "approved",
   preferences: {},
   createdAt: "2026-07-20T00:00:00.000Z",

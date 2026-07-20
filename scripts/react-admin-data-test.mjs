@@ -35,6 +35,12 @@ function responseData(path) {
   if (path === "/api/admin/sessions") return [{ id: "session-1" }];
   if (path === "/api/admin/logs") return [{ id: "log-1" }];
   if (path === "/api/admin/settings") return { semester: "2026-S2" };
+  if (path === "/api/admin/course-planning") return {
+    curriculumVersions: [{ id: "curriculum-2026", academicYear: 2026, curriculumCreditLimit: 130 }],
+    courses: [{ id: "course-1", name: "사진 기획", studentCredit: 3, operatingCredit: 3, facultyRecognizedCredit: 3 }],
+    annualPlans: [],
+    surveys: []
+  };
   if (path.startsWith("/api/admin/users")) {
     const query = url.searchParams.get("q") || "default";
     if (query === "last-page") {
@@ -123,6 +129,10 @@ state.bootstrap = { settings: {} };
 await loadAdminView("dashboard", { force: true });
 assert.deepEqual(requests, ["/api/admin/summary"], "dashboard must request only the summary endpoint");
 assert.equal(state.summary.pendingUsers, 3, "dashboard response must update summary state");
+
+await loadAdminView("course-demand", { force: true });
+assert.equal(requests.at(-1), "/api/admin/course-planning", "course demand must use one scoped planning endpoint");
+assert.equal(state.adminCoursePlanning.courses[0].name, "사진 기획", "course demand response must remain isolated from other admin view state");
 
 const dashboardRequestCount = requests.length;
 await loadAdminView("dashboard");

@@ -323,6 +323,87 @@ export type AdminDashboardSummary = Record<string, unknown> & {
   metrics?: AdminDashboardMetrics;
 };
 
+export type AdminCourseRecord = {
+  id: string;
+  courseCode?: string;
+  name: string;
+  majorType?: string;
+  targetYears?: number[];
+  allowedTerms?: string[];
+  studentCredit?: number;
+  operatingCredit?: number;
+  facultyRecognizedCredit?: number;
+  countsTowardCurriculum130?: boolean;
+  isMajorRequired?: boolean;
+  requiredFrequencyYears?: number;
+  deliveryPeriod?: string;
+  isSurveyEligible?: boolean;
+  active?: boolean;
+};
+
+export type AdminCourseOffering = {
+  courseId: string;
+  source?: string;
+  overrideReason?: string;
+};
+
+export type AdminCourseSemesterPlan = {
+  id: string;
+  term: "spring" | "fall" | "vacation" | string;
+  targetYears?: number[];
+  optionalCreditTarget?: number | null;
+  offerings: AdminCourseOffering[];
+  deferred?: Array<{ courseId: string; source?: string; reason?: string }>;
+};
+
+export type AdminCoursePlanValidation = {
+  valid?: boolean;
+  errors?: Array<{ code?: string; courseId?: string; message?: string }>;
+  warnings?: Array<{ code?: string; courseId?: string; message?: string; value?: number }>;
+  metrics?: {
+    operatingCredit?: number;
+    operatingCreditLimit?: number;
+    remainingOperatingCredit?: number;
+    facultyRecognizedCredit?: number;
+    curriculumCredit?: number;
+  };
+};
+
+export type AdminAnnualOfferingPlan = {
+  id: string;
+  academicYear: number;
+  operatingCreditLimit?: number;
+  status?: "draft" | "confirmed" | string;
+  semesterPlans: AdminCourseSemesterPlan[];
+  validation?: AdminCoursePlanValidation;
+};
+
+export type AdminCourseDemandSurveySummary = {
+  eligibleStudentCount?: number;
+  responseCount?: number;
+  responseRate?: number;
+  courses?: Array<{ courseId: string; courseName?: string; selections?: number; demandScore?: number; rankCounts?: Record<number, number> }>;
+};
+
+export type AdminCourseDemandSurvey = {
+  id: string;
+  semesterPlanId: string;
+  eligibleCurrentYears?: number[];
+  targetStudentYears?: number[];
+  opensAt?: string;
+  closesAt?: string;
+  status?: "draft" | "open" | "closed" | string;
+  catalogCount?: number;
+  summary?: AdminCourseDemandSurveySummary;
+};
+
+export type AdminCoursePlanningData = {
+  curriculumVersions: Array<{ id: string; academicYear: number; curriculumCreditLimit: number; status?: string }>;
+  courses: AdminCourseRecord[];
+  annualPlans: AdminAnnualOfferingPlan[];
+  surveys: AdminCourseDemandSurvey[];
+};
+
 export type AdminView =
   | "dashboard"
   | "users"
@@ -332,6 +413,7 @@ export type AdminView =
   | "lectures"
   | "notices"
   | "logs"
+  | "course-demand"
   | "settings"
   | "account";
 
@@ -395,6 +477,7 @@ export type AdminViewFilterMap = {
     logAction: string;
     logDirection: AdminSortDirection;
   };
+  "course-demand": Record<string, never>;
   settings: {
     blockedQuery: string;
   };
@@ -509,6 +592,7 @@ export type LegacyState = Record<string, unknown> & {
   adminLogSort?: string;
   adminBlockedScheduleSearch?: string;
   nativeNotifications?: AdminNativeNotificationState;
+  adminCoursePlanning?: AdminCoursePlanningData | null;
 };
 
 export type ReactAdminActions = {
@@ -534,6 +618,18 @@ export type ReactAdminActions = {
   importEquipment(rows: Array<Record<string, unknown>>): Promise<void>;
   deleteEquipment(ids: string[]): Promise<void>;
   saveEquipmentCategories(categories: string[]): Promise<void>;
+  saveCoursePlanningCourses(courses: AdminCourseRecord[]): Promise<void>;
+  saveAnnualOfferingPlan(plan: AdminAnnualOfferingPlan): Promise<AdminAnnualOfferingPlan>;
+  createCourseDemandSurvey(input: {
+    semesterPlanId: string;
+    eligibleCurrentYears: number[];
+    targetStudentYears?: number[];
+    opensAt: string;
+    closesAt: string;
+    status: "draft" | "open" | "closed";
+  }): Promise<void>;
+  updateCourseDemandSurvey(surveyId: string, input: { status?: "draft" | "open" | "closed"; closesAt?: string }): Promise<void>;
+  loadCourseDemandRecommendation(planId: string): Promise<AdminAnnualOfferingPlan>;
   bulkDeleteReports(filters: Partial<AdminViewFilterMap["reports"]>): Promise<void>;
   deleteAllReports(collectionTotal: number): Promise<void>;
   saveLecture(lectureId: string | null, input: AdminLectureInput): Promise<void>;

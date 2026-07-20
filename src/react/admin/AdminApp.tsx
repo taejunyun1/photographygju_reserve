@@ -7,6 +7,7 @@ import type { ReactAdminMountOptions } from "../platform/types";
 import { AdminAccount } from "./screens/AdminAccount";
 import { AdminDashboard } from "./screens/AdminDashboard";
 import { AdminEquipment } from "./screens/AdminEquipment";
+import { AdminCourseDemand } from "./screens/AdminCourseDemand";
 import { AdminLectures } from "./screens/AdminLectures";
 import { AdminLogs } from "./screens/AdminLogs";
 import { AdminNotices } from "./screens/AdminNotices";
@@ -33,6 +34,7 @@ const MOBILE_PRIMARY_NAV = [
 const MORE_NAV = [
   ["reports", "보고서"],
   ["lectures", "비교과 특강"],
+  ["course-demand", "교과 편성"],
   ["notices", "공지사항"],
   ["logs", "로그/세션"],
   ["settings", "설정"]
@@ -192,6 +194,8 @@ export function AdminApp({
     content = React.createElement(AdminReports, { state, actions });
   } else if (view === "lectures") {
     content = React.createElement(AdminLectures, { state, actions });
+  } else if (view === "course-demand") {
+    content = React.createElement(AdminCourseDemand, { state, actions });
   } else if (view === "notices") {
     content = React.createElement(AdminNotices, { state, actions });
   } else if (view === "logs") {

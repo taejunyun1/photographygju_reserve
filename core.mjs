@@ -305,8 +305,8 @@ function normalizeCoursePlanningCourses(courses) {
   return normalized;
 }
 
-function coursePlanningSurveySnapshot(planning, semesterPlan) {
-  const targetYears = new Set((semesterPlan.targetYears || []).map(Number));
+function coursePlanningSurveySnapshot(planning, semesterPlan, targetStudentYears = []) {
+  const targetYears = new Set((targetStudentYears.length ? targetStudentYears : semesterPlan.targetYears || []).map(Number));
   return (planning.courses || [])
     .filter((course) => course.active !== false && course.isSurveyEligible !== false && (course.allowedTerms || []).includes(semesterPlan.term))
     .filter((course) => !targetYears.size || (course.targetYears || []).some((year) => targetYears.has(Number(year))))
@@ -325,7 +325,7 @@ function courseDemandByCourseId(planning, planId, db) {
   const semesterPlanIds = new Set((coursePlanningAnnualPlan(planning, planId)?.semesterPlans || []).map((item) => item.id));
   for (const survey of planning.surveys || []) {
     if (!semesterPlanIds.has(survey.semesterPlanId)) continue;
-    const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+    const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
     const summary = summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount });
     for (const course of summary.courses) scores[course.courseId] = Number(scores[course.courseId] || 0) + course.demandScore;
   }
@@ -339,6 +339,12 @@ function coursePlanningAuditDetail(planning) {
     annualPlanCount: planning.annualPlans.length,
     surveyCount: planning.surveys.length
   };
+}
+
+function coursePlanningStudentYear(user) {
+  const raw = user?.studentYear ?? user?.year ?? user?.grade ?? user?.studentStatus ?? "";
+  const year = Number(typeof raw === "string" ? raw.match(/\d+/)?.[0] : raw);
+  return Number.isInteger(year) ? year : 0;
 }
 
 function coursePlanningDate(value, label = "날짜") {
@@ -699,7 +705,8 @@ export function adminExportData(db) {
     warnings: db.warnings,
     auditLogs: db.auditLogs,
     slackLogs: db.slackLogs,
-    importBatches: db.importBatches
+    importBatches: db.importBatches,
+    coursePlanning: db.coursePlanning
   };
 }
 
@@ -1117,11 +1124,12 @@ export async function handleApiRequest(ctx) {
           validation: validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory })
         }));
         const surveys = planning.surveys.map((survey) => {
-          const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+          const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
           return {
             id: survey.id,
             semesterPlanId: survey.semesterPlanId,
             eligibleCurrentYears: survey.eligibleCurrentYears || [],
+            targetStudentYears: survey.targetStudentYears || [],
             opensAt: survey.opensAt,
             closesAt: survey.closesAt,
             status: survey.status,
@@ -1208,17 +1216,19 @@ export async function handleApiRequest(ctx) {
         const target = coursePlanningSemester(planning, body.semesterPlanId);
         if (!target) throw Object.assign(new Error("설문 대상 학기 편성안을 찾을 수 없습니다."), { status: 404 });
         const eligibleCurrentYears = [...new Set((body.eligibleCurrentYears || []).map(Number).filter((year) => Number.isInteger(year) && year > 0))];
+        const targetStudentYears = [...new Set((body.targetStudentYears || target.semesterPlan.targetYears || []).map(Number).filter((year) => Number.isInteger(year) && year > 0))];
         const opensAt = coursePlanningDate(body.opensAt, "설문 시작일");
         const closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
         if (!eligibleCurrentYears.length || new Date(opensAt) >= new Date(closesAt)) {
           throw Object.assign(new Error("대상 학년과 올바른 설문 기간을 입력하세요."), { status: 400 });
         }
-        const catalogSnapshot = coursePlanningSurveySnapshot(planning, target.semesterPlan);
+        const catalogSnapshot = coursePlanningSurveySnapshot(planning, target.semesterPlan, targetStudentYears);
         if (!catalogSnapshot.length) throw Object.assign(new Error("설문에 노출할 수 있는 과목이 없습니다."), { status: 400 });
         const survey = {
           id: id("course_survey"),
           semesterPlanId: target.semesterPlan.id,
           eligibleCurrentYears,
+          targetStudentYears,
           opensAt,
           closesAt,
           status: ["draft", "open", "closed"].includes(body.status) ? body.status : "draft",
@@ -1254,7 +1264,7 @@ export async function handleApiRequest(ctx) {
         const planning = coursePlanningForDb(db);
         const survey = planning.surveys.find((item) => item.id === courseDemandSummaryMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
-        const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+        const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
         return ok(summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount }));
       }
 

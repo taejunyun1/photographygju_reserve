@@ -1717,6 +1717,176 @@
   }
 }
 
+.admin-course-demand,
+.admin-course-demand__validation,
+.admin-course-demand__course-list,
+.admin-course-demand__survey-list,
+.admin-course-demand__master-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-course-demand__plan-picker,
+.admin-course-demand__survey-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-course-demand__plan-picker label,
+.admin-course-demand__survey-form label,
+.admin-course-demand__master-list label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-course-demand__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-course-demand__metrics > span {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.admin-course-demand__metrics strong {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.admin-course-demand__metrics small,
+.admin-course-demand__course-list small,
+.admin-course-demand__survey-list small,
+.admin-course-demand__master-list small {
+  color: var(--muted);
+}
+
+.admin-course-demand__error,
+.admin-course-demand__warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.admin-course-demand__error {
+  color: #9d1c16;
+  background: #ffebe9;
+}
+
+.admin-course-demand__warning {
+  color: #7a5700;
+  background: #fff4d8;
+}
+
+.admin-course-demand__plan-actions,
+.admin-course-demand__master-actions,
+.admin-course-demand__semester-tabs,
+.admin-course-demand__course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-course-demand__semester-tabs {
+  margin-bottom: 12px;
+}
+
+.admin-course-demand__semester-tabs button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 800;
+}
+
+.admin-course-demand__semester-tabs button[aria-selected="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 9%, white);
+}
+
+.admin-course-demand__course-list > article,
+.admin-course-demand__survey-list > article,
+.admin-course-demand__master-list > article {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.admin-course-demand__course-list > article {
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  align-items: center;
+}
+
+.admin-course-demand__course-list > article[data-selected="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, white);
+}
+
+.admin-course-demand__course-list > article > div:first-child,
+.admin-course-demand__survey-list > article > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-course-demand__survey-list > article ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-course-demand__master-list > article {
+  grid-template-columns: minmax(170px, 1.4fr) minmax(120px, 0.8fr) repeat(3, minmax(90px, 0.55fr)) auto;
+  align-items: end;
+}
+
+.admin-course-demand__master-list > article > small {
+  grid-column: 1 / -1;
+}
+
+.admin-course-demand__check {
+  display: flex !important;
+  align-items: center;
+  min-height: 40px;
+}
+
+@media (max-width: 760px) {
+  .admin-course-demand__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-course-demand__course-list > article,
+  .admin-course-demand__master-list > article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-course-demand__course-list > article .gju-button,
+  .admin-course-demand__plan-actions .gju-button,
+  .admin-course-demand__master-actions .gju-button {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gju-motion-enter,
   .gju-motion-screen,

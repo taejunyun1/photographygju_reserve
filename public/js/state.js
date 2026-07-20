@@ -117,6 +117,7 @@ export const state = {
   adminNotices: [],
   adminSessions: [],
   adminLogs: [],
+  adminCoursePlanning: null,
   lectures: [],
   adminLectures: [],
   adminLectureSemesters: [],
