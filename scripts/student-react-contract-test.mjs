@@ -736,6 +736,7 @@ const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8"
 const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js", "utf8");
 const homeScreenSource = fs.readFileSync("src/react/student/screens/HomeScreen.tsx", "utf8");
 const reservationControlsSource = fs.readFileSync("src/react/student/components/ReservationControls.tsx", "utf8");
+const favoriteSheetSource = fs.readFileSync("src/react/student/components/FavoriteEquipmentSheet.tsx", "utf8");
 assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
 assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
 assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
@@ -744,6 +745,16 @@ assert(homeScreenSource.includes("즐겨찾기 관리"), "student home must expo
 assert(homeScreenSource.includes("다시 예약"), "student home must expose recent reservation rebooking");
 assert(reservationControlsSource.includes("현재 조건에서 가능한 대안이 없습니다."), "reservation controls must explain when no recommendation is available");
 assert(studentCssSource.includes(".student-react-favorite-sheet"), "favorite manager must receive mobile bottom-sheet styling");
+assert(
+  studentCssSource.includes(".student-react-quick-reservation .gju-button,\n.student-react-favorite-sheet .gju-button")
+    && studentCssSource.includes(".student-react-favorite-sheet__selected button {\n  min-height: 44px;"),
+  "favorite management controls must keep a 44px minimum touch target"
+);
+assert(
+  favoriteSheetSource.includes("const groupTabRefs = useRef")
+    && favoriteSheetSource.includes("focusGroupOrAdd(replacementGroup?.id || \"\");"),
+  "removing a favorite group must move focus to a remaining group or the add-group control"
+);
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),

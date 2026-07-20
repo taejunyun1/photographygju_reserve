@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { GjuButton, GjuDialog, GjuEmptyState } from "../../design-system";
 import type { StudentEquipment, StudentFavoriteEquipmentGroup } from "../types";
@@ -43,6 +43,8 @@ export function FavoriteEquipmentSheet({ open, groups, equipment, onClose, onSav
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const groupTabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const groupAddRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +53,7 @@ export function FavoriteEquipmentSheet({ open, groups, equipment, onClose, onSav
     setActiveGroupId(next[0]?.id || "");
     setQuery("");
     setError("");
+    focusGroupOrAdd(next[0]?.id || "");
   }, [groups, open]);
 
   const activeGroup = draftGroups.find((group) => group.id === activeGroupId);
@@ -68,6 +71,14 @@ export function FavoriteEquipmentSheet({ open, groups, equipment, onClose, onSav
     setDraftGroups((current) => current.map((group) => group.id === activeGroup.id ? updater(group) : group));
   }
 
+  function focusGroupOrAdd(groupId: string) {
+    setTimeout(() => {
+      const groupTab = groupId ? groupTabRefs.current.get(groupId) : undefined;
+      const addGroupButton = groupAddRef.current?.querySelector<HTMLButtonElement>("button");
+      (groupTab || addGroupButton)?.focus();
+    }, 0);
+  }
+
   function addGroup() {
     if (draftGroups.length >= MAX_GROUPS) {
       setError("즐겨찾기 그룹은 최대 3개까지 만들 수 있습니다.");
@@ -77,13 +88,17 @@ export function FavoriteEquipmentSheet({ open, groups, equipment, onClose, onSav
     setDraftGroups((current) => [...current, group]);
     setActiveGroupId(group.id);
     setError("");
+    focusGroupOrAdd(group.id);
   }
 
   function removeGroup(groupId: string) {
+    const removedIndex = Math.max(0, draftGroups.findIndex((group) => group.id === groupId));
     const next = draftGroups.filter((group) => group.id !== groupId);
+    const replacementGroup = next.length ? next[Math.min(removedIndex, next.length - 1)] : undefined;
     setDraftGroups(next);
-    setActiveGroupId(next[0]?.id || "");
+    setActiveGroupId(replacementGroup?.id || "");
     setError("");
+    focusGroupOrAdd(replacementGroup?.id || "");
   }
 
   function addEquipment(equipmentId: string) {
@@ -139,13 +154,17 @@ export function FavoriteEquipmentSheet({ open, groups, equipment, onClose, onSav
                 className="student-react-favorite-sheet__group-tab"
                 role="tab"
                 aria-selected={group.id === activeGroupId}
+                ref={(node) => {
+                  if (node) groupTabRefs.current.set(group.id, node);
+                  else groupTabRefs.current.delete(group.id);
+                }}
                 onClick={() => setActiveGroupId(group.id)}
               >
                 {group.name || "이름 없는 그룹"}
               </button>
             ))}
           </div>
-          <GjuButton variant="outline" icon="plus" disabled={draftGroups.length >= MAX_GROUPS} onClick={addGroup}>그룹 추가</GjuButton>
+          <span ref={groupAddRef}><GjuButton variant="outline" icon="plus" disabled={draftGroups.length >= MAX_GROUPS} onClick={addGroup}>그룹 추가</GjuButton></span>
         </div>
 
         {!activeGroup ? (

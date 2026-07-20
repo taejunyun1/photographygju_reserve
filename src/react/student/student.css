@@ -277,6 +277,13 @@
   cursor: pointer;
 }
 
+.student-react-quick-reservation .gju-button,
+.student-react-favorite-sheet .gju-button,
+.student-react-favorite-sheet .gju-icon-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .student-react-favorite-group__items button {
   display: grid;
   width: 100%;
@@ -392,7 +399,7 @@
 }
 
 .student-react-favorite-sheet__selected button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 8px;
   color: var(--student-danger);
 }

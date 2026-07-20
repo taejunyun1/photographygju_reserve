@@ -20,6 +20,37 @@ test("Student React mounts without legacy student content", async ({ page }) => 
   await expectNoHorizontalOverflow(page);
 });
 
+test("Student React favorite manager opens as a reachable bottom sheet", async ({ page }) => {
+  await loginReactStudent(page);
+  const trigger = page.getByRole("button", { name: "즐겨찾기 관리" });
+  await trigger.click();
+
+  const sheet = page.locator(".student-react-favorite-sheet");
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole("heading", { name: "즐겨찾는 장비 관리" })).toBeVisible();
+  const compactControls = await sheet.locator("button").evaluateAll((buttons) => buttons.map((button) => {
+    const box = button.getBoundingClientRect();
+    return { label: button.getAttribute("aria-label") || button.textContent?.trim(), width: box.width, height: box.height };
+  }));
+  for (const control of compactControls) {
+    expect(control.height, JSON.stringify(control)).toBeGreaterThanOrEqual(44);
+  }
+  const accessibility = await new AxeBuilder({ page })
+    .include(".student-react-favorite-sheet")
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(accessibility.violations.filter((violation) => ["critical", "serious"].includes(violation.impact))).toEqual([]);
+
+  const addGroup = sheet.getByRole("button", { name: "그룹 추가" });
+  await addGroup.click();
+  await sheet.getByRole("button", { name: "그룹 삭제" }).click();
+  await expect(addGroup).toBeFocused();
+
+  await sheet.getByRole("button", { name: "닫기" }).click();
+  await expect(trigger).toBeFocused();
+  await expectNoHorizontalOverflow(page);
+});
+
 test("Student React mobile navigation is an inset glass dock with visible 18px icons", async ({ page }) => {
   const viewport = page.viewportSize();
   test.skip(!viewport || viewport.width > 768, "mobile contract");
