@@ -148,6 +148,8 @@ export type StudentRebookingDetails = {
   fields: StudentReservationFields;
 };
 
+export type StudentCourseDemandCategory = "art" | "documentary" | "advertising" | "video";
+
 export type StudentCourseDemandCatalogCourse = {
   id: string;
   name: string;
@@ -155,6 +157,7 @@ export type StudentCourseDemandCatalogCourse = {
   targetYears?: readonly number[];
   allowedTerms?: readonly string[];
   studentCredit?: number;
+  demandCategory: StudentCourseDemandCategory;
 };
 
 export type StudentCourseDemandRanking = {
@@ -164,6 +167,10 @@ export type StudentCourseDemandRanking = {
 
 export type StudentCourseDemandSurvey = {
   id: string;
+  title?: string;
+  academicYear?: number;
+  term?: "spring" | "fall";
+  targetStudentYears?: readonly number[];
   semesterPlanId?: string;
   status?: "draft" | "open" | "closed" | string;
   opensAt?: string;

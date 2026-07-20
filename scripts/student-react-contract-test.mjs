@@ -18,6 +18,7 @@ const testBundle = await build({
       export * from "../src/react/student/reservationDraft.ts";
       export { StudentApp } from "../src/react/student/StudentApp.tsx";
       export { ReservationControls } from "../src/react/student/components/ReservationControls.tsx";
+      export { CourseDemandSurveySheet } from "../src/react/student/components/CourseDemandSurveySheet.tsx";
       export { isReportDue } from "../src/react/student/screens/ReportsScreen.tsx";
       export {
         submitProfileUpdate,
@@ -764,7 +765,52 @@ assert(homeScreenSource.includes("다음 학기 희망 과목 조사"), "student
 assert(homeScreenSource.includes("CourseDemandSurveySheet"), "student dashboard must own the course-demand bottom sheet");
 assert(courseDemandSheetSource.includes("1~5순위"), "course-demand sheet must explain ranking limits");
 assert(courseDemandSheetSource.includes("순위 올리기"), "course-demand sheet must provide an accessible ranking control");
+for (const categoryLabel of ["예술", "다큐멘터리", "광고", "영상"]) {
+  assert(courseDemandSheetSource.includes(categoryLabel), `course-demand sheet must expose ${categoryLabel} grouping`);
+}
+assert(courseDemandSheetSource.includes("title={survey?.title"), "course-demand sheet must use the administrator's survey title");
 assert(studentCssSource.includes(".student-react-course-demand-sheet"), "course-demand sheet must receive mobile bottom-sheet styling");
+
+const categorizedSurvey = {
+  id: "categorized-survey",
+  title: "2027학년도 2학년 2학기 전공 수요조사",
+  academicYear: 2027,
+  term: "fall",
+  targetStudentYears: [2],
+  status: "open",
+  isOpen: true,
+  catalog: [
+    { id: "art-1", name: "예술 사진", demandCategory: "art", studentCredit: 3 },
+    { id: "doc-1", name: "다큐 사진", demandCategory: "documentary", studentCredit: 3 },
+    { id: "ad-1", name: "광고 사진", demandCategory: "advertising", studentCredit: 3 },
+    { id: "video-1", name: "영상 제작", demandCategory: "video", studentCredit: 3 },
+    { id: "art-2", name: "예술 프로젝트", demandCategory: "art", studentCredit: 3 },
+    { id: "video-2", name: "영상 프로젝트", demandCategory: "video", studentCredit: 3 }
+  ],
+  response: null
+};
+const categorizedSurveyMarkup = renderToStaticMarkup(React.createElement(student.CourseDemandSurveySheet, {
+  open: true,
+  survey: categorizedSurvey,
+  onClose() {},
+  onSave() {}
+}));
+assert(categorizedSurveyMarkup.includes(categorizedSurvey.title), "course-demand sheet must render the survey title");
+assert(categorizedSurveyMarkup.includes("2학년 · 2학기"), "course-demand sheet must render its target grade and semester");
+for (const categoryLabel of ["예술", "다큐멘터리", "광고", "영상"]) {
+  assert(categorizedSurveyMarkup.includes(categoryLabel), `course-demand sheet must render non-empty ${categoryLabel} group`);
+}
+for (const course of categorizedSurvey.catalog) {
+  assert.equal((categorizedSurveyMarkup.match(new RegExp(course.name, "g")) || []).length, 1, `${course.name} must render exactly once`);
+}
+const singleCategoryMarkup = renderToStaticMarkup(React.createElement(student.CourseDemandSurveySheet, {
+  open: true,
+  survey: { ...categorizedSurvey, catalog: categorizedSurvey.catalog.slice(0, 1) },
+  onClose() {},
+  onSave() {}
+}));
+assert(singleCategoryMarkup.includes("예술"), "a non-empty category must render");
+assert(!singleCategoryMarkup.includes("다큐멘터리"), "an empty category must be omitted");
 
 student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
@@ -779,17 +825,23 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
     courseDemandSurveys: [{
       id: "survey-1",
+      title: "2027학년도 2학년 2학기 전공 수요조사",
+      academicYear: 2027,
+      term: "fall",
+      targetStudentYears: [2],
       status: "open",
       isOpen: true,
       opensAt: "2026-07-01T00:00:00.000Z",
       closesAt: "2026-07-31T14:59:59.000Z",
-      catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+      catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3, demandCategory: "art" }],
       response: null
     }]
   }),
   actions: actionRecorder().actions
 }));
 assert(markup.includes("다음 학기 희망 과목 조사"), "open course-demand surveys must render on the student home dashboard");
+assert(markup.includes("2027학년도 2학년 2학기 전공 수요조사"), "student dashboard must render the active survey title");
+assert(markup.includes("2학년 · 2학기"), "student dashboard must render the survey target");
 assert(markup.includes("응답하기"), "open course-demand surveys must offer a response action");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(

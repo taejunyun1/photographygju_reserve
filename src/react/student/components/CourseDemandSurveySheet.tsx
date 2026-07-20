@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { GjuButton, GjuDialog, GjuEmptyState } from "../../design-system";
-import type { StudentCourseDemandRanking, StudentCourseDemandSurvey } from "../types";
+import type { StudentCourseDemandCategory, StudentCourseDemandRanking, StudentCourseDemandSurvey } from "../types";
 
 type CourseDemandSurveySheetProps = {
   open: boolean;
@@ -9,6 +9,17 @@ type CourseDemandSurveySheetProps = {
   onClose: () => void;
   onSave: (surveyId: string, rankings: readonly StudentCourseDemandRanking[]) => Promise<void> | void;
 };
+
+const DEMAND_CATEGORIES: ReadonlyArray<{ key: StudentCourseDemandCategory; label: string }> = [
+  { key: "art", label: "예술" },
+  { key: "documentary", label: "다큐멘터리" },
+  { key: "advertising", label: "광고" },
+  { key: "video", label: "영상" }
+];
+
+function termLabel(term?: string) {
+  return term === "spring" ? "1학기" : term === "fall" ? "2학기" : "학기 미정";
+}
 
 function sortedRankings(rankings: readonly StudentCourseDemandRanking[]) {
   return rankings
@@ -31,6 +42,12 @@ export function CourseDemandSurveySheet({ open, survey, onClose, onSave }: Cours
   }, [open, survey?.id, survey?.response?.submittedAt]);
 
   const coursesById = useMemo(() => new Map((survey?.catalog || []).map((course) => [course.id, course])), [survey]);
+  const categoryGroups = useMemo(() => DEMAND_CATEGORIES
+    .map((category) => ({
+      ...category,
+      courses: (survey?.catalog || []).filter((course) => (course.demandCategory || "art") === category.key)
+    }))
+    .filter((category) => category.courses.length > 0), [survey?.catalog]);
   const selectedIds = new Set(rankings.map((ranking) => ranking.courseId));
 
   function addCourse(courseId: string) {
@@ -74,11 +91,12 @@ export function CourseDemandSurveySheet({ open, survey, onClose, onSave }: Cours
   }
 
   return (
-    <GjuDialog open={open} title="다음 학기 희망 과목 조사" className="student-react-course-demand-sheet" onClose={onClose} showActions={false}>
+    <GjuDialog open={open} title={survey?.title || "다음 학기 희망 과목 조사"} className="student-react-course-demand-sheet" onClose={onClose} showActions={false}>
       <div className="student-react-course-demand-sheet__content">
         <p className="muted">수강신청이 아닌 개설 수요조사입니다. 희망 과목을 1~5순위로 정해 주세요.</p>
         {!survey ? <GjuEmptyState title="설문을 찾을 수 없습니다." /> : (
           <>
+            <p className="student-react-course-demand-sheet__target">{survey.targetStudentYears?.join("·") || "-"}학년 · {termLabel(survey.term)}</p>
             <section className="student-react-course-demand-sheet__rankings" aria-label="선택한 희망 과목 순위">
               <div><strong>선택한 과목 {rankings.length}/5</strong><span>1~5순위</span></div>
               {rankings.length ? <ol>
@@ -98,10 +116,13 @@ export function CourseDemandSurveySheet({ open, survey, onClose, onSave }: Cours
             </section>
             <section className="student-react-course-demand-sheet__catalog" aria-label="희망 과목 후보">
               <h3>과목 후보</h3>
-              {(survey.catalog || []).map((course) => <button key={course.id} type="button" data-selected={selectedIds.has(course.id) ? "true" : "false"} onClick={() => addCourse(course.id)}>
-                <span><strong>{course.name}</strong><small>{course.courseCode ? `${course.courseCode} · ` : ""}{course.studentCredit ? `${course.studentCredit}학점` : "학점 확인 필요"}</small></span>
-                <em>{selectedIds.has(course.id) ? "선택 해제" : "선택"}</em>
-              </button>)}
+              {categoryGroups.map((category) => <section key={category.key} className="student-react-course-demand-sheet__category" aria-labelledby={`course-demand-category-${category.key}`}>
+                <div className="student-react-course-demand-sheet__category-heading"><h4 id={`course-demand-category-${category.key}`}>{category.label}</h4><span>{category.courses.length}개</span></div>
+                {category.courses.map((course) => <button key={course.id} type="button" data-selected={selectedIds.has(course.id) ? "true" : "false"} onClick={() => addCourse(course.id)}>
+                  <span><strong>{course.name}</strong><small>{course.courseCode ? `${course.courseCode} · ` : ""}{course.studentCredit ? `${course.studentCredit}학점` : "학점 확인 필요"}</small></span>
+                  <em>{selectedIds.has(course.id) ? "선택 해제" : "선택"}</em>
+                </button>)}
+              </section>)}
             </section>
             {error ? <p className="student-react-course-demand-sheet__error" role="alert">{error}</p> : null}
             <div className="student-react-course-demand-sheet__footer">

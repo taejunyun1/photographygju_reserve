@@ -431,11 +431,23 @@ export function publicSurveyForStudent({ survey, student, response, now = new Da
   return {
     id: survey.id,
     semesterPlanId: survey.semesterPlanId,
+    title: survey.title || "다음 학기 희망 과목 조사",
+    academicYear: survey.academicYear,
+    term: survey.term,
+    targetStudentYears: numberList(survey.targetStudentYears),
     status: survey.status,
     opensAt: survey.opensAt,
     closesAt: survey.closesAt,
     isOpen: withinSurveyWindow(survey, now),
-    catalog: (survey.catalogSnapshot || []).map((course) => ({ id: course.id, name: course.name, targetYears: numberList(course.targetYears), allowedTerms: uniqueStrings(course.allowedTerms), studentCredit: Number(course.studentCredit || 0) })),
+    catalog: (survey.catalogSnapshot || []).map((course) => ({
+      id: course.id,
+      courseCode: course.courseCode || "",
+      name: course.name,
+      targetYears: numberList(course.targetYears),
+      allowedTerms: uniqueStrings(course.allowedTerms),
+      studentCredit: Number(course.studentCredit || 0),
+      demandCategory: COURSE_DEMAND_CATEGORY_SET.has(course.demandCategory) ? course.demandCategory : "art"
+    })),
     response: response ? { rankings: response.rankings || [], submittedAt: response.submittedAt || "" } : null
   };
 }

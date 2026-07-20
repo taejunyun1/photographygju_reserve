@@ -470,6 +470,11 @@ assert.equal(invalidSurveyWindow.status, 400, "invalid survey dates must be repo
 const studentSurveys = await courseApi({ pathname: "/api/me/course-demand-surveys", token: "course-student-token" });
 assert.equal(studentSurveys.status, 200);
 assert.equal(studentSurveys.body.data.length, 1);
+assert.equal(studentSurveys.body.data[0].title, validIndependentInput.title);
+assert.equal(studentSurveys.body.data[0].academicYear, 2027);
+assert.equal(studentSurveys.body.data[0].term, "fall");
+assert.deepEqual(studentSurveys.body.data[0].targetStudentYears, [2]);
+assert.equal(studentSurveys.body.data[0].catalog.every((course) => demandCategoryValues.has(course.demandCategory)), true);
 const surveyId = studentSurveys.body.data[0].id;
 const selectedCourseIds = studentSurveys.body.data[0].catalog.slice(0, 2).map((course) => course.id);
 assert.equal(selectedCourseIds.length, 2);

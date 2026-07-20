@@ -362,9 +362,45 @@
 .student-react-course-demand-card__actions,
 .student-react-course-demand-sheet__content,
 .student-react-course-demand-sheet__rankings,
-.student-react-course-demand-sheet__catalog {
+.student-react-course-demand-sheet__catalog,
+.student-react-course-demand-sheet__category {
   display: grid;
   gap: 12px;
+}
+
+.student-react-course-demand-sheet__target {
+  width: fit-content;
+  margin: -4px 0 0;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--student-accent-strong);
+  background: color-mix(in srgb, var(--student-accent) 10%, var(--student-surface));
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-react-course-demand-sheet__category {
+  gap: 8px;
+}
+
+.student-react-course-demand-sheet__category-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--student-line);
+}
+
+.student-react-course-demand-sheet__category-heading h4 {
+  margin: 0;
+  color: var(--student-ink);
+  font-size: 15px;
+}
+
+.student-react-course-demand-sheet__category-heading span {
+  color: var(--student-muted);
+  font-size: 12px;
 }
 
 .student-react-course-demand-card__actions {

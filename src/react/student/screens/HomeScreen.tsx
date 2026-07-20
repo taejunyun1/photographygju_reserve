@@ -26,6 +26,11 @@ function courseDemandDeadline(value?: string) {
   return new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(date);
 }
 
+function courseDemandTarget(targetYears?: readonly number[], term?: string) {
+  if (!targetYears?.length || !term) return "개설 수요조사";
+  return `${targetYears.join("·")}학년 · ${term === "spring" ? "1학기" : "2학기"}`;
+}
+
 export function HomeScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
   const [favoriteSheetOpen, setFavoriteSheetOpen] = useState(false);
   const [courseDemandSurveyId, setCourseDemandSurveyId] = useState("");
@@ -63,7 +68,7 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
       return {
         tone: courseDemandSurvey.response ? "green" as const : "neutral" as const,
         label: courseDemandSurvey.response ? "응답 완료" : "마감됨",
-        message: courseDemandSurvey.response ? "제출한 희망 과목은 다음 학기 개설 편성에 반영됩니다." : "이번 수요조사는 마감되었습니다."
+        message: courseDemandSurvey.response ? "제출한 희망 과목은 다음 학기 개설 검토에 반영됩니다." : "이번 수요조사는 마감되었습니다."
       };
     }
     return { tone: "neutral" as const, label: "준비 중", message: "관리자가 설문을 공개하면 이곳에서 바로 응답할 수 있습니다." };
@@ -89,7 +94,7 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
         </GjuCard>
       ) : null}
 
-      <GjuCard title="다음 학기 희망 과목 조사" eyebrow="개설 수요조사" className="student-react-course-demand-card">
+      <GjuCard title={courseDemandSurvey?.title || "다음 학기 희망 과목 조사"} eyebrow={`${courseDemandTarget(courseDemandSurvey?.targetStudentYears, courseDemandSurvey?.term)} · 다음 학기 희망 과목 조사`} className="student-react-course-demand-card">
         <div className="student-react-course-demand-card__status">
           <GjuStatusBadge tone={courseDemandSummary.tone}>{courseDemandSummary.label}</GjuStatusBadge>
           <span>수강신청 전 개설 수요를 확인합니다.</span>

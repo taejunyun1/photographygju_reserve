@@ -69,18 +69,26 @@ const courseDemandBridge = harness({
     if (path === "/api/me/course-demand-surveys" && !options.method) {
       return [{
         id: "survey-1",
+        title: "2099학년도 2학년 2학기 수요조사",
+        academicYear: 2099,
+        term: "fall",
+        targetStudentYears: [2],
         status: "open",
         isOpen: true,
-        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3, demandCategory: "art" }],
         response: null
       }];
     }
     if (path === "/api/me/course-demand-surveys/survey-1/response") {
       return {
         id: "survey-1",
+        title: "2099학년도 2학년 2학기 수요조사",
+        academicYear: 2099,
+        term: "fall",
+        targetStudentYears: [2],
         status: "open",
         isOpen: true,
-        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3, demandCategory: "art" }],
         response: { rankings: options.body.rankings, submittedAt: "2099-01-01T00:00:00.000Z" }
       };
     }
@@ -89,6 +97,8 @@ const courseDemandBridge = harness({
 });
 await courseDemandBridge.actions.loadCourseDemandSurveys();
 assert.equal(courseDemandBridge.state.courseDemandSurveys[0].id, "survey-1");
+assert.equal(courseDemandBridge.state.courseDemandSurveys[0].title, "2099학년도 2학년 2학기 수요조사");
+assert.equal(courseDemandBridge.state.courseDemandSurveys[0].catalog[0].demandCategory, "art");
 await courseDemandBridge.actions.saveCourseDemandResponse("survey-1", [{ courseId: "course-a", rank: 1 }]);
 assert.equal(courseDemandBridge.state.courseDemandSurveys[0].response.rankings[0].rank, 1);
 assert(courseDemandBridge.calls.some(([kind, path]) => kind === "api" && path === "/api/me/course-demand-surveys/survey-1/response"), "ranked course demand responses must use the student-only endpoint");
