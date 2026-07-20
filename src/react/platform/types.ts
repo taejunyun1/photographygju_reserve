@@ -1,6 +1,8 @@
 export type AdminPageMeta = {
   total?: number;
   collectionTotal?: number;
+  persistedTotal?: number;
+  persistedCollectionTotal?: number;
   page?: number;
   pageSize?: number;
   hasMore?: boolean;
@@ -118,6 +120,7 @@ export type AdminEquipmentRecord = {
 
 export type AdminReportRecord = {
   id: string;
+  isMissing?: boolean;
   reservationId?: string;
   title?: string;
   projectTitle?: string;
@@ -478,6 +481,7 @@ export type AdminViewFilterMap = {
   };
   reports: {
     q: string;
+    status: string;
     semester: string;
     page: number;
     pageSize: number;
@@ -597,6 +601,7 @@ export type LegacyState = Record<string, unknown> & {
   selectedAdminEquipmentIds?: string[];
   adminReports?: AdminReportRecord[];
   adminReportSearch?: string;
+  adminReportStatusFilter?: string;
   adminReportSemesterFilter?: string;
   adminReportSort?: { field?: string; direction?: AdminSortDirection };
   adminReportsPage?: AdminPageMeta;

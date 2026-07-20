@@ -59,4 +59,84 @@ assert.deepEqual(
   "today's operating timeline must exclude cancelled and rejected reservations"
 );
 
-console.log("Dashboard cancelled reservation integrity check passed.");
+const tomorrowDate = new Date(`${today}T00:00:00.000Z`);
+tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+const tomorrow = tomorrowDate.toISOString().slice(0, 10);
+const studioFields = (reservedDate) => ({
+  reservedDate,
+  reportStatus: "required",
+  studioSpaces: ["Studio A Front"],
+  timeSlots: ["10:30-12:00"]
+});
+
+db.reservations = [
+  {
+    id: "report-due-today",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: studioFields(today),
+    history: []
+  },
+  {
+    id: "report-future",
+    type: "studio",
+    status: "auto_confirmed",
+    userId: "user_admin",
+    fields: studioFields(tomorrow),
+    history: []
+  },
+  {
+    id: "report-cancelled",
+    type: "studio",
+    status: "cancelled",
+    userId: "user_admin",
+    fields: studioFields(today),
+    history: []
+  }
+];
+db.reports = [];
+
+const reportSummary = await handleApiRequest({
+  method: "GET",
+  pathname: "/api/admin/summary",
+  authorization: `Bearer ${token}`,
+  readText: async () => "{}",
+  db,
+  saveDb: async () => {},
+  slackWebhook: ""
+});
+
+assert.equal(reportSummary.status, 200);
+assert.equal(
+  reportSummary.body.data.missingReports,
+  1,
+  "dashboard must count only studio reservations whose use date has arrived"
+);
+
+const missingReportPage = await handleApiRequest({
+  method: "GET",
+  pathname: "/api/admin/reports?status=missing&page=1&pageSize=100",
+  authorization: `Bearer ${token}`,
+  readText: async () => "{}",
+  db,
+  saveDb: async () => {},
+  slackWebhook: ""
+});
+
+assert.equal(missingReportPage.status, 200);
+assert.equal(
+  missingReportPage.body.data.total,
+  reportSummary.body.data.missingReports,
+  "report screen and dashboard must expose the same missing report count"
+);
+assert.deepEqual(
+  missingReportPage.body.data.items.map((report) => ({
+    reservationId: report.reservationId,
+    status: report.status,
+    isMissing: report.isMissing
+  })),
+  [{ reservationId: "report-due-today", status: "missing", isMissing: true }]
+);
+
+console.log("Dashboard reservation and report integrity checks passed.");

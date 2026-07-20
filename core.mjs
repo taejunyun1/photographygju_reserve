@@ -90,6 +90,7 @@ const EQUIPMENT_RESERVATION_STATUS_TRANSITIONS = {
   cancelled: new Set()
 };
 const RESERVATION_CANCELLATION_TERMINAL_STATUSES = new Set(["cancelled", "admin_cancelled", "returned", "completed", "rejected"]);
+const REPORT_INELIGIBLE_RESERVATION_STATUSES = new Set(["cancelled", "admin_cancelled", "rejected"]);
 const ADMIN_RESERVATION_STATUS_BY_TYPE = {
   equipment: EQUIPMENT_RESERVATION_STATUSES,
   studio: new Set(["completed", "admin_cancelled"]),
@@ -479,6 +480,20 @@ function isOperationalReservation(reservation) {
   return !RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(reservation?.status);
 }
 
+function isStudioReportSubmitted(db, reservation) {
+  return reservation?.type === "studio" &&
+    (db.reports || []).some((report) => report.type === "studio" && report.reservationId === reservation.id);
+}
+
+function isStudioReportDue(db, reservation, today = todayKeySeoul()) {
+  const reservedDate = String(reservation?.fields?.reservedDate || "");
+  return reservation?.type === "studio" &&
+    !isStudioReportSubmitted(db, reservation) &&
+    !REPORT_INELIGIBLE_RESERVATION_STATUSES.has(reservation?.status) &&
+    Boolean(reservedDate) &&
+    reservedDate <= today;
+}
+
 function studioSpaces(fields = {}) {
   if (Array.isArray(fields.studioSpaces) && fields.studioSpaces.length) return fields.studioSpaces;
   return fields.studioSpace ? [fields.studioSpace] : [];
@@ -564,7 +579,8 @@ const {
   withReservationDetails,
   reportWithDetails,
   publicUser,
-  lectureDetail
+  lectureDetail,
+  isStudioReportDue
 });
 
 function noticeWithActive(notice) {
@@ -1377,7 +1393,7 @@ export async function handleApiRequest(ctx) {
           })
           .sort((left, right) => String(left.queueAt || "").localeCompare(String(right.queueAt || "")));
         const todayReservations = todaySchedule.length;
-        const missingReports = db.reservations.filter((item) => item.type === "studio" && item.status !== "cancelled" && item.fields.reportStatus !== "submitted").length;
+        const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
         const activeEquipment = db.equipment.filter((item) => item.active !== false);
         const availableEquipment = activeEquipment.filter((item) => item.status === "가능").length;
         const repairEquipment = activeEquipment.filter((item) => item.status === "수리중").length;

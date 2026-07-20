@@ -311,7 +311,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       badge: "보고서",
       tone: "red",
       targetView: "reports",
-      filters: { q: "", semester: "all", page: 1 }
+      filters: { status: "missing", q: "", semester: "all", page: 1 }
     }
   ];
 

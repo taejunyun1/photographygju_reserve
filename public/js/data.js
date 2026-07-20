@@ -66,6 +66,8 @@ function pageMeta(result) {
     : {
       total: Number(result?.total || 0),
       collectionTotal: Number(result?.collectionTotal ?? result?.total ?? 0),
+      persistedTotal: Number(result?.persistedTotal ?? result?.total ?? 0),
+      persistedCollectionTotal: Number(result?.persistedCollectionTotal ?? result?.collectionTotal ?? result?.total ?? 0),
       page: Number(result?.page || 1),
       pageSize: Number(result?.pageSize || 0),
       hasMore: Boolean(result?.hasMore)
@@ -181,6 +183,7 @@ function adminReportsPath(filters = {}) {
     page: filterValue(filters, "page", pageNumber(state.adminReportsPage)),
     pageSize: filterValue(filters, "pageSize", pageSizeNumber(state.adminReportsPage)),
     semester: filterValue(filters, "semester", state.adminReportSemesterFilter),
+    status: filterValue(filters, "status", state.adminReportStatusFilter),
     q: filterValue(filters, "q", state.adminReportSearch),
     ...sort
   })}`;
@@ -252,6 +255,7 @@ function applyFilterState(view, filters) {
     if ("panel" in filters) state.adminEquipmentPanelTab = String(filters.panel || "manage");
   } else if (view === "reports") {
     if ("q" in filters) state.adminReportSearch = String(filters.q || "");
+    if ("status" in filters) state.adminReportStatusFilter = String(filters.status || "all");
     if ("semester" in filters) state.adminReportSemesterFilter = String(filters.semester || "all");
     if ("page" in filters) setPage("adminReportsPage", filters.page);
     if ("pageSize" in filters) setPageSize("adminReportsPage", filters.pageSize);

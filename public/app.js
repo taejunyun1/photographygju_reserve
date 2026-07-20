@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260720-course-demand-dashboard-r1";
+import "./js/main.js?v=20260720-report-integrity-r1";

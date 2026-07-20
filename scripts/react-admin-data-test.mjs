@@ -206,6 +206,11 @@ assert.deepEqual(
   [{ key: "2026-S1", label: "2026년 1학기" }],
   "legacy string semester options must normalize to key-label objects"
 );
+await loadAdminView("reports", { status: "missing", page: 1, force: true });
+const missingReportsUrl = new URL(requests.at(-1), "https://admin.test");
+assert.equal(missingReportsUrl.pathname, "/api/admin/reports");
+assert.equal(missingReportsUrl.searchParams.get("status"), "missing", "dashboard report navigation must request only missing reports");
+assert.equal(state.adminReportStatusFilter, "missing", "report status filter must stay aligned with the rendered rows");
 await loadAdminView("lectures", { force: true });
 assert.deepEqual(
   state.adminLectureSemesters,

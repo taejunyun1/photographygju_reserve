@@ -78,6 +78,10 @@ function reportDate(item) {
   return item.reservation?.fields?.reservedDate || item.submittedAt?.slice(0, 10) || "";
 }
 
+function reportStatus(item) {
+  return String(item.status || item.fields?.status || (item.submittedAt ? "submitted" : item.reservation?.fields?.reportStatus || "missing"));
+}
+
 function compareValues(left, right) {
   if (typeof left === "number" && typeof right === "number") return left - right;
   if (typeof left === "boolean" && typeof right === "boolean") return Number(left) - Number(right);
@@ -117,7 +121,7 @@ const REPORT_SORT_FIELDS = {
   createdAt: (item) => item.createdAt,
   name: (item) => item.user?.name || item.reservation?.user?.name,
   title: (item) => item.title || item.projectTitle || item.fields?.projectTitle || item.reservation?.fields?.title,
-  status: (item) => item.status || item.fields?.status || item.reservation?.fields?.reportStatus,
+  status: reportStatus,
   semester: (item) => item.semester || reportDate(item)
 };
 
@@ -147,7 +151,7 @@ const USER_SORT_FIELDS = {
   createdAt: (item) => item.createdAt
 };
 
-export function createAdminListHelpers({ withReservationDetails, reportWithDetails, publicUser, lectureDetail }) {
+export function createAdminListHelpers({ withReservationDetails, reportWithDetails, publicUser, lectureDetail, isStudioReportDue = () => false }) {
   function hasListQuery(searchParams) {
     return Boolean(searchParams && [...searchParams.keys()].length);
   }
@@ -185,32 +189,62 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
     return paginate(items, params, { semesterOptions, collectionTotal });
   }
 
-  function filterReports(db, params) {
-    const source = db.reports.map((item) => reportWithDetails(db, item));
+  function missingReportRows(db) {
+    return db.reservations
+      .filter((reservation) => isStudioReportDue(db, reservation))
+      .map((reservation) => {
+        const detailedReservation = withReservationDetails(db, reservation);
+        return {
+          id: `missing:${reservation.id}`,
+          type: "studio",
+          reservationId: reservation.id,
+          userId: reservation.userId,
+          status: "missing",
+          isMissing: true,
+          fields: {},
+          reservation: detailedReservation,
+          user: detailedReservation.user || publicUser(db.users.find((user) => user.id === reservation.userId))
+        };
+      });
+  }
+
+  function filterReports(db, params, { includeMissing = true } = {}) {
+    const persisted = db.reports.map((item) => reportWithDetails(db, item));
+    const source = includeMissing ? [...persisted, ...missingReportRows(db)] : persisted;
     const semesterOptions = academicSemesterOptionsFromDates(source.map(reportDate));
-    const items = source
-      .filter((item) => !params.semester || params.semester === "all" || dateMatchesAcademicSemester(reportDate(item), params.semester))
-      .filter((item) => !params.type || item.type === params.type)
-      .filter((item) => dateInRange(reportDate(item), params.from, params.to))
-      .filter((item) => !params.q || searchableRecord({
+    const matchesReport = (item) => (
+      (!params.semester || params.semester === "all" || dateMatchesAcademicSemester(reportDate(item), params.semester)) &&
+      (!params.type || item.type === params.type) &&
+      (!params.status || reportStatus(item) === params.status) &&
+      dateInRange(reportDate(item), params.from, params.to) &&
+      (!params.q || searchableRecord({
         id: item.id,
         reservationId: item.reservationId,
         fields: item.fields,
         reservation: item.reservation,
         user: item.user
-      }).includes(params.q));
+      }).includes(params.q))
+    );
+    const items = source.filter(matchesReport);
+    const persistedItems = persisted.filter(matchesReport);
     sortList(items, params, {
       fields: REPORT_SORT_FIELDS,
       defaultCompare: (a, b) => String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")),
       defaultDirections: { submittedAt: "desc", createdAt: "desc" }
     });
-    return { items, semesterOptions, collectionTotal: source.length };
+    return {
+      items,
+      semesterOptions,
+      collectionTotal: source.length,
+      persistedTotal: persistedItems.length,
+      persistedCollectionTotal: persisted.length
+    };
   }
 
   function adminReportList(db, searchParams) {
     const params = listParams(searchParams, 100);
-    const { items, semesterOptions, collectionTotal } = filterReports(db, params);
-    return paginate(items, params, { semesterOptions, collectionTotal });
+    const { items, semesterOptions, collectionTotal, persistedTotal, persistedCollectionTotal } = filterReports(db, params);
+    return paginate(items, params, { semesterOptions, collectionTotal, persistedTotal, persistedCollectionTotal });
   }
 
   function filterLectures(db, params) {
@@ -291,7 +325,7 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
     adminLectureList,
     adminNoticeList,
     filterAdminReservations: (db, filters) => filterReservations(db, listParams(searchParamsFromFilters(filters), 100000)),
-    filterAdminReports: (db, filters) => filterReports(db, listParams(searchParamsFromFilters(filters), 100000)),
+    filterAdminReports: (db, filters) => filterReports(db, listParams(searchParamsFromFilters(filters), 100000), { includeMissing: false }),
     filterAdminLectures: (db, filters) => filterLectures(db, listParams(searchParamsFromFilters(filters), 100000)),
     filterAdminNotices: (db, filters) => filterNotices(db, listParams(searchParamsFromFilters(filters), 100000))
   };

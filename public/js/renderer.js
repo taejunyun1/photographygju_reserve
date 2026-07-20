@@ -542,7 +542,7 @@ const reactAdminActions = {
     }
   },
   async bulkDeleteReports(filters) {
-    const body = guardedFilteredDeleteBody("reports", filters, ["q", "semester"]);
+    const body = guardedFilteredDeleteBody("reports", filters, ["q", "status", "semester"]);
     if (!body) return;
     const input = prompt("현재 필터에 해당하는 보고서를 삭제하려면 DELETE를 입력하세요.", "");
     if (input !== "DELETE") return;

@@ -59,6 +59,7 @@ export const state = {
   adminReservationSemesterFilter: "all",
   adminEquipmentReservationStatusFilter: "all",
   adminReportSearch: "",
+  adminReportStatusFilter: "all",
   adminReportSemesterFilter: "all",
   adminUserSearch: "",
   adminEquipmentSearch: "",

@@ -458,6 +458,7 @@ dashboardButtons[2].props.onClick();
 dashboardButtons[3].props.onClick();
 dashboardButtons[4].props.onClick();
 dashboardButtons[5].props.onClick();
+dashboardButtons[6].props.onClick();
 assert.deepEqual(
   dashboardNavigationCalls,
   [
@@ -465,9 +466,10 @@ assert.deepEqual(
     ["reservations", { type: "equipment", status: "approved", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "checked_out", q: "", page: 1 }],
     ["reservations", { type: "equipment", status: "returned", q: "", page: 1 }],
-    ["reservations", { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }]
+    ["reservations", { type: "equipment", status: "cancelled_or_rejected", q: "", page: 1 }],
+    ["reports", { status: "missing", q: "", semester: "all", page: 1 }]
   ],
-  "dashboard reservation cards must pass their target filters through the typed navigation action"
+  "dashboard action cards must pass their target filters through the typed navigation action"
 );
 const dashboardParityMarkup = renderToStaticMarkup(dashboardTree);
 for (const label of ["운영 큐", "오늘 예약 타임라인", "대여/반납 큐", "운영 지표", "이번 주 예약 수", "기자재 가용률", "Sony FX3", "운영 공지"]) {
@@ -971,6 +973,41 @@ for (const value of ["2026년 2학기", "2026-09-10 · Studio A Front", "10:40-1
   assert(reportsMarkup.includes(value), `report detail parity must render ${value}`);
 }
 assert(reportsMarkup.includes('data-surface="workspace"'), "React reports list must use the flat workspace surface");
+
+const missingReportsMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "reports",
+      user: { role: "admin" },
+      adminReportStatusFilter: "missing",
+      adminReportSemesters: [],
+      adminReportsPage: {
+        total: 1,
+        collectionTotal: 1,
+        persistedTotal: 0,
+        persistedCollectionTotal: 0,
+        page: 1,
+        pageSize: 20
+      },
+      adminReports: [{
+        id: "missing:studio-due",
+        reservationId: "studio-due",
+        status: "missing",
+        isMissing: true,
+        reservation: {
+          id: "studio-due",
+          fields: { reservedDate: "2026-09-10", studioSpaces: ["Studio A Front"] }
+        }
+      }]
+    },
+    actions: noopActions
+  })
+);
+for (const value of ["제출 대기", "학생 보고서 제출을 기다리고 있습니다.", "미제출"]) {
+  assert(missingReportsMarkup.includes(value), `missing report view must render ${value}`);
+}
+assert(!missingReportsMarkup.includes("필터 결과 보고서 삭제"), "synthetic missing report rows must not expose filtered deletion");
+assert(!missingReportsMarkup.includes("전체 보고서 삭제"), "synthetic missing report rows must not expose full report deletion");
 
 const lecturesMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {

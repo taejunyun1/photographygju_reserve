@@ -73,6 +73,9 @@ function reportPhoto(value: unknown) {
 }
 
 function reportDetails(report: AdminReportRecord) {
+  if (report.isMissing) {
+    return <p className="muted">학생 보고서 제출을 기다리고 있습니다.</p>;
+  }
   const damageFound = reportField(report, "damageFound") === true;
   return (
     <dl className="property-list compact admin-report-detail-list">
@@ -97,21 +100,30 @@ function reportTone(status: string) {
 
 function bulkDeleteReports(state: LegacyState, actions: ReactAdminActions) {
   runAdminAction(() => actions.bulkDeleteReports({
+    status: state.adminReportStatusFilter || "all",
     semester: state.adminReportSemesterFilter || "all",
     q: state.adminReportSearch || ""
   }));
 }
 
 export function AdminReports({ state, actions }: AdminReportsProps) {
+  const statusFilter = String(state.adminReportStatusFilter || "all");
   const semesterFilter = String(state.adminReportSemesterFilter || "all");
   const semesters = semesterOptions(state.adminReportSemesters);
   const reportSort = state.adminReportSort || { field: "submittedAt", direction: "desc" as const };
   const reports = state.adminReports || [];
   const deleteFilters = {
+    status: statusFilter,
     semester: semesterFilter,
     q: state.adminReportSearch || ""
   };
-  const deleteAvailability = bulkDeleteAvailability(state.adminReportsPage, deleteFilters);
+  const persistedReportPage = {
+    ...state.adminReportsPage,
+    total: Number(state.adminReportsPage?.persistedTotal ?? state.adminReportsPage?.total ?? 0),
+    collectionTotal: Number(state.adminReportsPage?.persistedCollectionTotal ?? state.adminReportsPage?.collectionTotal ?? 0)
+  };
+  const deleteAvailability = bulkDeleteAvailability(persistedReportPage, deleteFilters);
+  const canDeleteReports = statusFilter !== "missing";
 
   const submitSearch = stopSubmit((form) => {
     void actions.setAdminFilters("reports", {
@@ -122,6 +134,9 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
 
   const setSemester = (semester: string) => {
     void actions.setAdminFilters("reports", { semester, page: 1 });
+  };
+  const setStatus = (status: string) => {
+    void actions.setAdminFilters("reports", { status, page: 1 });
   };
   const setSort = (field: "title" | "name" | "status" | "submittedAt") => {
     const direction = reportSort.field === field && reportSort.direction === "asc" ? "desc" : "asc";
@@ -150,6 +165,19 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
           </button>
         </form>
         <GjuTabs
+          id="admin-report-status-tabs"
+          ariaLabel="보고서 상태"
+          className="tab-row"
+          tabClassName="tab-button"
+          items={[
+            { key: "all", label: "전체" },
+            { key: "missing", label: "제출 대기" },
+            { key: "submitted", label: "제출 완료" }
+          ]}
+          activeKey={statusFilter}
+          onChange={setStatus}
+        />
+        <GjuTabs
           id="admin-report-semester-tabs"
           ariaLabel="보고서 학기"
           className="tab-row"
@@ -158,7 +186,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
           activeKey={semesterFilter}
           onChange={setSemester}
         />
-        {deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
+        {canDeleteReports && deleteAvailability.collectionTotal > 0 ? <div className="admin-react-danger-row">
           <button className="button danger compact" type="button" disabled={deleteAvailability.filteredDisabled} onClick={() => bulkDeleteReports(state, actions)}>
             필터 결과 보고서 삭제
           </button>

@@ -66,7 +66,7 @@ export function deleteAdminReservations(db, { scope, filters = {}, confirmText, 
 
 export function deleteAdminReports(db, { scope, filters = {}, confirmText, admin, filterAdminReports }) {
   assertBulkScope({ scope, confirmText });
-  const safeFilters = allowedFilters(filters, ["q", "type", "semester", "from", "to"]);
+  const safeFilters = allowedFilters(filters, ["q", "type", "status", "semester", "from", "to"]);
   const allItems = filterAdminReports(db, {});
   const filteredItems = filterAdminReports(db, safeFilters);
   assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
