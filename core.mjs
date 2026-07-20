@@ -15,6 +15,7 @@ import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
 import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
 import { findReservationRecommendations } from "./core/reservation-recommendations.mjs";
+import { createCoursePlanningSeed, normalizeCoursePlanning } from "./core/course-demand.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -287,7 +288,8 @@ export async function initialDb(adminPassword = "admin") {
     warnings: [],
     slackLogs: [],
     auditLogs: [],
-    importBatches: []
+    importBatches: [],
+    coursePlanning: createCoursePlanningSeed()
   };
 }
 
@@ -510,6 +512,7 @@ function deleteUserAccount(db, user, actor, action = "user.deleted", detail = {}
 }
 
 export function normalizeDb(db) {
+  db.coursePlanning = normalizeCoursePlanning(db.coursePlanning);
   db.settings = { ...defaultSettings, ...(db.settings || {}) };
   if (db.settings.appName === "GJU-reserve") {
     db.settings.appName = defaultSettings.appName;

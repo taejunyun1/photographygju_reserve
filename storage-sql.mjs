@@ -1,6 +1,6 @@
 import { capLogs, initialDb as defaultInitialDb, normalizeDb } from "./core.mjs";
 
-const SINGLETON_KEYS = ["meta", "settings", "darkroomChemicals"];
+const SINGLETON_KEYS = ["meta", "settings", "darkroomChemicals", "coursePlanning"];
 
 const COLLECTIONS = [
   {

@@ -130,6 +130,8 @@ assert.equal(loaded.reservations.length, 1);
 assert.equal(loaded.reservations[0].id, "res_sql_1");
 assert.equal(loaded.reports.length, 1);
 assert.equal(loaded.reports[0].id, "report_sql_1");
+assert.equal(sql.records.app_singletons.has("coursePlanning"), true, "course planning must be persisted as a singleton");
+assert.equal(loaded.coursePlanning.courses.some((course) => course.name === "현장실습4"), true, "loaded course planning data must retain special course rules");
 
 const deleteCountBeforeNoopSave = sql.statements.filter((item) => item.sql.startsWith("DELETE FROM")).length;
 const insertCountBeforeNoopSave = sql.statements.filter((item) => item.sql.startsWith("INSERT OR REPLACE")).length;
