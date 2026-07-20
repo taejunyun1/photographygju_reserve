@@ -739,18 +739,23 @@ function DetailActions({ type, actions, submitting }: { type: ReservationType; a
   );
 }
 
+function rebookingFields(type: ReservationType, state: StudentState) {
+  return state.rebookingDetails?.type === type ? state.rebookingDetails.fields : {};
+}
+
 function EquipmentDetailsForm({ state, actions }: Omit<ReservationControlsProps, "type">) {
   const selectedItems = state.selectedEquipmentItemIds
     .map((id) => (state.bootstrap.equipment || []).find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const highValue = selectedItems.some((item) => isHighValueEquipment(item, state.bootstrap.settings));
   const cameraBag = selectedItems.some((item) => isCameraBagEquipment(item, state.bootstrap.settings));
+  const previous = rebookingFields("equipment", state);
   const [details, setDetails] = useState<EquipmentReservationDetails>({
     cameraBagConfirmed: cameraBag,
     equipmentPolicyConfirmed: false,
     phone: state.user.phone || "",
-    purpose: "",
-    standRequest: ""
+    purpose: String(previous.purpose || ""),
+    standRequest: String(previous.standRequest || "")
   });
   const submission = useReservationSubmission("equipment", state, actions, details);
   return (
@@ -773,10 +778,11 @@ function EquipmentDetailsForm({ state, actions }: Omit<ReservationControlsProps,
 }
 
 function StudioDetailsForm({ state, actions }: Omit<ReservationControlsProps, "type">) {
+  const previous = rebookingFields("studio", state);
   const [details, setDetails] = useState<StudioReservationDetails>({
-    participants: state.user.name,
-    requiredEquipment: "",
-    purpose: "",
+    participants: String(previous.participants || state.user.name),
+    requiredEquipment: String(previous.requiredEquipment || ""),
+    purpose: String(previous.purpose || ""),
     phone: state.user.phone || "",
     studioPolicyConfirmed: false
   });
@@ -796,8 +802,9 @@ function StudioDetailsForm({ state, actions }: Omit<ReservationControlsProps, "t
 }
 
 function DarkroomDetailsForm({ state, actions }: Omit<ReservationControlsProps, "type">) {
+  const previous = rebookingFields("darkroom", state);
   const [details, setDetails] = useState<DarkroomReservationDetails>({
-    purpose: "",
+    purpose: String(previous.purpose || ""),
     phone: state.user.phone || "",
     darkroomPolicyConfirmed: false
   });
@@ -815,9 +822,10 @@ function DarkroomDetailsForm({ state, actions }: Omit<ReservationControlsProps, 
 }
 
 function PrintDetailsForm({ state, actions }: Omit<ReservationControlsProps, "type">) {
+  const previous = rebookingFields("print", state);
   const [details, setDetails] = useState<PrintReservationDetails>({
-    count: 1,
-    memo: "",
+    count: Number(previous.count) > 0 ? Number(previous.count) : 1,
+    memo: String(previous.memo || ""),
     phone: state.user.phone || ""
   });
   const submission = useReservationSubmission("print", state, actions, details);

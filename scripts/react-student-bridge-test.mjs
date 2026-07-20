@@ -64,6 +64,51 @@ assert.equal(snapshot.reservationType, "studio");
 assert.equal(snapshot.selectedDates.studio, "2099-01-05");
 assert.equal(snapshot.user.name, "학생");
 
+const shortcutsBridge = harness({
+  apiImplementation: async (path, options = {}) => {
+    if (path === "/api/me/reservation-shortcuts") {
+      return {
+        favoriteGroups: [{ id: "favorites-camera", name: "카메라", equipmentItemIds: ["equipment-1"] }],
+        recentReservations: [{
+          id: "shortcut-1",
+          type: "equipment",
+          status: "returned",
+          fields: {
+            reservedDate: "2099-01-05",
+            period: "당일",
+            rentalTime: "10:00",
+            returnTime: "17:00",
+            equipmentItemIds: ["equipment-1"],
+            purpose: "촬영 과제",
+            phone: "010-1111-2222"
+          }
+        }]
+      };
+    }
+    if (path === "/api/me/favorite-equipment-groups") {
+      return { favoriteGroups: options.body.groups };
+    }
+    return { id: "created-1", type: options.body?.type, fields: options.body?.fields || {} };
+  }
+});
+await shortcutsBridge.actions.loadReservationShortcuts();
+assert.equal(shortcutsBridge.state.favoriteGroups[0].name, "카메라");
+assert.equal(shortcutsBridge.state.recentReservations[0].id, "shortcut-1");
+await shortcutsBridge.actions.saveFavoriteGroups([{ id: "favorites-light", name: "조명", equipmentItemIds: ["equipment-2"] }]);
+assert.equal(shortcutsBridge.state.favoriteGroups[0].name, "조명");
+assert(shortcutsBridge.calls.some(([kind, path]) => kind === "api" && path === "/api/me/favorite-equipment-groups"), "favorite groups must persist through the student API");
+shortcutsBridge.state.selectedDates = { equipment: "2099-01-06", studio: "2099-01-07", darkroom: "2099-01-08", print: "2099-01-09" };
+shortcutsBridge.actions.startRebooking("shortcut-1");
+assert.equal(shortcutsBridge.state.view, "reserve");
+assert.equal(shortcutsBridge.state.reservationType, "equipment");
+assert.equal(shortcutsBridge.state.selectedEquipmentPeriod, "당일");
+assert.deepEqual(shortcutsBridge.state.selectedEquipmentItemIds, ["equipment-1"]);
+assert.deepEqual(shortcutsBridge.state.selectedDates, { equipment: "", studio: "", darkroom: "", print: "" }, "rebooking must never copy a previous reservation date");
+assert.equal(shortcutsBridge.state.selectedEquipmentRentalTime, "", "rebooking must never copy a previous rental time");
+assert.equal(shortcutsBridge.state.selectedEquipmentReturnTime, "", "rebooking must never copy a previous return time");
+assert.equal(shortcutsBridge.state.rebookingDetails.fields.purpose, "촬영 과제");
+assert.equal(shortcutsBridge.state.rebookingDetails.fields.phone, undefined, "rebooking must not retain a previous stored phone number");
+
 for (const type of ["equipment", "studio", "darkroom", "print"]) {
   const test = harness();
   const draft = { type, fields: { reservedDate: "2099-01-05", phone: "01012345678" } };

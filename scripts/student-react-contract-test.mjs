@@ -666,6 +666,24 @@ for (const text of ["개인정보 수정", "비밀번호 변경", "계정 삭제
 }
 assert(markup.includes("student-react-account-properties"), "My account metadata must use an explicit label/value layout");
 
+student.resetCaptures();
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    view: "reserve",
+    reservationType: "equipment",
+    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    selectedEquipmentItemIds: ["body-1"],
+    rebookingDetails: {
+      type: "equipment",
+      fields: { purpose: "촬영 과제", standRequest: "조명 스탠드", equipmentItemIds: ["body-1"] }
+    }
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("촬영 과제"), "rebooking must prefill the safe purpose field");
+assert(markup.includes("조명 스탠드"), "rebooking must prefill the safe equipment request field");
+
 // Root must render StudentApp and keep the student mobile navigation icon-only.
 student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentReactRoot, {
@@ -689,6 +707,10 @@ const primitiveSource = fs.readFileSync("src/react/student/components/StudentPri
 assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must provide the primary content heading on desktop");
 
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
+const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js", "utf8");
+assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
+assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
+assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),

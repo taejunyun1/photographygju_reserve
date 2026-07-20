@@ -98,6 +98,7 @@ export type StudentReservationFields = {
   participantCount?: number | string;
   participants?: string;
   requiredEquipment?: string;
+  standRequest?: string;
   startTime?: string;
   endTime?: string;
   printType?: string;
@@ -125,6 +126,26 @@ export type StudentReservation = {
     reportDeadlineAt?: string;
   };
   createdAt?: string;
+};
+
+export type StudentFavoriteEquipmentGroup = {
+  id: string;
+  name: string;
+  equipmentItemIds: readonly string[];
+  equipment?: readonly StudentEquipment[];
+};
+
+export type StudentReservationShortcut = {
+  id: string;
+  type: ReservationType;
+  status?: string;
+  fields: StudentReservationFields;
+  equipmentItems?: readonly StudentEquipment[];
+};
+
+export type StudentRebookingDetails = {
+  type: ReservationType;
+  fields: StudentReservationFields;
 };
 
 export type StudentSettings = {
@@ -303,6 +324,9 @@ export type StudentState = {
   readonly bootstrap: StudentBootstrap;
   readonly myReservations: readonly StudentReservation[];
   readonly lectures: readonly StudentLecture[];
+  readonly favoriteGroups: readonly StudentFavoriteEquipmentGroup[];
+  readonly recentReservations: readonly StudentReservationShortcut[];
+  readonly rebookingDetails?: StudentRebookingDetails | null;
   readonly reservationType?: ReservationType;
   readonly reservationFlowStep: Readonly<Record<ReservationType, ReservationStep>>;
   readonly selectedDates: Readonly<Record<ReservationType, string>>;
@@ -331,6 +355,9 @@ export type StudentActions = {
   startReservation(type: ReservationType): Promise<void> | void;
   setReservationStep(type: ReservationType, step: ReservationStep): Promise<void> | void;
   updateReservationSelection(patch: StudentReservationSelectionPatch): Promise<void> | void;
+  loadReservationShortcuts(): Promise<void> | void;
+  saveFavoriteGroups(groups: readonly StudentFavoriteEquipmentGroup[]): Promise<void> | void;
+  startRebooking(reservationId: string): Promise<void> | void;
   submitReservation(draft: ReservationDraft): Promise<void> | void;
   cancelReservation(id: string): Promise<void> | void;
   openReport(id: string | null): Promise<void> | void;

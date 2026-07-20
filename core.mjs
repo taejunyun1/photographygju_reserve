@@ -13,6 +13,7 @@ import { createAdminListHelpers } from "./core/admin-lists.mjs";
 import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
+import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -536,6 +537,12 @@ export function normalizeDb(db) {
   db.sessions = db.sessions || [];
   db.warnings = db.warnings || [];
   db.users = db.users || [];
+  for (const user of db.users) {
+    user.preferences = user.preferences && typeof user.preferences === "object" && !Array.isArray(user.preferences)
+      ? user.preferences
+      : {};
+    if (!Array.isArray(user.preferences.favoriteEquipmentGroups)) user.preferences.favoriteEquipmentGroups = [];
+  }
   for (const reservation of db.reservations) normalizeReservationStatus(reservation);
   const seededTaUserIds = db.users
     .filter((user) => user.role === "admin" && user.username === "ta" && user.email === "ta@gju.local")
@@ -780,6 +787,25 @@ export async function handleApiRequest(ctx) {
           .filter((item) => item.userId === user.id)
           .map((item) => withLectureApplicationDetails(db, item));
         return ok([...reservations, ...lectureApplications]);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/me/reservation-shortcuts") {
+        const user = requireApprovedStudent(authorization, db);
+        return ok({
+          favoriteGroups: favoriteGroupsForUser(user, db.equipment),
+          recentReservations: reservationShortcuts({ userId: user.id, reservations: db.reservations, equipment: db.equipment })
+        });
+      }
+
+      if (routeKey(method, pathname) === "PUT /api/me/favorite-equipment-groups") {
+        const user = requireApprovedStudent(authorization, db);
+        const body = await parseBody(readText);
+        const groups = validateFavoriteGroups(body.groups, db.equipment, { createId: id });
+        user.preferences = { ...(user.preferences || {}), favoriteEquipmentGroups: groups };
+        user.updatedAt = nowIso();
+        audit(db, user, "favorite_groups.updated", user.id, { groupCount: groups.length });
+        await saveDb();
+        return ok({ favoriteGroups: favoriteGroupsForUser(user, db.equipment) });
       }
 
       if (routeKey(method, pathname) === "GET /api/lectures") {

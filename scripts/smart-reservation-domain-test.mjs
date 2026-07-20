@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { handleApiRequest, initialDb } from "../core.mjs";
 
 const { buildOperationsInsights } = await import("../core/operations-insights.mjs").catch(() => ({}));
+const { validateFavoriteGroups } = await import("../core/favorite-equipment.mjs").catch(() => ({}));
 
 assert.equal(typeof buildOperationsInsights, "function", "operations insight builder must be exported");
+assert.equal(typeof validateFavoriteGroups, "function", "favorite group validator must be exported");
 
 const now = new Date("2099-01-28T12:00:00+09:00");
 const equipment = [
@@ -58,12 +60,12 @@ db.sessions.push({
   lastSeenAt: "2099-01-01T00:00:00.000Z"
 });
 
-async function api(authorization = "") {
+async function api({ method = "GET", pathname = "/api/admin/summary", authorization = "", body = {} } = {}) {
   return handleApiRequest({
-    method: "GET",
-    pathname: "/api/admin/summary",
+    method,
+    pathname,
     authorization,
-    readText: async () => "",
+    readText: async () => JSON.stringify(body),
     db,
     saveDb: async () => {},
     slackWebhook: ""
@@ -73,8 +75,90 @@ async function api(authorization = "") {
 const deniedResponse = await api();
 assert.equal(deniedResponse.status, 401, "administrator insights must remain administrator-only");
 
-const summaryResponse = await api(`Bearer ${token}`);
+const summaryResponse = await api({ authorization: `Bearer ${token}` });
 assert.equal(summaryResponse.status, 200);
 assert.ok(summaryResponse.body.data.metrics.insights, "admin summary must include operations insights");
+
+const favoriteEquipment = db.equipment.filter((item) => item.active && item.reservable).slice(0, 6);
+assert.equal(favoriteEquipment.length, 6, "fixture requires six active reservable equipment items");
+const favoriteGroups = [
+  { name: "카메라", equipmentItemIds: [favoriteEquipment[0].id, favoriteEquipment[1].id] },
+  { name: "렌즈", equipmentItemIds: [favoriteEquipment[2].id] },
+  { name: "조명", equipmentItemIds: [favoriteEquipment[3].id] }
+];
+const savedGroups = await api({
+  method: "PUT",
+  pathname: "/api/me/favorite-equipment-groups",
+  authorization: `Bearer ${token}`,
+  body: { groups: favoriteGroups }
+});
+assert.equal(savedGroups.status, 200);
+assert.equal(savedGroups.body.data.favoriteGroups.length, 3);
+assert.equal(savedGroups.body.data.favoriteGroups[0].equipmentItemIds[0], favoriteEquipment[0].id);
+
+const tooManyGroups = await api({
+  method: "PUT",
+  pathname: "/api/me/favorite-equipment-groups",
+  authorization: `Bearer ${token}`,
+  body: { groups: [...favoriteGroups, { name: "기타", equipmentItemIds: [] }] }
+});
+assert.equal(tooManyGroups.status, 400);
+assert.match(tooManyGroups.body.error, /3개/);
+
+const duplicateEquipment = await api({
+  method: "PUT",
+  pathname: "/api/me/favorite-equipment-groups",
+  authorization: `Bearer ${token}`,
+  body: { groups: [{ name: "중복", equipmentItemIds: [favoriteEquipment[0].id] }, { name: "다른 그룹", equipmentItemIds: [favoriteEquipment[0].id] }] }
+});
+assert.equal(duplicateEquipment.status, 400);
+assert.match(duplicateEquipment.body.error, /한 그룹/);
+
+const tooManyItems = await api({
+  method: "PUT",
+  pathname: "/api/me/favorite-equipment-groups",
+  authorization: `Bearer ${token}`,
+  body: { groups: [{ name: "한도 초과", equipmentItemIds: favoriteEquipment.map((item) => item.id) }] }
+});
+assert.equal(tooManyItems.status, 400);
+assert.match(tooManyItems.body.error, /5개/);
+
+db.equipment.push({ id: "favorite-inactive", code: "FAV-STOP", name: "비활성 장비", category: "Body", active: false, reservable: true });
+const inactiveEquipment = await api({
+  method: "PUT",
+  pathname: "/api/me/favorite-equipment-groups",
+  authorization: `Bearer ${token}`,
+  body: { groups: [{ name: "비활성", equipmentItemIds: ["favorite-inactive"] }] }
+});
+assert.equal(inactiveEquipment.status, 400);
+assert.match(inactiveEquipment.body.error, /추가할 수 없는/);
+
+db.reservations.push({
+  id: "shortcut-reservation",
+  type: "equipment",
+  userId: "user_admin",
+  status: "returned",
+  fields: { reservedDate: "2099-01-14", period: "당일", rentalTime: "10:00", returnTime: "17:00", equipmentItemIds: [favoriteEquipment[0].id], phone: "010-1111-2222", purpose: "과제", standRequest: "조명 스탠드" },
+  history: [],
+  createdAt: "2099-01-01T00:00:00.000Z",
+  updatedAt: "2099-01-01T00:00:00.000Z"
+});
+db.reservations.push({
+  id: "other-student-reservation",
+  type: "equipment",
+  userId: "another-student",
+  status: "returned",
+  fields: { equipmentItemIds: [favoriteEquipment[1].id], purpose: "다른 학생 예약" },
+  history: [],
+  createdAt: "2099-01-02T00:00:00.000Z",
+  updatedAt: "2099-01-02T00:00:00.000Z"
+});
+const shortcuts = await api({ method: "GET", pathname: "/api/me/reservation-shortcuts", authorization: `Bearer ${token}` });
+assert.equal(shortcuts.status, 200);
+assert.equal(shortcuts.body.data.favoriteGroups.length, 3);
+assert.equal(shortcuts.body.data.recentReservations[0].id, "shortcut-reservation");
+assert.equal(shortcuts.body.data.recentReservations[0].fields.standRequest, "조명 스탠드", "shortcut response must retain supported reusable equipment requests");
+assert.equal(shortcuts.body.data.recentReservations.some((item) => item.id === "other-student-reservation"), false, "shortcut response must never include another student's reservation");
+assert.equal(JSON.stringify(shortcuts.body.data).includes("010-1111-2222"), false, "shortcut response must not expose stored phone numbers");
 
 console.log("Smart reservation domain checks passed.");

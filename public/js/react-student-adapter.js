@@ -46,6 +46,9 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     },
     myReservations: asArray(state.myReservations),
     lectures: asArray(state.lectures),
+    favoriteGroups: asArray(state.favoriteGroups),
+    recentReservations: asArray(state.recentReservations),
+    rebookingDetails: state.rebookingDetails || null,
     reservationType,
     reservationFlowStep: {
       equipment: state.reservationFlowStep?.equipment || "date",
@@ -131,10 +134,67 @@ function applySelectionPatch(state, patch) {
   }
 }
 
+function reusableText(value) {
+  return String(value || "").trim();
+}
+
+function reusableValues(value) {
+  return asArray(value).map((item) => reusableText(item)).filter(Boolean);
+}
+
+function applyReusableReservationFields(state, reservation) {
+  const type = reservation?.type;
+  if (!RESERVATION_TYPES.has(type)) return false;
+
+  for (const reservationType of RESERVATION_TYPES) resetReservationSelection(state, reservationType);
+
+  const source = reservation?.fields || {};
+  const fields = {
+    period: reusableText(source.period),
+    equipmentItemIds: reusableValues(source.equipmentItemIds),
+    studioSpace: reusableText(source.studioSpace) || reusableValues(source.studioSpaces)[0] || "",
+    studioSpaces: reusableValues(source.studioSpaces),
+    processTypes: reusableValues(source.processTypes),
+    participantCount: source.participantCount === undefined || source.participantCount === null ? "" : String(source.participantCount),
+    participants: reusableText(source.participants),
+    requiredEquipment: reusableText(source.requiredEquipment),
+    purpose: reusableText(source.purpose),
+    standRequest: reusableText(source.standRequest),
+    printType: reusableText(source.printType),
+    paper: reusableText(source.paper),
+    size: reusableText(source.size),
+    count: Math.max(0, Number(source.count || 0)),
+    memo: reusableText(source.memo)
+  };
+
+  if (type === "equipment") {
+    state.selectedEquipmentPeriod = fields.period;
+    state.selectedEquipmentItemIds = fields.equipmentItemIds;
+  } else if (type === "studio") {
+    state.selectedStudioSpace = fields.studioSpace;
+  } else if (type === "darkroom") {
+    state.selectedDarkroomProcessTypes = fields.processTypes;
+    state.selectedDarkroomParticipantCount = fields.participantCount || "1";
+  } else if (type === "print") {
+    state.selectedPrintTypes = fields.printType ? [fields.printType] : [];
+    state.selectedPrintPapers = fields.paper ? [fields.paper] : [];
+    state.selectedPrintSizes = fields.size ? [fields.size] : [];
+  }
+
+  state.rebookingDetails = { type, fields };
+  state.reservationType = type;
+  state.reservationFlowStep[type] = "date";
+  state.view = "reserve";
+  return true;
+}
+
 function clearAuthenticatedState(state, clearStoredSession) {
   state.token = "";
   state.user = null;
   state.myReservations = [];
+  state.favoriteGroups = [];
+  state.recentReservations = [];
+  state.rebookingDetails = null;
   state.lectures = [];
   state.view = "home";
   state.reservationType = "";
@@ -163,8 +223,14 @@ export function createStudentReactActions(dependencies) {
     confirm: confirmAction = (message) => globalThis.confirm?.(message) ?? true
   } = dependencies;
 
+  async function loadReservationShortcuts() {
+    const result = await api("/api/me/reservation-shortcuts");
+    state.favoriteGroups = asArray(result?.favoriteGroups);
+    state.recentReservations = asArray(result?.recentReservations);
+  }
+
   async function refreshStudentData({ includeLectures = true } = {}) {
-    const jobs = [loadBootstrap(), loadMyReservations()];
+    const jobs = [loadBootstrap(), loadMyReservations(), loadReservationShortcuts()];
     if (includeLectures) jobs.push(loadLectures());
     await Promise.all(jobs);
   }
@@ -185,6 +251,7 @@ export function createStudentReactActions(dependencies) {
         const activeType = state.reservationType;
         resetReservationSelection(state, activeType);
         state.reservationFlowStep[activeType] = "date";
+        state.rebookingDetails = null;
       }
       state.view = view;
       try {
@@ -200,6 +267,7 @@ export function createStudentReactActions(dependencies) {
       state.view = "reserve";
       state.reservationType = type;
       state.reservationFlowStep[type] = "date";
+      state.rebookingDetails = null;
       render();
     },
     setReservationStep(type, step) {
@@ -209,6 +277,20 @@ export function createStudentReactActions(dependencies) {
     },
     updateReservationSelection(patch) {
       applySelectionPatch(state, patch);
+      render();
+    },
+    async loadReservationShortcuts() {
+      await loadReservationShortcuts();
+      render();
+    },
+    async saveFavoriteGroups(groups) {
+      const result = await api("/api/me/favorite-equipment-groups", { method: "PUT", body: { groups } });
+      state.favoriteGroups = asArray(result?.favoriteGroups);
+      render();
+    },
+    startRebooking(reservationId) {
+      const reservation = asArray(state.recentReservations).find((item) => item?.id === reservationId);
+      if (!applyReusableReservationFields(state, reservation)) return;
       render();
     },
     async submitReservation(draft) {
@@ -221,6 +303,7 @@ export function createStudentReactActions(dependencies) {
         state.bootstrap.reservations = [reservation, ...state.bootstrap.reservations.filter((item) => item.id !== reservation.id)];
       }
       resetReservationSelection(state, type);
+      state.rebookingDetails = null;
       state.view = "mine";
       render();
       toast(type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");

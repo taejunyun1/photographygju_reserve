@@ -25,6 +25,9 @@ export async function loadMe() {
     clearAdminViewCache();
     state.token = "";
     state.myReservations = [];
+    state.favoriteGroups = [];
+    state.recentReservations = [];
+    state.rebookingDetails = null;
     state.lectures = [];
     state.adminUsers = [];
     state.adminReservations = [];
