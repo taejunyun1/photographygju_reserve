@@ -48,6 +48,7 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     lectures: asArray(state.lectures),
     favoriteGroups: asArray(state.favoriteGroups),
     recentReservations: asArray(state.recentReservations),
+    courseDemandSurveys: asArray(state.courseDemandSurveys),
     rebookingDetails: state.rebookingDetails || null,
     reservationRecommendations: state.reservationRecommendations || null,
     reservationType,
@@ -200,6 +201,7 @@ function clearAuthenticatedState(state, clearStoredSession) {
   state.myReservations = [];
   state.favoriteGroups = [];
   state.recentReservations = [];
+  state.courseDemandSurveys = [];
   state.rebookingDetails = null;
   clearReservationRecommendations(state);
   state.lectures = [];
@@ -236,6 +238,10 @@ export function createStudentReactActions(dependencies) {
     state.recentReservations = asArray(result?.recentReservations);
   }
 
+  async function loadCourseDemandSurveys() {
+    state.courseDemandSurveys = asArray(await api("/api/me/course-demand-surveys"));
+  }
+
   async function loadReservationRecommendations(draft) {
     const result = await api("/api/reservations/recommendations", { method: "POST", body: draft });
     state.reservationRecommendations = {
@@ -245,7 +251,7 @@ export function createStudentReactActions(dependencies) {
   }
 
   async function refreshStudentData({ includeLectures = true } = {}) {
-    const jobs = [loadBootstrap(), loadMyReservations(), loadReservationShortcuts()];
+    const jobs = [loadBootstrap(), loadMyReservations(), loadReservationShortcuts(), loadCourseDemandSurveys()];
     if (includeLectures) jobs.push(loadLectures());
     await Promise.all(jobs);
   }
@@ -304,6 +310,18 @@ export function createStudentReactActions(dependencies) {
     async saveFavoriteGroups(groups) {
       const result = await api("/api/me/favorite-equipment-groups", { method: "PUT", body: { groups } });
       state.favoriteGroups = asArray(result?.favoriteGroups);
+      render();
+    },
+    async loadCourseDemandSurveys() {
+      await loadCourseDemandSurveys();
+      render();
+    },
+    async saveCourseDemandResponse(surveyId, rankings) {
+      const result = await api(`/api/me/course-demand-surveys/${encodeURIComponent(surveyId)}/response`, {
+        method: "PUT",
+        body: { rankings }
+      });
+      state.courseDemandSurveys = asArray(state.courseDemandSurveys).map((survey) => survey.id === surveyId ? result : survey);
       render();
     },
     startRebooking(reservationId) {

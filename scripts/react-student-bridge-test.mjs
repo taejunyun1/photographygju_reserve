@@ -64,6 +64,35 @@ assert.equal(snapshot.reservationType, "studio");
 assert.equal(snapshot.selectedDates.studio, "2099-01-05");
 assert.equal(snapshot.user.name, "학생");
 
+const courseDemandBridge = harness({
+  apiImplementation: async (path, options = {}) => {
+    if (path === "/api/me/course-demand-surveys" && !options.method) {
+      return [{
+        id: "survey-1",
+        status: "open",
+        isOpen: true,
+        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+        response: null
+      }];
+    }
+    if (path === "/api/me/course-demand-surveys/survey-1/response") {
+      return {
+        id: "survey-1",
+        status: "open",
+        isOpen: true,
+        catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+        response: { rankings: options.body.rankings, submittedAt: "2099-01-01T00:00:00.000Z" }
+      };
+    }
+    return {};
+  }
+});
+await courseDemandBridge.actions.loadCourseDemandSurveys();
+assert.equal(courseDemandBridge.state.courseDemandSurveys[0].id, "survey-1");
+await courseDemandBridge.actions.saveCourseDemandResponse("survey-1", [{ courseId: "course-a", rank: 1 }]);
+assert.equal(courseDemandBridge.state.courseDemandSurveys[0].response.rankings[0].rank, 1);
+assert(courseDemandBridge.calls.some(([kind, path]) => kind === "api" && path === "/api/me/course-demand-surveys/survey-1/response"), "ranked course demand responses must use the student-only endpoint");
+
 const shortcutsBridge = harness({
   apiImplementation: async (path, options = {}) => {
     if (path === "/api/me/reservation-shortcuts") {

@@ -102,6 +102,7 @@ export const state = {
   myReservations: [],
   favoriteGroups: [],
   recentReservations: [],
+  courseDemandSurveys: [],
   rebookingDetails: null,
   reservationRecommendations: null,
   adminUsers: [],

@@ -357,6 +357,115 @@
   gap: 12px;
 }
 
+.student-react-course-demand-card,
+.student-react-course-demand-card__actions,
+.student-react-course-demand-sheet__content,
+.student-react-course-demand-sheet__rankings,
+.student-react-course-demand-sheet__catalog {
+  display: grid;
+  gap: 12px;
+}
+
+.student-react-course-demand-card__actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.student-react-course-demand-card__actions > span,
+.student-react-course-demand-sheet__rankings > div > span {
+  color: var(--student-muted);
+  font-size: 13px;
+}
+
+.student-react-course-demand-sheet__rankings > div,
+.student-react-course-demand-sheet__rankings li,
+.student-react-course-demand-sheet__catalog button,
+.student-react-course-demand-sheet__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.student-react-course-demand-sheet__rankings ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-react-course-demand-sheet__rankings li,
+.student-react-course-demand-sheet__catalog button {
+  min-height: 52px;
+  padding: 9px 10px;
+  border: 1px solid var(--student-line);
+  border-radius: 10px;
+  background: var(--student-soft);
+}
+
+.student-react-course-demand-sheet__rankings li > span,
+.student-react-course-demand-sheet__catalog button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.student-react-course-demand-sheet__rankings li > span,
+.student-react-course-demand-sheet__catalog strong,
+.student-react-course-demand-sheet__catalog small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-react-course-demand-sheet__rankings li > div {
+  display: flex;
+  gap: 4px;
+}
+
+.student-react-course-demand-sheet__rankings button,
+.student-react-course-demand-sheet__catalog button {
+  min-height: 44px;
+}
+
+.student-react-course-demand-sheet__rankings li > div button {
+  min-width: 44px;
+  padding: 6px;
+  border: 1px solid var(--student-line);
+  border-radius: 7px;
+  background: var(--student-surface);
+}
+
+.student-react-course-demand-sheet__catalog button {
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.student-react-course-demand-sheet__catalog button[data-selected="true"] {
+  border-color: var(--student-accent);
+  background: color-mix(in srgb, var(--student-accent) 8%, var(--student-surface));
+}
+
+.student-react-course-demand-sheet__catalog small,
+.student-react-course-demand-sheet__catalog em {
+  color: var(--student-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.student-react-course-demand-sheet__error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 13px;
+}
+
+.student-react-course-demand-sheet__footer {
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 .student-react-favorite-sheet__group-actions {
   align-items: flex-start;
 }
@@ -1041,6 +1150,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .student-react-course-demand-sheet,
   .student-react-favorite-sheet {
     width: 100% !important;
     max-width: none !important;
@@ -1050,6 +1160,7 @@
     border-radius: 20px 20px 0 0;
   }
 
+  .student-react-course-demand-sheet .gju-dialog__body,
   .student-react-favorite-sheet .gju-dialog__body {
     max-height: calc(88dvh - 76px);
     margin-bottom: 0;
@@ -1085,6 +1196,24 @@
 
   .student-react-favorite-sheet__results {
     max-height: 220px;
+  }
+
+  .student-react-course-demand-card__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-react-course-demand-card__actions .gju-button,
+  .student-react-course-demand-sheet__footer .gju-button {
+    width: 100%;
+  }
+
+  .student-react-course-demand-sheet__rankings li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .student-react-course-demand-sheet__rankings li > div {
+    width: 100%;
   }
 }
 

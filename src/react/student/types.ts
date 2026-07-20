@@ -148,6 +148,34 @@ export type StudentRebookingDetails = {
   fields: StudentReservationFields;
 };
 
+export type StudentCourseDemandCatalogCourse = {
+  id: string;
+  name: string;
+  courseCode?: string;
+  targetYears?: readonly number[];
+  allowedTerms?: readonly string[];
+  studentCredit?: number;
+};
+
+export type StudentCourseDemandRanking = {
+  courseId: string;
+  rank: number;
+};
+
+export type StudentCourseDemandSurvey = {
+  id: string;
+  semesterPlanId?: string;
+  status?: "draft" | "open" | "closed" | string;
+  opensAt?: string;
+  closesAt?: string;
+  isOpen?: boolean;
+  catalog: readonly StudentCourseDemandCatalogCourse[];
+  response?: {
+    rankings: readonly StudentCourseDemandRanking[];
+    submittedAt?: string;
+  } | null;
+};
+
 export type StudentReservationAlternative = {
   kind: "same_equipment_time" | "alternate_equipment" | "alternate_time";
   label: string;
@@ -337,6 +365,7 @@ export type StudentState = {
   readonly lectures: readonly StudentLecture[];
   readonly favoriteGroups: readonly StudentFavoriteEquipmentGroup[];
   readonly recentReservations: readonly StudentReservationShortcut[];
+  readonly courseDemandSurveys: readonly StudentCourseDemandSurvey[];
   readonly rebookingDetails?: StudentRebookingDetails | null;
   readonly reservationRecommendations?: StudentReservationRecommendations | null;
   readonly reservationType?: ReservationType;
@@ -369,6 +398,8 @@ export type StudentActions = {
   updateReservationSelection(patch: StudentReservationSelectionPatch): Promise<void> | void;
   loadReservationShortcuts(): Promise<void> | void;
   saveFavoriteGroups(groups: readonly StudentFavoriteEquipmentGroup[]): Promise<void> | void;
+  loadCourseDemandSurveys(): Promise<void> | void;
+  saveCourseDemandResponse(surveyId: string, rankings: readonly StudentCourseDemandRanking[]): Promise<void> | void;
   startRebooking(reservationId: string): Promise<void> | void;
   loadReservationRecommendations(draft: ReservationDraft): Promise<void> | void;
   submitReservation(draft: ReservationDraft): Promise<void> | void;

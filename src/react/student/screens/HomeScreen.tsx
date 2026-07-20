@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 
 import { GjuButton, GjuCard, GjuEmptyState, GjuStatusBadge } from "../../design-system";
 import { FavoriteEquipmentSheet } from "../components/FavoriteEquipmentSheet";
+import { CourseDemandSurveySheet } from "../components/CourseDemandSurveySheet";
 import { FacilityCard, LectureSummary, NoticeList, ReservationCard, ScreenHeader } from "../components/StudentPrimitives";
 import type { StudentActions, StudentState } from "../types";
 
@@ -21,6 +22,7 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
 
 export function HomeScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
   const [favoriteSheetOpen, setFavoriteSheetOpen] = useState(false);
+  const [courseDemandSurveyId, setCourseDemandSurveyId] = useState("");
   const favoriteTriggerRef = useRef<HTMLSpanElement>(null);
   const nextReservation = state.myReservations
     .filter((item) => !["cancelled", "admin_cancelled", "rejected"].includes(item.status || ""))
@@ -30,6 +32,9 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
   const notices = state.bootstrap.notices.slice(0, 3);
   const approved = state.user.approvalStatus === "approved";
   const equipmentById = new Map((state.bootstrap.equipment || []).map((item) => [item.id, item]));
+  const courseDemandSurveys = state.courseDemandSurveys || [];
+  const activeCourseDemandSurvey = courseDemandSurveys.find((survey) => survey.id === courseDemandSurveyId) || null;
+  const courseDemandSurvey = courseDemandSurveys.find((survey) => survey.isOpen) || courseDemandSurveys[0] || null;
 
   function closeFavoriteSheet() {
     setFavoriteSheetOpen(false);
@@ -75,6 +80,16 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
       ) : (
         <GjuEmptyState title="예정된 예약이 없습니다." action={<GjuButton onClick={() => actions.setView("reserve")}>예약 시작</GjuButton>} />
       )}
+
+      {courseDemandSurvey ? (
+        <GjuCard title="다음 학기 희망 과목 조사" eyebrow="수요조사" className="student-react-course-demand-card">
+          <p className="muted">희망 과목을 1~5순위로 제출하면 다음 학기 개설 편성에 반영합니다.</p>
+          <div className="student-react-course-demand-card__actions">
+            <span>{courseDemandSurvey.response?.rankings?.length ? `${courseDemandSurvey.response.rankings.length}개 과목 응답 완료` : "아직 응답하지 않았습니다."}</span>
+            <GjuButton disabled={!courseDemandSurvey.isOpen} onClick={() => setCourseDemandSurveyId(courseDemandSurvey.id)}>{courseDemandSurvey.isOpen ? courseDemandSurvey.response ? "응답 수정" : "응답하기" : "마감됨"}</GjuButton>
+          </div>
+        </GjuCard>
+      ) : null}
 
       <GjuCard
         title="빠른 예약"
@@ -127,6 +142,13 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
         equipment={state.bootstrap.equipment || []}
         onClose={closeFavoriteSheet}
         onSave={(groups) => actions.saveFavoriteGroups(groups)}
+      />
+
+      <CourseDemandSurveySheet
+        open={Boolean(activeCourseDemandSurvey)}
+        survey={activeCourseDemandSurvey}
+        onClose={() => setCourseDemandSurveyId("")}
+        onSave={(surveyId, rankings) => actions.saveCourseDemandResponse(surveyId, rankings)}
       />
 
       <GjuCard title="공지사항" actions={<GjuButton variant="ghost" onClick={() => actions.setView("notices")}>전체 보기</GjuButton>}>

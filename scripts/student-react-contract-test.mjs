@@ -737,6 +737,9 @@ const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js"
 const homeScreenSource = fs.readFileSync("src/react/student/screens/HomeScreen.tsx", "utf8");
 const reservationControlsSource = fs.readFileSync("src/react/student/components/ReservationControls.tsx", "utf8");
 const favoriteSheetSource = fs.readFileSync("src/react/student/components/FavoriteEquipmentSheet.tsx", "utf8");
+const courseDemandSheetSource = fs.existsSync("src/react/student/components/CourseDemandSurveySheet.tsx")
+  ? fs.readFileSync("src/react/student/components/CourseDemandSurveySheet.tsx", "utf8")
+  : "";
 assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
 assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
 assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
@@ -755,6 +758,30 @@ assert(
     && favoriteSheetSource.includes("focusGroupOrAdd(replacementGroup?.id || \"\");"),
   "removing a favorite group must move focus to a remaining group or the add-group control"
 );
+assert(studentBridgeSource.includes("/api/me/course-demand-surveys"), "student bridge must load the current student's course-demand surveys");
+assert(studentBridgeSource.includes("saveCourseDemandResponse"), "student bridge must expose ranked response saving");
+assert(homeScreenSource.includes("다음 학기 희망 과목 조사"), "student dashboard must expose the course-demand card");
+assert(homeScreenSource.includes("CourseDemandSurveySheet"), "student dashboard must own the course-demand bottom sheet");
+assert(courseDemandSheetSource.includes("1~5순위"), "course-demand sheet must explain ranking limits");
+assert(courseDemandSheetSource.includes("순위 올리기"), "course-demand sheet must provide an accessible ranking control");
+assert(studentCssSource.includes(".student-react-course-demand-sheet"), "course-demand sheet must receive mobile bottom-sheet styling");
+
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    courseDemandSurveys: [{
+      id: "survey-1",
+      status: "open",
+      isOpen: true,
+      opensAt: "2026-07-01T00:00:00.000Z",
+      closesAt: "2026-07-31T14:59:59.000Z",
+      catalog: [{ id: "course-a", name: "사진 기획", studentCredit: 3 }],
+      response: null
+    }]
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("다음 학기 희망 과목 조사"), "open course-demand surveys must render on the student home dashboard");
+assert(markup.includes("응답하기"), "open course-demand surveys must offer a response action");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),
