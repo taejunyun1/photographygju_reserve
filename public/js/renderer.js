@@ -525,6 +525,7 @@ const reactAdminActions = {
     );
   },
   async updateCourseDemandSurvey(surveyId, input) {
+    if (input?.status === "closed" && !confirm("수요조사를 마감할까요? 마감 후에는 다시 공개하거나 수정할 수 없습니다.")) return;
     await runAdminMutation(
       "course-demand",
       () => api(`/api/admin/course-demand-surveys/${encodeURIComponent(surveyId)}`, { method: "PUT", body: input }),

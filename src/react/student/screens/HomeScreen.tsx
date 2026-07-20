@@ -64,7 +64,9 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
           : `희망 과목을 1~5순위로 선택해 주세요.${deadline ? ` ${deadline}까지 응답할 수 있습니다.` : ""}`
       };
     }
-    if (courseDemandSurvey.status === "closed") {
+    const closesAt = new Date(courseDemandSurvey.closesAt || "").getTime();
+    const expired = courseDemandSurvey.status === "open" && Number.isFinite(closesAt) && closesAt <= Date.now();
+    if (courseDemandSurvey.status === "closed" || expired) {
       return {
         tone: courseDemandSurvey.response ? "green" as const : "neutral" as const,
         label: courseDemandSurvey.response ? "응답 완료" : "마감됨",

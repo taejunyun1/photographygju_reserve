@@ -487,6 +487,13 @@ const savedResponse = await courseApi({
 assert.equal(savedResponse.status, 200);
 assert.deepEqual(savedResponse.body.data.response.rankings.map((item) => item.rank), [1, 2]);
 
+const anonymousAuditLogs = await courseApi({ pathname: "/api/admin/logs", token: "course-admin-token" });
+assert.equal(anonymousAuditLogs.status, 200);
+assert.equal(anonymousAuditLogs.body.data.some((log) => log.action === "course_demand.response_saved"), false, "individual demand responses must not create administrator-visible audit events");
+assert.equal(JSON.stringify(anonymousAuditLogs.body.data).includes("20260001"), false, "administrator logs must not expose a demand respondent's student ID");
+const anonymousExport = adminExportData(apiDb);
+assert.equal("responses" in anonymousExport.coursePlanning, false, "administrator exports must not contain individual course-demand responses");
+
 const duplicateResponse = await courseApi({
   method: "PUT",
   pathname: `/api/me/course-demand-surveys/${surveyId}/response`,

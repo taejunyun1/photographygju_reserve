@@ -687,6 +687,8 @@ export const closeSemesterData = closeSemesterDataImpl;
 
 export function adminExportData(db) {
   normalizeDb(db);
+  const exportedCoursePlanning = { ...db.coursePlanning };
+  delete exportedCoursePlanning.responses;
   return {
     exportedAt: nowIso(),
     settings: db.settings,
@@ -707,7 +709,7 @@ export function adminExportData(db) {
     auditLogs: db.auditLogs,
     slackLogs: db.slackLogs,
     importBatches: db.importBatches,
-    coursePlanning: db.coursePlanning
+    coursePlanning: exportedCoursePlanning
   };
 }
 
@@ -933,7 +935,6 @@ export async function handleApiRequest(ctx) {
         response.rankings = rankings;
         response.submittedAt = nowIso();
         if (!existing) planning.responses.push(response);
-        audit(db, user, "course_demand.response_saved", survey.id, { rankingCount: rankings.length });
         await saveDb();
         return ok(publicSurveyForStudent({ survey, student: user, response, now: new Date() }));
       }

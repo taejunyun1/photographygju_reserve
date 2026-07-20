@@ -18,7 +18,7 @@ const testBundle = await build({
       export * from "../src/react/student/reservationDraft.ts";
       export { StudentApp } from "../src/react/student/StudentApp.tsx";
       export { ReservationControls } from "../src/react/student/components/ReservationControls.tsx";
-      export { CourseDemandSurveySheet } from "../src/react/student/components/CourseDemandSurveySheet.tsx";
+      export { CourseDemandSurveySheet, moveCourseDemandRanking } from "../src/react/student/components/CourseDemandSurveySheet.tsx";
       export { isReportDue } from "../src/react/student/screens/ReportsScreen.tsx";
       export {
         submitProfileUpdate,
@@ -789,6 +789,15 @@ const categorizedSurvey = {
   ],
   response: null
 };
+assert.deepEqual(
+  student.moveCourseDemandRanking(
+    [{ courseId: "course-a", rank: 1 }, { courseId: "course-b", rank: 2 }, { courseId: "course-c", rank: 3 }],
+    "course-b",
+    -1
+  ),
+  [{ courseId: "course-b", rank: 1 }, { courseId: "course-a", rank: 2 }, { courseId: "course-c", rank: 3 }],
+  "moving a ranked course up must preserve the swapped order and renumber ranks"
+);
 const categorizedSurveyMarkup = renderToStaticMarkup(React.createElement(student.CourseDemandSurveySheet, {
   open: true,
   survey: categorizedSurvey,
@@ -843,6 +852,23 @@ assert(markup.includes("다음 학기 희망 과목 조사"), "open course-deman
 assert(markup.includes("2027학년도 2학년 2학기 전공 수요조사"), "student dashboard must render the active survey title");
 assert(markup.includes("2학년 · 2학기"), "student dashboard must render the survey target");
 assert(markup.includes("응답하기"), "open course-demand surveys must offer a response action");
+
+student.resetCaptures();
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    courseDemandSurveys: [{
+      ...categorizedSurvey,
+      id: "expired-survey",
+      isOpen: false,
+      opensAt: "2026-06-01T00:00:00.000Z",
+      closesAt: "2026-06-14T14:59:59.000Z",
+      response: { rankings: [{ courseId: "art-1", rank: 1 }], submittedAt: "2026-06-10T00:00:00.000Z" }
+    }]
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("응답 완료"), "an expired open-status survey with a response must render as completed");
+assert(!markup.includes("관리자가 설문을 공개하면"), "an expired survey must not fall back to the preparing state");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),

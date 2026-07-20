@@ -70,6 +70,22 @@ function surveyTarget(survey: AdminCourseDemandSurvey) {
   return `현재 ${current}학년 · 수강 ${target}학년 · ${termLabel(survey.term)}`;
 }
 
+function OpenSurveyActions({ survey, actions }: { survey: AdminCourseDemandSurvey; actions: ReactAdminActions }) {
+  const [extensionDate, setExtensionDate] = React.useState(() => {
+    const current = new Date(survey.closesAt || "");
+    const baseline = Number.isNaN(current.getTime()) ? new Date() : current;
+    return inputDateTimeValue(new Date(baseline.getTime() + 7 * 24 * 60 * 60 * 1000));
+  });
+  const extensionIso = isoDateTime(extensionDate);
+  const canExtend = Boolean(extensionIso && new Date(extensionIso).getTime() > new Date(survey.closesAt || "").getTime());
+
+  return <div className="admin-course-demand__open-actions">
+    <label>새 마감일<input className="input" type="datetime-local" value={extensionDate} onChange={(event) => setExtensionDate(event.target.value)} /></label>
+    <GjuButton variant="outline" disabled={!canExtend} onClick={() => void actions.updateCourseDemandSurvey(survey.id, { closesAt: extensionIso })}>마감일 연장</GjuButton>
+    <GjuButton variant="outline" tone="danger" onClick={() => void actions.updateCourseDemandSurvey(survey.id, { status: "closed" })}>설문 마감</GjuButton>
+  </div>;
+}
+
 export function AdminCourseDemand({ state, actions }: AdminCourseDemandProps) {
   const planning = planningData(state);
   const [tab, setTab] = React.useState("survey");
@@ -115,7 +131,6 @@ export function AdminCourseDemand({ state, actions }: AdminCourseDemandProps) {
     setTerm(nextTerm);
     setTargetStudentYear(nextTargetYear);
     setSelectedCourseIds([]);
-    setEditingSurveyId("");
   };
 
   const toggleCandidate = (courseId: string) => {
@@ -234,7 +249,7 @@ export function AdminCourseDemand({ state, actions }: AdminCourseDemandProps) {
               <small>{survey.opensAt ? new Date(survey.opensAt).toLocaleString("ko-KR") : "-"} ~ {survey.closesAt ? new Date(survey.closesAt).toLocaleString("ko-KR") : "-"}</small>
               <div className="admin-course-demand__survey-actions">
                 {survey.status === "draft" ? <GjuButton variant="outline" onClick={() => editDraft(survey)}>설문안 편집</GjuButton> : null}
-                {survey.status === "open" ? <GjuButton variant="outline" tone="danger" onClick={() => void actions.updateCourseDemandSurvey(survey.id, { status: "closed" })}>설문 마감</GjuButton> : null}
+                {survey.status === "open" ? <OpenSurveyActions survey={survey} actions={actions} /> : null}
               </div>
             </article>)}
           </div> : <GjuEmptyState title="등록된 설문안이 없습니다." message="학년과 학기를 정하고 전공선택 후보 5~6개를 골라 공개하세요." />}

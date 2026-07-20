@@ -64,11 +64,16 @@ assert(fs.existsSync("src/react/admin/screens/AdminCourseDemand.tsx"), "course p
 for (const label of ["교과 수요조사", "설문안", "과목 관리", "결과", "예술", "다큐멘터리", "광고", "영상", "선택한 후보", "임시저장", "설문 공개"]) {
   assert(adminCourseDemandSource.includes(label), `course demand builder must render ${label}`);
 }
+assert(adminCourseDemandSource.includes("마감일 연장"), "an open survey must expose deadline extension");
+assert(rendererSource.includes("수요조사를 마감할까요?"), "closing a survey must require confirmation");
 for (const removedLabel of ["편성안", "85학점", "130학점", "수요 기반 추천 만들기", "편성안 확정"]) {
   assert(!adminCourseDemandSource.includes(removedLabel), `course demand builder must not render ${removedLabel}`);
 }
 assert(adminCourseDemandSource.includes('course.majorType === "전선"'), "course demand builder must only offer major electives");
 assert(adminCourseDemandSource.includes("course.demandCategory"), "course demand builder must filter and summarize categories");
+const resetSelectionContextSource = adminCourseDemandSource.match(/const resetSelectionContext[\s\S]*?\n  };/)?.[0] || "";
+assert(resetSelectionContextSource, "course demand builder must define target-context reset behavior");
+assert(!resetSelectionContextSource.includes("setEditingSurveyId"), "changing a draft's term or target grade must keep it in edit mode");
 assert(adminReservationsSource.includes("function activeReservationFilters"), "React reservations must normalize list and deletion filters through one helper");
 assert(adminReservationsSource.includes('status: nextTab === "equipment" ? statusFilter : "all"'), "Leaving the equipment tab must clear the equipment-only status filter");
 assert(adminReservationsSource.includes('["cancelled_or_rejected", "취소/반려"]'), "React equipment filters must expose the combined terminal status");

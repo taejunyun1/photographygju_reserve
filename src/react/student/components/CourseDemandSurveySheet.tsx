@@ -29,6 +29,15 @@ function sortedRankings(rankings: readonly StudentCourseDemandRanking[]) {
     .map((ranking, index) => ({ ...ranking, rank: index + 1 }));
 }
 
+export function moveCourseDemandRanking(rankings: readonly StudentCourseDemandRanking[], courseId: string, offset: number) {
+  const next = sortedRankings(rankings);
+  const index = next.findIndex((ranking) => ranking.courseId === courseId);
+  const target = index + offset;
+  if (index < 0 || target < 0 || target >= next.length) return next;
+  [next[index], next[target]] = [next[target], next[index]];
+  return next.map((ranking, rankingIndex) => ({ ...ranking, rank: rankingIndex + 1 }));
+}
+
 export function CourseDemandSurveySheet({ open, survey, onClose, onSave }: CourseDemandSurveySheetProps) {
   const [rankings, setRankings] = useState<StudentCourseDemandRanking[]>([]);
   const [saving, setSaving] = useState(false);
@@ -64,12 +73,7 @@ export function CourseDemandSurveySheet({ open, survey, onClose, onSave }: Cours
   }
 
   function move(courseId: string, offset: number) {
-    const index = rankings.findIndex((ranking) => ranking.courseId === courseId);
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= rankings.length) return;
-    const next = [...rankings];
-    [next[index], next[target]] = [next[target], next[index]];
-    setRankings(sortedRankings(next));
+    setRankings((current) => moveCourseDemandRanking(current, courseId, offset));
   }
 
   async function save() {

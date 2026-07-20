@@ -373,7 +373,19 @@ const courseDemandMarkup = renderToStaticMarkup(
       adminCoursePlanning: {
         curriculumVersions: [],
         annualPlans: [],
-        surveys: [],
+        surveys: [{
+          id: "open-survey",
+          title: "공개 설문",
+          academicYear: 2027,
+          term: "fall",
+          eligibleCurrentYears: [2],
+          targetStudentYears: [2],
+          opensAt: "2026-07-01T00:00:00.000Z",
+          closesAt: "2026-07-31T14:59:59.000Z",
+          status: "open",
+          catalogCount: 6,
+          summary: { responseCount: 1, eligibleStudentCount: 10, responseRate: 10, categories: [], courses: [] }
+        }],
         courses: ["art", "documentary", "advertising", "video", "art", "video"].map((demandCategory, index) => ({
           id: `course-${index + 1}`,
           name: `전공선택 ${index + 1}`,
@@ -394,6 +406,8 @@ for (const label of ["설문 제목", "학년도", "학기", "현재 학년", "�
   assert(courseDemandMarkup.includes(label), `course demand builder must render ${label}`);
 }
 assert(courseDemandMarkup.includes("전공선택 1"), "course demand builder must render matching elective candidates");
+assert(courseDemandMarkup.includes("마감일 연장"), "course demand builder must render deadline extension for an open survey");
+assert(courseDemandMarkup.includes("설문 마감"), "course demand builder must render close action for an open survey");
 assert(!courseDemandMarkup.includes("85학점"), "course demand builder must not expose annual operating-plan metrics");
 
 const dashboardNavigationCalls = [];
