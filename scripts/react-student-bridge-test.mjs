@@ -109,6 +109,30 @@ assert.equal(shortcutsBridge.state.selectedEquipmentReturnTime, "", "rebooking m
 assert.equal(shortcutsBridge.state.rebookingDetails.fields.purpose, "촬영 과제");
 assert.equal(shortcutsBridge.state.rebookingDetails.fields.phone, undefined, "rebooking must not retain a previous stored phone number");
 
+const recommendationBridge = harness({
+  apiImplementation: async (path) => {
+    if (path === "/api/reservations") {
+      throw Object.assign(new Error("requested equipment is unavailable"), { status: 409 });
+    }
+    if (path === "/api/reservations/recommendations") {
+      return {
+        alternatives: [{
+          kind: "alternate_equipment",
+          label: "대체 장비 · 카메라 2",
+          patch: { type: "equipment", equipmentItemIds: ["equipment-2"] }
+        }]
+      };
+    }
+    return {};
+  }
+});
+const conflictDraft = { type: "equipment", fields: { reservedDate: "2099-01-05", equipmentItemIds: ["equipment-1"], phone: "010-1234-5678" } };
+await assert.rejects(() => recommendationBridge.actions.submitReservation(conflictDraft), /unavailable/);
+assert.equal(recommendationBridge.state.reservationRecommendations.alternatives.length, 1, "409 reservation failures must load safe alternatives");
+assert(recommendationBridge.calls.some(([kind, path]) => kind === "api" && path === "/api/reservations/recommendations"), "recommendations must use the dedicated endpoint");
+recommendationBridge.actions.updateReservationSelection({ type: "equipment", equipmentItemIds: ["equipment-2"] });
+assert.equal(recommendationBridge.state.reservationRecommendations, null, "changing the reservation draft must clear stale alternatives");
+
 for (const type of ["equipment", "studio", "darkroom", "print"]) {
   const test = harness();
   const draft = { type, fields: { reservedDate: "2099-01-05", phone: "01012345678" } };

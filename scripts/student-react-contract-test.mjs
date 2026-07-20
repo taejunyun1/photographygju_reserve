@@ -224,6 +224,7 @@ function makeState(overrides = {}) {
     favoriteGroups: [],
     recentReservations: [],
     rebookingDetails: null,
+    reservationRecommendations: null,
     reservationType: undefined,
     reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
     selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
@@ -687,6 +688,28 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
 assert(markup.includes("촬영 과제"), "rebooking must prefill the safe purpose field");
 assert(markup.includes("조명 스탠드"), "rebooking must prefill the safe equipment request field");
 
+student.resetCaptures();
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({
+    view: "reserve",
+    reservationType: "equipment",
+    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    selectedEquipmentItemIds: ["body-1"],
+    reservationRecommendations: {
+      type: "equipment",
+      alternatives: [{
+        kind: "alternate_equipment",
+        label: "대체 장비 · 카메라 2",
+        patch: { type: "equipment", equipmentItemIds: ["body-2"] }
+      }]
+    }
+  }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("다른 선택지"), "reservation failures with recommendations must show an alternatives card");
+assert(markup.includes("대체 장비 · 카메라 2"), "the alternatives card must show the server-sanitized recommendation label");
+
 // Root must render StudentApp and keep the student mobile navigation icon-only.
 student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentReactRoot, {
@@ -712,12 +735,14 @@ assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must pro
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
 const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js", "utf8");
 const homeScreenSource = fs.readFileSync("src/react/student/screens/HomeScreen.tsx", "utf8");
+const reservationControlsSource = fs.readFileSync("src/react/student/components/ReservationControls.tsx", "utf8");
 assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
 assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
 assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
 assert(homeScreenSource.includes("FavoriteEquipmentSheet"), "student home must own the favorite manager sheet");
 assert(homeScreenSource.includes("즐겨찾기 관리"), "student home must expose favorite management");
 assert(homeScreenSource.includes("다시 예약"), "student home must expose recent reservation rebooking");
+assert(reservationControlsSource.includes("현재 조건에서 가능한 대안이 없습니다."), "reservation controls must explain when no recommendation is available");
 assert(studentCssSource.includes(".student-react-favorite-sheet"), "favorite manager must receive mobile bottom-sheet styling");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(

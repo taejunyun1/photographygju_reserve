@@ -148,6 +148,17 @@ export type StudentRebookingDetails = {
   fields: StudentReservationFields;
 };
 
+export type StudentReservationAlternative = {
+  kind: "same_equipment_time" | "alternate_equipment" | "alternate_time";
+  label: string;
+  patch: StudentReservationSelectionPatch;
+};
+
+export type StudentReservationRecommendations = {
+  type: ReservationType;
+  alternatives: readonly StudentReservationAlternative[];
+};
+
 export type StudentSettings = {
   equipmentPeriods?: readonly string[];
   equipmentRentalTimes?: readonly string[];
@@ -327,6 +338,7 @@ export type StudentState = {
   readonly favoriteGroups: readonly StudentFavoriteEquipmentGroup[];
   readonly recentReservations: readonly StudentReservationShortcut[];
   readonly rebookingDetails?: StudentRebookingDetails | null;
+  readonly reservationRecommendations?: StudentReservationRecommendations | null;
   readonly reservationType?: ReservationType;
   readonly reservationFlowStep: Readonly<Record<ReservationType, ReservationStep>>;
   readonly selectedDates: Readonly<Record<ReservationType, string>>;
@@ -358,6 +370,7 @@ export type StudentActions = {
   loadReservationShortcuts(): Promise<void> | void;
   saveFavoriteGroups(groups: readonly StudentFavoriteEquipmentGroup[]): Promise<void> | void;
   startRebooking(reservationId: string): Promise<void> | void;
+  loadReservationRecommendations(draft: ReservationDraft): Promise<void> | void;
   submitReservation(draft: ReservationDraft): Promise<void> | void;
   cancelReservation(id: string): Promise<void> | void;
   openReport(id: string | null): Promise<void> | void;

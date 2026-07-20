@@ -739,6 +739,24 @@ function DetailActions({ type, actions, submitting }: { type: ReservationType; a
   );
 }
 
+function ReservationAlternatives({ type, state, actions }: ReservationControlsProps) {
+  const recommendations = state.reservationRecommendations;
+  if (!recommendations || recommendations.type !== type) return null;
+  return (
+    <GjuCard title="다른 선택지" className="student-react-reservation-alternatives">
+      {recommendations.alternatives.length ? (
+        <div className="student-react-reservation-alternatives__items">
+          {recommendations.alternatives.map((alternative, index) => (
+            <GjuButton key={`${alternative.kind}:${index}`} variant="outline" onClick={() => void actions.updateReservationSelection(alternative.patch)}>
+              {alternative.label}
+            </GjuButton>
+          ))}
+        </div>
+      ) : <p className="muted">현재 조건에서 가능한 대안이 없습니다. 날짜나 시간 조건을 바꿔 주세요.</p>}
+    </GjuCard>
+  );
+}
+
 function rebookingFields(type: ReservationType, state: StudentState) {
   return state.rebookingDetails?.type === type ? state.rebookingDetails.fields : {};
 }
@@ -772,6 +790,7 @@ function EquipmentDetailsForm({ state, actions }: Omit<ReservationControlsProps,
       <div className="field"><label htmlFor="equipment-purpose">사용 목적</label><textarea id="equipment-purpose" className="textarea" value={details.purpose} onChange={(event) => setDetails((current) => ({ ...current, purpose: event.target.value }))} /></div>
       <label className="field consent"><span><input type="checkbox" required checked={details.equipmentPolicyConfirmed} onChange={(event) => setDetails((current) => ({ ...current, equipmentPolicyConfirmed: event.target.checked }))} /> 파손/분실 자가부담 및 대리 대여/반납 불가에 동의합니다.</span></label>
       {submission.error ? <p className="student-react-submit-error" role="alert">{submission.error}</p> : null}
+      <ReservationAlternatives type="equipment" state={state} actions={actions} />
       <DetailActions type="equipment" actions={actions} submitting={submission.submitting} />
     </form>
   );
@@ -796,6 +815,7 @@ function StudioDetailsForm({ state, actions }: Omit<ReservationControlsProps, "t
       <div className="field"><label htmlFor="studio-phone">연락처</label><input id="studio-phone" className="input" required value={details.phone} onChange={(event) => setDetails((current) => ({ ...current, phone: event.target.value }))} /></div>
       <label className="field consent"><span><input type="checkbox" required checked={details.studioPolicyConfirmed} onChange={(event) => setDetails((current) => ({ ...current, studioPolicyConfirmed: event.target.checked }))} /> 사용 후 정리정돈과 보고서 제출 규정을 확인했습니다.</span></label>
       {submission.error ? <p className="student-react-submit-error" role="alert">{submission.error}</p> : null}
+      <ReservationAlternatives type="studio" state={state} actions={actions} />
       <DetailActions type="studio" actions={actions} submitting={submission.submitting} />
     </form>
   );
@@ -816,6 +836,7 @@ function DarkroomDetailsForm({ state, actions }: Omit<ReservationControlsProps, 
       <div className="field"><label htmlFor="darkroom-phone">연락처</label><input id="darkroom-phone" className="input" required value={details.phone} onChange={(event) => setDetails((current) => ({ ...current, phone: event.target.value }))} /></div>
       <label className="field consent"><span><input type="checkbox" required checked={details.darkroomPolicyConfirmed} onChange={(event) => setDetails((current) => ({ ...current, darkroomPolicyConfirmed: event.target.checked }))} /> 약품 폐수 분리, 청소, 취식 금지 규정을 확인했습니다.</span></label>
       {submission.error ? <p className="student-react-submit-error" role="alert">{submission.error}</p> : null}
+      <ReservationAlternatives type="darkroom" state={state} actions={actions} />
       <DetailActions type="darkroom" actions={actions} submitting={submission.submitting} />
     </form>
   );
@@ -837,6 +858,7 @@ function PrintDetailsForm({ state, actions }: Omit<ReservationControlsProps, "ty
       <div className="field"><label htmlFor="print-phone">연락처</label><input id="print-phone" className="input" required value={details.phone} onChange={(event) => setDetails((current) => ({ ...current, phone: event.target.value }))} /></div>
       {state.bootstrap.settings.printBankAccount ? <div className="info-strip"><strong>출력비 계좌</strong><span>{state.bootstrap.settings.printBankAccount}</span></div> : null}
       {submission.error ? <p className="student-react-submit-error" role="alert">{submission.error}</p> : null}
+      <ReservationAlternatives type="print" state={state} actions={actions} />
       <DetailActions type="print" actions={actions} submitting={submission.submitting} />
     </form>
   );

@@ -49,6 +49,7 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     favoriteGroups: asArray(state.favoriteGroups),
     recentReservations: asArray(state.recentReservations),
     rebookingDetails: state.rebookingDetails || null,
+    reservationRecommendations: state.reservationRecommendations || null,
     reservationType,
     reservationFlowStep: {
       equipment: state.reservationFlowStep?.equipment || "date",
@@ -147,6 +148,7 @@ function applyReusableReservationFields(state, reservation) {
   if (!RESERVATION_TYPES.has(type)) return false;
 
   for (const reservationType of RESERVATION_TYPES) resetReservationSelection(state, reservationType);
+  clearReservationRecommendations(state);
 
   const source = reservation?.fields || {};
   const fields = {
@@ -188,6 +190,10 @@ function applyReusableReservationFields(state, reservation) {
   return true;
 }
 
+function clearReservationRecommendations(state) {
+  state.reservationRecommendations = null;
+}
+
 function clearAuthenticatedState(state, clearStoredSession) {
   state.token = "";
   state.user = null;
@@ -195,6 +201,7 @@ function clearAuthenticatedState(state, clearStoredSession) {
   state.favoriteGroups = [];
   state.recentReservations = [];
   state.rebookingDetails = null;
+  clearReservationRecommendations(state);
   state.lectures = [];
   state.view = "home";
   state.reservationType = "";
@@ -229,6 +236,14 @@ export function createStudentReactActions(dependencies) {
     state.recentReservations = asArray(result?.recentReservations);
   }
 
+  async function loadReservationRecommendations(draft) {
+    const result = await api("/api/reservations/recommendations", { method: "POST", body: draft });
+    state.reservationRecommendations = {
+      type: draft.type,
+      alternatives: asArray(result?.alternatives)
+    };
+  }
+
   async function refreshStudentData({ includeLectures = true } = {}) {
     const jobs = [loadBootstrap(), loadMyReservations(), loadReservationShortcuts()];
     if (includeLectures) jobs.push(loadLectures());
@@ -252,6 +267,7 @@ export function createStudentReactActions(dependencies) {
         resetReservationSelection(state, activeType);
         state.reservationFlowStep[activeType] = "date";
         state.rebookingDetails = null;
+        clearReservationRecommendations(state);
       }
       state.view = view;
       try {
@@ -268,6 +284,7 @@ export function createStudentReactActions(dependencies) {
       state.reservationType = type;
       state.reservationFlowStep[type] = "date";
       state.rebookingDetails = null;
+      clearReservationRecommendations(state);
       render();
     },
     setReservationStep(type, step) {
@@ -277,6 +294,7 @@ export function createStudentReactActions(dependencies) {
     },
     updateReservationSelection(patch) {
       applySelectionPatch(state, patch);
+      clearReservationRecommendations(state);
       render();
     },
     async loadReservationShortcuts() {
@@ -293,10 +311,27 @@ export function createStudentReactActions(dependencies) {
       if (!applyReusableReservationFields(state, reservation)) return;
       render();
     },
+    async loadReservationRecommendations(draft) {
+      await loadReservationRecommendations(draft);
+      render();
+    },
     async submitReservation(draft) {
       const type = draft?.type;
       if (!RESERVATION_TYPES.has(type)) throw new Error("지원하지 않는 예약 종류입니다.");
-      const reservation = await api("/api/reservations", { method: "POST", body: draft });
+      let reservation;
+      try {
+        reservation = await api("/api/reservations", { method: "POST", body: draft });
+      } catch (error) {
+        if (error?.status === 409) {
+          try {
+            await loadReservationRecommendations(draft);
+          } catch {
+            state.reservationRecommendations = { type, alternatives: [] };
+          }
+          render();
+        }
+        throw error;
+      }
       await notifyNativeReservationCreated(reservation).catch(() => null);
       state.myReservations = [reservation, ...asArray(state.myReservations).filter((item) => item.id !== reservation.id)];
       if (Array.isArray(state.bootstrap?.reservations)) {
@@ -304,6 +339,7 @@ export function createStudentReactActions(dependencies) {
       }
       resetReservationSelection(state, type);
       state.rebookingDetails = null;
+      clearReservationRecommendations(state);
       state.view = "mine";
       render();
       toast(type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");

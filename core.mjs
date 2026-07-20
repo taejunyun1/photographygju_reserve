@@ -14,6 +14,7 @@ import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
 import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
+import { findReservationRecommendations } from "./core/reservation-recommendations.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -860,6 +861,27 @@ export async function handleApiRequest(ctx) {
         audit(db, user, "lecture.cancelled", lecture.id, { applicationId: application.id });
         await saveDb();
         return ok(lectureSummary(db, lecture, user));
+      }
+
+      if (routeKey(method, pathname) === "POST /api/reservations/recommendations") {
+        requireApprovedStudent(authorization, db);
+        const body = await parseBody(readText);
+        assertRequired(body, ["type", "fields"]);
+        const sourceFields = { ...(body.fields || {}) };
+        try {
+          validateReservation(db, body.type, { ...sourceFields });
+          return ok({ alternatives: [] });
+        } catch {
+          return ok({
+            alternatives: findReservationRecommendations({
+              db,
+              type: body.type,
+              fields: sourceFields,
+              validateCandidate: (candidate) => validateReservation(db, body.type, candidate),
+              now: new Date()
+            })
+          });
+        }
       }
 
       if (routeKey(method, pathname) === "POST /api/reservations") {

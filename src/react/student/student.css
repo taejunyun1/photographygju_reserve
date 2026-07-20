@@ -410,10 +410,24 @@
 
 .student-react-reservation-flow,
 .student-react-details-form,
-.student-react-tab-panel {
+.student-react-tab-panel,
+.student-react-reservation-alternatives,
+.student-react-reservation-alternatives__items {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+.student-react-reservation-alternatives {
+  border-color: #93c5bd;
+  background: #f3fbf9;
+}
+
+.student-react-reservation-alternatives__items .gju-button {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
 }
 
 .student-react-equipment-picker {

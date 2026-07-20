@@ -28,6 +28,7 @@ export async function loadMe() {
     state.favoriteGroups = [];
     state.recentReservations = [];
     state.rebookingDetails = null;
+    state.reservationRecommendations = null;
     state.lectures = [];
     state.adminUsers = [];
     state.adminReservations = [];

@@ -4,9 +4,11 @@ import { handleApiRequest, initialDb } from "../core.mjs";
 
 const { buildOperationsInsights } = await import("../core/operations-insights.mjs").catch(() => ({}));
 const { validateFavoriteGroups } = await import("../core/favorite-equipment.mjs").catch(() => ({}));
+const { findReservationRecommendations } = await import("../core/reservation-recommendations.mjs").catch(() => ({}));
 
 assert.equal(typeof buildOperationsInsights, "function", "operations insight builder must be exported");
 assert.equal(typeof validateFavoriteGroups, "function", "favorite group validator must be exported");
+assert.equal(typeof findReservationRecommendations, "function", "reservation recommendation builder must be exported");
 
 const now = new Date("2099-01-28T12:00:00+09:00");
 const equipment = [
@@ -160,5 +162,55 @@ assert.equal(shortcuts.body.data.recentReservations[0].id, "shortcut-reservation
 assert.equal(shortcuts.body.data.recentReservations[0].fields.standRequest, "조명 스탠드", "shortcut response must retain supported reusable equipment requests");
 assert.equal(shortcuts.body.data.recentReservations.some((item) => item.id === "other-student-reservation"), false, "shortcut response must never include another student's reservation");
 assert.equal(JSON.stringify(shortcuts.body.data).includes("010-1111-2222"), false, "shortcut response must not expose stored phone numbers");
+
+const recommendationEquipment = db.equipment.filter((item) => item.active && item.reservable && item.category === "Body").slice(0, 2);
+assert.equal(recommendationEquipment.length, 2, "fixture requires two reservable same-category equipment items");
+const conflictingRecommendationFields = {
+  reservedDate: "2099-01-05",
+  period: "당일",
+  rentalTime: "10:15",
+  returnTime: "17:10",
+  equipmentItemIds: [recommendationEquipment[0].id],
+  cameraBagConfirmed: true,
+  phone: "010-2222-3333",
+  purpose: "추천 검증"
+};
+db.reservations.push({
+  id: "recommendation-conflict",
+  type: "equipment",
+  userId: "another-student",
+  userName: "다른 학생",
+  status: "pending_approval",
+  fields: { ...conflictingRecommendationFields, phone: "010-9999-9999" },
+  history: [],
+  createdAt: "2099-01-01T00:00:00.000Z",
+  updatedAt: "2099-01-01T00:00:00.000Z"
+});
+const recommendations = await api({
+  method: "POST",
+  pathname: "/api/reservations/recommendations",
+  authorization: `Bearer ${token}`,
+  body: { type: "equipment", fields: conflictingRecommendationFields }
+});
+assert.equal(recommendations.status, 200);
+assert.equal(recommendations.body.data.alternatives.length <= 3, true);
+assert.equal(recommendations.body.data.alternatives.every((item) => item.patch.type === "equipment"), true);
+assert.equal(recommendations.body.data.alternatives.some((item) => item.kind === "same_equipment_time"), true);
+assert.equal(recommendations.body.data.alternatives.some((item) => item.kind === "alternate_equipment"), true);
+assert.equal(JSON.stringify(recommendations.body.data).includes("userName"), false);
+assert.equal(JSON.stringify(recommendations.body.data).includes("010-9999-9999"), false);
+assert.equal(JSON.stringify(recommendations.body.data).includes("010-2222-3333"), false);
+
+const noCandidateRecommendations = await api({
+  method: "POST",
+  pathname: "/api/reservations/recommendations",
+  authorization: `Bearer ${token}`,
+  body: {
+    type: "equipment",
+    fields: { ...conflictingRecommendationFields, equipmentItemIds: ["missing-equipment"] }
+  }
+});
+assert.equal(noCandidateRecommendations.status, 200);
+assert.deepEqual(noCandidateRecommendations.body.data.alternatives, [], "no-candidate requests must return a safe empty list");
 
 console.log("Smart reservation domain checks passed.");
