@@ -1,6 +1,8 @@
 const TERM_ORDER = ["spring", "fall", "vacation"];
 const SCORE_BY_RANK = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 };
 const CONFIRMED_HISTORY_STATUSES = new Set(["confirmed", "offered", "completed"]);
+export const COURSE_DEMAND_CATEGORIES = ["art", "documentary", "advertising", "video"];
+const COURSE_DEMAND_CATEGORY_SET = new Set(COURSE_DEMAND_CATEGORIES);
 
 function domainError(message, status = 400) {
   return Object.assign(new Error(message), { status });
@@ -23,6 +25,14 @@ function numberList(values) {
     .sort((left, right) => left - right);
 }
 
+function seedDemandCategory(name) {
+  const value = String(name || "");
+  if (/영상|드론/.test(value)) return "video";
+  if (/다큐|포토\s?스토리|포토에세이|장소/.test(value)) return "documentary";
+  if (/커머셜|라이팅|스튜디오|프린트/.test(value)) return "advertising";
+  return "art";
+}
+
 function courseRecord(name, options = {}) {
   const id = options.id || `course_${slug(name)}`;
   const deliveryPeriod = options.deliveryPeriod || "semester";
@@ -42,6 +52,7 @@ function courseRecord(name, options = {}) {
     requiredFrequencyYears: Number(options.requiredFrequencyYears || 0),
     deliveryPeriod,
     isSurveyEligible: options.isSurveyEligible !== false && deliveryPeriod === "semester",
+    demandCategory: COURSE_DEMAND_CATEGORY_SET.has(options.demandCategory) ? options.demandCategory : seedDemandCategory(name),
     active: options.active !== false
   };
 }
@@ -151,6 +162,95 @@ export function normalizeCoursePlanning(value) {
   };
 }
 
+export function buildCourseDemandCatalog({ courses = [], courseIds = [], targetStudentYears = [], term = "" } = {}) {
+  if (!Array.isArray(courseIds)) throw domainError("설문 후보 과목 목록이 올바르지 않습니다.");
+  const normalizedIds = courseIds.map((courseId) => String(courseId || "").trim()).filter(Boolean);
+  if (normalizedIds.length !== courseIds.length) throw domainError("설문 후보 과목을 확인하세요.");
+  if (new Set(normalizedIds).size !== normalizedIds.length) throw domainError("같은 과목을 중복으로 선택할 수 없습니다.");
+  const targetYears = numberList(targetStudentYears);
+  const coursesById = new Map((Array.isArray(courses) ? courses : []).map((course) => [String(course?.id || ""), course]));
+
+  return normalizedIds.map((courseId) => {
+    const course = coursesById.get(courseId);
+    if (!course) throw domainError("존재하지 않는 과목이 포함되어 있습니다.");
+    if (course.active === false) throw domainError(`${course.name || "과목"}은 비활성 과목입니다.`);
+    if (course.isSurveyEligible === false) throw domainError(`${course.name || "과목"}은 수요조사 대상이 아닙니다.`);
+    if (course.majorType !== "전선" || course.isMajorRequired) throw domainError("수요조사에는 전선 과목만 선택할 수 있습니다.");
+    const courseYears = numberList(course.targetYears);
+    if (!targetYears.length || !courseYears.some((year) => targetYears.includes(year))) {
+      throw domainError(`${course.name || "과목"}의 대상 학년이 설문과 맞지 않습니다.`);
+    }
+    const allowedTerms = uniqueStrings(course.allowedTerms);
+    if (!allowedTerms.includes(term)) throw domainError(`${course.name || "과목"}의 개설 학기가 설문과 맞지 않습니다.`);
+    if (!COURSE_DEMAND_CATEGORY_SET.has(course.demandCategory)) throw domainError(`${course.name || "과목"}의 수요 카테고리를 지정하세요.`);
+    return {
+      id: course.id,
+      courseCode: course.courseCode || "",
+      name: course.name,
+      targetYears: courseYears,
+      allowedTerms,
+      studentCredit: Number(course.studentCredit || 0),
+      demandCategory: course.demandCategory
+    };
+  });
+}
+
+function surveyDate(value, fieldName) {
+  const timestamp = new Date(value || "").getTime();
+  if (!Number.isFinite(timestamp)) throw domainError(`${fieldName}을 올바르게 입력하세요.`);
+  return new Date(timestamp).toISOString();
+}
+
+function surveyYears(values, fieldName) {
+  const years = numberList(values).filter((year) => year >= 1 && year <= 4);
+  if (!years.length || years.length !== numberList(values).length) throw domainError(`${fieldName}을 올바르게 선택하세요.`);
+  return years;
+}
+
+export function validateCourseDemandSurveyDefinition({ input = {}, courses = [], existingSurveys = [], currentSurveyId = "" } = {}) {
+  const title = String(input.title || "").trim();
+  if (!title || title.length > 100) throw domainError("설문 제목을 100자 이내로 입력하세요.");
+  const academicYear = Number(input.academicYear);
+  if (!Number.isInteger(academicYear) || academicYear < 2020 || academicYear > 2100) throw domainError("설문 학년도를 올바르게 입력하세요.");
+  const term = String(input.term || "");
+  if (!['spring', 'fall'].includes(term)) throw domainError("설문 학기를 선택하세요.");
+  const eligibleCurrentYears = surveyYears(input.eligibleCurrentYears, "현재 학년");
+  const targetStudentYears = surveyYears(input.targetStudentYears, "수강 대상 학년");
+  const opensAt = surveyDate(input.opensAt, "시작일");
+  const closesAt = surveyDate(input.closesAt, "종료일");
+  if (new Date(closesAt).getTime() <= new Date(opensAt).getTime()) throw domainError("종료일은 시작일보다 늦어야 합니다.");
+  const status = String(input.status || "draft");
+  if (!['draft', 'open'].includes(status)) throw domainError("설문 상태가 올바르지 않습니다.");
+  const catalogSnapshot = buildCourseDemandCatalog({
+    courses,
+    courseIds: Array.isArray(input.courseIds) ? input.courseIds : [],
+    targetStudentYears,
+    term
+  });
+  if (catalogSnapshot.length > 6) throw domainError("설문 후보 과목은 최대 6개까지 선택할 수 있습니다.");
+  if (status === "open" && ![5, 6].includes(catalogSnapshot.length)) throw domainError("공개 설문은 후보 과목을 5개 또는 6개 선택해야 합니다.");
+
+  if (status === "open") {
+    const conflicts = (Array.isArray(existingSurveys) ? existingSurveys : []).some((survey) =>
+      survey?.id !== currentSurveyId && survey?.status === "open" && Number(survey?.academicYear) === academicYear &&
+      survey?.term === term && numberList(survey?.eligibleCurrentYears).some((year) => eligibleCurrentYears.includes(year))
+    );
+    if (conflicts) throw domainError("같은 학년도·학기·현재 학년에 이미 공개된 수요조사가 있습니다.");
+  }
+
+  return {
+    title,
+    academicYear,
+    term,
+    eligibleCurrentYears,
+    targetStudentYears,
+    opensAt,
+    closesAt,
+    status,
+    catalogSnapshot
+  };
+}
+
 function studentYear(student) {
   const value = Number(student?.studentYear ?? student?.year ?? String(student?.grade || student?.studentStatus || "").match(/\d+/)?.[0]);
   return Number.isInteger(value) ? value : 0;
@@ -192,6 +292,7 @@ export function summarizeSurvey({ survey, responses = [], eligibleStudentCount =
     courseId: String(course.id || ""),
     courseName: String(course.name || "과목"),
     targetYears: numberList(course.targetYears),
+    demandCategory: COURSE_DEMAND_CATEGORY_SET.has(course.demandCategory) ? course.demandCategory : "art",
     selections: 0,
     demandScore: 0,
     rankCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
@@ -214,7 +315,12 @@ export function summarizeSurvey({ survey, responses = [], eligibleStudentCount =
     eligibleStudentCount: eligible,
     responseCount,
     responseRate: eligible ? Math.round((responseCount / eligible) * 100) : 0,
-    courses: courseRows
+    courses: courseRows,
+    categories: COURSE_DEMAND_CATEGORIES.map((category) => ({
+      category,
+      selections: courseRows.filter((course) => course.demandCategory === category).reduce((sum, course) => sum + course.selections, 0),
+      demandScore: courseRows.filter((course) => course.demandCategory === category).reduce((sum, course) => sum + course.demandScore, 0)
+    }))
   };
 }
 

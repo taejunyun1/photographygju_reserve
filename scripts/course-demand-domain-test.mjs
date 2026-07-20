@@ -2,18 +2,25 @@ import assert from "node:assert/strict";
 import { adminExportData, handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const {
+  buildCourseDemandCatalog,
   buildOfferingRecommendation,
+  COURSE_DEMAND_CATEGORIES,
   createCoursePlanningSeed,
+  normalizeCoursePlanning,
   summarizeSurvey,
   validateAnnualPlan,
+  validateCourseDemandSurveyDefinition,
   validateCourseDemandResponse
 } = await import("../core/course-demand.mjs").catch(() => ({}));
 
 for (const [name, value] of Object.entries({
+  buildCourseDemandCatalog,
   buildOfferingRecommendation,
   createCoursePlanningSeed,
+  normalizeCoursePlanning,
   summarizeSurvey,
   validateAnnualPlan,
+  validateCourseDemandSurveyDefinition,
   validateCourseDemandResponse
 })) {
   assert.equal(typeof value, "function", `${name} must be exported`);
@@ -22,6 +29,130 @@ for (const [name, value] of Object.entries({
 const seed = createCoursePlanningSeed();
 assert.equal(seed.curriculumVersions[0].curriculumCreditLimit, 130);
 assert.equal(seed.courses.some((course) => course.isMajorRequired), true, "PDF seed must include major-required courses");
+assert.deepEqual(COURSE_DEMAND_CATEGORIES, ["art", "documentary", "advertising", "video"]);
+const demandCategoryValues = new Set(COURSE_DEMAND_CATEGORIES);
+assert.equal(
+  seed.courses.filter((course) => course.active && course.isSurveyEligible).every((course) => demandCategoryValues.has(course.demandCategory)),
+  true,
+  "every active survey course must have a demand category"
+);
+assert.equal(
+  normalizeCoursePlanning({ courses: [{ id: "custom", name: "커스텀", demandCategory: "video" }] }).courses[0].demandCategory,
+  "video",
+  "an explicitly edited demand category must survive normalization"
+);
+
+const independentCandidates = Array.from({ length: 6 }, (_, index) => ({
+  id: `elective_${index + 1}`,
+  courseCode: `EL-${index + 1}`,
+  name: `전선 ${index + 1}`,
+  majorType: "전선",
+  active: true,
+  isSurveyEligible: true,
+  targetYears: [2],
+  allowedTerms: ["fall"],
+  demandCategory: COURSE_DEMAND_CATEGORIES[index % COURSE_DEMAND_CATEGORIES.length],
+  studentCredit: 3
+}));
+const validIndependentInput = {
+  title: "2027학년도 2학년 2학기 수요조사",
+  academicYear: 2027,
+  term: "fall",
+  eligibleCurrentYears: [2],
+  targetStudentYears: [2],
+  opensAt: "2027-06-01T00:00:00.000Z",
+  closesAt: "2027-06-14T14:59:59.000Z",
+  status: "open",
+  courseIds: independentCandidates.slice(0, 5).map((course) => course.id)
+};
+assert.equal(
+  buildCourseDemandCatalog({
+    courses: independentCandidates,
+    courseIds: validIndependentInput.courseIds,
+    targetStudentYears: [2],
+    term: "fall"
+  }).length,
+  5
+);
+assert.throws(
+  () => buildCourseDemandCatalog({
+    courses: [{ ...independentCandidates[0], majorType: "전필", isMajorRequired: true }],
+    courseIds: [independentCandidates[0].id],
+    targetStudentYears: [2],
+    term: "fall"
+  }),
+  /전선/
+);
+assert.throws(
+  () => buildCourseDemandCatalog({
+    courses: independentCandidates,
+    courseIds: [independentCandidates[0].id, independentCandidates[0].id],
+    targetStudentYears: [2],
+    term: "fall"
+  }),
+  /중복/
+);
+assert.throws(
+  () => buildCourseDemandCatalog({
+    courses: [{ ...independentCandidates[0], demandCategory: "other" }],
+    courseIds: [independentCandidates[0].id],
+    targetStudentYears: [2],
+    term: "fall"
+  }),
+  /카테고리/
+);
+assert.throws(
+  () => buildCourseDemandCatalog({
+    courses: independentCandidates,
+    courseIds: [independentCandidates[0].id],
+    targetStudentYears: [3],
+    term: "fall"
+  }),
+  /학년/
+);
+
+const independentDefinition = validateCourseDemandSurveyDefinition({
+  input: validIndependentInput,
+  courses: independentCandidates,
+  existingSurveys: []
+});
+assert.equal(independentDefinition.semesterPlanId, undefined);
+assert.equal(independentDefinition.catalogSnapshot.length, 5);
+assert.deepEqual(independentDefinition.catalogSnapshot.map((course) => course.id), validIndependentInput.courseIds);
+assert.equal(validateCourseDemandSurveyDefinition({
+  input: { ...validIndependentInput, status: "draft", courseIds: [] },
+  courses: independentCandidates,
+  existingSurveys: []
+}).catalogSnapshot.length, 0);
+assert.equal(validateCourseDemandSurveyDefinition({
+  input: { ...validIndependentInput, status: "draft", courseIds: independentCandidates.map((course) => course.id) },
+  courses: independentCandidates,
+  existingSurveys: []
+}).catalogSnapshot.length, 6);
+assert.throws(
+  () => validateCourseDemandSurveyDefinition({
+    input: { ...validIndependentInput, courseIds: independentCandidates.slice(0, 4).map((course) => course.id) },
+    courses: independentCandidates,
+    existingSurveys: []
+  }),
+  /5개 또는 6개/
+);
+assert.throws(
+  () => validateCourseDemandSurveyDefinition({
+    input: { ...validIndependentInput, closesAt: "2027-05-31T00:00:00.000Z" },
+    courses: independentCandidates,
+    existingSurveys: []
+  }),
+  /종료일/
+);
+assert.throws(
+  () => validateCourseDemandSurveyDefinition({
+    input: validIndependentInput,
+    courses: independentCandidates,
+    existingSurveys: [{ id: "existing", status: "open", academicYear: 2027, term: "fall", eligibleCurrentYears: [2] }]
+  }),
+  /이미 공개된/
+);
 
 const fieldPractice4 = seed.courses.find((course) => course.name === "현장실습4");
 assert.deepEqual(
@@ -56,9 +187,9 @@ const rankingSurvey = {
   closesAt: "2099-01-31T14:59:59.000Z",
   eligibleCurrentYears: [2],
   catalogSnapshot: [
-    { id: "course_a", name: "과목 A", targetYears: [3], allowedTerms: ["spring"] },
-    { id: "course_b", name: "과목 B", targetYears: [3], allowedTerms: ["spring"] },
-    { id: "course_c", name: "과목 C", targetYears: [3], allowedTerms: ["spring"] }
+    { id: "course_a", name: "과목 A", targetYears: [3], allowedTerms: ["spring"], demandCategory: "art" },
+    { id: "course_b", name: "과목 B", targetYears: [3], allowedTerms: ["spring"], demandCategory: "video" },
+    { id: "course_c", name: "과목 C", targetYears: [3], allowedTerms: ["spring"], demandCategory: "art" }
   ]
 };
 const eligibleStudent = { id: "student_1", role: "student", studentYear: 2 };
@@ -116,6 +247,16 @@ assert.deepEqual(
     { courseId: "course_c", selections: 0, demandScore: 0 }
   ],
   "rank 1~5 must be weighted 5~1 and remain deterministic"
+);
+assert.deepEqual(
+  summary.categories,
+  [
+    { category: "art", selections: 2, demandScore: 8 },
+    { category: "documentary", selections: 0, demandScore: 0 },
+    { category: "advertising", selections: 0, demandScore: 0 },
+    { category: "video", selections: 2, demandScore: 9 }
+  ],
+  "anonymous results must aggregate demand by category"
 );
 
 const planningCourses = [
