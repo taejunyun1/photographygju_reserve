@@ -198,6 +198,216 @@
   gap: 12px;
 }
 
+.student-react-quick-reservation,
+.student-react-quick-reservation__section,
+.student-react-favorite-groups,
+.student-react-favorite-group,
+.student-react-rebooking-list,
+.student-react-favorite-sheet__content,
+.student-react-favorite-sheet__editor,
+.student-react-favorite-sheet__selected,
+.student-react-favorite-sheet__results {
+  display: grid;
+  gap: 12px;
+}
+
+.student-react-quick-reservation__section + .student-react-quick-reservation__section {
+  padding-top: 16px;
+  border-top: 1px solid var(--student-line);
+}
+
+.student-react-quick-reservation__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-react-quick-reservation__heading h3,
+.student-react-favorite-group h4 {
+  margin: 0;
+  color: var(--student-ink);
+}
+
+.student-react-quick-reservation__heading h3 {
+  font-size: 15px;
+}
+
+.student-react-quick-reservation__heading span {
+  color: var(--student-muted);
+  font-size: 12px;
+}
+
+.student-react-favorite-groups {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.student-react-favorite-group {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-soft);
+}
+
+.student-react-favorite-group h4 {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-react-favorite-group__items,
+.student-react-favorite-sheet__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-react-favorite-group__items button,
+.student-react-rebooking-list button,
+.student-react-favorite-sheet__group-tab,
+.student-react-favorite-sheet__result,
+.student-react-favorite-sheet__selected button {
+  min-height: 44px;
+  border: 1px solid var(--student-line);
+  border-radius: 6px;
+  color: var(--student-ink);
+  background: var(--student-surface);
+  cursor: pointer;
+}
+
+.student-react-favorite-group__items button {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.student-react-favorite-group__items button:hover,
+.student-react-favorite-group__items button:focus-visible,
+.student-react-rebooking-list button:hover,
+.student-react-rebooking-list button:focus-visible,
+.student-react-favorite-sheet__group-tab[aria-selected="true"],
+.student-react-favorite-sheet__result:hover,
+.student-react-favorite-sheet__result:focus-visible {
+  border-color: var(--student-accent);
+  background: #e9f5f2;
+}
+
+.student-react-favorite-group__items button:disabled {
+  color: var(--student-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.student-react-favorite-group__items small,
+.student-react-rebooking-list small,
+.student-react-favorite-sheet__result small {
+  color: var(--student-muted);
+  font-size: 12px;
+}
+
+.student-react-rebooking-list button,
+.student-react-favorite-sheet__result,
+.student-react-favorite-sheet__selected li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.student-react-rebooking-list button span,
+.student-react-favorite-sheet__result span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.student-react-rebooking-list button em,
+.student-react-favorite-sheet__result em {
+  flex: 0 0 auto;
+  color: var(--student-accent-strong);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.student-react-favorite-sheet .gju-dialog__body {
+  color: var(--student-ink);
+}
+
+.student-react-favorite-sheet__group-actions,
+.student-react-favorite-sheet__group-name,
+.student-react-favorite-sheet__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-react-favorite-sheet__group-actions {
+  align-items: flex-start;
+}
+
+.student-react-favorite-sheet__group-tab {
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.student-react-favorite-sheet__group-name .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.student-react-favorite-sheet__selected {
+  padding: 12px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-soft);
+}
+
+.student-react-favorite-sheet__selected ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-react-favorite-sheet__selected li {
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid var(--student-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.student-react-favorite-sheet__selected li:last-child {
+  border-bottom: 0;
+}
+
+.student-react-favorite-sheet__selected button {
+  min-height: 36px;
+  padding: 4px 8px;
+  color: var(--student-danger);
+}
+
+.student-react-favorite-sheet__results {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.student-react-favorite-sheet__footer {
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 .student-react-reservation-flow,
 .student-react-details-form,
 .student-react-tab-panel {
@@ -799,6 +1009,61 @@
 
   .student-react-equipment-manifest__items {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-react-favorite-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-react-favorite-group__items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-react-favorite-sheet {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 88dvh;
+    margin-top: auto;
+    margin-bottom: 0;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .student-react-favorite-sheet .gju-dialog__body {
+    max-height: calc(88dvh - 76px);
+    margin-bottom: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .student-react-favorite-sheet__group-actions,
+  .student-react-favorite-sheet__group-name {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-react-favorite-sheet__group-actions .gju-button,
+  .student-react-favorite-sheet__group-name .gju-button,
+  .student-react-favorite-sheet__footer .gju-button {
+    width: 100%;
+  }
+
+  .student-react-favorite-sheet__groups {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .student-react-favorite-sheet__group-tab {
+    min-width: 0;
+    padding-inline: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-react-favorite-sheet__results {
+    max-height: 220px;
   }
 }
 

@@ -221,6 +221,9 @@ function makeState(overrides = {}) {
     bootstrap: { settings, notices: [{ id: "notice-1", title: "공지", body: "공지 본문" }], equipment, darkroomChemicals: chemicals, reservations: [] },
     myReservations: [],
     lectures: [],
+    favoriteGroups: [],
+    recentReservations: [],
+    rebookingDetails: null,
     reservationType: undefined,
     reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
     selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
@@ -708,9 +711,14 @@ assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must pro
 
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
 const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js", "utf8");
+const homeScreenSource = fs.readFileSync("src/react/student/screens/HomeScreen.tsx", "utf8");
 assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
 assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
 assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
+assert(homeScreenSource.includes("FavoriteEquipmentSheet"), "student home must own the favorite manager sheet");
+assert(homeScreenSource.includes("즐겨찾기 관리"), "student home must expose favorite management");
+assert(homeScreenSource.includes("다시 예약"), "student home must expose recent reservation rebooking");
+assert(studentCssSource.includes(".student-react-favorite-sheet"), "favorite manager must receive mobile bottom-sheet styling");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(
   studentCssSource.includes("grid-template-columns: minmax(0, 1fr) auto"),

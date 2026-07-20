@@ -17,6 +17,7 @@ export type GjuDialogProps = {
   onClose?: () => void;
   tone?: "neutral" | "danger";
   showActions?: boolean;
+  className?: string;
 };
 
 export function GjuDialog({
@@ -30,7 +31,8 @@ export function GjuDialog({
   onCancel,
   onClose,
   tone = "neutral",
-  showActions = true
+  showActions = true,
+  className
 }: GjuDialogProps) {
   const titleId = `gju-dialog-title-${React.useId()}`;
   const dialogBody = body ?? children;
@@ -53,7 +55,7 @@ export function GjuDialog({
       padding: 0,
       purpose: "info",
       role: "dialog",
-      className: cx("gju-dialog", motionClass.dialog),
+      className: cx("gju-dialog", motionClass.dialog, className),
       "aria-labelledby": titleId,
       children: React.createElement(
         "div",
