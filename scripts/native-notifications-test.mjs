@@ -76,10 +76,43 @@ const planned = planReservationNotifications({
   reservations: [legacyReservation, timingReservation],
   now
 });
-assert.equal(planned.length, 8, "legacy and additive timing reservations should each plan four reminders");
+assert.equal(planned.length, 4, "legacy and additive timing reservations should each plan the two low-noise start reminders");
 assert.equal(planned[0].reservationId, "legacy-studio", "planner should sort by the closest KST start time");
 assert.equal(planned.find((item) => item.reservationId === "timing-studio").body.includes("7. 3."), true, "timing should take precedence over legacy fields");
 assert(planned.every((item) => item.channelId === RESERVATION_REMINDER_CHANNEL_ID), "every planned reminder should target the configured Android channel");
+
+const thirtyHoursAway = {
+  id: "thirty-hours-away",
+  type: "print",
+  status: "approved",
+  timing: { startAt: "2026-07-02T06:00:00.000Z", endAt: "2026-07-02T07:00:00.000Z" },
+  fields: { reservedDate: "2026-07-02", startTime: "15:00", endTime: "16:00" }
+};
+const thirtyHoursPlan = planReservationNotifications({ userId: "student1", reservations: [thirtyHoursAway], now });
+assert.equal(thirtyHoursPlan.some((item) => item.extra?.reminderKey === "day-before"), true, "a reservation more than a day away needs a day-before reminder");
+assert.equal(thirtyHoursPlan.some((item) => ["ten-min-before", "start"].includes(item.extra?.notificationType)), false, "low-noise reminders must not include ten-minute or start alerts");
+
+const eightHoursAway = {
+  id: "eight-hours-away",
+  type: "print",
+  status: "approved",
+  timing: { startAt: "2026-07-01T08:00:00.000Z", endAt: "2026-07-01T09:00:00.000Z" },
+  fields: { reservedDate: "2026-07-01", startTime: "17:00", endTime: "18:00" }
+};
+const eightHoursPlan = planReservationNotifications({ userId: "student1", reservations: [eightHoursAway], now });
+assert.equal(eightHoursPlan.filter((item) => item.extra?.notificationType === "pre-start").length <= 1, true, "there must be at most one pre-start reminder within twelve hours");
+
+const checkedOutEquipment = {
+  id: "checked-out-equipment",
+  type: "equipment",
+  status: "checked_out",
+  timing: { startAt: "2026-07-01T00:30:00.000Z", endAt: "2026-07-01T02:00:00.000Z" },
+  fields: { reservedDate: "2026-07-01", rentalTime: "09:30", returnTime: "11:00", period: "당일" }
+};
+const checkedOutPlan = planReservationNotifications({ userId: "student1", reservations: [checkedOutEquipment], now });
+assert.equal(checkedOutPlan.some((item) => item.extra?.notificationType === "return-hour-before"), true, "checked-out equipment needs one return-imminent reminder");
+const returnedEquipmentPlan = planReservationNotifications({ userId: "student1", reservations: [{ ...checkedOutEquipment, status: "returned" }], now });
+assert.equal(returnedEquipmentPlan.some((item) => item.extra?.notificationType === "return-hour-before"), false, "returned equipment must not keep a return reminder");
 
 const fridayEquipment = {
   id: "friday-equipment",
@@ -146,7 +179,7 @@ const duplicatePlan = planReservationNotifications({
 });
 assert.equal(new Set(duplicatePlan.map((item) => item.id)).size, duplicatePlan.length, "planner should dedupe stable IDs");
 
-const manyReservations = Array.from({ length: 20 }, (_, index) => ({
+const manyReservations = Array.from({ length: 40 }, (_, index) => ({
   id: `reservation-${index}`,
   type: "print",
   status: "approved",
@@ -340,7 +373,7 @@ raceUser = "race-b";
 const racingCleanup = raceManager.clearAccount("race-a");
 releasePermission();
 await Promise.all([racingSync, racingCleanup]);
-const expectedRaceIds = new Set(["day-before", "hour-before", "ten-min-before", "start"].map((key) => stableNotificationId(`race-a:${timingReservation.id}:${key}`)));
+const expectedRaceIds = new Set(["day-before", "hour-before"].map((key) => stableNotificationId(`race-a:${timingReservation.id}:${key}`)));
 assert.deepEqual(new Set(raceScheduled.map((item) => item.id)), expectedRaceIds, "account snapshot should remain stable while permission is pending");
 assert.equal(storage.get("gju_native_notifications_v2:race-a:ids"), "[]", "queued account cleanup should cancel reminders created by an in-flight sync");
 assert.equal(storage.has("gju_native_notifications_v2:race-b:ids"), false, "an in-flight sync must not write IDs into the next account");
@@ -583,7 +616,7 @@ const oldAndroidManager = createNotificationManager({
   supported: true
 });
 await oldAndroidManager.sync({ force: true });
-assert.equal(oldAndroidScheduled, 4, "Android API 24-25 should still schedule through the default channel when channel creation is unavailable");
+assert.equal(oldAndroidScheduled, 2, "Android API 24-25 should still schedule low-noise reminders through the default channel when channel creation is unavailable");
 
 permissionState = "denied";
 const deniedManager = createNotificationManager({

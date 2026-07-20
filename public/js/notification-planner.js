@@ -1,10 +1,8 @@
 const DEFAULT_TIME_ZONE = "Asia/Seoul";
 export const RESERVATION_REMINDER_CHANNEL_ID = "gju_reservation_reminders";
-const REMINDER_OFFSETS = [
+const PRE_START_REMINDERS = [
   { key: "day-before", minutes: 24 * 60, label: "내일" },
-  { key: "hour-before", minutes: 60, label: "1시간 전" },
-  { key: "ten-min-before", minutes: 10, label: "10분 전" },
-  { key: "start", minutes: 0, label: "시작" }
+  { key: "hour-before", minutes: 60, label: "1시간 전" }
 ];
 const REPORT_REMINDERS = [
   { key: "report-after-use", minutesAfterEnd: 60, label: "보고서 작성 필요" },
@@ -168,6 +166,29 @@ function pushUnique(notifications, notification, seen) {
   notifications.push(notification);
 }
 
+function isWithinTwelveHours(left, right) {
+  return Math.abs(left.getTime() - right.getTime()) < 12 * 60 * 60 * 1000;
+}
+
+function reservationNotification({ userId, reservation, type, key, title, body, notifyAt, notificationType, extra = {} }) {
+  return {
+    id: stableNotificationId(`${userId}:${reservation.id}:${key}`),
+    title,
+    body,
+    schedule: { at: notifyAt },
+    channelId: RESERVATION_REMINDER_CHANNEL_ID,
+    autoCancel: true,
+    reservationId: reservation.id,
+    extra: {
+      route: "mine",
+      reservationId: reservation.id,
+      reservationType: reservation.type,
+      notificationType,
+      ...extra
+    }
+  };
+}
+
 export function planReservationNotifications({
   userId = "user",
   reservations = [],
@@ -184,19 +205,39 @@ export function planReservationNotifications({
     if (!startAt) continue;
     const type = typeLabel(reservation.type);
     if (!TERMINAL_STATUSES.has(reservation.status)) {
-      for (const offset of REMINDER_OFFSETS) {
-        const notifyAt = new Date(startAt.getTime() - offset.minutes * 60 * 1000);
+      const acceptedPreStartTimes = [];
+      for (const reminder of [...PRE_START_REMINDERS].sort((left, right) => left.minutes - right.minutes)) {
+        const notifyAt = new Date(startAt.getTime() - reminder.minutes * 60 * 1000);
         if (notifyAt.getTime() <= now.getTime() + 60 * 1000) continue;
-        pushUnique(notifications, {
-          id: stableNotificationId(`${userId}:${reservation.id}:${offset.key}`),
-          title: offset.key === "start" ? `${type} 사용 시작` : `${type} ${offset.label} 알림`,
+        if (acceptedPreStartTimes.some((acceptedAt) => isWithinTwelveHours(acceptedAt, notifyAt))) continue;
+        pushUnique(notifications, reservationNotification({
+          userId,
+          reservation,
+          type,
+          key: reminder.key,
+          title: `${type} ${reminder.label} 알림`,
           body: `${dateLabel(startAt, timeZone)} · ${reservationMeta(reservation) || type}`,
-          schedule: { at: notifyAt },
-          channelId: RESERVATION_REMINDER_CHANNEL_ID,
-          autoCancel: true,
-          reservationId: reservation.id,
-          extra: { route: "mine", reservationId: reservation.id, reservationType: reservation.type }
-        }, seen);
+          notifyAt,
+          notificationType: "pre-start",
+          extra: { reminderKey: reminder.key }
+        }), seen);
+        acceptedPreStartTimes.push(notifyAt);
+      }
+      if (reservation.type === "equipment" && reservation.status === "checked_out") {
+        const endAt = reservationEndDate(reservation, startAt);
+        const notifyAt = endAt ? new Date(endAt.getTime() - 60 * 60 * 1000) : null;
+        if (notifyAt && notifyAt.getTime() > now.getTime() + 60 * 1000) {
+          pushUnique(notifications, reservationNotification({
+            userId,
+            reservation,
+            type,
+            key: "return-hour-before",
+            title: "기자재 반납 1시간 전 알림",
+            body: `${dateLabel(endAt, timeZone)}까지 ${reservationMeta(reservation) || "기자재"}를 반납해 주세요.`,
+            notifyAt,
+            notificationType: "return-hour-before"
+          }), seen);
+        }
       }
     }
     if (reservation.type !== "studio" || reservation.fields?.reportStatus === "submitted" || REPORT_EXCLUDED_STATUSES.has(reservation.status)) continue;
