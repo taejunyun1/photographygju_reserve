@@ -19,6 +19,48 @@ test("React Admin mounts current source without legacy panel or horizontal overf
   await expectNoHorizontalOverflow(page);
 });
 
+test("React Admin congestion insight uses a compact card hierarchy", async ({ page }) => {
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.summary = {
+      ...(state.summary || {}),
+      metrics: {
+        ...(state.summary?.metrics || {}),
+        insights: {
+          congestion: {
+            items: [{
+              type: "equipment",
+              label: "기자재",
+              time: "14:00~15:00",
+              count: 4,
+              sharePercent: 25
+            }]
+          },
+          equipmentUtilization: [],
+          cancellationRate: { totalRequests: 0 },
+          warnings: []
+        }
+      }
+    };
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+
+  const card = page.locator(".admin-dashboard-insight-card");
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText("혼잡 시간");
+  const dimensions = await card.evaluate((element) => {
+    const value = element.querySelector(".gju-card__body > strong");
+    return {
+      height: element.getBoundingClientRect().height,
+      valueFontSize: value ? Number.parseFloat(getComputedStyle(value).fontSize) : 0
+    };
+  });
+  expect(dimensions.valueFontSize).toBeLessThanOrEqual(22);
+  expect(dimensions.height).toBeLessThanOrEqual(112);
+});
+
 test("React Admin action toast is announced once across a follow-up render", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(() => {

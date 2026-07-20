@@ -651,6 +651,45 @@
   opacity: 1;
 }
 
+.admin-dashboard-insights__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  justify-content: start;
+  gap: 10px;
+}
+
+.admin-dashboard-insight-action {
+  min-width: 0;
+}
+
+.admin-dashboard-insight-card {
+  height: 100%;
+}
+
+.gju-app-shell__content .admin-dashboard-insight-card .gju-card__header {
+  padding: 12px 14px 0;
+}
+
+.gju-app-shell__content .admin-dashboard-insight-card .gju-card__title {
+  font-size: 14px;
+}
+
+.gju-app-shell__content .admin-dashboard-insight-card .gju-card__body {
+  padding: 8px 14px 12px;
+}
+
+.gju-app-shell__content .admin-dashboard-insight-card .gju-card__body > strong {
+  display: block;
+  font-size: 20px !important;
+  line-height: 1.3 !important;
+}
+
+.gju-app-shell__content .admin-dashboard-insight-card .gju-card__body > p {
+  margin-top: 4px !important;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .admin-dashboard-action-card {
   min-height: 104px;
 }
@@ -847,6 +886,10 @@
 }
 
 @media (max-width: 900px) {
+  .admin-dashboard-insights__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .admin-dashboard-action-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
