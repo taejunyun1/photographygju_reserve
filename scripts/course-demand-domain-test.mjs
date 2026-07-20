@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { initialDb, normalizeDb } from "../core.mjs";
+import { handleApiRequest, initialDb, normalizeDb } from "../core.mjs";
 
 const {
   buildOfferingRecommendation,
@@ -170,5 +170,110 @@ const overLimitPlan = {
 };
 const overLimitValidation = validateAnnualPlan({ plan: overLimitPlan, courses: overLimitCourses, history: [] });
 assert.equal(overLimitValidation.errors.some((item) => item.code === "operating_credit_limit"), true, "86+ 일반 운영학점 must block confirmation");
+
+const apiDb = await initialDb("course-demand-api-password");
+apiDb.users.push({
+  id: "user_course_student",
+  role: "student",
+  name: "수요조사 학생",
+  studentId: "20260001",
+  studentYear: 2,
+  approvalStatus: "approved",
+  preferences: {},
+  createdAt: "2026-07-20T00:00:00.000Z",
+  updatedAt: "2026-07-20T00:00:00.000Z"
+});
+apiDb.sessions.push(
+  { id: "session_course_admin", token: "course-admin-token", userId: "user_admin", expiresAt: "2100-01-01T00:00:00.000Z", createdAt: "2026-07-20T00:00:00.000Z", lastSeenAt: "2026-07-20T00:00:00.000Z" },
+  { id: "session_course_student", token: "course-student-token", userId: "user_course_student", expiresAt: "2100-01-01T00:00:00.000Z", createdAt: "2026-07-20T00:00:00.000Z", lastSeenAt: "2026-07-20T00:00:00.000Z" }
+);
+apiDb.coursePlanning.annualPlans.push({
+  id: "annual_2099",
+  academicYear: 2099,
+  operatingCreditLimit: 85,
+  status: "draft",
+  semesterPlans: [{ id: "annual_2099_spring", term: "spring", targetYears: [3], offerings: [] }]
+});
+
+async function courseApi({ method = "GET", pathname, token = "", body = {} }) {
+  return handleApiRequest({
+    method,
+    pathname,
+    authorization: token ? `Bearer ${token}` : "",
+    readText: async () => JSON.stringify(body),
+    db: apiDb,
+    saveDb: async () => {},
+    slackWebhook: ""
+  });
+}
+
+const adminPlanning = await courseApi({ pathname: "/api/admin/course-planning", token: "course-admin-token" });
+assert.equal(adminPlanning.status, 200, "administrator planning data must be authenticated");
+assert.equal(adminPlanning.body.data.courses.some((course) => course.name === "현장실습4"), true);
+const deniedPlanning = await courseApi({ pathname: "/api/admin/course-planning", token: "course-student-token" });
+assert.equal(deniedPlanning.status, 403, "students must not read administrator planning data");
+
+const createdSurvey = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: {
+    semesterPlanId: "annual_2099_spring",
+    eligibleCurrentYears: [2],
+    opensAt: "2020-01-01T00:00:00.000Z",
+    closesAt: "2100-01-01T00:00:00.000Z",
+    status: "open"
+  }
+});
+assert.equal(createdSurvey.status, 200);
+assert.equal(createdSurvey.body.data.catalogSnapshot.every((course) => course.targetYears.includes(3)), true, "survey snapshot must only contain its next-semester target courses");
+
+const invalidSurveyWindow = await courseApi({
+  method: "POST",
+  pathname: "/api/admin/course-demand-surveys",
+  token: "course-admin-token",
+  body: { semesterPlanId: "annual_2099_spring", eligibleCurrentYears: [2], opensAt: "not-a-date", closesAt: "2100-01-01T00:00:00.000Z", status: "open" }
+});
+assert.equal(invalidSurveyWindow.status, 400, "invalid survey dates must be reported as client errors, not server failures");
+
+const studentSurveys = await courseApi({ pathname: "/api/me/course-demand-surveys", token: "course-student-token" });
+assert.equal(studentSurveys.status, 200);
+assert.equal(studentSurveys.body.data.length, 1);
+const surveyId = studentSurveys.body.data[0].id;
+const selectedCourseIds = studentSurveys.body.data[0].catalog.slice(0, 2).map((course) => course.id);
+assert.equal(selectedCourseIds.length, 2);
+const savedResponse = await courseApi({
+  method: "PUT",
+  pathname: `/api/me/course-demand-surveys/${surveyId}/response`,
+  token: "course-student-token",
+  body: { rankings: selectedCourseIds.map((courseId, index) => ({ courseId, rank: index + 1 })) }
+});
+assert.equal(savedResponse.status, 200);
+assert.deepEqual(savedResponse.body.data.response.rankings.map((item) => item.rank), [1, 2]);
+
+const duplicateResponse = await courseApi({
+  method: "PUT",
+  pathname: `/api/me/course-demand-surveys/${surveyId}/response`,
+  token: "course-student-token",
+  body: { rankings: [{ courseId: selectedCourseIds[0], rank: 1 }, { courseId: selectedCourseIds[0], rank: 2 }] }
+});
+assert.equal(duplicateResponse.status, 400, "duplicate course rankings must be rejected at the API boundary");
+
+const surveySummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
+assert.equal(surveySummary.status, 200);
+assert.equal(surveySummary.body.data.responseCount, 1);
+assert.equal(JSON.stringify(surveySummary.body.data).includes("20260001"), false, "admin summary must remain anonymous");
+
+const recommendationResponse = await courseApi({ method: "POST", pathname: "/api/admin/annual-offering-plans/annual_2099/recommendations", token: "course-admin-token" });
+assert.equal(recommendationResponse.status, 200);
+assert.equal(Array.isArray(recommendationResponse.body.data.semesterPlans), true);
+
+const invalidConfirmation = await courseApi({
+  method: "PUT",
+  pathname: "/api/admin/annual-offering-plans/annual_2099",
+  token: "course-admin-token",
+  body: { plan: { ...apiDb.coursePlanning.annualPlans[0], status: "confirmed" } }
+});
+assert.equal(invalidConfirmation.status, 400, "a plan with missing required courses must not be confirmed");
 
 console.log("Course demand domain checks passed.");

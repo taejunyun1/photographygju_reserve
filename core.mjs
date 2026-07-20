@@ -15,7 +15,15 @@ import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
 import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
 import { findReservationRecommendations } from "./core/reservation-recommendations.mjs";
-import { createCoursePlanningSeed, normalizeCoursePlanning } from "./core/course-demand.mjs";
+import {
+  buildOfferingRecommendation,
+  createCoursePlanningSeed,
+  normalizeCoursePlanning,
+  publicSurveyForStudent,
+  summarizeSurvey,
+  validateAnnualPlan,
+  validateCourseDemandResponse
+} from "./core/course-demand.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -260,6 +268,83 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function coursePlanningForDb(db) {
+  db.coursePlanning = normalizeCoursePlanning(db.coursePlanning);
+  return db.coursePlanning;
+}
+
+function coursePlanningSemester(planning, semesterPlanId) {
+  for (const annualPlan of planning.annualPlans || []) {
+    const semesterPlan = (annualPlan.semesterPlans || []).find((item) => item.id === semesterPlanId);
+    if (semesterPlan) return { annualPlan, semesterPlan };
+  }
+  return null;
+}
+
+function coursePlanningAnnualPlan(planning, planId) {
+  return (planning.annualPlans || []).find((item) => item.id === planId) || null;
+}
+
+function normalizeCoursePlanningCourses(courses) {
+  if (!Array.isArray(courses) || !courses.length) throw Object.assign(new Error("과목을 한 개 이상 등록하세요."), { status: 400 });
+  const normalized = normalizeCoursePlanning({ courses }).courses;
+  const ids = normalized.map((course) => course.id);
+  if (new Set(ids).size !== ids.length) throw Object.assign(new Error("과목 ID가 중복되었습니다."), { status: 400 });
+  const names = normalized.map((course) => course.name);
+  if (new Set(names).size !== names.length) throw Object.assign(new Error("같은 과목명이 중복되었습니다."), { status: 400 });
+  const fieldPractice4 = normalized.find((course) => course.name === "현장실습4");
+  if (fieldPractice4 && (
+    fieldPractice4.targetYears.length !== 1 || fieldPractice4.targetYears[0] !== 4 ||
+    fieldPractice4.allowedTerms.length !== 1 || fieldPractice4.allowedTerms[0] !== "fall" ||
+    fieldPractice4.studentCredit !== 15 || fieldPractice4.operatingCredit !== 0 || fieldPractice4.facultyRecognizedCredit !== 3
+  )) {
+    throw Object.assign(new Error("현장실습4는 4학년 2학기, 학생 15·운영 0·교수인정 3학점으로만 저장할 수 있습니다."), { status: 400 });
+  }
+  return normalized;
+}
+
+function coursePlanningSurveySnapshot(planning, semesterPlan) {
+  const targetYears = new Set((semesterPlan.targetYears || []).map(Number));
+  return (planning.courses || [])
+    .filter((course) => course.active !== false && course.isSurveyEligible !== false && (course.allowedTerms || []).includes(semesterPlan.term))
+    .filter((course) => !targetYears.size || (course.targetYears || []).some((year) => targetYears.has(Number(year))))
+    .map((course) => ({
+      id: course.id,
+      courseCode: course.courseCode || "",
+      name: course.name,
+      targetYears: course.targetYears || [],
+      allowedTerms: course.allowedTerms || [],
+      studentCredit: Number(course.studentCredit || 0)
+    }));
+}
+
+function courseDemandByCourseId(planning, planId, db) {
+  const scores = {};
+  const semesterPlanIds = new Set((coursePlanningAnnualPlan(planning, planId)?.semesterPlans || []).map((item) => item.id));
+  for (const survey of planning.surveys || []) {
+    if (!semesterPlanIds.has(survey.semesterPlanId)) continue;
+    const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+    const summary = summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount });
+    for (const course of summary.courses) scores[course.courseId] = Number(scores[course.courseId] || 0) + course.demandScore;
+  }
+  return scores;
+}
+
+function coursePlanningAuditDetail(planning) {
+  return {
+    curriculumVersionCount: planning.curriculumVersions.length,
+    courseCount: planning.courses.length,
+    annualPlanCount: planning.annualPlans.length,
+    surveyCount: planning.surveys.length
+  };
+}
+
+function coursePlanningDate(value, label = "날짜") {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) throw Object.assign(new Error(`${label}를 올바르게 입력하세요.`), { status: 400 });
+  return date.toISOString();
 }
 
 export async function initialDb(adminPassword = "admin") {
@@ -812,6 +897,39 @@ export async function handleApiRequest(ctx) {
         return ok({ favoriteGroups: favoriteGroupsForUser(user, db.equipment) });
       }
 
+      if (routeKey(method, pathname) === "GET /api/me/course-demand-surveys") {
+        const user = requireApprovedStudent(authorization, db);
+        const planning = coursePlanningForDb(db);
+        const surveys = planning.surveys
+          .map((survey) => publicSurveyForStudent({
+            survey,
+            student: user,
+            response: planning.responses.find((response) => response.surveyId === survey.id && response.studentId === user.id),
+            now: new Date()
+          }))
+          .filter(Boolean)
+          .sort((left, right) => String(right.closesAt || "").localeCompare(String(left.closesAt || "")));
+        return ok(surveys);
+      }
+
+      const courseDemandResponseMatch = pathname.match(/^\/api\/me\/course-demand-surveys\/([^/]+)\/response$/);
+      if (method === "PUT" && courseDemandResponseMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const planning = coursePlanningForDb(db);
+        const survey = planning.surveys.find((item) => item.id === courseDemandResponseMatch[1]);
+        if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
+        const body = await parseBody(readText);
+        const rankings = validateCourseDemandResponse({ survey, student: user, rankings: body.rankings, now: new Date() });
+        const existing = planning.responses.find((response) => response.surveyId === survey.id && response.studentId === user.id);
+        const response = existing || { id: id("course_response"), surveyId: survey.id, studentId: user.id };
+        response.rankings = rankings;
+        response.submittedAt = nowIso();
+        if (!existing) planning.responses.push(response);
+        audit(db, user, "course_demand.response_saved", survey.id, { rankingCount: rankings.length });
+        await saveDb();
+        return ok(publicSurveyForStudent({ survey, student: user, response, now: new Date() }));
+      }
+
       if (routeKey(method, pathname) === "GET /api/lectures") {
         const user = requireUser(authorization, db);
         const lectures = db.lectures
@@ -989,6 +1107,194 @@ export async function handleApiRequest(ctx) {
         await postSlack(slackWebhook, db, "studio_report", reservation);
         await saveDb();
         return ok(report);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/course-planning") {
+        requireAdmin(authorization, db);
+        const planning = coursePlanningForDb(db);
+        const annualPlans = planning.annualPlans.map((plan) => ({
+          ...plan,
+          validation: validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory })
+        }));
+        const surveys = planning.surveys.map((survey) => {
+          const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+          return {
+            id: survey.id,
+            semesterPlanId: survey.semesterPlanId,
+            eligibleCurrentYears: survey.eligibleCurrentYears || [],
+            opensAt: survey.opensAt,
+            closesAt: survey.closesAt,
+            status: survey.status,
+            catalogCount: (survey.catalogSnapshot || []).length,
+            summary: summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount })
+          };
+        });
+        return ok({ curriculumVersions: planning.curriculumVersions, courses: planning.courses, annualPlans, surveys });
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/curriculum-versions") {
+        requireAdmin(authorization, db);
+        return ok(coursePlanningForDb(db).curriculumVersions);
+      }
+
+      if (routeKey(method, pathname) === "PUT /api/admin/curriculum-versions") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        if (!Array.isArray(body.curriculumVersions) || !body.curriculumVersions.length) throw Object.assign(new Error("교육과정 버전을 한 개 이상 등록하세요."), { status: 400 });
+        const versions = body.curriculumVersions.map((version, index) => ({
+          id: String(version.id || `curriculum_${version.academicYear || index + 1}`),
+          academicYear: Number(version.academicYear),
+          curriculumCreditLimit: Number(version.curriculumCreditLimit || 130),
+          status: String(version.status || "draft")
+        }));
+        if (versions.some((version) => !Number.isInteger(version.academicYear) || version.curriculumCreditLimit !== 130)) {
+          throw Object.assign(new Error("교육과정 편성학점은 130학점으로 저장해야 합니다."), { status: 400 });
+        }
+        const planning = coursePlanningForDb(db);
+        planning.curriculumVersions = versions;
+        audit(db, admin, "course_planning.curriculum_versions_updated", "course_planning", coursePlanningAuditDetail(planning));
+        await saveDb();
+        return ok(versions);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/courses") {
+        requireAdmin(authorization, db);
+        return ok(coursePlanningForDb(db).courses);
+      }
+
+      if (routeKey(method, pathname) === "PUT /api/admin/courses") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const planning = coursePlanningForDb(db);
+        planning.courses = normalizeCoursePlanningCourses(body.courses);
+        audit(db, admin, "course_planning.courses_updated", "course_planning", coursePlanningAuditDetail(planning));
+        await saveDb();
+        return ok(planning.courses);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/annual-offering-plans") {
+        requireAdmin(authorization, db);
+        const planning = coursePlanningForDb(db);
+        return ok(planning.annualPlans.map((plan) => ({ ...plan, validation: validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory }) })));
+      }
+
+      if (routeKey(method, pathname) === "PUT /api/admin/annual-offering-plans") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        if (!Array.isArray(body.annualPlans)) throw Object.assign(new Error("연간 편성안 목록이 필요합니다."), { status: 400 });
+        const planning = coursePlanningForDb(db);
+        planning.annualPlans = body.annualPlans.map((plan, index) => ({
+          id: String(plan.id || `annual_plan_${plan.academicYear || index + 1}`),
+          academicYear: Number(plan.academicYear),
+          operatingCreditLimit: Number(plan.operatingCreditLimit || 85),
+          status: String(plan.status || "draft"),
+          semesterPlans: Array.isArray(plan.semesterPlans) ? plan.semesterPlans.map((semesterPlan, semesterIndex) => ({
+            id: String(semesterPlan.id || `${plan.id || "annual_plan"}_${semesterPlan.term || semesterIndex}`),
+            term: String(semesterPlan.term || "spring"),
+            targetYears: (semesterPlan.targetYears || []).map(Number).filter(Number.isInteger),
+            optionalCreditTarget: semesterPlan.optionalCreditTarget === undefined ? null : Number(semesterPlan.optionalCreditTarget),
+            offerings: Array.isArray(semesterPlan.offerings) ? semesterPlan.offerings.map((offering) => ({ courseId: String(offering.courseId || ""), source: String(offering.source || "manual"), overrideReason: String(offering.overrideReason || "") })) : []
+          })) : []
+        }));
+        audit(db, admin, "course_planning.annual_plans_updated", "course_planning", coursePlanningAuditDetail(planning));
+        await saveDb();
+        return ok(planning.annualPlans);
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/course-demand-surveys") {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const planning = coursePlanningForDb(db);
+        const target = coursePlanningSemester(planning, body.semesterPlanId);
+        if (!target) throw Object.assign(new Error("설문 대상 학기 편성안을 찾을 수 없습니다."), { status: 404 });
+        const eligibleCurrentYears = [...new Set((body.eligibleCurrentYears || []).map(Number).filter((year) => Number.isInteger(year) && year > 0))];
+        const opensAt = coursePlanningDate(body.opensAt, "설문 시작일");
+        const closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
+        if (!eligibleCurrentYears.length || new Date(opensAt) >= new Date(closesAt)) {
+          throw Object.assign(new Error("대상 학년과 올바른 설문 기간을 입력하세요."), { status: 400 });
+        }
+        const catalogSnapshot = coursePlanningSurveySnapshot(planning, target.semesterPlan);
+        if (!catalogSnapshot.length) throw Object.assign(new Error("설문에 노출할 수 있는 과목이 없습니다."), { status: 400 });
+        const survey = {
+          id: id("course_survey"),
+          semesterPlanId: target.semesterPlan.id,
+          eligibleCurrentYears,
+          opensAt,
+          closesAt,
+          status: ["draft", "open", "closed"].includes(body.status) ? body.status : "draft",
+          catalogSnapshot,
+          createdAt: nowIso(),
+          updatedAt: nowIso()
+        };
+        planning.surveys.push(survey);
+        audit(db, admin, "course_demand.survey_created", survey.id, { semesterPlanId: survey.semesterPlanId, eligibleCurrentYears: survey.eligibleCurrentYears, catalogCount: catalogSnapshot.length });
+        await saveDb();
+        return ok(survey);
+      }
+
+      const courseDemandSurveyMatch = pathname.match(/^\/api\/admin\/course-demand-surveys\/([^/]+)$/);
+      if (method === "PUT" && courseDemandSurveyMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const planning = coursePlanningForDb(db);
+        const survey = planning.surveys.find((item) => item.id === courseDemandSurveyMatch[1]);
+        if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
+        if (body.status !== undefined && !["draft", "open", "closed"].includes(body.status)) throw Object.assign(new Error("올바른 설문 상태가 아닙니다."), { status: 400 });
+        if (body.status !== undefined) survey.status = body.status;
+        if (body.closesAt !== undefined) survey.closesAt = coursePlanningDate(body.closesAt, "설문 마감일");
+        survey.updatedAt = nowIso();
+        audit(db, admin, "course_demand.survey_updated", survey.id, { status: survey.status });
+        await saveDb();
+        return ok(survey);
+      }
+
+      const courseDemandSummaryMatch = pathname.match(/^\/api\/admin\/course-demand-surveys\/([^/]+)\/summary$/);
+      if (method === "GET" && courseDemandSummaryMatch) {
+        requireAdmin(authorization, db);
+        const planning = coursePlanningForDb(db);
+        const survey = planning.surveys.find((item) => item.id === courseDemandSummaryMatch[1]);
+        if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
+        const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(Number(user.studentYear))).length;
+        return ok(summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount }));
+      }
+
+      const courseDemandRecommendationMatch = pathname.match(/^\/api\/admin\/annual-offering-plans\/([^/]+)\/recommendations$/);
+      if (method === "POST" && courseDemandRecommendationMatch) {
+        requireAdmin(authorization, db);
+        const planning = coursePlanningForDb(db);
+        const plan = coursePlanningAnnualPlan(planning, courseDemandRecommendationMatch[1]);
+        if (!plan) throw Object.assign(new Error("연간 편성안을 찾을 수 없습니다."), { status: 404 });
+        return ok(buildOfferingRecommendation({ plan, courses: planning.courses, history: planning.offeringHistory, demandByCourseId: courseDemandByCourseId(planning, plan.id, db) }));
+      }
+
+      const courseDemandPlanMatch = pathname.match(/^\/api\/admin\/annual-offering-plans\/([^/]+)$/);
+      if (method === "PUT" && courseDemandPlanMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const planning = coursePlanningForDb(db);
+        const existing = coursePlanningAnnualPlan(planning, courseDemandPlanMatch[1]);
+        if (!existing) throw Object.assign(new Error("연간 편성안을 찾을 수 없습니다."), { status: 404 });
+        const plan = { ...existing, ...(body.plan || {}), id: existing.id };
+        const validation = validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory });
+        if (plan.status === "confirmed" && validation.errors.length) {
+          throw Object.assign(new Error(validation.errors[0].message), { status: 400 });
+        }
+        const index = planning.annualPlans.findIndex((item) => item.id === existing.id);
+        planning.annualPlans[index] = plan;
+        if (plan.status === "confirmed") {
+          const alreadyRecorded = new Set(planning.offeringHistory.filter((entry) => entry.academicYear === plan.academicYear && entry.status === "confirmed").map((entry) => `${entry.courseId}:${entry.term}`));
+          for (const semesterPlan of plan.semesterPlans || []) {
+            for (const offering of semesterPlan.offerings || []) {
+              const key = `${offering.courseId}:${semesterPlan.term}`;
+              if (alreadyRecorded.has(key)) continue;
+              planning.offeringHistory.push({ id: id("course_history"), courseId: offering.courseId, academicYear: plan.academicYear, term: semesterPlan.term, status: "confirmed", confirmedAt: nowIso() });
+              alreadyRecorded.add(key);
+            }
+          }
+        }
+        audit(db, admin, "course_planning.annual_plan_saved", plan.id, { status: plan.status, errors: validation.errors.length, warnings: validation.warnings.length });
+        await saveDb();
+        return ok({ ...plan, validation });
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/summary") {
