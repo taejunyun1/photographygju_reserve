@@ -766,6 +766,15 @@ assert(courseDemandSheetSource.includes("1~5순위"), "course-demand sheet must 
 assert(courseDemandSheetSource.includes("순위 올리기"), "course-demand sheet must provide an accessible ranking control");
 assert(studentCssSource.includes(".student-react-course-demand-sheet"), "course-demand sheet must receive mobile bottom-sheet styling");
 
+student.resetCaptures();
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState(),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("진행 중인 수요조사가 없습니다."), "student dashboard must retain a visible course-demand area before a survey opens");
+assert(markup.includes("설문이 공개되면 이곳에서 바로 응답할 수 있습니다."), "student dashboard must explain where a future survey will appear");
+
+student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
     courseDemandSurveys: [{

@@ -20,6 +20,12 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
   print: "출력실"
 };
 
+function courseDemandDeadline(value?: string) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(date);
+}
+
 export function HomeScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
   const [favoriteSheetOpen, setFavoriteSheetOpen] = useState(false);
   const [courseDemandSurveyId, setCourseDemandSurveyId] = useState("");
@@ -35,6 +41,33 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
   const courseDemandSurveys = state.courseDemandSurveys || [];
   const activeCourseDemandSurvey = courseDemandSurveys.find((survey) => survey.id === courseDemandSurveyId) || null;
   const courseDemandSurvey = courseDemandSurveys.find((survey) => survey.isOpen) || courseDemandSurveys[0] || null;
+  const courseDemandSummary = (() => {
+    if (!approved) {
+      return { tone: "amber" as const, label: "승인 후 이용", message: "계정 승인 후 내 학년의 수요조사를 이곳에서 확인할 수 있습니다." };
+    }
+    if (!courseDemandSurvey) {
+      return { tone: "neutral" as const, label: "진행 전", message: "진행 중인 수요조사가 없습니다. 설문이 공개되면 이곳에서 바로 응답할 수 있습니다." };
+    }
+    if (courseDemandSurvey.isOpen) {
+      const selectedCount = courseDemandSurvey.response?.rankings?.length || 0;
+      const deadline = courseDemandDeadline(courseDemandSurvey.closesAt);
+      return {
+        tone: "blue" as const,
+        label: "응답 기간",
+        message: selectedCount
+          ? `${selectedCount}개 과목 응답을 저장했습니다.${deadline ? ` ${deadline}까지 수정할 수 있습니다.` : ""}`
+          : `희망 과목을 1~5순위로 선택해 주세요.${deadline ? ` ${deadline}까지 응답할 수 있습니다.` : ""}`
+      };
+    }
+    if (courseDemandSurvey.status === "closed") {
+      return {
+        tone: courseDemandSurvey.response ? "green" as const : "neutral" as const,
+        label: courseDemandSurvey.response ? "응답 완료" : "마감됨",
+        message: courseDemandSurvey.response ? "제출한 희망 과목은 다음 학기 개설 편성에 반영됩니다." : "이번 수요조사는 마감되었습니다."
+      };
+    }
+    return { tone: "neutral" as const, label: "준비 중", message: "관리자가 설문을 공개하면 이곳에서 바로 응답할 수 있습니다." };
+  })();
 
   function closeFavoriteSheet() {
     setFavoriteSheetOpen(false);
@@ -55,6 +88,19 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
           <GjuStatusBadge tone="amber">{APPROVAL_LABELS[state.user.approvalStatus || ""] || "승인 대기"}</GjuStatusBadge>
         </GjuCard>
       ) : null}
+
+      <GjuCard title="다음 학기 희망 과목 조사" eyebrow="개설 수요조사" className="student-react-course-demand-card">
+        <div className="student-react-course-demand-card__status">
+          <GjuStatusBadge tone={courseDemandSummary.tone}>{courseDemandSummary.label}</GjuStatusBadge>
+          <span>수강신청 전 개설 수요를 확인합니다.</span>
+        </div>
+        <div className="student-react-course-demand-card__actions">
+          <span>{courseDemandSummary.message}</span>
+          {approved && courseDemandSurvey?.isOpen ? (
+            <GjuButton onClick={() => setCourseDemandSurveyId(courseDemandSurvey.id)}>{courseDemandSurvey.response ? "응답 수정" : "응답하기"}</GjuButton>
+          ) : null}
+        </div>
+      </GjuCard>
 
       <section className="home-quick-actions" aria-label="예약 바로가기">
         <div className="home-section-label"><strong>예약</strong><span>바로가기</span></div>
@@ -80,16 +126,6 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
       ) : (
         <GjuEmptyState title="예정된 예약이 없습니다." action={<GjuButton onClick={() => actions.setView("reserve")}>예약 시작</GjuButton>} />
       )}
-
-      {courseDemandSurvey ? (
-        <GjuCard title="다음 학기 희망 과목 조사" eyebrow="수요조사" className="student-react-course-demand-card">
-          <p className="muted">희망 과목을 1~5순위로 제출하면 다음 학기 개설 편성에 반영합니다.</p>
-          <div className="student-react-course-demand-card__actions">
-            <span>{courseDemandSurvey.response?.rankings?.length ? `${courseDemandSurvey.response.rankings.length}개 과목 응답 완료` : "아직 응답하지 않았습니다."}</span>
-            <GjuButton disabled={!courseDemandSurvey.isOpen} onClick={() => setCourseDemandSurveyId(courseDemandSurvey.id)}>{courseDemandSurvey.isOpen ? courseDemandSurvey.response ? "응답 수정" : "응답하기" : "마감됨"}</GjuButton>
-          </div>
-        </GjuCard>
-      ) : null}
 
       <GjuCard
         title="빠른 예약"

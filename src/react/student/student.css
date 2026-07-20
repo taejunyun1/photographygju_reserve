@@ -358,6 +358,7 @@
 }
 
 .student-react-course-demand-card,
+.student-react-course-demand-card__status,
 .student-react-course-demand-card__actions,
 .student-react-course-demand-sheet__content,
 .student-react-course-demand-sheet__rankings,
@@ -371,6 +372,12 @@
   align-items: center;
 }
 
+.student-react-course-demand-card__status {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.student-react-course-demand-card__status > span,
 .student-react-course-demand-card__actions > span,
 .student-react-course-demand-sheet__rankings > div > span {
   color: var(--student-muted);
