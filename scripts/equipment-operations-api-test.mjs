@@ -203,4 +203,151 @@ const searchByLegacyCode = await api(
 assert.equal(searchByLegacyCode.status, 200);
 assert.equal(searchByLegacyCode.body.data[0].id, importedItem.id);
 
+const returnItems = db.equipment.slice(0, 3);
+returnItems.forEach((item) => {
+  item.status = "가능";
+  item.reservable = true;
+  item.inquiryOnly = false;
+});
+const checkedOutReservation = {
+  id: "reservation_return_inspection",
+  type: "equipment",
+  status: "checked_out",
+  userId: admin.id,
+  fields: {
+    reservedDate: "2099-07-29",
+    equipmentItemIds: returnItems.map((item) => item.id)
+  },
+  history: [],
+  createdAt: "2099-07-20T00:00:00.000Z",
+  updatedAt: "2099-07-20T00:00:00.000Z"
+};
+db.reservations.push(checkedOutReservation);
+
+const returnInspection = await api(
+  "POST",
+  `/api/admin/reservations/${checkedOutReservation.id}/return-inspection`,
+  {
+    inspections: [
+      {
+        equipmentId: returnItems[0].id,
+        outcome: "normal",
+        note: ""
+      },
+      {
+        equipmentId: returnItems[1].id,
+        outcome: "needs_inspection",
+        note: "렌즈 유격 확인"
+      },
+      {
+        equipmentId: returnItems[2].id,
+        outcome: "needs_repair",
+        note: "전원 불량"
+      }
+    ]
+  }
+);
+assert.equal(returnInspection.status, 200);
+assert.equal(checkedOutReservation.status, "returned");
+assert.equal(returnItems[0].status, "가능");
+assert.equal(returnItems[1].status, "수리중");
+assert.equal(returnItems[2].status, "수리중");
+assert.equal(db.equipmentInspections.length, 3);
+assert.deepEqual(
+  db.equipmentInspections.map((item) => item.outcome),
+  ["normal", "needs_inspection", "needs_repair"]
+);
+
+const approvedReservation = {
+  ...checkedOutReservation,
+  id: "reservation_not_checked_out",
+  status: "approved",
+  history: []
+};
+db.reservations.push(approvedReservation);
+const invalidStatusInspection = await api(
+  "POST",
+  `/api/admin/reservations/${approvedReservation.id}/return-inspection`,
+  {
+    inspections: returnItems.map((item) => ({
+      equipmentId: item.id,
+      outcome: "normal",
+      note: ""
+    }))
+  }
+);
+assert.equal(invalidStatusInspection.status, 409);
+
+const missingRepairReasonReservation = {
+  ...checkedOutReservation,
+  id: "reservation_missing_repair_reason",
+  status: "checked_out",
+  history: []
+};
+db.reservations.push(missingRepairReasonReservation);
+const missingRepairReason = await api(
+  "POST",
+  `/api/admin/reservations/${missingRepairReasonReservation.id}/return-inspection`,
+  {
+    inspections: returnItems.map((item, index) => ({
+      equipmentId: item.id,
+      outcome: index === 0 ? "needs_repair" : "normal",
+      note: ""
+    }))
+  }
+);
+assert.equal(missingRepairReason.status, 400);
+assert.equal(missingRepairReasonReservation.status, "checked_out");
+
+const unrelatedEquipmentInspection = await api(
+  "POST",
+  `/api/admin/reservations/${missingRepairReasonReservation.id}/return-inspection`,
+  {
+    inspections: [
+      ...returnItems.slice(0, 2).map((item) => ({
+        equipmentId: item.id,
+        outcome: "normal",
+        note: ""
+      })),
+      {
+        equipmentId: importedItem.id,
+        outcome: "normal",
+        note: ""
+      }
+    ]
+  }
+);
+assert.equal(unrelatedEquipmentInspection.status, 400);
+
+db.users.push({
+  id: "user_equipment_operations_student",
+  role: "student",
+  username: "equipment-operations-student",
+  name: "기자재 테스트 학생",
+  approvalStatus: "approved",
+  createdAt: "2099-01-01T00:00:00.000Z",
+  updatedAt: "2099-01-01T00:00:00.000Z"
+});
+db.sessions.push({
+  id: "session_equipment_operations_student",
+  token: "equipment-operations-student-token",
+  userId: "user_equipment_operations_student",
+  expiresAt: "2099-12-31T00:00:00.000Z",
+  createdAt: "2099-01-01T00:00:00.000Z",
+  lastSeenAt: "2099-01-01T00:00:00.000Z"
+});
+const studentInspection = await api(
+  "POST",
+  `/api/admin/reservations/${missingRepairReasonReservation.id}/return-inspection`,
+  {
+    inspections: returnItems.map((item) => ({
+      equipmentId: item.id,
+      outcome: "normal",
+      note: ""
+    }))
+  },
+  "equipment-operations-student-token"
+);
+assert.equal(studentInspection.status, 403);
+
 console.log("Equipment operations API checks passed.");

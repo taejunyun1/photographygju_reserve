@@ -1661,6 +1661,168 @@ export async function handleApiRequest(ctx) {
         return ok({ id: reservationId, deletedReservations: 1, deletedReports });
       }
 
+      const adminReturnInspectionMatch = pathname.match(
+        /^\/api\/admin\/reservations\/([^/]+)\/return-inspection$/
+      );
+      if (method === "POST" && adminReturnInspectionMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const reservation = db.reservations.find(
+          (item) => item.id === adminReturnInspectionMatch[1]
+        );
+        if (!reservation) {
+          throw Object.assign(new Error("예약을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        if (reservation.type !== "equipment") {
+          throw Object.assign(
+            new Error("기자재 예약에서만 반납 점검을 처리할 수 있습니다."),
+            { status: 400 }
+          );
+        }
+        if (reservation.status !== "checked_out") {
+          throw Object.assign(
+            new Error("대여 중인 예약만 반납 점검을 처리할 수 있습니다."),
+            { status: 409 }
+          );
+        }
+        const requested = Array.isArray(body.inspections)
+          ? body.inspections
+          : [];
+        const expectedIds = [
+          ...new Set(
+            Array.isArray(reservation.fields?.equipmentItemIds)
+              ? reservation.fields.equipmentItemIds.map(String)
+              : []
+          )
+        ];
+        const requestedIds = requested.map((item) =>
+          String(item?.equipmentId || "")
+        );
+        if (
+          !expectedIds.length ||
+          requestedIds.length !== expectedIds.length ||
+          new Set(requestedIds).size !== requestedIds.length ||
+          requestedIds.some((itemId) => !expectedIds.includes(itemId))
+        ) {
+          throw Object.assign(
+            new Error("예약에 포함된 모든 기자재의 점검 결과를 입력하세요."),
+            { status: 400 }
+          );
+        }
+
+        const allowedOutcomes = new Set([
+          "normal",
+          "needs_inspection",
+          "needs_repair"
+        ]);
+        const checkedAt = nowIso();
+        const changes = requested.map((inspection) => {
+          const equipment = db.equipment.find(
+            (item) => item.id === String(inspection.equipmentId)
+          );
+          if (!equipment) {
+            throw Object.assign(new Error("점검할 기자재를 찾을 수 없습니다."), {
+              status: 404
+            });
+          }
+          const outcome = String(inspection.outcome || "");
+          if (!allowedOutcomes.has(outcome)) {
+            throw Object.assign(new Error("지원하지 않는 점검 결과입니다."), {
+              status: 400
+            });
+          }
+          const note = String(inspection.note || "").trim();
+          if (outcome === "needs_repair" && !note) {
+            throw Object.assign(
+              new Error("파손·수리 필요 사유를 입력하세요."),
+              { status: 400 }
+            );
+          }
+          const nextStatus = outcome === "normal" ? "가능" : "수리중";
+          return {
+            equipment,
+            nextStatus,
+            record: {
+              id: id("eqinspection"),
+              equipmentId: equipment.id,
+              reservationId: reservation.id,
+              outcome,
+              note,
+              previousStatus: equipment.status,
+              nextStatus,
+              checkedBy: admin.id,
+              checkedAt
+            }
+          };
+        });
+
+        const previousReservation = JSON.parse(JSON.stringify(reservation));
+        const previousEquipment = changes.map(({ equipment }) => ({
+          equipment,
+          snapshot: JSON.parse(JSON.stringify(equipment))
+        }));
+        const previousInspections = db.equipmentInspections;
+        const previousAuditLogs = db.auditLogs;
+        for (const { equipment, nextStatus } of changes) {
+          equipment.status = nextStatus;
+          equipment.updatedAt = checkedAt;
+          if (nextStatus === "가능") {
+            const inquiryOnly = equipment.source === "fantasy_lab"
+              || equipment.facility === "판타지랩";
+            equipment.reservable = !inquiryOnly;
+            equipment.inquiryOnly = inquiryOnly;
+          } else {
+            equipment.reservable = false;
+            equipment.inquiryOnly = true;
+          }
+        }
+        reservation.status = "returned";
+        reservation.updatedAt = checkedAt;
+        reservation.history = [
+          ...(Array.isArray(reservation.history) ? reservation.history : []),
+          {
+            at: checkedAt,
+            actorId: admin.id,
+            action: "return_inspected",
+            status: "returned",
+            equipmentOutcomes: changes.map(({ record }) => ({
+              equipmentId: record.equipmentId,
+              outcome: record.outcome
+            }))
+          }
+        ];
+        db.equipmentInspections = [
+          ...previousInspections,
+          ...changes.map(({ record }) => record)
+        ];
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "reservation.return_inspected", reservation.id, {
+          equipmentOutcomes: changes.map(({ record }) => ({
+            equipmentId: record.equipmentId,
+            outcome: record.outcome
+          }))
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          for (const key of Object.keys(reservation)) delete reservation[key];
+          Object.assign(reservation, previousReservation);
+          for (const { equipment, snapshot } of previousEquipment) {
+            for (const key of Object.keys(equipment)) delete equipment[key];
+            Object.assign(equipment, snapshot);
+          }
+          db.equipmentInspections = previousInspections;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok({
+          reservation: withReservationDetails(db, reservation),
+          inspections: changes.map(({ record }) => record)
+        });
+      }
+
       const adminReservationStatusMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)\/status$/);
       if (method === "PATCH" && adminReservationStatusMatch) {
         const admin = requireAdmin(authorization, db);
