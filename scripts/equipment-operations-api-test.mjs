@@ -119,4 +119,88 @@ const missingMigration = await api(
 );
 assert.equal(missingMigration.status, 404);
 
+const codePreview = await api(
+  "POST",
+  "/api/admin/equipment/code-preview",
+  {
+    category: "Drone",
+    name: "DJI 매빅2 프로",
+    brand: "DJI",
+    quantity: 1
+  }
+);
+assert.equal(codePreview.status, 200);
+assert.match(
+  codePreview.body.data.codes[0],
+  /^DRN-DJI-MAVIC2PRO-\d{3}$/
+);
+
+const created = await api(
+  "POST",
+  "/api/admin/equipment",
+  {
+    category: "Body",
+    name: "소니 A7MIII Body",
+    brand: "Sony",
+    model: "A7MIII",
+    functionTags: ["영상 촬영"],
+    quantity: 2,
+    source: "department",
+    status: "가능"
+  }
+);
+assert.equal(created.status, 200);
+assert.match(created.body.data[0].code, /^CAM-SNY-A7M3-\d{3}$/);
+assert.equal(
+  created.body.data[1].code.slice(-3),
+  String(Number(created.body.data[0].code.slice(-3)) + 1).padStart(3, "0")
+);
+assert.equal(created.body.data[0].codeVersion, 2);
+assert.deepEqual(created.body.data[0].functionTags, ["영상 촬영"]);
+
+const searchByFunction = await api(
+  "GET",
+  "/api/admin/equipment/search?q=영상%20촬영"
+);
+assert.equal(searchByFunction.status, 200);
+assert.equal(searchByFunction.body.data[0].id, created.body.data[0].id);
+
+const previousCode = created.body.data[0].code;
+const regenerated = await api(
+  "POST",
+  `/api/admin/equipment/${created.body.data[0].id}/regenerate-code`,
+  { confirmation: "코드 재생성" }
+);
+assert.equal(regenerated.status, 200);
+assert.notEqual(regenerated.body.data.code, previousCode);
+assert.equal(regenerated.body.data.legacyCodes.includes(previousCode), true);
+
+const imported = await api(
+  "POST",
+  "/api/admin/equipment/import",
+  {
+    rows: [{
+      category: "Audio",
+      name: "RODE 샷건 마이크",
+      brand: "Rode",
+      function_tags: "인터뷰|동시녹음",
+      code: "AUD-OLD-01"
+    }]
+  }
+);
+assert.equal(imported.status, 200);
+const importedItem = db.equipment.find(
+  (item) => item.importBatchId === imported.body.data.id
+);
+assert.match(importedItem.code, /^AUD-ROD-SHOTGUN-\d{3}$/);
+assert.deepEqual(importedItem.legacyCodes, ["AUD-OLD-01"]);
+assert.deepEqual(importedItem.functionTags, ["인터뷰", "동시녹음"]);
+
+const searchByLegacyCode = await api(
+  "GET",
+  "/api/admin/equipment/search?q=AUD-OLD-01"
+);
+assert.equal(searchByLegacyCode.status, 200);
+assert.equal(searchByLegacyCode.body.data[0].id, importedItem.id);
+
 console.log("Equipment operations API checks passed.");

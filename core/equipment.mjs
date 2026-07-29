@@ -109,6 +109,45 @@ export function createEquipmentHelpers({ seedEquipmentGroups, defaultSettings, i
     return items;
   }
 
+  function createEquipmentRecords({
+    existingItems = [],
+    input = {},
+    quantity = 1,
+    makeId = id,
+    timestamp = nowIso()
+  } = {}) {
+    const allocation = allocateEquipmentCodes({
+      items: existingItems,
+      input,
+      quantity
+    });
+    if (
+      allocation.identity.warnings.includes(
+        "제품 또는 모델 정보를 확인하세요."
+      )
+    ) {
+      throw Object.assign(
+        new Error("제품명 또는 모델 정보를 확인하세요."),
+        { status: 400 }
+      );
+    }
+    const legacyCode = String(input.legacyCode || "").trim();
+    return allocation.codes.map((code) => ({
+      id: makeId("eq"),
+      code,
+      legacyCodes: legacyCode ? [legacyCode] : [],
+      category: allocation.identity.category,
+      brand: allocation.identity.brand,
+      brandCode: allocation.identity.brandCode,
+      model: allocation.identity.model,
+      productKey: allocation.identity.productKey,
+      functionTags: allocation.identity.functionTags,
+      codeVersion: 2,
+      codeAssignedAt: timestamp,
+      codeAssignedBy: input.codeAssignedBy || ""
+    }));
+  }
+
   function equipmentPeriodDays(period = "") {
     if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
     if (String(period).includes("1박2일")) return 1;
@@ -131,7 +170,18 @@ export function createEquipmentHelpers({ seedEquipmentGroups, defaultSettings, i
   }
 
   function equipmentMatchesAnyKeyword(item, keywords = []) {
-    const haystack = [item?.name, item?.code, item?.category, item?.notes, item?.model, item?.brand].map(normalizedText).join(" ");
+    const haystack = [
+      item?.name,
+      item?.code,
+      ...(Array.isArray(item?.legacyCodes) ? item.legacyCodes : []),
+      item?.category,
+      item?.notes,
+      item?.model,
+      item?.brand,
+      item?.brandCode,
+      item?.productKey,
+      ...(Array.isArray(item?.functionTags) ? item.functionTags : [])
+    ].map(normalizedText).join(" ");
     return keywords.map(normalizedText).filter(Boolean).some((keyword) => haystack.includes(keyword));
   }
 
@@ -154,6 +204,7 @@ export function createEquipmentHelpers({ seedEquipmentGroups, defaultSettings, i
     applyEquipmentPatch,
     booleanFromBody,
     codeBase,
+    createEquipmentRecords,
     equipmentAuditDetail,
     equipmentMatchesAnyKeyword,
     equipmentMatchesCategory,

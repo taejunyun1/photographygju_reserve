@@ -36,7 +36,9 @@ import {
   createEquipmentHelpers
 } from "./core/equipment.mjs";
 import {
+  allocateEquipmentCodes,
   buildEquipmentCodeMigrationPreview,
+  equipmentSearchScore,
   equipmentMigrationFingerprint
 } from "./core/equipment-code.mjs";
 import {
@@ -534,7 +536,7 @@ const equipmentHelpers = createEquipmentHelpers({
 
 const {
   applyEquipmentPatch,
-  codeBase,
+  createEquipmentRecords,
   equipmentAuditDetail,
   equipmentReservationRange,
   equipmentReservableForStatus,
@@ -673,6 +675,12 @@ export function normalizeDb(db) {
   }
   db.equipment = db.equipment || [];
   for (const item of db.equipment) {
+    item.legacyCodes = Array.isArray(item.legacyCodes)
+      ? [...new Set(item.legacyCodes.map(String).filter(Boolean))]
+      : [];
+    item.functionTags = Array.isArray(item.functionTags)
+      ? [...new Set(item.functionTags.map(String).filter(Boolean))]
+      : [];
     item.status = normalizeEquipmentStatus(item.status);
     if (!equipmentReservableForStatus(item.status)) {
       item.reservable = false;
@@ -1848,13 +1856,43 @@ export async function handleApiRequest(ctx) {
         return ok(migration);
       }
 
+      if (routeKey(method, pathname) === "POST /api/admin/equipment/code-preview") {
+        requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const quantity = Math.min(200, Math.max(1, Number(body.quantity || 1)));
+        return ok(allocateEquipmentCodes({
+          items: db.equipment,
+          input: body,
+          quantity
+        }));
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/equipment/search") {
+        requireAdmin(authorization, db);
+        const query = String(searchParams.get("q") || "").trim();
+        return ok(db.equipment
+          .filter((item) => item.active !== false)
+          .map((item) => ({
+            item,
+            score: equipmentSearchScore(item, query)
+          }))
+          .filter(({ score }) => score > 0)
+          .sort((left, right) =>
+            right.score - left.score ||
+            String(left.item.code || "").localeCompare(
+              String(right.item.code || ""),
+              "ko"
+            )
+          )
+          .slice(0, 50)
+          .map(({ item }) => item));
+      }
+
       if (routeKey(method, pathname) === "POST /api/admin/equipment") {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["name", "category"]);
-        const quantity = Math.max(1, Number(body.quantity || 1));
-        const requestedCodePrefix = String(body.codePrefix || body.code || "").trim();
-        const base = requestedCodePrefix || codeBase(body.category, body.name, db.equipment.length + 1);
+        const quantity = Math.min(200, Math.max(1, Number(body.quantity || 1)));
         const source = body.source || "department";
         const status = normalizeEquipmentStatus(body.status);
         const inquiryOnlyRequested = source === "fantasy_lab"
@@ -1863,26 +1901,31 @@ export async function handleApiRequest(ctx) {
           || body.inquiryOnly === "true"
           || body.reservable === false;
         const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
-        const created = [];
-        for (let index = 1; index <= quantity; index += 1) {
-          created.push({
-            id: id("eq"),
+        const createdAt = nowIso();
+        const generated = createEquipmentRecords({
+          existingItems: db.equipment,
+          input: {
+            ...body,
+            legacyCode: body.codePrefix || body.code || "",
+            codeAssignedBy: admin.id
+          },
+          quantity,
+          makeId: id,
+          timestamp: createdAt
+        });
+        const created = generated.map((record) => ({
+            ...record,
             facility: body.facility || (source === "fantasy_lab" ? "판타지랩" : "극기관"),
             source,
-            category: body.category,
             name: body.name,
-            brand: String(body.brand || ""),
-            model: String(body.model || ""),
-            code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
             status,
             reservable,
             inquiryOnly: !reservable,
             notes: body.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
             active: true,
-            createdAt: nowIso(),
-            updatedAt: nowIso()
-          });
-        }
+            createdAt,
+            updatedAt: createdAt
+          }));
         db.equipment.push(...created);
         audit(db, admin, "equipment.created", created.map((item) => item.id).join(","), { count: created.length });
         await saveDb();
@@ -1923,26 +1966,43 @@ export async function handleApiRequest(ctx) {
             || row.reservable === false
             || row.reservable === "false";
           const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
-          const requestedCodePrefix = String(row.code_prefix || row.codePrefix || row.code || "").trim();
-          const base = requestedCodePrefix || codeBase(category, row.name, db.equipment.length + 1);
-          for (let index = 1; index <= quantity; index += 1) {
+          const createdAt = nowIso();
+          let generated;
+          try {
+            generated = createEquipmentRecords({
+              existingItems: db.equipment,
+              input: {
+                ...row,
+                category,
+                functionTags: row.functionTags || row.function_tags || [],
+                legacyCode: row.code_prefix || row.codePrefix || row.code || "",
+                codeAssignedBy: admin.id
+              },
+              quantity,
+              makeId: id,
+              timestamp: createdAt
+            });
+          } catch (error) {
+            if (error?.status === 400) {
+              batch.errorRows += 1;
+              continue;
+            }
+            throw error;
+          }
+          for (const record of generated) {
             const item = {
-              id: id("eq"),
+              ...record,
               facility: row.facility || (source === "fantasy_lab" ? "판타지랩" : "극기관"),
               source,
-              category,
               name: row.name,
-              brand: row.brand || "",
-              model: row.model || "",
-              code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
               status,
               reservable,
               inquiryOnly: !reservable,
               notes: row.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
               active: true,
               importBatchId: batch.id,
-              createdAt: nowIso(),
-              updatedAt: nowIso()
+              createdAt,
+              updatedAt: createdAt
             };
             db.equipment.push(item);
             batch.createdItemIds.push(item.id);
@@ -1972,6 +2032,68 @@ export async function handleApiRequest(ctx) {
         const updated = items.map((item) => applyEquipmentPatch(item, body.patch));
         audit(db, admin, "equipment.updated", ids.join(","), equipmentAuditDetail(body.patch, { count: updated.length, bulk: true }));
         await saveDb();
+        return ok(updated);
+      }
+
+      const equipmentCodeRegenerationMatch = pathname.match(
+        /^\/api\/admin\/equipment\/([^/]+)\/regenerate-code$/
+      );
+      if (method === "POST" && equipmentCodeRegenerationMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        if (body.confirmation !== "코드 재생성") {
+          throw Object.assign(
+            new Error("코드 재생성 확인 문구가 일치하지 않습니다."),
+            { status: 400 }
+          );
+        }
+        const itemIndex = db.equipment.findIndex(
+          (item) => item.id === equipmentCodeRegenerationMatch[1]
+        );
+        if (itemIndex < 0) {
+          throw Object.assign(new Error("기자재를 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        const current = db.equipment[itemIndex];
+        const generated = createEquipmentRecords({
+          existingItems: db.equipment,
+          input: {
+            ...current,
+            legacyCode: current.code,
+            codeAssignedBy: admin.id
+          },
+          quantity: 1,
+          makeId: () => current.id,
+          timestamp: nowIso()
+        })[0];
+        const updated = {
+          ...current,
+          ...generated,
+          legacyCodes: [
+            ...(Array.isArray(current.legacyCodes) ? current.legacyCodes : []),
+            current.code
+          ].map(String).filter(Boolean),
+          updatedAt: generated.codeAssignedAt
+        };
+        updated.legacyCodes = [...new Set(updated.legacyCodes)];
+        const previousEquipment = db.equipment;
+        const previousAuditLogs = db.auditLogs;
+        db.equipment = db.equipment.map((item, index) =>
+          index === itemIndex ? updated : item
+        );
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_regenerated", current.id, {
+          oldCode: current.code,
+          newCode: updated.code
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipment = previousEquipment;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
         return ok(updated);
       }
 

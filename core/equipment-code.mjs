@@ -71,7 +71,8 @@ const PRODUCT_ALIASES = Object.freeze([
   [/스팟\s*미터|스팟미터|SPOT\s*METER/i, "SPOTMETER"],
   [/컬러\s*미터|컬러미터|COLOR\s*METER/i, "COLORMETER"],
   [/셔틀러|SHUTTLER/i, "SHUTTLER"],
-  [/전동\s*슬라이더|SLIDER/i, "SLIDER"]
+  [/전동\s*슬라이더|SLIDER/i, "SLIDER"],
+  [/장비|EQUIPMENT/i, "EQUIPMENT"]
 ]);
 
 const PRODUCT_NOISE = /\b(BODY|LENS|CAMERA|LIGHTING|LIGHT|AUDIO|DRONE)\b|카메라|바디|렌즈|조명|오디오|드론|마이크/g;
