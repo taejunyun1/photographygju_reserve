@@ -272,6 +272,57 @@ const COLLECTIONS = [
     insert: `INSERT OR REPLACE INTO import_batches
       (id, created_at, data)
       VALUES (?, ?, ?)`
+  },
+  {
+    key: "equipmentCodeMigrations",
+    table: "equipment_code_migrations",
+    create: `CREATE TABLE IF NOT EXISTS equipment_code_migrations (
+      id TEXT PRIMARY KEY,
+      status TEXT,
+      created_at TEXT,
+      applied_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_equipment_code_migrations_status_created ON equipment_code_migrations (status, created_at)"
+    ],
+    params: (item, data) => [
+      item.id,
+      item.status || "",
+      item.createdAt || "",
+      item.appliedAt || "",
+      data
+    ],
+    insert: `INSERT OR REPLACE INTO equipment_code_migrations
+      (id, status, created_at, applied_at, data)
+      VALUES (?, ?, ?, ?, ?)`
+  },
+  {
+    key: "equipmentInspections",
+    table: "equipment_inspections",
+    create: `CREATE TABLE IF NOT EXISTS equipment_inspections (
+      id TEXT PRIMARY KEY,
+      equipment_id TEXT,
+      reservation_id TEXT,
+      outcome TEXT,
+      checked_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_equipment_inspections_equipment_checked ON equipment_inspections (equipment_id, checked_at)",
+      "CREATE INDEX IF NOT EXISTS idx_equipment_inspections_reservation ON equipment_inspections (reservation_id)"
+    ],
+    params: (item, data) => [
+      item.id,
+      item.equipmentId || "",
+      item.reservationId || "",
+      item.outcome || "",
+      item.checkedAt || "",
+      data
+    ],
+    insert: `INSERT OR REPLACE INTO equipment_inspections
+      (id, equipment_id, reservation_id, outcome, checked_at, data)
+      VALUES (?, ?, ?, ?, ?, ?)`
   }
 ];
 

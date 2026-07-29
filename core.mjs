@@ -36,6 +36,10 @@ import {
   createEquipmentHelpers
 } from "./core/equipment.mjs";
 import {
+  buildEquipmentCodeMigrationPreview,
+  equipmentMigrationFingerprint
+} from "./core/equipment-code.mjs";
+import {
   PASSWORD_MIN_LENGTH,
   SESSION_TTL_MS,
   createAuthSessionHelpers
@@ -382,6 +386,8 @@ export async function initialDb(adminPassword = "admin") {
     slackLogs: [],
     auditLogs: [],
     importBatches: [],
+    equipmentCodeMigrations: [],
+    equipmentInspections: [],
     coursePlanning: createCoursePlanningSeed()
   };
 }
@@ -640,6 +646,8 @@ export function normalizeDb(db) {
   }
   db.darkroomChemicals = db.darkroomChemicals || darkroomChemicals;
   db.importBatches = db.importBatches || [];
+  db.equipmentCodeMigrations = db.equipmentCodeMigrations || [];
+  db.equipmentInspections = db.equipmentInspections || [];
   db.reservations = db.reservations || [];
   db.reports = db.reports || [];
   db.lectures = db.lectures || [];
@@ -725,6 +733,8 @@ export function adminExportData(db) {
     auditLogs: db.auditLogs,
     slackLogs: db.slackLogs,
     importBatches: db.importBatches,
+    equipmentCodeMigrations: db.equipmentCodeMigrations,
+    equipmentInspections: db.equipmentInspections,
     coursePlanning: exportedCoursePlanning
   };
 }
@@ -1673,6 +1683,169 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/admin/equipment") {
         requireAdmin(authorization, db);
         return ok(db.equipment);
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/equipment/code-migrations/preview") {
+        const admin = requireAdmin(authorization, db);
+        const preview = buildEquipmentCodeMigrationPreview(db.equipment);
+        const migration = {
+          id: id("eqmigration"),
+          status: "preview",
+          codeVersion: 2,
+          fingerprint: preview.fingerprint,
+          items: preview.items,
+          warningCount: preview.warningCount,
+          createdBy: admin.id,
+          createdAt: nowIso(),
+          appliedAt: ""
+        };
+        const previousMigrations = db.equipmentCodeMigrations;
+        const previousAuditLogs = db.auditLogs;
+        db.equipmentCodeMigrations = [...previousMigrations, migration];
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_migration_previewed", migration.id, {
+          itemCount: migration.items.length,
+          warningCount: migration.warningCount,
+          codeVersion: migration.codeVersion
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipmentCodeMigrations = previousMigrations;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok(migration);
+      }
+
+      const equipmentCodeMigrationApplyMatch = pathname.match(
+        /^\/api\/admin\/equipment\/code-migrations\/([^/]+)\/apply$/
+      );
+      if (method === "POST" && equipmentCodeMigrationApplyMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const migration = db.equipmentCodeMigrations.find(
+          (item) => item.id === equipmentCodeMigrationApplyMatch[1]
+        );
+        if (!migration) {
+          throw Object.assign(new Error("코드 재발급 작업을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        if (migration.status === "applied") return ok(migration);
+        if (migration.fingerprint !== equipmentMigrationFingerprint(db.equipment)) {
+          throw Object.assign(
+            new Error("미리보기 이후 기자재가 변경되었습니다. 미리보기를 다시 생성하세요."),
+            { status: 409 }
+          );
+        }
+
+        const confirmedIds = new Set(
+          Array.isArray(body.confirmedIds)
+            ? body.confirmedIds.map((value) => String(value || ""))
+            : []
+        );
+        const unconfirmed = migration.items.filter(
+          (item) => item.warnings?.length && !confirmedIds.has(item.equipmentId)
+        );
+        if (unconfirmed.length) {
+          throw Object.assign(
+            new Error(`확인이 필요한 기자재 ${unconfirmed.length}개를 먼저 확인하세요.`),
+            { status: 409 }
+          );
+        }
+
+        const mappingById = new Map(
+          migration.items.map((item) => [item.equipmentId, item])
+        );
+        if (mappingById.size !== db.equipment.length) {
+          throw Object.assign(
+            new Error("코드 재발급 대상과 현재 기자재 수가 일치하지 않습니다."),
+            { status: 409 }
+          );
+        }
+        const assignedAt = nowIso();
+        const nextEquipment = db.equipment.map((item) => {
+          const mapping = mappingById.get(item.id);
+          if (!mapping) {
+            throw Object.assign(
+              new Error("코드 재발급 대상 기자재를 찾을 수 없습니다."),
+              { status: 409 }
+            );
+          }
+          const legacyCodes = [
+            ...(Array.isArray(item.legacyCodes) ? item.legacyCodes : []),
+            mapping.oldCode
+          ].map(String).filter(Boolean);
+          return {
+            ...item,
+            code: mapping.newCode,
+            legacyCodes: [...new Set(legacyCodes)],
+            category: mapping.identity.category,
+            brand: mapping.identity.brand,
+            brandCode: mapping.identity.brandCode,
+            model: mapping.identity.model,
+            productKey: mapping.identity.productKey,
+            functionTags: mapping.identity.functionTags,
+            codeVersion: 2,
+            codeAssignedAt: assignedAt,
+            codeAssignedBy: admin.id,
+            updatedAt: assignedAt
+          };
+        });
+        if (new Set(nextEquipment.map((item) => item.code)).size !== nextEquipment.length) {
+          throw Object.assign(
+            new Error("새 기자재 코드가 중복되어 적용할 수 없습니다."),
+            { status: 409 }
+          );
+        }
+
+        const appliedMigration = {
+          ...migration,
+          status: "applied",
+          appliedAt: assignedAt,
+          appliedBy: admin.id,
+          confirmedIds: [...confirmedIds]
+        };
+        const nextMigrations = db.equipmentCodeMigrations.map((item) =>
+          item.id === migration.id ? appliedMigration : item
+        );
+        const previousEquipment = db.equipment;
+        const previousMigrations = db.equipmentCodeMigrations;
+        const previousAuditLogs = db.auditLogs;
+        db.equipment = nextEquipment;
+        db.equipmentCodeMigrations = nextMigrations;
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_migration_applied", migration.id, {
+          itemCount: nextEquipment.length,
+          warningCount: migration.warningCount,
+          codeVersion: 2
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipment = previousEquipment;
+          db.equipmentCodeMigrations = previousMigrations;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok(appliedMigration);
+      }
+
+      const equipmentCodeMigrationGetMatch = pathname.match(
+        /^\/api\/admin\/equipment\/code-migrations\/([^/]+)$/
+      );
+      if (method === "GET" && equipmentCodeMigrationGetMatch) {
+        requireAdmin(authorization, db);
+        const migration = db.equipmentCodeMigrations.find(
+          (item) => item.id === equipmentCodeMigrationGetMatch[1]
+        );
+        if (!migration) {
+          throw Object.assign(new Error("코드 재발급 작업을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        return ok(migration);
       }
 
       if (routeKey(method, pathname) === "POST /api/admin/equipment") {

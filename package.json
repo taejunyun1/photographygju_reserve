@@ -27,6 +27,7 @@
     "test:smart-reservation": "node scripts/smart-reservation-domain-test.mjs",
     "test:course-demand": "node scripts/course-demand-domain-test.mjs",
     "test:equipment-code": "node scripts/equipment-code-domain-test.mjs",
+    "test:equipment-operations": "npm run test:equipment-code && node scripts/equipment-operations-api-test.mjs",
     "test:storage": "node scripts/sql-storage-smoke-test.mjs",
     "native:sync": "npm run build:native && cap sync",
     "native:ios": "npm run native:sync && cap open ios",
