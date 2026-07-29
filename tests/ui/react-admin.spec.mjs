@@ -98,6 +98,31 @@ test("React Admin controls have names and no serious axe violations", async ({ p
   expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact))).toEqual([]);
 });
 
+test("React Admin equipment codes are automatic and migration preview stays responsive", async ({ page }, testInfo) => {
+  await loginReactAdmin(page);
+  const navigation = testInfo.project.name === "desktop-1440"
+    ? page.locator(".gju-admin-nav--sidebar")
+    : page.locator(".gju-admin-nav--bottom");
+  await navigation.getByRole("button", { name: "기자재" }).click();
+
+  const tabs = page.getByRole("tablist", { name: "기자재 관리 탭" });
+  await tabs.getByRole("tab", { name: "장비추가" }).click();
+  await expect(page.getByLabel("코드 / 접두어")).toHaveCount(0);
+  await expect(page.getByLabel("기능 태그")).toBeVisible();
+  await expect(page.getByText("예상 코드", { exact: true })).toBeVisible();
+
+  await page.getByLabel("장비명").fill("소니 A7M3");
+  await page.getByLabel("브랜드").fill("Sony");
+  await page.getByLabel("모델").fill("A7M3");
+  await expect(page.locator(".equipment-code-preview code")).toContainText(/CAM-SNY-A7M3-\d{3}/);
+
+  await tabs.getByRole("tab", { name: "코드 재발급" }).click();
+  await page.getByRole("button", { name: "변경안 만들기" }).click();
+  await expect(page.locator(".equipment-code-migration-row").first()).toBeVisible();
+  await expect(page.locator(".equipment-code-transition").first()).toContainText("→");
+  await expectNoHorizontalOverflow(page);
+});
+
 test("React Admin tabs expose a controlled panel and support arrow-key activation", async ({ page }, testInfo) => {
   await loginReactAdmin(page);
   if (testInfo.project.name === "desktop-1440") {

@@ -566,6 +566,7 @@ export type AdminEquipmentCodeMigration = {
   codeVersion: 2;
   items: AdminEquipmentCodeMigrationItem[];
   warningCount: number;
+  confirmedIds?: string[];
   createdAt: string;
   appliedAt?: string;
 };

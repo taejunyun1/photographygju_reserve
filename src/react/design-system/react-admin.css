@@ -615,6 +615,122 @@
   grid-column: 1 / -1;
 }
 
+.equipment-code-preview {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 5px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid rgba(36, 87, 255, 0.2);
+  border-left: 4px solid var(--gju-color-primary);
+  border-radius: 8px;
+  background: rgba(36, 87, 255, 0.05);
+}
+
+.equipment-code-preview > span {
+  color: var(--gju-color-info);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.equipment-code-preview code,
+.equipment-code-transition code,
+.admin-equipment-list-card td[data-label="코드"] code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--gju-color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.equipment-code-preview small {
+  grid-column: 2;
+  color: var(--gju-color-text-muted);
+  line-height: 1.45;
+}
+
+.equipment-code-preview .equipment-code-warning {
+  color: var(--gju-color-warning);
+  font-weight: 800;
+}
+
+.equipment-code-migration-intro,
+.equipment-code-migration-summary,
+.equipment-code-migration-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.equipment-code-migration-intro p,
+.equipment-code-migration-summary p,
+.equipment-code-migration-complete {
+  margin: 0;
+  color: var(--gju-color-text-muted);
+  line-height: 1.55;
+}
+
+.equipment-code-migration-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(62vh, 720px);
+  margin-top: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.equipment-code-migration-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--gju-color-border);
+  border-radius: 8px;
+  background: var(--gju-color-surface);
+}
+
+.equipment-code-migration-row.has-warning {
+  border-color: rgba(154, 95, 0, 0.3);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.equipment-code-transition {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.equipment-code-transition span {
+  color: var(--gju-color-primary);
+  font-weight: 900;
+}
+
+.equipment-code-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--gju-color-warning);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.equipment-code-confirmation input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 1px 0 0;
+}
+
+.equipment-code-migration-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 .admin-react-check {
   display: inline-flex;
   align-items: center;
@@ -1666,6 +1782,28 @@
 
   .gju-app-shell__content .admin-equipment-mobile-actions .icon-only-action {
     justify-self: end;
+  }
+
+  .gju-app-shell__content .equipment-code-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gju-app-shell__content .equipment-code-preview small {
+    grid-column: auto;
+  }
+
+  .gju-app-shell__content .equipment-code-transition {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .gju-app-shell__content .equipment-code-transition span {
+    justify-self: start;
+    transform: rotate(90deg);
+  }
+
+  .gju-app-shell__content .equipment-code-migration-actions .button {
+    flex: 1 1 100%;
   }
 
   .gju-app-shell__content .admin-react-toolbar,
