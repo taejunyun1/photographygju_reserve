@@ -55,6 +55,23 @@ const adminAppSource = read("src/react/admin/AdminApp.tsx");
 const adminNavSource = read("src/react/platform/adminNav.ts");
 const adminCourseDemandSource = read("src/react/admin/screens/AdminCourseDemand.tsx");
 const adminListsSource = read("core/admin-lists.mjs");
+for (const token of [
+  "previewEquipmentCode",
+  "previewEquipmentCodeMigration",
+  "applyEquipmentCodeMigration",
+  "regenerateEquipmentCode",
+  "returnEquipmentReservation"
+]) {
+  assert(rendererSource.includes(`async ${token}`), `renderer must expose ${token}`);
+  assert(platformTypes.includes(`${token}(`), `ReactAdminActions must type ${token}`);
+}
+for (const stateKey of [
+  "adminEquipmentCodeMigration",
+  "adminEquipmentReturnDraft"
+]) {
+  assert(stateSource.includes(`${stateKey}:`), `admin state must initialize ${stateKey}`);
+  assert(dataSource.includes(`state.${stateKey} =`), `admin logout must clear ${stateKey}`);
+}
 for (const label of ["운영 인사이트", "주의 필요", "혼잡 시간", "장비 가동률", "취소율", "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다."]) {
   assert(adminDashboardSource.includes(label), `Admin dashboard must render ${label}`);
 }

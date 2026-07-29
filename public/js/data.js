@@ -33,6 +33,8 @@ export async function loadMe() {
     state.adminUsers = [];
     state.adminReservations = [];
     state.adminEquipment = [];
+    state.adminEquipmentCodeMigration = null;
+    state.adminEquipmentReturnDraft = {};
     state.adminReports = [];
     state.adminNotices = [];
     state.adminLectures = [];

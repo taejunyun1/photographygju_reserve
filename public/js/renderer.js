@@ -455,6 +455,73 @@ const reactAdminActions = {
       uniqueIds.length === 1 ? "기자재 상태를 변경했습니다." : `선택 기자재 ${uniqueIds.length}개의 상태를 변경했습니다.`
     );
   },
+  async previewEquipmentCode(input) {
+    return api("/api/admin/equipment/code-preview", {
+      method: "POST",
+      body: input
+    });
+  },
+  async previewEquipmentCodeMigration() {
+    const migration = await api(
+      "/api/admin/equipment/code-migrations/preview",
+      { method: "POST" }
+    );
+    state.adminEquipmentCodeMigration = migration;
+    renderWithScrollState(captureScrollState());
+    return migration;
+  },
+  async applyEquipmentCodeMigration(migrationId, confirmedIds = []) {
+    await runAdminMutation(
+      "equipment",
+      () => api(
+        `/api/admin/equipment/code-migrations/${encodeURIComponent(migrationId)}/apply`,
+        {
+          method: "POST",
+          body: { confirmedIds }
+        }
+      ),
+      "기자재 코드를 재발급했습니다.",
+      {
+        after: (migration) => {
+          state.adminEquipmentCodeMigration = migration;
+        },
+        invalidateViews: ["equipment", "reservations", "dashboard"]
+      }
+    );
+  },
+  async regenerateEquipmentCode(equipmentId) {
+    const confirmation = prompt(
+      "코드를 다시 만들려면 코드 재생성을 입력하세요.",
+      ""
+    );
+    if (confirmation !== "코드 재생성") return;
+    await runAdminMutation(
+      "equipment",
+      () => api(
+        `/api/admin/equipment/${encodeURIComponent(equipmentId)}/regenerate-code`,
+        {
+          method: "POST",
+          body: { confirmation }
+        }
+      ),
+      "기자재 코드를 다시 생성했습니다.",
+      { invalidateViews: ["equipment", "reservations"] }
+    );
+  },
+  async returnEquipmentReservation(reservationId, inspections) {
+    await runAdminMutation(
+      "reservations",
+      () => api(
+        `/api/admin/reservations/${encodeURIComponent(reservationId)}/return-inspection`,
+        {
+          method: "POST",
+          body: { inspections }
+        }
+      ),
+      "반납 점검을 완료했습니다.",
+      { invalidateViews: ["reservations", "equipment", "dashboard"] }
+    );
+  },
   async createEquipment(input) {
     const inquiryOnly = input.status === "문의" || input.inquiryOnly === true || input.reservable === false;
     const body = {

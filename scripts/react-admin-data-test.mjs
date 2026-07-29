@@ -125,6 +125,8 @@ const { loadAdminData, loadAdminView } = await import("../public/js/data.js?reac
 
 state.user = { id: "admin-1", role: "admin" };
 state.bootstrap = { settings: {} };
+assert.equal(state.adminEquipmentCodeMigration, null);
+assert.deepEqual(state.adminEquipmentReturnDraft, {});
 
 await loadAdminView("dashboard", { force: true });
 assert.deepEqual(requests, ["/api/admin/summary"], "dashboard must request only the summary endpoint");
