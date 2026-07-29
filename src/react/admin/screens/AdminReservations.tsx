@@ -388,23 +388,33 @@ function EquipmentReturnInspectionDialog({
     label,
     count: inspections.filter((item) => item.outcome === value).length
   }));
+  const borrower = userLabel(reservation.user || reservation.student);
+  const contact = String(
+    reservation.user?.phone
+    || reservation.student?.phone
+    || reservation.fields?.phone
+    || "-"
+  );
 
   return (
     <GjuDialog
       open
-      title="반납 점검"
+      title={`반납 점검 · ${borrower}`}
       onClose={onClose}
       showActions={false}
       className="equipment-return-dialog"
     >
       <div className="equipment-return-dialog__intro">
         <strong>{reservationTitle(reservation)}</strong>
-        <span>{items.length}개 장비를 각각 확인해 주세요.</span>
+        <span>연락처 {contact} · {items.length}개 장비를 각각 확인해 주세요.</span>
       </div>
       {items.length ? (
         <div className="equipment-return-list">
           {items.map((item) => {
             const itemDraft = draft[item.id] || { outcome: "normal", note: "" };
+            const showNote = itemDraft.outcome !== "normal";
+            const noteErrorId = `equipment-return-note-error-${item.id}`;
+            const hasNoteError = itemDraft.outcome === "needs_repair" && !itemDraft.note.trim();
             return (
               <fieldset className="equipment-return-item" key={item.id}>
                 <legend>
@@ -427,23 +437,31 @@ function EquipmentReturnInspectionDialog({
                     ))}
                   </select>
                 </label>
-                <label>
-                  <span>
-                    점검 메모
-                    {itemDraft.outcome === "needs_repair" ? " · 필수" : " · 선택"}
-                  </span>
-                  <textarea
-                    className="textarea"
-                    rows={2}
-                    aria-label={`${item.name} 점검 메모`}
-                    placeholder="이상 증상이나 확인할 내용을 입력하세요."
-                    value={itemDraft.note}
-                    onChange={(event) => {
-                      const note = event.currentTarget.value;
-                      updateDraft(item.id, { note });
-                    }}
-                  />
-                </label>
+                {showNote ? (
+                  <label>
+                    <span>
+                      점검 메모
+                      {itemDraft.outcome === "needs_repair" ? " · 필수" : " · 선택"}
+                    </span>
+                    <textarea
+                      className="textarea"
+                      rows={2}
+                      aria-label={`${item.name} 점검 메모`}
+                      aria-describedby={hasNoteError ? noteErrorId : undefined}
+                      placeholder="이상 증상이나 확인할 내용을 입력하세요."
+                      value={itemDraft.note}
+                      onChange={(event) => {
+                        const note = event.currentTarget.value;
+                        updateDraft(item.id, { note });
+                      }}
+                    />
+                    {hasNoteError ? (
+                      <small id={noteErrorId} className="equipment-return-dialog__error">
+                        수리 필요 사유를 입력하세요.
+                      </small>
+                    ) : null}
+                  </label>
+                ) : null}
               </fieldset>
             );
           })}

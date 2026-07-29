@@ -149,7 +149,7 @@ test("React Admin completes equipment return through per-item inspection", async
         { id: "equipment-fx3", code: "CAM-SNY-FX3-001", name: "Sony FX3" },
         { id: "equipment-lens", code: "LEN-SNY-2470GM-001", name: "Sony 24-70GM" }
       ],
-      user: { name: "반납 학생", studentId: "20260001" }
+      user: { name: "반납 학생", studentId: "20260001", phone: "010-1234-5678" }
     }];
     const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
     render();
@@ -158,6 +158,9 @@ test("React Admin completes equipment return through per-item inspection", async
   await page.getByRole("button", { name: "반납 점검" }).click();
   const dialog = page.getByRole("dialog", { name: "반납 점검" });
   await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("반납 학생");
+  await expect(dialog).toContainText("010-1234-5678");
+  await expect(dialog).toContainText("Sony FX3, Sony 24-70GM");
   await expect(dialog.getByText("CAM-SNY-FX3-001", { exact: true })).toBeVisible();
   await expect(dialog.getByText("LEN-SNY-2470GM-001", { exact: true })).toBeVisible();
 

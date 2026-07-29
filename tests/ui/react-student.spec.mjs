@@ -513,7 +513,7 @@ test("Student React reservation cancellation keeps the card and announces reques
       id: "cancel-error-fixture",
       type: "equipment",
       status: "approved",
-      fields: { reservedDate: "2026-07-20", period: "당일" }
+      fields: { reservedDate: "2099-07-20", period: "당일" }
     }];
     render();
   });

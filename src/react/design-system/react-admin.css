@@ -616,8 +616,6 @@
 }
 
 .equipment-return-dialog__actions {
-  position: sticky;
-  bottom: 0;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--gju-color-border);
