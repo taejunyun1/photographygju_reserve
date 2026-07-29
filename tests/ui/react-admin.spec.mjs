@@ -98,6 +98,89 @@ test("React Admin controls have names and no serious axe violations", async ({ p
   expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact))).toEqual([]);
 });
 
+test("React Admin equipment codes are automatic and migration preview stays responsive", async ({ page }, testInfo) => {
+  await loginReactAdmin(page);
+  const navigation = testInfo.project.name === "desktop-1440"
+    ? page.locator(".gju-admin-nav--sidebar")
+    : page.locator(".gju-admin-nav--bottom");
+  await navigation.getByRole("button", { name: "기자재" }).click();
+
+  const tabs = page.getByRole("tablist", { name: "기자재 관리 탭" });
+  await tabs.getByRole("tab", { name: "장비추가" }).click();
+  await expect(page.getByLabel("코드 / 접두어")).toHaveCount(0);
+  await expect(page.getByLabel("기능 태그")).toBeVisible();
+  await expect(page.getByText("예상 코드", { exact: true })).toBeVisible();
+
+  await page.getByLabel("장비명").fill("소니 A7M3");
+  await page.getByLabel("브랜드").fill("Sony");
+  await page.getByLabel("모델").fill("A7M3");
+  await expect(page.locator(".equipment-code-preview code")).toContainText(/CAM-SNY-A7M3-\d{3}/);
+
+  await tabs.getByRole("tab", { name: "코드 재발급" }).click();
+  await page.getByRole("button", { name: "변경안 만들기" }).click();
+  await expect(page.locator(".equipment-code-migration-row").first()).toBeVisible();
+  await expect(page.locator(".equipment-code-transition").first()).toContainText("→");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("React Admin completes equipment return through per-item inspection", async ({ page }) => {
+  let submittedBody = null;
+  await page.route("**/api/admin/reservations/return-ui/return-inspection", async (route) => {
+    submittedBody = await route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ reservation: { id: "return-ui", status: "returned" } })
+    });
+  });
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.adminView = "reservations";
+    state.adminReservationTab = "equipment";
+    state.adminEquipmentReservationStatusFilter = "checked_out";
+    state.adminReservationsPage = { total: 1, collectionTotal: 1, page: 1, pageSize: 20 };
+    state.adminReservations = [{
+      id: "return-ui",
+      type: "equipment",
+      status: "checked_out",
+      fields: { reservedDate: "2026-09-11", rentalTime: "10:15", returnTime: "17:10" },
+      equipmentItems: [
+        { id: "equipment-fx3", code: "CAM-SNY-FX3-001", name: "Sony FX3" },
+        { id: "equipment-lens", code: "LEN-SNY-2470GM-001", name: "Sony 24-70GM" }
+      ],
+      user: { name: "반납 학생", studentId: "20260001", phone: "010-1234-5678" }
+    }];
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+
+  await page.getByRole("button", { name: "반납 점검" }).click();
+  const dialog = page.getByRole("dialog", { name: "반납 점검" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("반납 학생");
+  await expect(dialog).toContainText("010-1234-5678");
+  await expect(dialog).toContainText("Sony FX3, Sony 24-70GM");
+  await expect(dialog.getByText("CAM-SNY-FX3-001", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("LEN-SNY-2470GM-001", { exact: true })).toBeVisible();
+
+  const repairResult = dialog.getByLabel("Sony 24-70GM 점검 결과");
+  await repairResult.selectOption("needs_repair");
+  const completeButton = dialog.getByRole("button", { name: "반납 점검 완료" });
+  await expect(completeButton).toBeDisabled();
+  await dialog.getByLabel("Sony 24-70GM 점검 메모").fill("줌 링 걸림 확인");
+  await expect(completeButton).toBeEnabled();
+  await completeButton.click();
+
+  await expect.poll(() => submittedBody).toEqual({
+    inspections: [
+      { equipmentId: "equipment-fx3", outcome: "normal", note: "" },
+      { equipmentId: "equipment-lens", outcome: "needs_repair", note: "줌 링 걸림 확인" }
+    ]
+  });
+  await expectNoHorizontalOverflow(page);
+});
+
 test("React Admin tabs expose a controlled panel and support arrow-key activation", async ({ page }, testInfo) => {
   await loginReactAdmin(page);
   if (testInfo.project.name === "desktop-1440") {

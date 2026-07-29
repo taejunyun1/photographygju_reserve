@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   GjuCard,
@@ -7,8 +7,14 @@ import {
   GjuTable,
   type GjuIconName
 } from "../../design-system";
-import type { AdminEquipmentStatus, LegacyState, ReactAdminActions } from "../../platform/types";
-import { fieldValue, numberValue, runAdminAction, stopSubmit } from "./adminScreenUtils";
+import type {
+  AdminEquipmentCodePreview,
+  AdminEquipmentInput,
+  AdminEquipmentStatus,
+  LegacyState,
+  ReactAdminActions
+} from "../../platform/types";
+import { fieldValue, runAdminAction, stopSubmit } from "./adminScreenUtils";
 
 type AdminEquipmentProps = {
   state: LegacyState;
@@ -18,10 +24,15 @@ type AdminEquipmentProps = {
 type AdminEquipmentItem = {
   id: string;
   code?: string;
+  legacyCodes?: string[];
   name?: string;
   category?: string;
   brand?: string;
+  brandCode?: string;
   model?: string;
+  productKey?: string;
+  functionTags?: string[];
+  codeVersion?: number;
   source?: string;
   facility?: string;
   status?: string;
@@ -59,16 +70,25 @@ function isInquiry(item: AdminEquipmentItem) {
   return Boolean(item.inquiryOnly) || (item.status === "가능" && item.reservable === false);
 }
 
-function matchesEquipmentQuery(item: AdminEquipmentItem, query: string) {
-  if (!query) return true;
+function equipmentQueryScore(item: AdminEquipmentItem, query: string) {
+  if (!query) return 1;
+  const exactCode = normalizeSearchText(item.code);
+  if (exactCode === query) return 400;
+  if ((item.legacyCodes || []).some((code) => normalizeSearchText(code) === query)) return 350;
+  if ([item.name, item.model, item.productKey]
+    .some((value) => normalizeSearchText(value).includes(query))) return 200;
   return [
     item.code,
+    ...(item.legacyCodes || []),
     item.name,
     item.category,
     item.source,
     item.facility,
     item.brand,
+    item.brandCode,
     item.model,
+    item.productKey,
+    ...(item.functionTags || []),
     item.status,
     item.notes,
     item.reservable ? "예약가능" : "문의"
@@ -76,7 +96,7 @@ function matchesEquipmentQuery(item: AdminEquipmentItem, query: string) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase()
-    .includes(query);
+    .includes(query) ? 100 : 0;
 }
 
 function sourceLabel(source: string) {
@@ -168,6 +188,15 @@ function renderEquipmentPanelTabs(panelTab: string, onTab: (tab: string) => void
       >
         장비관리
       </button>
+      <button
+        className={`tab-button ${panelTab === "codes" ? "active" : ""}`}
+        type="button"
+        role="tab"
+        aria-selected={panelTab === "codes" ? "true" : "false"}
+        onClick={() => onTab("codes")}
+      >
+        코드 재발급
+      </button>
     </div>
   );
 }
@@ -177,7 +206,8 @@ function renderEquipmentMobileCard(
   selected: Set<string>,
   onSelect: (itemId: string, checked: boolean) => void,
   onStatus: (itemId: string, status: AdminEquipmentStatus) => void,
-  onRemove: (itemId: string) => void
+  onRemove: (itemId: string) => void,
+  onRegenerate: (itemId: string) => void
 ) {
   const selectedItem = selected.has(item.id);
 
@@ -200,6 +230,11 @@ function renderEquipmentMobileCard(
           <span className="admin-equipment-mobile-reservable">
             {renderReservableTag(item)}
           </span>
+          <GjuIconButton
+            label="코드 재생성"
+            icon="refresh"
+            onClick={() => onRegenerate(item.id)}
+          />
           <GjuIconButton
             label="기자재 제거"
             icon="trash"
@@ -285,30 +320,83 @@ function equipmentCategoryOptions(state: LegacyState, items: AdminEquipmentItem[
   return [...new Set([...values, ...equipmentCategories(items)])].filter(Boolean);
 }
 
-function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions, items: AdminEquipmentItem[]) {
+function EquipmentAddPanel({
+  state,
+  actions,
+  items
+}: {
+  state: LegacyState;
+  actions: ReactAdminActions;
+  items: AdminEquipmentItem[];
+}) {
   const categories = equipmentCategoryOptions(state, items);
   const sources = [
     ["department", "극기관"],
     ["fantasy_lab", "판타지랩"]
   ] as const;
+  const [draft, setDraft] = useState({
+    name: "",
+    category: "Body",
+    brand: "",
+    model: "",
+    functionTags: "",
+    quantity: 1
+  });
+  const [codePreview, setCodePreview] = useState<AdminEquipmentCodePreview | null>(null);
+
+  useEffect(() => {
+    if (!draft.name.trim() || !draft.category.trim()) {
+      setCodePreview(null);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const input: AdminEquipmentInput = {
+        name: draft.name,
+        category: draft.category,
+        brand: draft.brand,
+        model: draft.model,
+        functionTags: draft.functionTags
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+        quantity: draft.quantity
+      };
+      void actions.previewEquipmentCode(input)
+        .then(setCodePreview)
+        .catch(() => setCodePreview(null));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [actions, draft]);
 
   const submitEquipment = stopSubmit(async (form) => {
     const inquiryOnly = fieldValue(form, "reservationMode") === "inquiry";
-    const body = {
-      codePrefix: fieldValue(form, "codePrefix"),
-      name: fieldValue(form, "name"),
-      category: fieldValue(form, "category"),
-      brand: fieldValue(form, "brand"),
-      model: fieldValue(form, "model"),
+    const body: AdminEquipmentInput = {
+      name: draft.name,
+      category: draft.category,
+      brand: draft.brand,
+      model: draft.model,
+      functionTags: draft.functionTags
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
       source: fieldValue(form, "source"),
       status: (fieldValue(form, "status") || "가능") as AdminEquipmentStatus,
-      quantity: numberValue(form, "quantity") || 1,
+      quantity: draft.quantity,
       notes: fieldValue(form, "notes"),
       reservable: !inquiryOnly,
       inquiryOnly
     };
     await actions.createEquipment(body);
     form.reset();
+    setDraft({
+      name: "",
+      category: "Body",
+      brand: "",
+      model: "",
+      functionTags: "",
+      quantity: 1
+    });
+    setCodePreview(null);
   });
 
   const submitCategory = stopSubmit(async (form) => {
@@ -330,16 +418,37 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
       <GjuCard title="장비추가">
         <form className="admin-react-form-grid" onSubmit={submitEquipment}>
           <label>
-            코드 / 접두어
-            <input className="input" name="codePrefix" placeholder="CAM-001" />
-          </label>
-          <label>
             장비명
-            <input className="input" name="name" required />
+            <input
+              className="input"
+              name="name"
+              value={draft.name}
+              required
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  name: value
+                }));
+              }}
+            />
           </label>
           <label>
             카테고리
-            <input className="input" name="category" list="admin-equipment-category-list" required />
+            <input
+              className="input"
+              name="category"
+              list="admin-equipment-category-list"
+              value={draft.category}
+              required
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  category: value
+                }));
+              }}
+            />
             <datalist id="admin-equipment-category-list">
               {categories.map((category) => <option key={category} value={category} />)}
             </datalist>
@@ -352,15 +461,67 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
           </label>
           <label>
             브랜드
-            <input className="input" name="brand" />
+            <input
+              className="input"
+              name="brand"
+              value={draft.brand}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  brand: value
+                }));
+              }}
+            />
           </label>
           <label>
             모델
-            <input className="input" name="model" />
+            <input
+              className="input"
+              name="model"
+              value={draft.model}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  model: value
+                }));
+              }}
+            />
+          </label>
+          <label>
+            기능 태그
+            <input
+              className="input"
+              name="functionTags"
+              value={draft.functionTags}
+              placeholder="영상 촬영, 인터뷰"
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  functionTags: value
+                }));
+              }}
+            />
           </label>
           <label>
             수량
-            <input className="input" name="quantity" type="number" min="1" defaultValue="1" />
+            <input
+              className="input"
+              name="quantity"
+              type="number"
+              min="1"
+              max="200"
+              value={draft.quantity}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setDraft((current) => ({
+                  ...current,
+                  quantity: Math.max(1, Number(value) || 1)
+                }));
+              }}
+            />
           </label>
           <label>
             상태
@@ -381,6 +542,22 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
             메모
             <input className="input" name="notes" />
           </label>
+          <div className="equipment-code-preview admin-react-form-wide" aria-live="polite">
+            <span>예상 코드</span>
+            {codePreview?.codes?.length ? (
+              <>
+                <code>{codePreview.codes[0]}</code>
+                {codePreview.codes.length > 1 ? (
+                  <small>외 {codePreview.codes.length - 1}개가 연속 번호로 생성됩니다.</small>
+                ) : null}
+                {codePreview.identity.warnings.map((warning) => (
+                  <small className="equipment-code-warning" key={warning}>{warning}</small>
+                ))}
+              </>
+            ) : (
+              <small>브랜드·제품명·모델을 기준으로 저장할 때 자동으로 부여합니다.</small>
+            )}
+          </div>
           <button className="button primary admin-react-form-wide" type="submit">
             장비 추가
           </button>
@@ -405,7 +582,7 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
               className="textarea"
               name="csv"
               rows={8}
-              placeholder="code_prefix,name,category,brand,model,source,status,reservable,inquiry_only"
+              placeholder="code,name,category,brand,model,function_tags,source,status,reservable,inquiry_only"
               required
             />
           </label>
@@ -418,6 +595,123 @@ function renderEquipmentAddPanel(state: LegacyState, actions: ReactAdminActions,
   );
 }
 
+function EquipmentCodeMigrationPanel({
+  state,
+  actions
+}: {
+  state: LegacyState;
+  actions: ReactAdminActions;
+}) {
+  const migration = state.adminEquipmentCodeMigration;
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setConfirmedIds(new Set(migration?.confirmedIds || []));
+  }, [migration?.id, migration?.status]);
+
+  if (!migration) {
+    return (
+      <GjuCard title="코드 재발급" eyebrow="전체 기자재">
+        <div className="equipment-code-migration-intro">
+          <p>
+            현재 코드를 보존하고 분류·브랜드·제품·일련번호 형식의 새 코드를 만듭니다.
+            예약 연결은 변경되지 않습니다.
+          </p>
+          <button
+            className="button primary"
+            type="button"
+            onClick={() => runAdminAction(() => actions.previewEquipmentCodeMigration())}
+          >
+            변경안 만들기
+          </button>
+        </div>
+      </GjuCard>
+    );
+  }
+
+  const warningItems = migration.items.filter((item) => item.warnings.length > 0);
+  const ready = warningItems.every((item) => confirmedIds.has(item.equipmentId));
+  const toggleConfirmed = (equipmentId: string, checked: boolean) => {
+    setConfirmedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(equipmentId);
+      else next.delete(equipmentId);
+      return next;
+    });
+  };
+
+  return (
+    <GjuCard
+      className="equipment-code-migration-card"
+      title="코드 재발급"
+      eyebrow={migration.status === "applied" ? "적용 완료" : "변경안"}
+      actions={<span className="tag blue">{migration.items.length}개</span>}
+    >
+      {migration.status === "applied" ? (
+        <p className="equipment-code-migration-complete">
+          전체 기자재 코드를 적용했습니다.
+          {migration.appliedAt ? ` · ${new Date(migration.appliedAt).toLocaleString("ko-KR")}` : ""}
+        </p>
+      ) : (
+        <div className="equipment-code-migration-summary">
+          <p>이전 코드는 관리자 검색 이력에 남습니다.</p>
+          <span className={`tag ${warningItems.length ? "yellow" : "green"}`}>
+            {warningItems.length ? `확인 필요 ${warningItems.length}개` : "확인 완료"}
+          </span>
+        </div>
+      )}
+      <div className="equipment-code-migration-list">
+        {migration.items.map((item) => (
+          <article
+            className={`equipment-code-migration-row ${item.warnings.length ? "has-warning" : ""}`}
+            key={item.equipmentId}
+          >
+            <div className="equipment-code-transition">
+              <code>{item.oldCode || "기존 코드 없음"}</code>
+              <span aria-hidden="true">→</span>
+              <code>{item.newCode}</code>
+            </div>
+            {item.warnings.length ? (
+              <label className="equipment-code-confirmation">
+                <input
+                  type="checkbox"
+                  checked={confirmedIds.has(item.equipmentId)}
+                  disabled={migration.status === "applied"}
+                  onChange={(event) => toggleConfirmed(item.equipmentId, event.currentTarget.checked)}
+                />
+                <span>
+                  확인 필요 · {item.warnings.join(" ")}
+                </span>
+              </label>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      {migration.status !== "applied" ? (
+        <div className="equipment-code-migration-actions">
+          <button
+            className="button"
+            type="button"
+            onClick={() => runAdminAction(() => actions.previewEquipmentCodeMigration())}
+          >
+            변경안 다시 만들기
+          </button>
+          <button
+            className="button primary"
+            type="button"
+            disabled={!ready}
+            onClick={() => runAdminAction(() =>
+              actions.applyEquipmentCodeMigration(migration.id, [...confirmedIds])
+            )}
+          >
+            전체 적용
+          </button>
+        </div>
+      ) : null}
+    </GjuCard>
+  );
+}
+
 export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
   const panelTab = String(state.adminEquipmentPanelTab || "manage");
   const query = normalizeSearchText(state.adminEquipmentSearch);
@@ -426,11 +720,19 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
   const items = activeEquipment(asEquipment(state.adminEquipment));
   const categories = equipmentCategories(items);
   const selected = selectedEquipmentSet(state);
-  const filtered = items.filter((item) => {
-    if (sourceTab !== "all" && item.source !== sourceTab) return false;
-    if (categoryTab !== "all" && item.category !== categoryTab) return false;
-    return matchesEquipmentQuery(item, query);
-  });
+  const filtered = items
+    .filter((item) => {
+      if (sourceTab !== "all" && item.source !== sourceTab) return false;
+      if (categoryTab !== "all" && item.category !== categoryTab) return false;
+      return true;
+    })
+    .map((item) => ({ item, score: equipmentQueryScore(item, query) }))
+    .filter(({ score }) => score > 0)
+    .sort((left, right) =>
+      right.score - left.score ||
+      String(left.item.code || "").localeCompare(String(right.item.code || ""), "ko")
+    )
+    .map(({ item }) => item);
   const visibleSelectedCount = filtered.filter((item) => selected.has(item.id)).length;
   const allVisibleSelected = filtered.length > 0 && visibleSelectedCount === filtered.length;
   const setPanelTab = (tab: string) => {
@@ -454,11 +756,20 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
     runAdminAction(() => actions.updateEquipmentStatus([itemId], status));
   };
 
-  if (panelTab !== "manage") {
+  if (panelTab === "add") {
     return (
       <section className="grid">
         {renderEquipmentPanelTabs(panelTab, setPanelTab)}
-        {renderEquipmentAddPanel(state, actions, items)}
+        <EquipmentAddPanel state={state} actions={actions} items={items} />
+      </section>
+    );
+  }
+
+  if (panelTab === "codes") {
+    return (
+      <section className="grid">
+        {renderEquipmentPanelTabs(panelTab, setPanelTab)}
+        <EquipmentCodeMigrationPanel state={state} actions={actions} />
       </section>
     );
   }
@@ -577,9 +888,31 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
                         aria-label={`${item.code || item.id} ${item.name || "기자재"} 선택`}
                       />
                     </td>
-                    <td data-label="코드">{item.code || "-"}</td>
+                    <td data-label="코드">
+                      <code>{item.code || "-"}</code>
+                      {item.legacyCodes?.length ? (
+                        <>
+                          <br />
+                          <span className="muted">이전 {item.legacyCodes.join(", ")}</span>
+                        </>
+                      ) : null}
+                    </td>
                     <td data-label="장비">
                       {item.name || "-"}
+                      {[item.brand, item.model].filter(Boolean).length ? (
+                        <>
+                          <br />
+                          <span className="muted">
+                            {[item.brand, item.model].filter(Boolean).join(" · ")}
+                          </span>
+                        </>
+                      ) : null}
+                      {item.functionTags?.length ? (
+                        <>
+                          <br />
+                          <span className="muted">{item.functionTags.join(", ")}</span>
+                        </>
+                      ) : null}
                       {item.notes ? (
                         <>
                           <br />
@@ -599,6 +932,11 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
                     </td>
                     <td data-label="예약">{renderReservableTag(item)}</td>
                     <td data-label="작업">
+                      <GjuIconButton
+                        label="코드 재생성"
+                        icon="refresh"
+                        onClick={() => runAdminAction(() => actions.regenerateEquipmentCode(item.id))}
+                      />
                       <GjuIconButton
                         label="기자재 제거"
                         icon="trash"
@@ -625,7 +963,14 @@ export function AdminEquipment({ state, actions }: AdminEquipmentProps) {
           {filtered.length ? (
             filtered.map((item) => (
               <React.Fragment key={`mobile:${item.id}`}>
-                {renderEquipmentMobileCard(item, selected, setSelected, setStatus, (itemId) => runAdminAction(() => actions.deleteEquipment([itemId])))}
+                {renderEquipmentMobileCard(
+                  item,
+                  selected,
+                  setSelected,
+                  setStatus,
+                  (itemId) => runAdminAction(() => actions.deleteEquipment([itemId])),
+                  (itemId) => runAdminAction(() => actions.regenerateEquipmentCode(itemId))
+                )}
               </React.Fragment>
             ))
           ) : (

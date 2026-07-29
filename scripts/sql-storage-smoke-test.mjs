@@ -32,7 +32,9 @@ class FakeSql {
       warnings: new Map(),
       audit_logs: new Map(),
       slack_logs: new Map(),
-      import_batches: new Map()
+      import_batches: new Map(),
+      equipment_code_migrations: new Map(),
+      equipment_inspections: new Map()
     };
   }
 
@@ -97,6 +99,14 @@ assert.ok(
   sql.statements.some((item) => item.sql.includes("CREATE INDEX IF NOT EXISTS idx_reports_submitted_at")),
   "reports submittedAt index should be created"
 );
+assert.ok(
+  sql.statements.some((item) => item.sql.includes("CREATE TABLE IF NOT EXISTS equipment_code_migrations")),
+  "equipment code migration SQL table should be created"
+);
+assert.ok(
+  sql.statements.some((item) => item.sql.includes("CREATE TABLE IF NOT EXISTS equipment_inspections")),
+  "equipment inspection SQL table should be created"
+);
 
 const db = await initialDb("admin-pass");
 db.reservations.push({
@@ -119,6 +129,20 @@ db.reports.push({
   submittedAt: "2026-06-24T00:00:00.000Z",
   expiresAt: "2026-12-24T00:00:00.000Z"
 });
+db.equipmentCodeMigrations.push({
+  id: "eqmigration_sql_1",
+  status: "preview",
+  codeVersion: 2,
+  items: [],
+  createdAt: "2026-07-29T00:00:00.000Z"
+});
+db.equipmentInspections.push({
+  id: "eqinspection_sql_1",
+  equipmentId: db.equipment[0].id,
+  reservationId: "res_sql_1",
+  outcome: "normal",
+  checkedAt: "2026-07-29T00:00:00.000Z"
+});
 
 await store.saveDb(db);
 const loaded = await store.loadDb();
@@ -130,6 +154,10 @@ assert.equal(loaded.reservations.length, 1);
 assert.equal(loaded.reservations[0].id, "res_sql_1");
 assert.equal(loaded.reports.length, 1);
 assert.equal(loaded.reports[0].id, "report_sql_1");
+assert.equal(sql.records.equipment_code_migrations.has("eqmigration_sql_1"), true);
+assert.equal(sql.records.equipment_inspections.has("eqinspection_sql_1"), true);
+assert.equal(loaded.equipmentCodeMigrations[0].status, "preview");
+assert.equal(loaded.equipmentInspections[0].outcome, "normal");
 assert.equal(sql.records.app_singletons.has("coursePlanning"), true, "course planning must be persisted as a singleton");
 assert.equal(loaded.coursePlanning.courses.some((course) => course.name === "현장실습4"), true, "loaded course planning data must retain special course rules");
 

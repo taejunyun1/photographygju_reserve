@@ -34,6 +34,9 @@ erDiagram
   USER ||--o{ AUDIT_LOG : acts
   RESERVATION ||--o| REPORT : produces
   RESERVATION }o--o{ EQUIPMENT : references
+  RESERVATION ||--o{ EQUIPMENT_INSPECTION : records
+  EQUIPMENT ||--o{ EQUIPMENT_INSPECTION : receives
+  EQUIPMENT_CODE_MIGRATION }o--o{ EQUIPMENT : reassigns
   LECTURE ||--o{ LECTURE_APPLICATION : has
   IMPORT_BATCH ||--o{ EQUIPMENT : creates
   COURSE_SURVEY ||--o{ COURSE_RESPONSE : receives
@@ -251,6 +254,36 @@ SQLite에는 외래 키가 선언되어 있지 않다. 위 관계는 객체 ID�
 
 - `idx_import_batches_created_at(created_at)`
 
+### 3.14 `equipment_code_migrations`
+
+| 컬럼 | 형식 | 설명 |
+| --- | --- | --- |
+| `id` | TEXT PK | `eqmigration_*` |
+| `status` | TEXT | preview/applied/failed |
+| `created_at` | TEXT | 변경안 생성 시각 |
+| `applied_at` | TEXT | 전체 적용 시각 |
+| `data` | TEXT NOT NULL | 지문, 코드 버전, 기존→신규 매핑, 경고·확인 목록 |
+
+인덱스:
+
+- `idx_equipment_code_migrations_status_created(status, created_at)`
+
+### 3.15 `equipment_inspections`
+
+| 컬럼 | 형식 | 설명 |
+| --- | --- | --- |
+| `id` | TEXT PK | 검사 기록 ID |
+| `equipment_id` | TEXT | 물리 장비 ID |
+| `reservation_id` | TEXT | 반납 예약 ID |
+| `outcome` | TEXT | normal/needs_inspection/needs_repair |
+| `checked_at` | TEXT | 관리자 점검 시각 |
+| `data` | TEXT NOT NULL | 메모, 처리자, 점검 당시 코드 등 전체 기록 |
+
+인덱스:
+
+- `idx_equipment_inspections_equipment_checked(equipment_id, checked_at)`
+- `idx_equipment_inspections_reservation(reservation_id)`
+
 ## 4. JSON 엔터티 계약
 
 아래 필드 중 기능에 따라 선택 필드가 존재한다. SQLite `data` JSON이 원본이므로 새 필드 추가 시 물리 컬럼 마이그레이션 없이 저장될 수 있다.
@@ -302,7 +335,14 @@ SQLite에는 외래 키가 선언되어 있지 않다. 위 관계는 객체 ID�
 | `category` | string | Body/Lens/Lighting/Audio/Drone/Other |
 | `name` | string | 장비명 |
 | `brand`, `model` | string | 제조사·모델 |
-| `code` | string | 관리 코드 |
+| `code` | string | 현재 관리 코드 |
+| `legacyCodes` | string[] | 관리자 검색용 이전 코드 |
+| `brandCode` | string | 정규화 브랜드 코드 |
+| `productKey` | string | 정규화 제품키 |
+| `functionTags` | string[] | 기능·용도 검색 태그 |
+| `codeVersion` | number | 현재 코드 규격 버전, 신규 체계는 2 |
+| `codeAssignedAt` | ISO string | 현재 코드 배정 시각 |
+| `codeAssignedBy` | string | 코드 배정 관리자 ID 또는 system |
 | `status` | string | 가능/수리중/파손 |
 | `reservable` | boolean | 온라인 예약 가능 |
 | `inquiryOnly` | boolean | 문의 전용 |
@@ -312,6 +352,8 @@ SQLite에는 외래 키가 선언되어 있지 않다. 위 관계는 객체 ID�
 | `createdAt`, `updatedAt` | ISO string | 생성·수정 |
 
 초기 데이터는 물리 개체 단위로 144건을 생성한다.
+
+코드는 `[분류]-[브랜드]-[제품키]-[3자리 일련번호]` 형식이며 예약 관계는 코드가 아닌 `equipment.id`를 사용한다. 따라서 코드 재발급이 기존 예약의 장비 연결을 변경하지 않는다.
 
 ### 4.4 예약 `Reservation`
 
@@ -627,4 +669,3 @@ gju_user_identities
 - 감사 로그 상한 때문에 장기 감사 증적 저장소로 사용할 수 없다.
 - 예약 통계는 `fields.reservedDate`와 파생 `timing`에 의존하므로 날짜 변환 규칙을 유지해야 한다.
 - `missing` 보고서는 가상 데이터이므로 보고서 테이블에 적재하지 않는다.
-

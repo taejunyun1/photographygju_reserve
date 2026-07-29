@@ -633,6 +633,8 @@ assert(!equipmentMarkup.includes("data-equipment-bulk-status"), "React equipment
 assert(!equipmentMarkup.includes("data-admin-equipment-panel-tab"), "React equipment tabs must use onClick handlers");
 assert(equipmentMarkup.includes("문의"), "React equipment screen must include inquiry status action");
 assert(equipmentMarkup.includes("장비추가"), "React equipment manage view must keep access to the add workflow tab");
+assert(equipmentMarkup.includes("코드 재발급"), "React equipment manage view must expose the code migration tab");
+assert(equipmentMarkup.includes('aria-label="코드 재생성"'), "React equipment rows must expose code regeneration");
 assert(equipmentMarkup.includes('data-surface="workspace"'), "React equipment list must use the flat workspace surface");
 for (const label of ["가능 상태로 변경", "수리중 상태로 변경", "파손 상태로 변경", "문의 상태로 변경", "기자재 제거"]) {
   assert(equipmentMarkup.includes(`aria-label="${label}"`), `React equipment ${label} action must be icon-only accessible`);
@@ -733,8 +735,66 @@ assert(equipmentAddMarkup.includes("카테고리 추가"), "React equipment add 
 assert(equipmentAddMarkup.includes("CSV 가져오기"), "React equipment add view must render native CSV import form");
 assert(!equipmentAddMarkup.includes("gju-legacy-admin-panel"), "React equipment add view must not use LegacyAdminPanel");
 assert(!equipmentAddMarkup.includes("legacy"), "React equipment add view must not render legacy fallback content");
-assert(equipmentAddMarkup.includes('name="codePrefix"'), "React equipment add form must submit the server codePrefix contract");
+assert(!equipmentAddMarkup.includes('name="codePrefix"'), "React equipment add form must not expose manual code entry");
+assert(equipmentAddMarkup.includes('name="functionTags"'), "React equipment add form must capture searchable function tags");
+assert(equipmentAddMarkup.includes("자동으로 부여"), "React equipment add form must explain automatic code assignment");
+assert(equipmentAddMarkup.includes("예상 코드"), "React equipment add form must reserve a code preview region");
 assert(equipmentAddMarkup.includes("문의 전용"), "React equipment add form must expose inquiry-only registration explicitly");
+
+const equipmentLegacySearchMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      user: { role: "admin" },
+      adminEquipmentSearch: "cam-old-01",
+      adminEquipment: [{
+        id: "legacy-equipment",
+        code: "CAM-SNY-A7M3-001",
+        legacyCodes: ["CAM-OLD-01"],
+        name: "소니 A7M3",
+        category: "Body",
+        brand: "Sony",
+        model: "A7M3",
+        functionTags: ["영상 촬영"],
+        source: "department",
+        status: "가능",
+        active: true,
+        reservable: true
+      }]
+    },
+    actions: noopActions
+  })
+);
+assert(equipmentLegacySearchMarkup.includes("CAM-SNY-A7M3-001"), "React equipment search must match legacy codes");
+
+const equipmentMigrationMarkup = renderToStaticMarkup(
+  React.createElement(renderModule.AdminApp, {
+    state: {
+      adminView: "equipment",
+      adminEquipmentPanelTab: "codes",
+      user: { role: "admin" },
+      adminEquipment: [],
+      adminEquipmentCodeMigration: {
+        id: "migration-1",
+        status: "preview",
+        codeVersion: 2,
+        warningCount: 1,
+        createdAt: "2026-07-29T00:00:00.000Z",
+        items: [{
+          equipmentId: "legacy-equipment",
+          oldCode: "LEN-8LENS-01",
+          newCode: "LEN-SAM-AF35F28-001",
+          warnings: ["브랜드 정보를 확인하세요."]
+        }]
+      }
+    },
+    actions: noopActions
+  })
+);
+assert(equipmentMigrationMarkup.includes("LEN-8LENS-01"));
+assert(equipmentMigrationMarkup.includes("LEN-SAM-AF35F28-001"));
+assert(equipmentMigrationMarkup.includes("확인 필요"));
+assert(equipmentMigrationMarkup.includes("전체 적용"));
 
 const logsMarkup = renderToStaticMarkup(
   React.createElement(renderModule.AdminApp, {
@@ -915,9 +975,13 @@ const reservationDetailsMarkup = renderToStaticMarkup(
 for (const value of ["CAM-FX3-01", "졸업작품", "010-1234-5678", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
 }
-for (const label of ["반납 처리", "예약 취소", "예약 삭제"]) {
+for (const label of ["반납 점검", "예약 취소", "예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(`aria-label="${label}"`), `equipment reservation ${label} action must be icon-only accessible`);
   assert(reservationDetailsMarkup.includes(`title="${label}"`), `equipment reservation ${label} action must expose a native tooltip`);
+}
+assert(!reservationDetailsMarkup.includes('aria-label="반납 처리"'), "checked-out equipment must not bypass the return inspection flow");
+for (const label of ["정상", "점검 필요", "수리 필요", "반납 점검 완료"]) {
+  assert(adminScreenSource.includes(label), `return inspection UI must include ${label}`);
 }
 
 const equipmentApprovalMarkup = renderToStaticMarkup(

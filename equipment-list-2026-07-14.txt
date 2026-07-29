@@ -4,6 +4,11 @@
 사진영상미디어학과 기자재실: 83개 (예약 가능 81개, 문의 전용 2개)
 판타지랩: 61개 (문의 전용 61개)
 
+코드 체계: 분류-브랜드-제품키-일련번호
+코드 버전: 2
+재발급 기준일: 2026-07-29
+이전 코드는 서비스 관리자 검색 및 감사 이력에 보존
+
 표기 형식: [분류] 장비명 | 코드 | 이용 구분 | 상태 | 비고
 
 ================================================================
@@ -11,171 +16,171 @@
 ================================================================
 
 [바디] 16개
-- 니콘 D800 | CAM-D800-01 | 예약 가능 | 가능
-- 니콘 FM2 | CAM-FM2-01 | 예약 가능 | 가능 | 필름
-- 라이카 M6 | CAM-M6-01 | 예약 가능 | 가능 | 필름
-- 소니 A7M3 | CAM-A7M3-01 | 예약 가능 | 가능
-- 소니 A7M3 | CAM-A7M3-02 | 예약 가능 | 가능
-- 소니 A7M3 | CAM-A7M3-03 | 예약 가능 | 가능
-- 캐논 750D | CAM-750D-01 | 예약 가능 | 가능
-- 캐논 750D | CAM-750D-02 | 예약 가능 | 가능
-- 캐논 750D | CAM-750D-03 | 예약 가능 | 가능
-- 캐논 750D | CAM-750D-04 | 예약 가능 | 가능
-- 캐논 750D | CAM-750D-05 | 예약 가능 | 가능
-- 캐논 800D | CAM-800D-01 | 예약 가능 | 가능
-- 캐논 EOS 1 | CAM-EOS1-01 | 예약 가능 | 가능 | 필름
-- 캐논 EOS 5 | CAM-EOS5-01 | 예약 가능 | 가능 | 필름
-- 캐논 EOS 5 | CAM-EOS5-02 | 예약 가능 | 가능 | 필름
-- 캐논 EOS 5 | CAM-EOS5-03 | 예약 가능 | 가능 | 필름
+- 니콘 D800 | CAM-NIK-D800-001 | 예약 가능 | 가능
+- 니콘 FM2 | CAM-NIK-FM2-001 | 예약 가능 | 가능 | 필름
+- 라이카 M6 | CAM-LEI-M6-001 | 예약 가능 | 가능 | 필름
+- 소니 A7M3 | CAM-SNY-A7M3-001 | 예약 가능 | 가능
+- 소니 A7M3 | CAM-SNY-A7M3-002 | 예약 가능 | 가능
+- 소니 A7M3 | CAM-SNY-A7M3-003 | 예약 가능 | 가능
+- 캐논 750D | CAM-CAN-750D-001 | 예약 가능 | 가능
+- 캐논 750D | CAM-CAN-750D-002 | 예약 가능 | 가능
+- 캐논 750D | CAM-CAN-750D-003 | 예약 가능 | 가능
+- 캐논 750D | CAM-CAN-750D-004 | 예약 가능 | 가능
+- 캐논 750D | CAM-CAN-750D-005 | 예약 가능 | 가능
+- 캐논 800D | CAM-CAN-800D-001 | 예약 가능 | 가능
+- 캐논 EOS 1 | CAM-CAN-EOS1-001 | 예약 가능 | 가능 | 필름
+- 캐논 EOS 5 | CAM-CAN-EOS5-001 | 예약 가능 | 가능 | 필름
+- 캐논 EOS 5 | CAM-CAN-EOS5-002 | 예약 가능 | 가능 | 필름
+- 캐논 EOS 5 | CAM-CAN-EOS5-003 | 예약 가능 | 가능 | 필름
 
 [렌즈] 28개
-- 니콘 105macro | LEN-105MACRO-01 | 예약 가능 | 가능
-- 니콘 135mm | LEN-135MM-01 | 예약 가능 | 가능 | 수동
-- 니콘 16-35mm | LEN-1635MM-01 | 예약 가능 | 가능
-- 니콘 50mm | LEN-50MM-01 | 예약 가능 | 가능 | 수동
-- 니콘 50mm | LEN-50MM-02 | 예약 가능 | 가능 | 수동
-- 니콘 85mm | LEN-85MM-01 | 예약 가능 | 가능
-- 니콘 시그마 70-200mm | LEN-70200MM-01 | 예약 가능 | 가능
-- 미확인 렌즈 | LEN-ITEM010-01 | 문의 전용 | 가능 | 원본 목록에 이름 없이 2pcs만 있음. 확인 필요
-- 미확인 렌즈 | LEN-ITEM010-02 | 문의 전용 | 가능 | 원본 목록에 이름 없이 2pcs만 있음. 확인 필요
-- 소니 16-35GM | LEN-1635GM-01 | 예약 가능 | 가능
-- 소니 24-70GM | LEN-2470GM-01 | 예약 가능 | 가능
-- 소니 28-70mm | LEN-2870MM-01 | 예약 가능 | 가능
-- 소니 90macro | LEN-90MACRO-01 | 예약 가능 | 가능
-- 캐논 100macro | LEN-100MACRO-01 | 예약 가능 | 가능
-- 캐논 100macro | LEN-100MACRO-02 | 예약 가능 | 가능
-- 캐논 17-85 | LEN-1785-01 | 예약 가능 | 가능
-- 캐논 28-105 | LEN-28105-01 | 예약 가능 | 가능 | 필카 가능
-- 캐논 28-105 | LEN-28105-02 | 예약 가능 | 가능 | 필카 가능
-- 캐논 28-105 | LEN-28105-03 | 예약 가능 | 가능 | 필카 가능
-- 캐논 28-80 | LEN-2880-01 | 예약 가능 | 가능 | 필카 가능
-- 캐논 70-300 | LEN-70300-01 | 예약 가능 | 가능
-- 캐논 EF 16-35 | LEN-1635-01 | 예약 가능 | 가능
-- 캐논 EF-S 18-55 | LEN-1855-01 | 예약 가능 | 가능
-- 캐논 EF-S 18-55 | LEN-1855-02 | 예약 가능 | 가능
-- 캐논 EF-S 18-55 | LEN-1855-03 | 예약 가능 | 가능
-- 캐논 EF-S 18-55 | LEN-1855-04 | 예약 가능 | 가능
-- 캐논 EF-S 18-55 | LEN-1855-05 | 예약 가능 | 가능
-- 캐논 RF 85mm | LEN-RF85MM-01 | 예약 가능 | 가능
+- 니콘 105macro | LEN-NIK-105MACRO-001 | 예약 가능 | 가능
+- 니콘 135mm | LEN-NIK-135-001 | 예약 가능 | 가능 | 수동
+- 니콘 16-35mm | LEN-NIK-1635-001 | 예약 가능 | 가능
+- 니콘 50mm | LEN-NIK-50-001 | 예약 가능 | 가능 | 수동
+- 니콘 50mm | LEN-NIK-50-002 | 예약 가능 | 가능 | 수동
+- 니콘 85mm | LEN-NIK-85-001 | 예약 가능 | 가능
+- 니콘 시그마 70-200mm | LEN-SIG-70200-001 | 예약 가능 | 가능
+- 미확인 렌즈 | LEN-GEN-UNKNOWNLENS-001 | 문의 전용 | 가능 | 원본 목록에 이름 없이 2pcs만 있음. 확인 필요
+- 미확인 렌즈 | LEN-GEN-UNKNOWNLENS-002 | 문의 전용 | 가능 | 원본 목록에 이름 없이 2pcs만 있음. 확인 필요
+- 소니 16-35GM | LEN-SNY-1635GM-001 | 예약 가능 | 가능
+- 소니 24-70GM | LEN-SNY-2470GM-001 | 예약 가능 | 가능
+- 소니 28-70mm | LEN-SNY-2870-001 | 예약 가능 | 가능
+- 소니 90macro | LEN-SNY-90MACRO-001 | 예약 가능 | 가능
+- 캐논 100macro | LEN-CAN-100MACRO-001 | 예약 가능 | 가능
+- 캐논 100macro | LEN-CAN-100MACRO-002 | 예약 가능 | 가능
+- 캐논 17-85 | LEN-CAN-1785-001 | 예약 가능 | 가능
+- 캐논 28-105 | LEN-CAN-28105-001 | 예약 가능 | 가능 | 필카 가능
+- 캐논 28-105 | LEN-CAN-28105-002 | 예약 가능 | 가능 | 필카 가능
+- 캐논 28-105 | LEN-CAN-28105-003 | 예약 가능 | 가능 | 필카 가능
+- 캐논 28-80 | LEN-CAN-2880-001 | 예약 가능 | 가능 | 필카 가능
+- 캐논 70-300 | LEN-CAN-70300-001 | 예약 가능 | 가능
+- 캐논 EF 16-35 | LEN-CAN-EF1635-001 | 예약 가능 | 가능
+- 캐논 EF-S 18-55 | LEN-CAN-EFS1855-001 | 예약 가능 | 가능
+- 캐논 EF-S 18-55 | LEN-CAN-EFS1855-002 | 예약 가능 | 가능
+- 캐논 EF-S 18-55 | LEN-CAN-EFS1855-003 | 예약 가능 | 가능
+- 캐논 EF-S 18-55 | LEN-CAN-EFS1855-004 | 예약 가능 | 가능
+- 캐논 EF-S 18-55 | LEN-CAN-EFS1855-005 | 예약 가능 | 가능
+- 캐논 RF 85mm | LEN-CAN-RF85-001 | 예약 가능 | 가능
 
 [조명] 11개
-- Aputure LS 60D LED 조명 5600K | LGT-LED5600K-01 | 예약 가능 | 가능
-- Aputure LS 60X LED 조명 바이컬러 | LGT-60XLED-01 | 예약 가능 | 가능
-- Aputure LS 60X LED 조명 바이컬러 | LGT-60XLED-02 | 예약 가능 | 가능
-- Aputure Light Dome MINI II | LGT-MINIII-01 | 예약 가능 | 가능
-- Aputure Light Dome MINI II | LGT-MINIII-02 | 예약 가능 | 가능
-- 니콘 스피드라이트 SB-900 | LGT-SB900-01 | 예약 가능 | 가능
-- 캐논 스피드라이트 430EX | LGT-430EX-01 | 예약 가능 | 가능
-- 캐논 스피드라이트 430EX | LGT-430EX-02 | 예약 가능 | 가능
-- 프로포토 B10 | LGT-B10-01 | 예약 가능 | 가능
-- 프로포토 B10 | LGT-B10-02 | 예약 가능 | 가능
-- 프로포토 B10 | LGT-B10-03 | 예약 가능 | 가능
+- Aputure LS 60D LED 조명 5600K | LGT-APT-LS60DLED5600K-001 | 예약 가능 | 가능
+- Aputure LS 60X LED 조명 바이컬러 | LGT-APT-LS60XLED-001 | 예약 가능 | 가능
+- Aputure LS 60X LED 조명 바이컬러 | LGT-APT-LS60XLED-002 | 예약 가능 | 가능
+- Aputure Light Dome MINI II | LGT-APT-DOMEMINIII-001 | 예약 가능 | 가능
+- Aputure Light Dome MINI II | LGT-APT-DOMEMINIII-002 | 예약 가능 | 가능
+- 니콘 스피드라이트 SB-900 | LGT-NIK-SB900-001 | 예약 가능 | 가능
+- 캐논 스피드라이트 430EX | LGT-CAN-430EX-001 | 예약 가능 | 가능
+- 캐논 스피드라이트 430EX | LGT-CAN-430EX-002 | 예약 가능 | 가능
+- 프로포토 B10 | LGT-PFT-B10-001 | 예약 가능 | 가능
+- 프로포토 B10 | LGT-PFT-B10-002 | 예약 가능 | 가능
+- 프로포토 B10 | LGT-PFT-B10-003 | 예약 가능 | 가능
 
 [오디오] 18개
-- Zoom H5 레코더 | AUD-ZOOMH5-01 | 예약 가능 | 가능
-- Zoom H5 레코더 | AUD-ZOOMH5-02 | 예약 가능 | 가능
-- Zoom H5 레코더 | AUD-ZOOMH5-03 | 예약 가능 | 가능
-- 로데 붐 마이크 폴 | AUD-ITEM045-01 | 예약 가능 | 가능
-- 로데 블림프 | AUD-ITEM049-01 | 예약 가능 | 가능
-- 로데 샷건 마이크 | AUD-ITEM047-01 | 예약 가능 | 가능
-- 로데 쇼크 마운트 | AUD-ITEM048-01 | 예약 가능 | 가능
-- 로데 쇼크 마운트 | AUD-ITEM048-02 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 1M | AUD-XLR1M-01 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 1M | AUD-XLR1M-02 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 1M | AUD-XLR1M-03 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 1M | AUD-XLR1M-04 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 3M | AUD-XLR3M-01 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 3M | AUD-XLR3M-02 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 3M | AUD-XLR3M-03 | 예약 가능 | 가능
-- 벨덴 XLR to XLR 케이블 3M | AUD-XLR3M-04 | 예약 가능 | 가능
-- 젠하이저 샷건마이크 | AUD-ITEM046-01 | 예약 가능 | 가능
-- 짓조 붐 마이크 폴 | AUD-ITEM044-01 | 예약 가능 | 가능
+- Zoom H5 레코더 | AUD-ZOM-H5-001 | 예약 가능 | 가능
+- Zoom H5 레코더 | AUD-ZOM-H5-002 | 예약 가능 | 가능
+- Zoom H5 레코더 | AUD-ZOM-H5-003 | 예약 가능 | 가능
+- 로데 붐 마이크 폴 | AUD-ROD-BOOMPOLE-001 | 예약 가능 | 가능
+- 로데 블림프 | AUD-ROD-BLIMP-001 | 예약 가능 | 가능
+- 로데 샷건 마이크 | AUD-ROD-SHOTGUN-001 | 예약 가능 | 가능
+- 로데 쇼크 마운트 | AUD-ROD-SHOCKMOUNT-001 | 예약 가능 | 가능
+- 로데 쇼크 마운트 | AUD-ROD-SHOCKMOUNT-002 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 1M | AUD-BEL-XLRTOXLR1M-001 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 1M | AUD-BEL-XLRTOXLR1M-002 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 1M | AUD-BEL-XLRTOXLR1M-003 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 1M | AUD-BEL-XLRTOXLR1M-004 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 3M | AUD-BEL-XLRTOXLR3M-001 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 3M | AUD-BEL-XLRTOXLR3M-002 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 3M | AUD-BEL-XLRTOXLR3M-003 | 예약 가능 | 가능
+- 벨덴 XLR to XLR 케이블 3M | AUD-BEL-XLRTOXLR3M-004 | 예약 가능 | 가능
+- 젠하이저 샷건마이크 | AUD-SEN-SHOTGUN-001 | 예약 가능 | 가능
+- 짓조 붐 마이크 폴 | AUD-GIT-BOOMPOLE-001 | 예약 가능 | 가능
 
 [기타] 10개
-- ATOMOS Shogun 7 | ETC-SHOGUN7-01 | 예약 가능 | 가능 | 영상 프리뷰 모니터
-- ATOMOS Shogun 7 | ETC-SHOGUN7-02 | 예약 가능 | 가능 | 영상 프리뷰 모니터
-- BW 가변 ND 필터 | ETC-BWND-01 | 예약 가능 | 가능
-- DJI 로닌 RS2 Pro 짐벌 | ETC-RS2PRO-01 | 예약 가능 | 가능
-- 노출계 | ETC-ITEM034-01 | 예약 가능 | 가능 | 수량 확인 필요
-- 모니터 캘리브레이터 IOne | ETC-IONE-01 | 예약 가능 | 가능
-- 삼각대 | ETC-ITEM035-01 | 예약 가능 | 가능 | 수량 확인 필요
-- 스팟미터 | ETC-ITEM037-01 | 예약 가능 | 가능 | 수량 확인 필요
-- 컬러미터 | ETC-ITEM036-01 | 예약 가능 | 가능 | 수량 확인 필요
-- 펠리칸 케이스 1510 디바이어스 | ETC-1510-01 | 예약 가능 | 가능
+- ATOMOS Shogun 7 | ETC-ATM-SHOGUN7-001 | 예약 가능 | 가능 | 영상 프리뷰 모니터
+- ATOMOS Shogun 7 | ETC-ATM-SHOGUN7-002 | 예약 가능 | 가능 | 영상 프리뷰 모니터
+- BW 가변 ND 필터 | ETC-BWP-ND-001 | 예약 가능 | 가능
+- DJI 로닌 RS2 Pro 짐벌 | ETC-DJI-RS2PRO-001 | 예약 가능 | 가능
+- 노출계 | ETC-GEN-EXPOSUREMETER-001 | 예약 가능 | 가능 | 수량 확인 필요
+- 모니터 캘리브레이터 IOne | ETC-GEN-IONE-001 | 예약 가능 | 가능
+- 삼각대 | ETC-GEN-TRIPOD-001 | 예약 가능 | 가능 | 수량 확인 필요
+- 스팟미터 | ETC-GEN-SPOTMETER-001 | 예약 가능 | 가능 | 수량 확인 필요
+- 컬러미터 | ETC-GEN-COLORMETER-001 | 예약 가능 | 가능 | 수량 확인 필요
+- 펠리칸 케이스 1510 디바이어스 | ETC-PEL-CASE1510-001 | 예약 가능 | 가능
 
 ================================================================
 판타지랩 | 61개
 ================================================================
 
 [바디] 8개
-- 소니 A7MIII Body | CAM-A7MIIIBODY-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 소니 A7SII Body | CAM-A7SIIBODY-01 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 A7SII Body | CAM-A7SIIBODY-02 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 A7SII Body | CAM-A7SIIBODY-03 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 A7SII Body | CAM-A7SIIBODY-04 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 A7SII Body | CAM-A7SIIBODY-05 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 FX3 Body | CAM-FX3BODY-01 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
-- 소니 PXW FS7 | CAM-PXWFS7-01 | 문의 전용 | 가능 | 4K 비디오카메라, 판타지랩 조교 문의
+- 소니 A7MIII Body | CAM-SNY-A7M3-004 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 소니 A7SII Body | CAM-SNY-A7SII-001 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 A7SII Body | CAM-SNY-A7SII-002 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 A7SII Body | CAM-SNY-A7SII-003 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 A7SII Body | CAM-SNY-A7SII-004 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 A7SII Body | CAM-SNY-A7SII-005 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 FX3 Body | CAM-SNY-FX3-001 | 문의 전용 | 가능 | 영상용, 판타지랩 조교 문의
+- 소니 PXW FS7 | CAM-SNY-PXWFS7-001 | 문의 전용 | 가능 | 4K 비디오카메라, 판타지랩 조교 문의
 
 [렌즈] 6개
-- 삼양 AF 35mm F2.8 Lens | LEN-8LENS-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 삼양 AF 35mm F2.8 Lens | LEN-8LENS-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 삼양 AF 35mm F2.8 Lens | LEN-8LENS-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 삼양 AF 35mm F2.8 Lens | LEN-8LENS-04 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 소니 FE 24-70mm F2.8 Lens | LEN-8LENS-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 소니 FE 28-70mm F3.5-5.6 Lens | LEN-6LENS-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 삼양 AF 35mm F2.8 Lens | LEN-SAM-AF35F28-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 삼양 AF 35mm F2.8 Lens | LEN-SAM-AF35F28-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 삼양 AF 35mm F2.8 Lens | LEN-SAM-AF35F28-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 삼양 AF 35mm F2.8 Lens | LEN-SAM-AF35F28-004 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 소니 FE 24-70mm F2.8 Lens | LEN-SNY-FE2470F28-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 소니 FE 28-70mm F3.5-5.6 Lens | LEN-SNY-FE2870F3556-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
 
 [조명] 19개
-- APUTURE 600X 바이컬러 조명 | LGT-APUTURE600X-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- APUTURE 600X 바이컬러 조명 | LGT-APUTURE600X-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- APUTURE Barn doors F10 | LGT-DOORSF10-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- APUTURE Barn doors F10 | LGT-DOORSF10-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- APUTURE LANTERN 26inch | LGT-LANTERN26INCH-01 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
-- APUTURE LANTERN 26inch | LGT-LANTERN26INCH-02 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
-- APUTURE Spotlight Mount | LGT-SPOTLIGHTMOUNT-01 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
-- APUTURE Spotlight Mount | LGT-SPOTLIGHTMOUNT-02 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-04 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-05 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-06 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-07 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD BL2250 | LGT-LITEPADBL2250-08 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD LP260C | LGT-LITEPADLP260C-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD LP260C | LGT-LITEPADLP260C-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 포맥스 LITEPAD LP260C | LGT-LITEPADLP260C-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- APUTURE 600X 바이컬러 조명 | LGT-APT-600X-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- APUTURE 600X 바이컬러 조명 | LGT-APT-600X-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- APUTURE Barn doors F10 | LGT-APT-BARNDOORSF10-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- APUTURE Barn doors F10 | LGT-APT-BARNDOORSF10-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- APUTURE LANTERN 26inch | LGT-APT-LANTERN26INCH-001 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
+- APUTURE LANTERN 26inch | LGT-APT-LANTERN26INCH-002 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
+- APUTURE Spotlight Mount | LGT-APT-SPOTLIGHTMOUNT-001 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
+- APUTURE Spotlight Mount | LGT-APT-SPOTLIGHTMOUNT-002 | 문의 전용 | 가능 | 조명 악세서리, 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-004 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-005 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-006 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-007 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD BL2250 | LGT-FOM-LITEPADBL2250-008 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD LP260C | LGT-FOM-LITEPADLP260C-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD LP260C | LGT-FOM-LITEPADLP260C-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 포맥스 LITEPAD LP260C | LGT-FOM-LITEPADLP260C-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
 
 [오디오] 7개
-- BSM200_1 채널 무선 핀마이크 | AUD-BSM2001-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- RODE Stereo VideoMic Pro | AUD-VIDEOMICPRO-01 | 문의 전용 | 가능 | 지향성마이크, 판타지랩 조교 문의
-- SONY UWP-D11 핀마이크 | AUD-UWPD11-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- SONY UWP-D11 핀마이크 | AUD-UWPD11-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- SONY UWP-D11 핀마이크 | AUD-UWPD11-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- TASCAM DR-40x 보이스레코더 | AUD-DR40X-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 하만 C214 마이크믹싱콘솔 | AUD-C214-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- BSM200_1 채널 무선 핀마이크 | AUD-GEN-BSM2001-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- RODE Stereo VideoMic Pro | AUD-ROD-STEREOVIDEOMICPR-001 | 문의 전용 | 가능 | 지향성마이크, 판타지랩 조교 문의
+- SONY UWP-D11 핀마이크 | AUD-SNY-UWPD11-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- SONY UWP-D11 핀마이크 | AUD-SNY-UWPD11-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- SONY UWP-D11 핀마이크 | AUD-SNY-UWPD11-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- TASCAM DR-40x 보이스레코더 | AUD-TAS-DR40X-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 하만 C214 마이크믹싱콘솔 | AUD-HAR-C214-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
 
 [드론] 8개
-- DJI 매빅 에어 | DRN-DJI-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 매빅2 줌 | DRN-DJI2-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 매빅2 프로 | DRN-DJI2-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 매빅2 프로 | DRN-DJI2-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 매빅2 프로 | DRN-DJI2-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 매빅3 | DRN-DJI3-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 스파크 | DRN-DJI-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 스파크 | DRN-DJI-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅 에어 | DRN-DJI-MAVICAIR-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅2 줌 | DRN-DJI-MAVIC2ZOOM-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅2 프로 | DRN-DJI-MAVIC2PRO-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅2 프로 | DRN-DJI-MAVIC2PRO-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅2 프로 | DRN-DJI-MAVIC2PRO-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 매빅3 | DRN-DJI-MAVIC3-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 스파크 | DRN-DJI-SPARK-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 스파크 | DRN-DJI-SPARK-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
 
 [기타] 13개
-- 360도 촬영 카메라 어댑터 삼각대고정용 | ETC-360-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 360도 촬영 카메라 어댑터 카메라고정용 | ETC-360-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 로닌SC Pro 짐벌 | ETC-SCPRO-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 오즈모 짐벌 | ETC-DJI-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- DJI 오즈모 포켓 | ETC-DJI-01 | 문의 전용 | 가능 | 액션캠, 판타지랩 조교 문의
-- DJI 오즈모 포켓 | ETC-DJI-02 | 문의 전용 | 가능 | 액션캠, 판타지랩 조교 문의
-- 세코닉 L-308DC | ETC-L308DC-01 | 문의 전용 | 가능 | 영상촬영용 노출계, 판타지랩 조교 문의
-- 셔틀러 | ETC-ITEM071-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 셔틀러 | ETC-ITEM071-02 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 셔틀러 | ETC-ITEM071-03 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 셔틀러 | ETC-ITEM071-04 | 문의 전용 | 가능 | 판타지랩 조교 문의
-- 아토모스 쇼군7 | ETC-7-01 | 문의 전용 | 가능 | 프리뷰 모니터, 판타지랩 조교 문의
-- 호르스벤누 전동슬라이더 | ETC-ITEM076-01 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 360도 촬영 카메라 어댑터 삼각대고정용 | ETC-GEN-360TRIPODADPT-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 360도 촬영 카메라 어댑터 카메라고정용 | ETC-GEN-360CAMADPT-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 로닌SC Pro 짐벌 | ETC-DJI-SCPRO-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 오즈모 짐벌 | ETC-DJI-OSMOGIMBAL-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- DJI 오즈모 포켓 | ETC-DJI-OSMOPOCKET-001 | 문의 전용 | 가능 | 액션캠, 판타지랩 조교 문의
+- DJI 오즈모 포켓 | ETC-DJI-OSMOPOCKET-002 | 문의 전용 | 가능 | 액션캠, 판타지랩 조교 문의
+- 세코닉 L-308DC | ETC-SEK-L308DC-001 | 문의 전용 | 가능 | 영상촬영용 노출계, 판타지랩 조교 문의
+- 셔틀러 | ETC-GEN-SHUTTLER-001 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 셔틀러 | ETC-GEN-SHUTTLER-002 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 셔틀러 | ETC-GEN-SHUTTLER-003 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 셔틀러 | ETC-GEN-SHUTTLER-004 | 문의 전용 | 가능 | 판타지랩 조교 문의
+- 아토모스 쇼군7 | ETC-ATM-7-001 | 문의 전용 | 가능 | 프리뷰 모니터, 판타지랩 조교 문의
+- 호르스벤누 전동슬라이더 | ETC-HRS-SLIDER-001 | 문의 전용 | 가능 | 판타지랩 조교 문의

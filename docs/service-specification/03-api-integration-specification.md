@@ -188,6 +188,7 @@ Authorization: Bearer <session-token>
 | --- | --- | --- | --- | --- |
 | GET | `/api/admin/reservations` | 관리자 | 상세 예약 목록 | 목록 쿼리 |
 | PATCH | `/api/admin/reservations/:id/status` | 관리자 | 상태 전이 | `status`, 선택 `adminNote` |
+| POST | `/api/admin/reservations/:id/return-inspection` | 관리자 | 장비별 반납 점검과 반납 완료 | `inspections` |
 | DELETE | `/api/admin/reservations/:id` | 관리자 | 예약과 연결 보고서 삭제 | 없음 |
 | DELETE | `/api/admin/reservations/bulk` | 관리자 | 필터 결과 또는 전체 삭제 | 일괄 삭제 본문 |
 
@@ -198,8 +199,14 @@ Authorization: Bearer <session-token>
 | 메서드 | 경로 | 권한 | 목적 | 주요 입력 |
 | --- | --- | --- | --- | --- |
 | GET | `/api/admin/equipment` | 관리자 | 전체 장비 조회 | 없음 |
+| GET | `/api/admin/equipment/search` | 관리자 | 현재·이전 코드와 메타데이터 통합 검색 | `q` |
 | POST | `/api/admin/equipment` | 관리자 | 장비 1개 이상 생성 | `name`, `category`, 선택 `quantity` 등 |
 | POST | `/api/admin/equipment/import` | 관리자 | CSV 파싱 결과 적용 | `rows`, 선택 `filename` |
+| POST | `/api/admin/equipment/code-preview` | 관리자 | 신규 장비 예상 코드 계산 | 장비 입력값 |
+| POST | `/api/admin/equipment/code-migrations/preview` | 관리자 | 전체 코드 재발급 변경안 생성 | 없음 |
+| GET | `/api/admin/equipment/code-migrations/:id` | 관리자 | 재발급 변경안·결과 조회 | 없음 |
+| POST | `/api/admin/equipment/code-migrations/:id/apply` | 관리자 | 확인된 전체 변경안 적용 | `confirmedIds` |
+| POST | `/api/admin/equipment/:id/regenerate-code` | 관리자 | 단일 장비 코드 재생성 | `confirmation` |
 | PATCH | `/api/admin/equipment/bulk` | 관리자 | 최대 200개 일괄 수정 | `ids`, `patch` |
 | PATCH | `/api/admin/equipment/:id` | 관리자 | 장비 수정·비활성화 | 수정 필드 |
 
@@ -431,6 +438,76 @@ PUT은 부분 수정이 아니라 전체 그룹 목록 교체다.
 
 필터가 없거나 필터 결과가 사실상 전체와 같으면 확인 문구 없이 삭제할 수 없다.
 
+### 5.9 기자재 코드와 반납 점검
+
+신규 장비 코드 미리보기:
+
+```http
+POST /api/admin/equipment/code-preview
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "소니 A7M3",
+  "category": "Body",
+  "brand": "Sony",
+  "model": "A7M3",
+  "functionTags": ["영상 촬영"],
+  "quantity": 2
+}
+```
+
+응답 `data.codes`는 다음 사용 가능한 코드를 순서대로 반환한다. 미리보기는 저장소를 변경하지 않으며 실제 등록 응답의 코드가 최종값이다.
+
+전체 재발급은 `preview → warning 확인 → apply` 순서다. 적용 본문 예시는 다음과 같다.
+
+```json
+{
+  "confirmedIds": ["eq_warning_1"]
+}
+```
+
+- 미리보기 이후 장비가 변경되면 `409`를 반환한다.
+- 경고 장비 확인이 빠져도 `409`를 반환한다.
+- 이미 적용된 마이그레이션을 다시 적용하면 최초 적용 결과를 그대로 반환한다.
+
+단일 코드 재생성은 오조작 방지를 위해 다음 확인 문구가 정확해야 한다.
+
+```json
+{
+  "confirmation": "코드 재생성"
+}
+```
+
+반납 점검:
+
+```http
+POST /api/admin/reservations/res_123/return-inspection
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "inspections": [
+    {
+      "equipmentId": "eq_camera",
+      "outcome": "normal",
+      "note": ""
+    },
+    {
+      "equipmentId": "eq_lens",
+      "outcome": "needs_repair",
+      "note": "줌 링 걸림"
+    }
+  ]
+}
+```
+
+예약 상태가 `checked_out`이 아니거나 예약 장비가 누락·중복되면 `409` 또는 `400`을 반환한다. `needs_repair`에 메모가 없으면 `400`이다. 성공 시 예약 `returned`, 장비 상태, 검사 기록을 한 트랜잭션으로 저장한다.
+
 ## 6. CORS와 보안 헤더
 
 Worker 허용 출처:
@@ -482,4 +559,3 @@ content-type, authorization
 - 낙관적 동시성 또는 `updatedAt` 조건부 수정
 - 일괄 교체 API에 idempotency key 적용
 - 관리자 세부 권한 정책 추가
-

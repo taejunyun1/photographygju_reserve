@@ -112,6 +112,8 @@ export const state = {
   adminReservationSemesters: [],
   adminReservationsPage: { total: 0, page: 1, pageSize: 0, hasMore: false },
   adminEquipment: [],
+  adminEquipmentCodeMigration: null,
+  adminEquipmentReturnDraft: {},
   adminReports: [],
   adminReportSemesters: [],
   adminReportsPage: { total: 0, page: 1, pageSize: 0, hasMore: false },

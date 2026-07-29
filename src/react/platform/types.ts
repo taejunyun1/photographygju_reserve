@@ -105,10 +105,15 @@ export type AdminReservationRecord = {
 export type AdminEquipmentRecord = {
   id: string;
   code?: string;
+  legacyCodes?: string[];
   name?: string;
   category?: string;
   brand?: string;
+  brandCode?: string;
   model?: string;
+  productKey?: string;
+  functionTags?: string[];
+  codeVersion?: number;
   source?: string;
   facility?: string;
   status?: string;
@@ -523,17 +528,61 @@ export type AdminViewFilterMap = {
 export type AdminEquipmentStatus = "가능" | "수리중" | "파손" | "문의";
 
 export type AdminEquipmentInput = {
-  codePrefix?: string;
   name: string;
   category: string;
   brand?: string;
   model?: string;
+  functionTags?: string[];
   source?: string;
   status?: AdminEquipmentStatus;
   quantity?: number;
   notes?: string;
   reservable?: boolean;
   inquiryOnly?: boolean;
+};
+
+export type AdminEquipmentInspectionOutcome =
+  | "normal"
+  | "needs_inspection"
+  | "needs_repair";
+
+export type AdminEquipmentInspectionInput = {
+  equipmentId: string;
+  outcome: AdminEquipmentInspectionOutcome;
+  note: string;
+};
+
+export type AdminEquipmentCodeMigrationItem = {
+  equipmentId: string;
+  oldCode: string;
+  newCode: string;
+  warnings: string[];
+  confirmed?: boolean;
+};
+
+export type AdminEquipmentCodeMigration = {
+  id: string;
+  status: "preview" | "applied" | "failed";
+  codeVersion: 2;
+  items: AdminEquipmentCodeMigrationItem[];
+  warningCount: number;
+  confirmedIds?: string[];
+  createdAt: string;
+  appliedAt?: string;
+};
+
+export type AdminEquipmentCodePreview = {
+  identity: {
+    category: string;
+    categoryCode: string;
+    brand: string;
+    brandCode: string;
+    model: string;
+    productKey: string;
+    functionTags: string[];
+    warnings: string[];
+  };
+  codes: string[];
 };
 
 export type AdminLectureInput = {
@@ -601,6 +650,11 @@ export type LegacyState = Record<string, unknown> & {
   adminEquipmentTab?: string;
   adminEquipmentCategoryTab?: string;
   adminEquipmentPanelTab?: string;
+  adminEquipmentCodeMigration?: AdminEquipmentCodeMigration | null;
+  adminEquipmentReturnDraft?: Record<string, {
+    outcome?: AdminEquipmentInspectionOutcome;
+    note?: string;
+  }>;
   adminSelectedEquipmentIds?: string[];
   selectedAdminEquipmentIds?: string[];
   adminReports?: AdminReportRecord[];
@@ -653,6 +707,14 @@ export type ReactAdminActions = {
   bulkDeleteReservations(filters: Partial<AdminViewFilterMap["reservations"]>): Promise<void>;
   deleteAllReservations(collectionTotal: number): Promise<void>;
   updateEquipmentStatus(ids: string[], status: AdminEquipmentStatus): Promise<void>;
+  previewEquipmentCode(input: AdminEquipmentInput): Promise<AdminEquipmentCodePreview>;
+  previewEquipmentCodeMigration(): Promise<AdminEquipmentCodeMigration>;
+  applyEquipmentCodeMigration(migrationId: string, confirmedIds: string[]): Promise<void>;
+  regenerateEquipmentCode(equipmentId: string): Promise<void>;
+  returnEquipmentReservation(
+    reservationId: string,
+    inspections: AdminEquipmentInspectionInput[]
+  ): Promise<void>;
   createEquipment(input: AdminEquipmentInput): Promise<void>;
   importEquipment(rows: Array<Record<string, unknown>>): Promise<void>;
   deleteEquipment(ids: string[]): Promise<void>;

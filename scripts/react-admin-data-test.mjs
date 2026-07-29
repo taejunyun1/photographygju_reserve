@@ -130,6 +130,8 @@ assert.deepEqual(
   { field: "createdAt", direction: "desc" },
   "student approvals must default to newest signup first"
 );
+assert.equal(state.adminEquipmentCodeMigration, null);
+assert.deepEqual(state.adminEquipmentReturnDraft, {});
 
 await loadAdminView("dashboard", { force: true });
 assert.deepEqual(requests, ["/api/admin/summary"], "dashboard must request only the summary endpoint");

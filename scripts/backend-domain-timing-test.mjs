@@ -359,7 +359,16 @@ const createdInquiryEquipment = await api("POST", "/api/admin/equipment", {
   inquiryOnly: true
 });
 assert.equal(createdInquiryEquipment.status, 200);
-assert.equal(createdInquiryEquipment.body.data[0].code, "CAM-REVIEW-001", "a single explicit codePrefix must preserve the entered equipment code");
+assert.match(
+  createdInquiryEquipment.body.data[0].code,
+  /^CAM-SNY-FX3-\d{3}$/,
+  "equipment codes must use the normalized category, brand, product, and sequence"
+);
+assert.deepEqual(
+  createdInquiryEquipment.body.data[0].legacyCodes,
+  ["CAM-REVIEW-001"],
+  "an entered legacy code must stay searchable without overriding the generated code"
+);
 assert.equal(createdInquiryEquipment.body.data[0].brand, "Sony");
 assert.equal(createdInquiryEquipment.body.data[0].model, "FX3");
 assert.equal(createdInquiryEquipment.body.data[0].status, "가능", "inquiry is a reservation mode, not a persisted equipment status");

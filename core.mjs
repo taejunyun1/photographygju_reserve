@@ -36,6 +36,12 @@ import {
   createEquipmentHelpers
 } from "./core/equipment.mjs";
 import {
+  allocateEquipmentCodes,
+  buildEquipmentCodeMigrationPreview,
+  equipmentSearchScore,
+  equipmentMigrationFingerprint
+} from "./core/equipment-code.mjs";
+import {
   PASSWORD_MIN_LENGTH,
   SESSION_TTL_MS,
   createAuthSessionHelpers
@@ -382,6 +388,8 @@ export async function initialDb(adminPassword = "admin") {
     slackLogs: [],
     auditLogs: [],
     importBatches: [],
+    equipmentCodeMigrations: [],
+    equipmentInspections: [],
     coursePlanning: createCoursePlanningSeed()
   };
 }
@@ -528,7 +536,7 @@ const equipmentHelpers = createEquipmentHelpers({
 
 const {
   applyEquipmentPatch,
-  codeBase,
+  createEquipmentRecords,
   equipmentAuditDetail,
   equipmentReservationRange,
   equipmentReservableForStatus,
@@ -640,6 +648,8 @@ export function normalizeDb(db) {
   }
   db.darkroomChemicals = db.darkroomChemicals || darkroomChemicals;
   db.importBatches = db.importBatches || [];
+  db.equipmentCodeMigrations = db.equipmentCodeMigrations || [];
+  db.equipmentInspections = db.equipmentInspections || [];
   db.reservations = db.reservations || [];
   db.reports = db.reports || [];
   db.lectures = db.lectures || [];
@@ -665,6 +675,12 @@ export function normalizeDb(db) {
   }
   db.equipment = db.equipment || [];
   for (const item of db.equipment) {
+    item.legacyCodes = Array.isArray(item.legacyCodes)
+      ? [...new Set(item.legacyCodes.map(String).filter(Boolean))]
+      : [];
+    item.functionTags = Array.isArray(item.functionTags)
+      ? [...new Set(item.functionTags.map(String).filter(Boolean))]
+      : [];
     item.status = normalizeEquipmentStatus(item.status);
     if (!equipmentReservableForStatus(item.status)) {
       item.reservable = false;
@@ -725,6 +741,8 @@ export function adminExportData(db) {
     auditLogs: db.auditLogs,
     slackLogs: db.slackLogs,
     importBatches: db.importBatches,
+    equipmentCodeMigrations: db.equipmentCodeMigrations,
+    equipmentInspections: db.equipmentInspections,
     coursePlanning: exportedCoursePlanning
   };
 }
@@ -1643,6 +1661,168 @@ export async function handleApiRequest(ctx) {
         return ok({ id: reservationId, deletedReservations: 1, deletedReports });
       }
 
+      const adminReturnInspectionMatch = pathname.match(
+        /^\/api\/admin\/reservations\/([^/]+)\/return-inspection$/
+      );
+      if (method === "POST" && adminReturnInspectionMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const reservation = db.reservations.find(
+          (item) => item.id === adminReturnInspectionMatch[1]
+        );
+        if (!reservation) {
+          throw Object.assign(new Error("예약을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        if (reservation.type !== "equipment") {
+          throw Object.assign(
+            new Error("기자재 예약에서만 반납 점검을 처리할 수 있습니다."),
+            { status: 400 }
+          );
+        }
+        if (reservation.status !== "checked_out") {
+          throw Object.assign(
+            new Error("대여 중인 예약만 반납 점검을 처리할 수 있습니다."),
+            { status: 409 }
+          );
+        }
+        const requested = Array.isArray(body.inspections)
+          ? body.inspections
+          : [];
+        const expectedIds = [
+          ...new Set(
+            Array.isArray(reservation.fields?.equipmentItemIds)
+              ? reservation.fields.equipmentItemIds.map(String)
+              : []
+          )
+        ];
+        const requestedIds = requested.map((item) =>
+          String(item?.equipmentId || "")
+        );
+        if (
+          !expectedIds.length ||
+          requestedIds.length !== expectedIds.length ||
+          new Set(requestedIds).size !== requestedIds.length ||
+          requestedIds.some((itemId) => !expectedIds.includes(itemId))
+        ) {
+          throw Object.assign(
+            new Error("예약에 포함된 모든 기자재의 점검 결과를 입력하세요."),
+            { status: 400 }
+          );
+        }
+
+        const allowedOutcomes = new Set([
+          "normal",
+          "needs_inspection",
+          "needs_repair"
+        ]);
+        const checkedAt = nowIso();
+        const changes = requested.map((inspection) => {
+          const equipment = db.equipment.find(
+            (item) => item.id === String(inspection.equipmentId)
+          );
+          if (!equipment) {
+            throw Object.assign(new Error("점검할 기자재를 찾을 수 없습니다."), {
+              status: 404
+            });
+          }
+          const outcome = String(inspection.outcome || "");
+          if (!allowedOutcomes.has(outcome)) {
+            throw Object.assign(new Error("지원하지 않는 점검 결과입니다."), {
+              status: 400
+            });
+          }
+          const note = String(inspection.note || "").trim();
+          if (outcome === "needs_repair" && !note) {
+            throw Object.assign(
+              new Error("파손·수리 필요 사유를 입력하세요."),
+              { status: 400 }
+            );
+          }
+          const nextStatus = outcome === "normal" ? "가능" : "수리중";
+          return {
+            equipment,
+            nextStatus,
+            record: {
+              id: id("eqinspection"),
+              equipmentId: equipment.id,
+              reservationId: reservation.id,
+              outcome,
+              note,
+              previousStatus: equipment.status,
+              nextStatus,
+              checkedBy: admin.id,
+              checkedAt
+            }
+          };
+        });
+
+        const previousReservation = JSON.parse(JSON.stringify(reservation));
+        const previousEquipment = changes.map(({ equipment }) => ({
+          equipment,
+          snapshot: JSON.parse(JSON.stringify(equipment))
+        }));
+        const previousInspections = db.equipmentInspections;
+        const previousAuditLogs = db.auditLogs;
+        for (const { equipment, nextStatus } of changes) {
+          equipment.status = nextStatus;
+          equipment.updatedAt = checkedAt;
+          if (nextStatus === "가능") {
+            const inquiryOnly = equipment.source === "fantasy_lab"
+              || equipment.facility === "판타지랩";
+            equipment.reservable = !inquiryOnly;
+            equipment.inquiryOnly = inquiryOnly;
+          } else {
+            equipment.reservable = false;
+            equipment.inquiryOnly = true;
+          }
+        }
+        reservation.status = "returned";
+        reservation.updatedAt = checkedAt;
+        reservation.history = [
+          ...(Array.isArray(reservation.history) ? reservation.history : []),
+          {
+            at: checkedAt,
+            actorId: admin.id,
+            action: "return_inspected",
+            status: "returned",
+            equipmentOutcomes: changes.map(({ record }) => ({
+              equipmentId: record.equipmentId,
+              outcome: record.outcome
+            }))
+          }
+        ];
+        db.equipmentInspections = [
+          ...previousInspections,
+          ...changes.map(({ record }) => record)
+        ];
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "reservation.return_inspected", reservation.id, {
+          equipmentOutcomes: changes.map(({ record }) => ({
+            equipmentId: record.equipmentId,
+            outcome: record.outcome
+          }))
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          for (const key of Object.keys(reservation)) delete reservation[key];
+          Object.assign(reservation, previousReservation);
+          for (const { equipment, snapshot } of previousEquipment) {
+            for (const key of Object.keys(equipment)) delete equipment[key];
+            Object.assign(equipment, snapshot);
+          }
+          db.equipmentInspections = previousInspections;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok({
+          reservation: withReservationDetails(db, reservation),
+          inspections: changes.map(({ record }) => record)
+        });
+      }
+
       const adminReservationStatusMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)\/status$/);
       if (method === "PATCH" && adminReservationStatusMatch) {
         const admin = requireAdmin(authorization, db);
@@ -1675,13 +1855,206 @@ export async function handleApiRequest(ctx) {
         return ok(db.equipment);
       }
 
+      if (routeKey(method, pathname) === "POST /api/admin/equipment/code-migrations/preview") {
+        const admin = requireAdmin(authorization, db);
+        const preview = buildEquipmentCodeMigrationPreview(db.equipment);
+        const migration = {
+          id: id("eqmigration"),
+          status: "preview",
+          codeVersion: 2,
+          fingerprint: preview.fingerprint,
+          items: preview.items,
+          warningCount: preview.warningCount,
+          createdBy: admin.id,
+          createdAt: nowIso(),
+          appliedAt: ""
+        };
+        const previousMigrations = db.equipmentCodeMigrations;
+        const previousAuditLogs = db.auditLogs;
+        db.equipmentCodeMigrations = [...previousMigrations, migration];
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_migration_previewed", migration.id, {
+          itemCount: migration.items.length,
+          warningCount: migration.warningCount,
+          codeVersion: migration.codeVersion
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipmentCodeMigrations = previousMigrations;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok(migration);
+      }
+
+      const equipmentCodeMigrationApplyMatch = pathname.match(
+        /^\/api\/admin\/equipment\/code-migrations\/([^/]+)\/apply$/
+      );
+      if (method === "POST" && equipmentCodeMigrationApplyMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const migration = db.equipmentCodeMigrations.find(
+          (item) => item.id === equipmentCodeMigrationApplyMatch[1]
+        );
+        if (!migration) {
+          throw Object.assign(new Error("코드 재발급 작업을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        if (migration.status === "applied") return ok(migration);
+        if (migration.fingerprint !== equipmentMigrationFingerprint(db.equipment)) {
+          throw Object.assign(
+            new Error("미리보기 이후 기자재가 변경되었습니다. 미리보기를 다시 생성하세요."),
+            { status: 409 }
+          );
+        }
+
+        const confirmedIds = new Set(
+          Array.isArray(body.confirmedIds)
+            ? body.confirmedIds.map((value) => String(value || ""))
+            : []
+        );
+        const unconfirmed = migration.items.filter(
+          (item) => item.warnings?.length && !confirmedIds.has(item.equipmentId)
+        );
+        if (unconfirmed.length) {
+          throw Object.assign(
+            new Error(`확인이 필요한 기자재 ${unconfirmed.length}개를 먼저 확인하세요.`),
+            { status: 409 }
+          );
+        }
+
+        const mappingById = new Map(
+          migration.items.map((item) => [item.equipmentId, item])
+        );
+        if (mappingById.size !== db.equipment.length) {
+          throw Object.assign(
+            new Error("코드 재발급 대상과 현재 기자재 수가 일치하지 않습니다."),
+            { status: 409 }
+          );
+        }
+        const assignedAt = nowIso();
+        const nextEquipment = db.equipment.map((item) => {
+          const mapping = mappingById.get(item.id);
+          if (!mapping) {
+            throw Object.assign(
+              new Error("코드 재발급 대상 기자재를 찾을 수 없습니다."),
+              { status: 409 }
+            );
+          }
+          const legacyCodes = [
+            ...(Array.isArray(item.legacyCodes) ? item.legacyCodes : []),
+            mapping.oldCode
+          ].map(String).filter(Boolean);
+          return {
+            ...item,
+            code: mapping.newCode,
+            legacyCodes: [...new Set(legacyCodes)],
+            category: mapping.identity.category,
+            brand: mapping.identity.brand,
+            brandCode: mapping.identity.brandCode,
+            model: mapping.identity.model,
+            productKey: mapping.identity.productKey,
+            functionTags: mapping.identity.functionTags,
+            codeVersion: 2,
+            codeAssignedAt: assignedAt,
+            codeAssignedBy: admin.id,
+            updatedAt: assignedAt
+          };
+        });
+        if (new Set(nextEquipment.map((item) => item.code)).size !== nextEquipment.length) {
+          throw Object.assign(
+            new Error("새 기자재 코드가 중복되어 적용할 수 없습니다."),
+            { status: 409 }
+          );
+        }
+
+        const appliedMigration = {
+          ...migration,
+          status: "applied",
+          appliedAt: assignedAt,
+          appliedBy: admin.id,
+          confirmedIds: [...confirmedIds]
+        };
+        const nextMigrations = db.equipmentCodeMigrations.map((item) =>
+          item.id === migration.id ? appliedMigration : item
+        );
+        const previousEquipment = db.equipment;
+        const previousMigrations = db.equipmentCodeMigrations;
+        const previousAuditLogs = db.auditLogs;
+        db.equipment = nextEquipment;
+        db.equipmentCodeMigrations = nextMigrations;
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_migration_applied", migration.id, {
+          itemCount: nextEquipment.length,
+          warningCount: migration.warningCount,
+          codeVersion: 2
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipment = previousEquipment;
+          db.equipmentCodeMigrations = previousMigrations;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
+        return ok(appliedMigration);
+      }
+
+      const equipmentCodeMigrationGetMatch = pathname.match(
+        /^\/api\/admin\/equipment\/code-migrations\/([^/]+)$/
+      );
+      if (method === "GET" && equipmentCodeMigrationGetMatch) {
+        requireAdmin(authorization, db);
+        const migration = db.equipmentCodeMigrations.find(
+          (item) => item.id === equipmentCodeMigrationGetMatch[1]
+        );
+        if (!migration) {
+          throw Object.assign(new Error("코드 재발급 작업을 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        return ok(migration);
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/equipment/code-preview") {
+        requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        const quantity = Math.min(200, Math.max(1, Number(body.quantity || 1)));
+        return ok(allocateEquipmentCodes({
+          items: db.equipment,
+          input: body,
+          quantity
+        }));
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/equipment/search") {
+        requireAdmin(authorization, db);
+        const query = String(searchParams.get("q") || "").trim();
+        return ok(db.equipment
+          .filter((item) => item.active !== false)
+          .map((item) => ({
+            item,
+            score: equipmentSearchScore(item, query)
+          }))
+          .filter(({ score }) => score > 0)
+          .sort((left, right) =>
+            right.score - left.score ||
+            String(left.item.code || "").localeCompare(
+              String(right.item.code || ""),
+              "ko"
+            )
+          )
+          .slice(0, 50)
+          .map(({ item }) => item));
+      }
+
       if (routeKey(method, pathname) === "POST /api/admin/equipment") {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["name", "category"]);
-        const quantity = Math.max(1, Number(body.quantity || 1));
-        const requestedCodePrefix = String(body.codePrefix || body.code || "").trim();
-        const base = requestedCodePrefix || codeBase(body.category, body.name, db.equipment.length + 1);
+        const quantity = Math.min(200, Math.max(1, Number(body.quantity || 1)));
         const source = body.source || "department";
         const status = normalizeEquipmentStatus(body.status);
         const inquiryOnlyRequested = source === "fantasy_lab"
@@ -1690,26 +2063,31 @@ export async function handleApiRequest(ctx) {
           || body.inquiryOnly === "true"
           || body.reservable === false;
         const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
-        const created = [];
-        for (let index = 1; index <= quantity; index += 1) {
-          created.push({
-            id: id("eq"),
+        const createdAt = nowIso();
+        const generated = createEquipmentRecords({
+          existingItems: db.equipment,
+          input: {
+            ...body,
+            legacyCode: body.codePrefix || body.code || "",
+            codeAssignedBy: admin.id
+          },
+          quantity,
+          makeId: id,
+          timestamp: createdAt
+        });
+        const created = generated.map((record) => ({
+            ...record,
             facility: body.facility || (source === "fantasy_lab" ? "판타지랩" : "극기관"),
             source,
-            category: body.category,
             name: body.name,
-            brand: String(body.brand || ""),
-            model: String(body.model || ""),
-            code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
             status,
             reservable,
             inquiryOnly: !reservable,
             notes: body.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
             active: true,
-            createdAt: nowIso(),
-            updatedAt: nowIso()
-          });
-        }
+            createdAt,
+            updatedAt: createdAt
+          }));
         db.equipment.push(...created);
         audit(db, admin, "equipment.created", created.map((item) => item.id).join(","), { count: created.length });
         await saveDb();
@@ -1750,26 +2128,43 @@ export async function handleApiRequest(ctx) {
             || row.reservable === false
             || row.reservable === "false";
           const reservable = !inquiryOnlyRequested && equipmentReservableForStatus(status);
-          const requestedCodePrefix = String(row.code_prefix || row.codePrefix || row.code || "").trim();
-          const base = requestedCodePrefix || codeBase(category, row.name, db.equipment.length + 1);
-          for (let index = 1; index <= quantity; index += 1) {
+          const createdAt = nowIso();
+          let generated;
+          try {
+            generated = createEquipmentRecords({
+              existingItems: db.equipment,
+              input: {
+                ...row,
+                category,
+                functionTags: row.functionTags || row.function_tags || [],
+                legacyCode: row.code_prefix || row.codePrefix || row.code || "",
+                codeAssignedBy: admin.id
+              },
+              quantity,
+              makeId: id,
+              timestamp: createdAt
+            });
+          } catch (error) {
+            if (error?.status === 400) {
+              batch.errorRows += 1;
+              continue;
+            }
+            throw error;
+          }
+          for (const record of generated) {
             const item = {
-              id: id("eq"),
+              ...record,
               facility: row.facility || (source === "fantasy_lab" ? "판타지랩" : "극기관"),
               source,
-              category,
               name: row.name,
-              brand: row.brand || "",
-              model: row.model || "",
-              code: requestedCodePrefix && quantity === 1 ? requestedCodePrefix : `${base}-${String(index).padStart(2, "0")}`,
               status,
               reservable,
               inquiryOnly: !reservable,
               notes: row.notes || (source === "fantasy_lab" ? FANTASY_LAB_INQUIRY_NOTE : ""),
               active: true,
               importBatchId: batch.id,
-              createdAt: nowIso(),
-              updatedAt: nowIso()
+              createdAt,
+              updatedAt: createdAt
             };
             db.equipment.push(item);
             batch.createdItemIds.push(item.id);
@@ -1799,6 +2194,68 @@ export async function handleApiRequest(ctx) {
         const updated = items.map((item) => applyEquipmentPatch(item, body.patch));
         audit(db, admin, "equipment.updated", ids.join(","), equipmentAuditDetail(body.patch, { count: updated.length, bulk: true }));
         await saveDb();
+        return ok(updated);
+      }
+
+      const equipmentCodeRegenerationMatch = pathname.match(
+        /^\/api\/admin\/equipment\/([^/]+)\/regenerate-code$/
+      );
+      if (method === "POST" && equipmentCodeRegenerationMatch) {
+        const admin = requireAdmin(authorization, db);
+        const body = await parseBody(readText);
+        if (body.confirmation !== "코드 재생성") {
+          throw Object.assign(
+            new Error("코드 재생성 확인 문구가 일치하지 않습니다."),
+            { status: 400 }
+          );
+        }
+        const itemIndex = db.equipment.findIndex(
+          (item) => item.id === equipmentCodeRegenerationMatch[1]
+        );
+        if (itemIndex < 0) {
+          throw Object.assign(new Error("기자재를 찾을 수 없습니다."), {
+            status: 404
+          });
+        }
+        const current = db.equipment[itemIndex];
+        const generated = createEquipmentRecords({
+          existingItems: db.equipment,
+          input: {
+            ...current,
+            legacyCode: current.code,
+            codeAssignedBy: admin.id
+          },
+          quantity: 1,
+          makeId: () => current.id,
+          timestamp: nowIso()
+        })[0];
+        const updated = {
+          ...current,
+          ...generated,
+          legacyCodes: [
+            ...(Array.isArray(current.legacyCodes) ? current.legacyCodes : []),
+            current.code
+          ].map(String).filter(Boolean),
+          updatedAt: generated.codeAssignedAt
+        };
+        updated.legacyCodes = [...new Set(updated.legacyCodes)];
+        const previousEquipment = db.equipment;
+        const previousAuditLogs = db.auditLogs;
+        db.equipment = db.equipment.map((item, index) =>
+          index === itemIndex ? updated : item
+        );
+        db.auditLogs = [...previousAuditLogs];
+        audit(db, admin, "equipment.code_regenerated", current.id, {
+          oldCode: current.code,
+          newCode: updated.code
+        });
+        try {
+          await saveDb();
+        } catch (error) {
+          db.equipment = previousEquipment;
+          db.auditLogs = previousAuditLogs;
+          throw error;
+        }
         return ok(updated);
       }
 
