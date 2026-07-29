@@ -975,9 +975,13 @@ const reservationDetailsMarkup = renderToStaticMarkup(
 for (const value of ["CAM-FX3-01", "졸업작품", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
 }
-for (const label of ["반납 처리", "예약 취소", "예약 삭제"]) {
+for (const label of ["반납 점검", "예약 취소", "예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(`aria-label="${label}"`), `equipment reservation ${label} action must be icon-only accessible`);
   assert(reservationDetailsMarkup.includes(`title="${label}"`), `equipment reservation ${label} action must expose a native tooltip`);
+}
+assert(!reservationDetailsMarkup.includes('aria-label="반납 처리"'), "checked-out equipment must not bypass the return inspection flow");
+for (const label of ["정상", "점검 필요", "수리 필요", "반납 점검 완료"]) {
+  assert(adminScreenSource.includes(label), `return inspection UI must include ${label}`);
 }
 
 const equipmentApprovalMarkup = renderToStaticMarkup(

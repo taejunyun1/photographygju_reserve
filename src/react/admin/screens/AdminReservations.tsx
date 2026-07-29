@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 
 import {
   GjuCard,
+  GjuDialog,
   GjuEmptyState,
   GjuIconButton,
   GjuStatusBadge,
@@ -9,7 +10,13 @@ import {
   GjuTabs,
   type GjuIconName
 } from "../../design-system";
-import type { AdminReservationRecord, LegacyState, ReactAdminActions } from "../../platform/types";
+import type {
+  AdminEquipmentInspectionInput,
+  AdminEquipmentInspectionOutcome,
+  AdminReservationRecord,
+  LegacyState,
+  ReactAdminActions
+} from "../../platform/types";
 import {
   bulkDeleteAvailability,
   formatDate,
@@ -47,7 +54,7 @@ const EQUIPMENT_STATUS_FILTERS = [
 const EQUIPMENT_STATUS_ACTIONS = {
   pending_approval: [["approved", "승인"], ["rejected", "반려"]],
   approved: [["checked_out", "대여 처리"], ["cancelled", "예약 취소"]],
-  checked_out: [["returned", "반납 처리"], ["cancelled", "예약 취소"]]
+  checked_out: [["cancelled", "예약 취소"]]
 } as const;
 
 const FACILITY_STATUS_ACTIONS = [
@@ -205,20 +212,33 @@ function updateReservationStatus(actions: ReactAdminActions, reservation: AdminR
 function renderReservationStatusActions(
   reservation: AdminReservationRecord,
   actions: ReactAdminActions,
-  disableCurrent = false
+  disableCurrent = false,
+  onReturnInspection?: (reservation: AdminReservationRecord) => void
 ) {
   const currentStatus = String(reservation.status || "");
-  return statusActionsFor(reservation).map(([nextStatus, label]) => (
-    <GjuIconButton
-      key={nextStatus}
-      label={label}
-      icon={reservationStatusIcon(nextStatus)}
-      tone={nextStatus === "cancelled" || nextStatus === "admin_cancelled" || nextStatus === "rejected" ? "danger" : "success"}
-      disabled={disableCurrent && nextStatus === currentStatus}
-      aria-pressed={nextStatus === currentStatus ? "true" : "false"}
-      onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
-    />
-  ));
+  return (
+    <>
+      {reservation.type === "equipment" && currentStatus === "checked_out" ? (
+        <GjuIconButton
+          label="반납 점검"
+          icon="check"
+          tone="success"
+          onClick={() => onReturnInspection?.(reservation)}
+        />
+      ) : null}
+      {statusActionsFor(reservation).map(([nextStatus, label]) => (
+        <GjuIconButton
+          key={nextStatus}
+          label={label}
+          icon={reservationStatusIcon(nextStatus)}
+          tone={nextStatus === "cancelled" || nextStatus === "admin_cancelled" || nextStatus === "rejected" ? "danger" : "success"}
+          disabled={disableCurrent && nextStatus === currentStatus}
+          aria-pressed={nextStatus === currentStatus ? "true" : "false"}
+          onClick={() => updateReservationStatus(actions, reservation, nextStatus)}
+        />
+      ))}
+    </>
+  );
 }
 
 function renderReservationDeleteAction(reservation: AdminReservationRecord, actions: ReactAdminActions) {
@@ -251,7 +271,8 @@ function bulkDeleteReservations(state: LegacyState, actions: ReactAdminActions) 
 
 function renderReservationCard(
   reservation: AdminReservationRecord,
-  actions: ReactAdminActions
+  actions: ReactAdminActions,
+  onReturnInspection: (reservation: AdminReservationRecord) => void
 ) {
   const status = String(reservation.status || "");
   return (
@@ -271,14 +292,191 @@ function renderReservationCard(
       </dl>
       {reservationDetails(reservation)}
       <div className="admin-react-action-row" aria-label={`${reservationTitle(reservation)} 상태 변경`}>
-        {renderReservationStatusActions(reservation, actions)}
+        {renderReservationStatusActions(reservation, actions, false, onReturnInspection)}
         {renderReservationDeleteAction(reservation, actions)}
       </div>
     </article>
   );
 }
 
+type ReturnInspectionItem = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+type ReturnInspectionDraft = Record<string, {
+  outcome: AdminEquipmentInspectionOutcome;
+  note: string;
+}>;
+
+const RETURN_OUTCOMES: Array<{
+  value: AdminEquipmentInspectionOutcome;
+  label: string;
+}> = [
+  { value: "normal", label: "정상" },
+  { value: "needs_inspection", label: "점검 필요" },
+  { value: "needs_repair", label: "수리 필요" }
+];
+
+function returnInspectionItems(reservation: AdminReservationRecord): ReturnInspectionItem[] {
+  const equipmentItems = reservation.equipmentItems?.length
+    ? reservation.equipmentItems
+    : reservation.equipment
+      ? [reservation.equipment]
+      : [];
+  return equipmentItems
+    .filter((item): item is typeof item & { id: string } => Boolean(item.id))
+    .map((item) => ({
+      id: String(item.id),
+      code: String(item.code || "코드 없음"),
+      name: String(item.name || item.code || item.id)
+    }));
+}
+
+function EquipmentReturnInspectionDialog({
+  reservation,
+  actions,
+  onClose
+}: {
+  reservation: AdminReservationRecord;
+  actions: ReactAdminActions;
+  onClose: () => void;
+}) {
+  const items = returnInspectionItems(reservation);
+  const [draft, setDraft] = useState<ReturnInspectionDraft>(() =>
+    Object.fromEntries(items.map((item) => [
+      item.id,
+      { outcome: "normal" as const, note: "" }
+    ]))
+  );
+  const inspections: AdminEquipmentInspectionInput[] = items.map((item) => ({
+    equipmentId: item.id,
+    outcome: draft[item.id]?.outcome || "normal",
+    note: String(draft[item.id]?.note || "").trim()
+  }));
+  const missingRepairNote = inspections.some((item) =>
+    item.outcome === "needs_repair" && !item.note
+  );
+  const canSubmit = inspections.length > 0 && !missingRepairNote;
+  const updateDraft = (
+    equipmentId: string,
+    patch: Partial<ReturnInspectionDraft[string]>
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [equipmentId]: {
+        outcome: current[equipmentId]?.outcome || "normal",
+        note: current[equipmentId]?.note || "",
+        ...patch
+      }
+    }));
+  };
+  const submit = () => {
+    if (!canSubmit) {
+      actions.notify(
+        inspections.length ? "수리 필요 장비의 점검 메모를 입력하세요." : "점검할 장비 정보를 확인하세요.",
+        "error"
+      );
+      return;
+    }
+    void actions.returnEquipmentReservation(reservation.id, inspections)
+      .then(onClose)
+      .catch(() => undefined);
+  };
+  const resultCounts = RETURN_OUTCOMES.map(({ value, label }) => ({
+    label,
+    count: inspections.filter((item) => item.outcome === value).length
+  }));
+
+  return (
+    <GjuDialog
+      open
+      title="반납 점검"
+      onClose={onClose}
+      showActions={false}
+      className="equipment-return-dialog"
+    >
+      <div className="equipment-return-dialog__intro">
+        <strong>{reservationTitle(reservation)}</strong>
+        <span>{items.length}개 장비를 각각 확인해 주세요.</span>
+      </div>
+      {items.length ? (
+        <div className="equipment-return-list">
+          {items.map((item) => {
+            const itemDraft = draft[item.id] || { outcome: "normal", note: "" };
+            return (
+              <fieldset className="equipment-return-item" key={item.id}>
+                <legend>
+                  <code>{item.code}</code>
+                  <strong>{item.name}</strong>
+                </legend>
+                <label>
+                  <span>점검 결과</span>
+                  <select
+                    className="select"
+                    aria-label={`${item.name} 점검 결과`}
+                    value={itemDraft.outcome}
+                    onChange={(event) => {
+                      const outcome = event.currentTarget.value as AdminEquipmentInspectionOutcome;
+                      updateDraft(item.id, { outcome });
+                    }}
+                  >
+                    {RETURN_OUTCOMES.map((outcome) => (
+                      <option key={outcome.value} value={outcome.value}>{outcome.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>
+                    점검 메모
+                    {itemDraft.outcome === "needs_repair" ? " · 필수" : " · 선택"}
+                  </span>
+                  <textarea
+                    className="textarea"
+                    rows={2}
+                    aria-label={`${item.name} 점검 메모`}
+                    placeholder="이상 증상이나 확인할 내용을 입력하세요."
+                    value={itemDraft.note}
+                    onChange={(event) => {
+                      const note = event.currentTarget.value;
+                      updateDraft(item.id, { note });
+                    }}
+                  />
+                </label>
+              </fieldset>
+            );
+          })}
+        </div>
+      ) : (
+        <GjuEmptyState
+          title="점검할 장비 정보가 없습니다."
+          message="예약의 기자재 연결 정보를 먼저 확인하세요."
+        />
+      )}
+      <div className="equipment-return-summary" aria-label="점검 결과 요약">
+        {resultCounts.map((item) => (
+          <span className="tag" key={item.label}>{item.label} {item.count}</span>
+        ))}
+      </div>
+      {missingRepairNote ? (
+        <p className="equipment-return-dialog__error" role="status">
+          수리 필요 장비에는 점검 메모가 필요합니다.
+        </p>
+      ) : null}
+      <div className="gju-dialog__actions equipment-return-dialog__actions">
+        <button className="button ghost" type="button" onClick={onClose}>취소</button>
+        <button className="button primary" type="button" disabled={!canSubmit} onClick={submit}>
+          반납 점검 완료
+        </button>
+      </div>
+    </GjuDialog>
+  );
+}
+
 export function AdminReservations({ state, actions }: AdminReservationsProps) {
+  const [returnInspectionReservation, setReturnInspectionReservation] =
+    useState<AdminReservationRecord | null>(null);
   const tab = String(state.adminReservationTab || "all");
   const statusFilter = String(state.adminEquipmentReservationStatusFilter || "all");
   const semesterFilter = String(state.adminReservationSemesterFilter || "all");
@@ -401,7 +599,12 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
                       </td>
                       <td>
                         <div className="admin-react-action-row">
-                          {renderReservationStatusActions(reservation, actions, true)}
+                          {renderReservationStatusActions(
+                            reservation,
+                            actions,
+                            true,
+                            setReturnInspectionReservation
+                          )}
                           {renderReservationDeleteAction(reservation, actions)}
                         </div>
                       </td>
@@ -420,11 +623,21 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
         </div>
         <div className="admin-react-card-list" aria-label="예약 목록">
           {reservations.length
-            ? reservations.map((reservation) => renderReservationCard(reservation, actions))
+            ? reservations.map((reservation) =>
+                renderReservationCard(reservation, actions, setReturnInspectionReservation)
+              )
             : <GjuEmptyState title="예약이 없습니다." message="검색어와 필터를 확인하세요." />}
         </div>
         {renderPager(actions, state.adminReservationsPage, "reservations", "예약 페이지 이동")}
       </GjuCard>
+      {returnInspectionReservation ? (
+        <EquipmentReturnInspectionDialog
+          key={returnInspectionReservation.id}
+          reservation={returnInspectionReservation}
+          actions={actions}
+          onClose={() => setReturnInspectionReservation(null)}
+        />
+      ) : null}
     </section>
   );
 }
