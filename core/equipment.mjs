@@ -1,21 +1,16 @@
+import {
+  allocateEquipmentCodes,
+  inferEquipmentIdentity
+} from "./equipment-code.mjs";
+
 export const EQUIPMENT_STATUSES = new Set(["가능", "수리중", "파손", "available", "rented", "maintenance", "repair", "lost", "사용 가능", "대여 중", "점검 중", "수리 중", "분실", "damaged", "broken"]);
 export const FANTASY_LAB_INQUIRY_NOTE = "온라인 예약불가. 판타지랩 조교에게 직접 문의";
 
 export function createEquipmentHelpers({ seedEquipmentGroups, defaultSettings, id, nowIso, addDaysToDateKey }) {
-  function categoryPrefix(category) {
-    return { Body: "CAM", Lens: "LEN", Lighting: "LGT", Audio: "AUD", Drone: "DRN", Other: "ETC" }[category] || "ETC";
-  }
-
   function codeBase(category, name, fallbackIndex) {
-    const ascii = String(name || "")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]+/g, " ")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(-2)
-      .join("");
-    return `${categoryPrefix(category)}-${ascii || `ITEM${String(fallbackIndex).padStart(3, "0")}`}`;
+    const identity = inferEquipmentIdentity({ category, name });
+    const productKey = identity.productKey || `UNKNOWN${String(fallbackIndex).padStart(3, "0")}`;
+    return `${identity.categoryCode}-${identity.brandCode}-${productKey}`;
   }
 
   function normalizeEquipmentStatus(status) {
@@ -77,25 +72,37 @@ export function createEquipmentHelpers({ seedEquipmentGroups, defaultSettings, i
 
   function seedEquipment() {
     const items = [];
-    let groupIndex = 0;
     for (const [source, category, name, quantity, reservable, notes] of seedEquipmentGroups) {
-      groupIndex += 1;
-      const base = codeBase(category, name, groupIndex);
-      for (let i = 1; i <= quantity; i += 1) {
+      const assignedAt = nowIso();
+      const allocation = allocateEquipmentCodes({
+        items,
+        input: { category, name },
+        quantity
+      });
+      for (const code of allocation.codes) {
         items.push({
           id: id("eq"),
           facility: source === "fantasy_lab" ? "판타지랩" : defaultSettings.equipmentFacility,
           source,
-          category,
+          category: allocation.identity.category,
           name,
-          code: `${base}-${String(i).padStart(2, "0")}`,
+          brand: allocation.identity.brand,
+          brandCode: allocation.identity.brandCode,
+          model: allocation.identity.model,
+          productKey: allocation.identity.productKey,
+          functionTags: allocation.identity.functionTags,
+          code,
+          legacyCodes: [],
+          codeVersion: 2,
+          codeAssignedAt: assignedAt,
+          codeAssignedBy: "seed",
           status: "가능",
           reservable,
           inquiryOnly: !reservable,
           notes,
           active: true,
-          createdAt: nowIso(),
-          updatedAt: nowIso()
+          createdAt: assignedAt,
+          updatedAt: assignedAt
         });
       }
     }
