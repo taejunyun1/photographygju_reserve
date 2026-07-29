@@ -40,7 +40,7 @@ type AdminUser = {
   warningRecords?: AdminUserWarningRecord[];
 };
 
-type AdminUserSortField = "name" | "studentId" | "studentStatus" | "approvalStatus";
+type AdminUserSortField = "name" | "studentId" | "studentStatus" | "approvalStatus" | "createdAt";
 
 type AdminUserSortState = {
   field: AdminUserSortField;
@@ -114,7 +114,7 @@ function getUserSortState(state: LegacyState): AdminUserSortState {
       return { field, direction };
     }
   }
-  return { field: "approvalStatus", direction: "asc" };
+  return { field: "createdAt", direction: "desc" };
 }
 
 function sortButtonClassName(active: boolean) {

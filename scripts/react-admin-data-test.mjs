@@ -125,6 +125,11 @@ const { loadAdminData, loadAdminView } = await import("../public/js/data.js?reac
 
 state.user = { id: "admin-1", role: "admin" };
 state.bootstrap = { settings: {} };
+assert.deepEqual(
+  state.adminUserSort,
+  { field: "createdAt", direction: "desc" },
+  "student approvals must default to newest signup first"
+);
 
 await loadAdminView("dashboard", { force: true });
 assert.deepEqual(requests, ["/api/admin/summary"], "dashboard must request only the summary endpoint");
@@ -133,6 +138,11 @@ assert.equal(state.summary.pendingUsers, 3, "dashboard response must update summ
 await loadAdminView("course-demand", { force: true });
 assert.equal(requests.at(-1), "/api/admin/course-planning", "course demand must use one scoped planning endpoint");
 assert.equal(state.adminCoursePlanning.courses[0].name, "사진 기획", "course demand response must remain isolated from other admin view state");
+
+await loadAdminView("users", { force: true });
+const defaultUsersUrl = new URL(requests.at(-1), "https://admin.test");
+assert.equal(defaultUsersUrl.searchParams.get("sort"), "createdAt", "student approvals must request newest signup sorting by default");
+assert.equal(defaultUsersUrl.searchParams.get("direction"), "desc", "student approvals must request descending signup dates by default");
 
 const dashboardRequestCount = requests.length;
 await loadAdminView("dashboard");
@@ -298,6 +308,18 @@ assert.deepEqual(
   lists.adminUserList(db, params({ sort: "name", direction: "asc" })).items.map((item) => item.id),
   ["user-a", "user-b", "user-c"],
   "users must apply allowlisted sort with a stable id tie-breaker"
+);
+assert.deepEqual(
+  lists.adminUserList({
+    ...db,
+    users: [
+      { id: "older-pending", role: "student", name: "대기", approvalStatus: "approval_pending", createdAt: "2026-01-01" },
+      { id: "middle-rejected", role: "student", name: "반려", approvalStatus: "rejected", createdAt: "2026-01-02" },
+      { id: "newer-approved", role: "student", name: "승인", approvalStatus: "approved", createdAt: "2026-01-03" }
+    ]
+  }, params({})).items.map((item) => item.id),
+  ["newer-approved", "middle-rejected", "older-pending"],
+  "users must default to newest signup first regardless of approval status"
 );
 assert.deepEqual(
   lists.adminReservationList(db, params({ sort: "reservedDate", direction: "asc" })).items.map((item) => item.id),

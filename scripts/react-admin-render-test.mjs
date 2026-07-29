@@ -892,7 +892,7 @@ const reservationDetailsMarkup = renderToStaticMarkup(
           id: "equipment-1",
           type: "equipment",
           status: "checked_out",
-          fields: { reservedDate: "2026-09-11", rentalTime: "10:15", returnTime: "17:10", period: "당일", purpose: "졸업작품", cameraBagConfirmed: true },
+          fields: { reservedDate: "2026-09-11", rentalTime: "10:15", returnTime: "17:10", period: "당일", purpose: "졸업작품", phone: "010-1234-5678", cameraBagConfirmed: true },
           equipmentItems: [{ code: "CAM-FX3-01", name: "Sony FX3" }]
         },
         {
@@ -912,7 +912,7 @@ const reservationDetailsMarkup = renderToStaticMarkup(
     actions: noopActions
   })
 );
-for (const value of ["CAM-FX3-01", "졸업작품", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
+for (const value of ["CAM-FX3-01", "졸업작품", "010-1234-5678", "현상", "D-76 500ml", "과제 / 매트 / 대형", "색상 확인", "필터 결과 예약 삭제", "전체 예약 삭제"]) {
   assert(reservationDetailsMarkup.includes(value), `reservation detail parity must render ${value}`);
 }
 for (const label of ["반납 처리", "예약 취소", "예약 삭제"]) {

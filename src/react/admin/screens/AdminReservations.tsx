@@ -149,6 +149,7 @@ function reservationDetailRows(reservation: AdminReservationRecord): Array<[stri
       ["기간", String(fields.period || "-")],
       ["장비", equipment || "-"],
       ["가방 확인", bag],
+      ["연락처", String(fields.phone || reservation.user?.phone || "-")],
       ["목적", String(fields.purpose || "-")]
     ];
   }

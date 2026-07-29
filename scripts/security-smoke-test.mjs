@@ -175,7 +175,7 @@ const nextSaturday = nextDayOfWeek(seoulToday, 6);
 const nextMonday = nextDayOfWeek(seoulToday, 1);
 const nextTuesday = nextDayOfWeek(seoulToday, 2);
 const nextWednesday = nextDayOfWeek(seoulToday, 3);
-const nextThursday = nextDayOfWeek(seoulToday, 4);
+const nextThursday = nextDayOfWeek(nextWednesday, 4);
 const nextFriday = nextDayOfWeek(seoulToday, 5);
 
 async function withMockedRandomUuids(uuids, fn) {

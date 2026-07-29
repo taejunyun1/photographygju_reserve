@@ -147,7 +147,7 @@ function sortValue(filters, stateKey, defaultField, defaultDirection) {
 }
 
 function adminUsersPath(filters = {}) {
-  const sort = sortValue(filters, "adminUserSort", "approvalStatus", "asc");
+  const sort = sortValue(filters, "adminUserSort", "createdAt", "desc");
   return `/api/admin/users?${queryString({
     page: filterValue(filters, "page", pageNumber(state.adminUsersPage)),
     pageSize: filterValue(filters, "pageSize", pageSizeNumber(state.adminUsersPage)),
@@ -241,7 +241,7 @@ function applyFilterState(view, filters) {
     if ("status" in filters) state.adminUserStatusFilter = String(filters.status || "all");
     if ("page" in filters) setPage("adminUsersPage", filters.page);
     if ("pageSize" in filters) setPageSize("adminUsersPage", filters.pageSize);
-    setSort("adminUserSort", filters, "approvalStatus", "asc");
+    setSort("adminUserSort", filters, "createdAt", "desc");
   } else if (view === "reservations") {
     if ("q" in filters) state.adminReservationSearch = String(filters.q || "");
     if ("type" in filters) state.adminReservationTab = String(filters.type || "all");

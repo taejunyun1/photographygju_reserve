@@ -307,11 +307,7 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
       .filter((user) => !params.q || searchableRecord(user).includes(params.q));
     sortList(items, params, {
       fields: USER_SORT_FIELDS,
-      defaultCompare: (a, b) => {
-        const approvalCompare = String(a.approvalStatus || "").localeCompare(String(b.approvalStatus || ""));
-        if (approvalCompare) return approvalCompare;
-        return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
-      },
+      defaultCompare: (a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")),
       defaultDirections: { approvalStatus: "asc", createdAt: "desc" }
     });
     return paginate(items, params);

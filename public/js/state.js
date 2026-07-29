@@ -96,8 +96,8 @@ export const state = {
   adminLecturePanelTab: "list",
   selectedAdminEquipmentIds: [],
   adminUserSort: {
-    field: "approvalStatus",
-    direction: "asc"
+    field: "createdAt",
+    direction: "desc"
   },
   csvPreviewRows: [],
   myReservations: [],
