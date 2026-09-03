@@ -43,6 +43,59 @@ const reservations = [
   }
 ];
 
+const insightSettings = {
+  equipmentRentalTimes: ["10:15", "12:00"],
+  studioSpaces: ["Studio A", "Studio B"],
+  studioSlots: ["12:00-14:00"],
+  darkroomCapacity: 6,
+  printAvailableStart: "10:00",
+  printAvailableEnd: "19:00",
+  printCapacityWindowMinutes: 120,
+  printCapacityPerWindow: 4
+};
+const uniqueSlotReservations = [
+  { id: "slot-equipment-1015", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-10", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
+  { id: "slot-equipment-1200", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-11", rentalTime: "12:00", equipmentItemIds: ["eq_camera_alt"] } },
+  { id: "slot-studio-1200", type: "studio", status: "auto_confirmed", fields: { reservedDate: "2099-01-12", timeSlots: ["12:00-14:00"] } }
+];
+const capacityAwareInsights = buildOperationsInsights({ reservations: uniqueSlotReservations, equipment, settings: insightSettings, now });
+assert.equal(capacityAwareInsights.congestion.insufficientData, false, "configured capacity must provide enough sample slots");
+assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "equipment" && item.time === "10:15")?.availableCount, 56, "equipment congestion must use reservable inventory across the period as its denominator");
+assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "equipment" && item.time === "10:15")?.sharePercent, 2, "one of 56 available equipment slots must not be reported as 25% congestion");
+assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "studio")?.availableCount, 56, "studio congestion must use configured spaces across the period as its denominator");
+const capacityWithRepairEquipment = buildOperationsInsights({
+  reservations: [uniqueSlotReservations[0]],
+  equipment: [...equipment, { id: "eq_repair", code: "CAM-REPAIR", name: "수리중 카메라", category: "Camera", active: true, reservable: true, status: "수리중" }],
+  settings: insightSettings,
+  now
+});
+assert.equal(capacityWithRepairEquipment.congestion.items[0]?.availableCount, 56, "수리중 장비 must not increase available equipment capacity");
+const rankedByOccupancyInsights = buildOperationsInsights({
+  reservations: [
+    { id: "rank-equipment-1", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-10", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
+    { id: "rank-equipment-2", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-11", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
+    { id: "rank-studio-1", type: "studio", status: "auto_confirmed", fields: { reservedDate: "2099-01-12", timeSlots: ["12:00-14:00"] } },
+    { id: "rank-studio-2", type: "studio", status: "auto_confirmed", fields: { reservedDate: "2099-01-13", timeSlots: ["12:00-14:00"] } },
+    { id: "rank-studio-3", type: "studio", status: "auto_confirmed", fields: { reservedDate: "2099-01-14", timeSlots: ["12:00-14:00"] } }
+  ],
+  equipment,
+  settings: { ...insightSettings, studioSpaces: ["Studio A", "Studio B", "Studio C", "Studio D"] },
+  now
+});
+assert.equal(rankedByOccupancyInsights.congestion.items[0]?.type, "equipment", "congestion cards must rank by occupancy percentage, not raw reservation count");
+
+const requestDateInsights = buildOperationsInsights({
+  reservations: [
+    { id: "old-approved", type: "equipment", status: "approved", createdAt: "2098-12-01T00:00:00.000Z", fields: { reservedDate: "2099-01-10", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
+    { id: "old-cancelled", type: "equipment", status: "cancelled", createdAt: "2098-12-02T00:00:00.000Z", fields: { reservedDate: "2099-01-11", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
+    { id: "recent-request", type: "equipment", status: "cancelled", createdAt: "2099-01-12T00:00:00.000Z", fields: { reservedDate: "2099-02-15", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } }
+  ],
+  equipment,
+  settings: insightSettings,
+  now
+});
+assert.deepEqual(requestDateInsights.cancellationRate, { totalRequests: 1, cancelledRequests: 1, percent: 100 }, "cancellation rate must use request creation date, not scheduled reservation date");
+
 const insights = buildOperationsInsights({ reservations, equipment, now });
 assert.deepEqual(insights.period, { from: "2099-01-01", to: "2099-01-28", days: 28 });
 assert.deepEqual(insights.cancellationRate, { totalRequests: 3, cancelledRequests: 1, percent: 33 });
@@ -162,6 +215,18 @@ assert.equal(shortcuts.body.data.recentReservations[0].id, "shortcut-reservation
 assert.equal(shortcuts.body.data.recentReservations[0].fields.standRequest, "조명 스탠드", "shortcut response must retain supported reusable equipment requests");
 assert.equal(shortcuts.body.data.recentReservations.some((item) => item.id === "other-student-reservation"), false, "shortcut response must never include another student's reservation");
 assert.equal(JSON.stringify(shortcuts.body.data).includes("010-1111-2222"), false, "shortcut response must not expose stored phone numbers");
+
+db.reservations.push(
+  { id: "admin-filter-equipment-1015", userId: "user_admin", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-20", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] }, history: [], createdAt: "2099-01-19T00:00:00.000Z", updatedAt: "2099-01-19T00:00:00.000Z" },
+  { id: "admin-filter-equipment-1200", userId: "user_admin", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-20", rentalTime: "12:00", equipmentItemIds: ["eq_camera"] }, history: [], createdAt: "2099-01-19T00:00:00.000Z", updatedAt: "2099-01-19T00:00:00.000Z" },
+  { id: "admin-filter-equipment-admin-cancelled", userId: "user_admin", type: "equipment", status: "admin_cancelled", fields: { reservedDate: "2099-01-20", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] }, history: [], createdAt: "2099-01-19T00:00:00.000Z", updatedAt: "2099-01-19T00:00:00.000Z" }
+);
+const filteredReservations = await api({ authorization: `Bearer ${token}`, pathname: "/api/admin/reservations?type=equipment&status=approved&time=10%3A15&pageSize=200" });
+assert.equal(filteredReservations.status, 200);
+assert.equal(filteredReservations.body.data.items.length, 1, "admin reservation list must support insight time filters");
+assert.equal(filteredReservations.body.data.items[0].id, "admin-filter-equipment-1015");
+const cancelledReservations = await api({ authorization: `Bearer ${token}`, pathname: "/api/admin/reservations?type=equipment&status=cancelled_or_rejected&pageSize=200" });
+assert.equal(cancelledReservations.body.data.items.some((item) => item.id === "admin-filter-equipment-admin-cancelled"), true, "cancellation insight navigation must include administrator-cancelled reservations");
 
 const recommendationEquipment = db.equipment.filter((item) => item.active && item.reservable && item.category === "Body").slice(0, 2);
 assert.equal(recommendationEquipment.length, 2, "fixture requires two reservable same-category equipment items");

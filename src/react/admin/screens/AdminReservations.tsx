@@ -258,10 +258,13 @@ function activeReservationFilters(state: LegacyState) {
   const type = q ? "all" : String(state.adminReservationTab || "all");
   return {
     type,
-    status: q || type !== "equipment"
+    status: q
       ? "all"
-      : String(state.adminEquipmentReservationStatusFilter || "all"),
+      : type === "equipment" || state.adminEquipmentReservationStatusFilter === "cancelled_or_rejected"
+        ? String(state.adminEquipmentReservationStatusFilter || "all")
+        : "all",
     semester: state.adminReservationSemesterFilter || "all",
+    time: state.adminReservationTimeFilter || "",
     q
   };
 }

@@ -23,6 +23,7 @@ function listParams(searchParams, defaultPageSize = 100) {
     role: String(searchParams.get("role") || "").trim(),
     from: String(searchParams.get("from") || "").trim(),
     to: String(searchParams.get("to") || "").trim(),
+    time: String(searchParams.get("time") || "").trim().toLocaleLowerCase(),
     sort: String(searchParams.get("sort") || "").trim(),
     direction: ["asc", "desc"].includes(String(searchParams.get("direction") || "").trim().toLowerCase())
       ? String(searchParams.get("direction")).trim().toLowerCase()
@@ -72,6 +73,15 @@ function dateInRange(value, from, to) {
 
 function reservationDate(item) {
   return item.fields?.reservedDate || "";
+}
+
+function reservationTimes(item) {
+  const fields = item.fields || {};
+  return [
+    fields.rentalTime,
+    fields.startTime,
+    ...(Array.isArray(fields.timeSlots) ? fields.timeSlots : [])
+  ].map((value) => searchable(value)).filter(Boolean);
 }
 
 function reportDate(item) {
@@ -164,9 +174,10 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
       .filter((item) => !params.type || item.type === params.type)
       .filter((item) => !params.status
         || (params.status === "cancelled_or_rejected"
-          ? ["cancelled", "rejected"].includes(item.status)
+          ? ["cancelled", "admin_cancelled", "rejected"].includes(item.status)
           : item.status === params.status))
       .filter((item) => dateInRange(reservationDate(item), params.from, params.to))
+      .filter((item) => !params.time || reservationTimes(item).some((value) => value === params.time || value.includes(params.time)))
       .filter((item) => !params.q || searchableRecord({
         id: item.id,
         type: item.type,

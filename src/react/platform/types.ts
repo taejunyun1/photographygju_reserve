@@ -293,7 +293,7 @@ export type AdminOperationsWarning = {
 export type AdminOperationsInsights = {
   period?: { from?: string; to?: string; days?: number };
   congestion?: {
-    items?: Array<{ type?: string; time?: string; label?: string; count?: number; sharePercent?: number }>;
+    items?: Array<{ type?: string; time?: string; label?: string; count?: number; availableCount?: number; sharePercent?: number }>;
     insufficientData?: boolean;
   };
   equipmentUtilization?: Array<{ equipmentId?: string; code?: string; name?: string; category?: string; reservedDays?: number; utilizationPercent?: number }>;
@@ -475,6 +475,7 @@ export type AdminViewFilterMap = {
     semester: string;
     from: string;
     to: string;
+    time: string;
     page: number;
     pageSize: number;
     sort: "createdAt" | "reservedDate" | "status" | "type" | "name" | "title";
@@ -637,6 +638,7 @@ export type LegacyState = Record<string, unknown> & {
   adminUsersPage?: AdminPageMeta;
   adminReservations?: AdminReservationRecord[];
   adminReservationSearch?: string;
+  adminReservationTimeFilter?: string;
   adminReservationTab?: string;
   adminEquipmentReservationStatusFilter?: string;
   adminReservationSemesterFilter?: string;

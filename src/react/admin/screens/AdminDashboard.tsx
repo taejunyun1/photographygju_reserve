@@ -192,11 +192,13 @@ function metric(label: string, value: React.ReactNode, detail = "") {
 }
 
 function insightCard({
+  cardKey,
   label,
   value,
   detail,
   onClick
 }: {
+  cardKey?: string;
   label: string;
   value: React.ReactNode;
   detail: string;
@@ -205,7 +207,7 @@ function insightCard({
   return React.createElement(
     "button",
     {
-      key: label,
+      key: cardKey || `${label}:${String(value)}:${detail}`,
       type: "button",
       style: styles.button,
       className: "admin-dashboard-insight-action",
@@ -334,7 +336,12 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const utilization = Array.isArray(operationsInsights?.equipmentUtilization) ? operationsInsights.equipmentUtilization : [];
   const cancellationRate = operationsInsights?.cancellationRate;
   const warnings = Array.isArray(operationsInsights?.warnings) ? operationsInsights.warnings : [];
-  const hasOperationsInsights = congestion.length > 0 || utilization.length > 0 || Number(cancellationRate?.totalRequests || 0) >= 3;
+  const insightPeriod = operationsInsights?.period || {};
+  const insightDateFilters = {
+    from: String(insightPeriod.from || ""),
+    to: String(insightPeriod.to || "")
+  };
+  const hasOperationsInsights = congestion.length > 0 || utilization.length > 0 || Number(cancellationRate?.totalRequests || 0) >= 5;
 
   return React.createElement(
     "section",
@@ -380,23 +387,28 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
           "div",
           { className: "admin-dashboard-insights__grid" },
           ...congestion.map((item) => insightCard({
+            cardKey: `congestion:${item.type || "all"}:${item.time || "unknown"}`,
             label: "혼잡 시간",
             value: `${item.time || "시간 미정"} · ${Number(item.count || 0)}건`,
-            detail: `${item.label || "예약"}의 최근 4주 예약 비중 ${Number(item.sharePercent || 0)}%`,
-            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "all", page: 1 }); }
+            detail: Number(item.availableCount || 0) > 0
+              ? `${item.label || "예약"}의 최근 4주 점유율 ${Number(item.sharePercent || 0)}% · 예약 ${Number(item.count || 0)}/${Number(item.availableCount || 0)}회`
+              : `${item.label || "예약"}의 최근 4주 점유율 ${Number(item.sharePercent || 0)}%`,
+            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "all", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
           })),
           ...utilization.slice(0, 3).map((item) => insightCard({
+            cardKey: `utilization:${item.equipmentId || item.code || item.name || "unknown"}`,
             label: "장비 가동률",
             value: `${Number(item.utilizationPercent || 0)}%`,
-            detail: `${item.name || item.code || "기자재"} · 최근 ${Number(item.reservedDays || 0)}일 사용`,
+            detail: `${item.name || item.code || "기자재"} · 최근 ${Number(insightPeriod.days || 28)}일 중 ${Number(item.reservedDays || 0)}일 예약`,
             onClick: () => { void actions.setAdminView("equipment", { q: String(item.name || item.code || "") }); }
           })),
-          Number(cancellationRate?.totalRequests || 0) >= 3
+          Number(cancellationRate?.totalRequests || 0) >= 5
             ? insightCard({
+              cardKey: "cancellation-rate",
               label: "취소율",
               value: `${Number(cancellationRate?.percent || 0)}%`,
               detail: `최근 4주 ${Number(cancellationRate?.cancelledRequests || 0)}건 / ${Number(cancellationRate?.totalRequests || 0)}건`,
-              onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", page: 1 }); }
+              onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", ...insightDateFilters, time: "", page: 1 }); }
             })
             : null
         )

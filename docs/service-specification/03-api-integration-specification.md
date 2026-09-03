@@ -186,7 +186,7 @@ Authorization: Bearer <session-token>
 
 | 메서드 | 경로 | 권한 | 목적 | 주요 입력 |
 | --- | --- | --- | --- | --- |
-| GET | `/api/admin/reservations` | 관리자 | 상세 예약 목록 | 목록 쿼리 |
+| GET | `/api/admin/reservations` | 관리자 | 상세 예약 목록 | `type`, `status`, `semester`, `from`, `to`, `time`, `q`, 페이지·정렬 쿼리 |
 | PATCH | `/api/admin/reservations/:id/status` | 관리자 | 상태 전이 | `status`, 선택 `adminNote` |
 | POST | `/api/admin/reservations/:id/return-inspection` | 관리자 | 장비별 반납 점검과 반납 완료 | `inspections` |
 | DELETE | `/api/admin/reservations/:id` | 관리자 | 예약과 연결 보고서 삭제 | 없음 |
@@ -261,6 +261,8 @@ Authorization: Bearer <session-token>
 ```
 
 예약·보고서·특강은 학기 필터 선택지 `semesterOptions`를 추가한다. 보고서는 가상 미제출 행을 포함하므로 `persistedTotal`, `persistedCollectionTotal`을 별도로 제공한다.
+
+`time`은 기자재 `rentalTime`, 출력실 `startTime`, 스튜디오·암실 `timeSlots` 중 하나와 일치하는 예약만 반환한다. 운영 인사이트 카드 이동은 최근 28일 `from`·`to`와 해당 `time` 또는 취소·반려 상태를 함께 전달한다.
 
 학기 범위:
 

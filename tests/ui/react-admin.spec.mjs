@@ -61,6 +61,100 @@ test("React Admin congestion insight uses a compact card hierarchy", async ({ pa
   expect(dimensions.height).toBeLessThanOrEqual(112);
 });
 
+test("React Admin insight navigation keeps the period and selected time", async ({ page }) => {
+  const consoleErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.summary = {
+      ...(state.summary || {}),
+      metrics: {
+        ...(state.summary?.metrics || {}),
+        insights: {
+          period: { from: "2026-08-07", to: "2026-09-03", days: 28 },
+          congestion: {
+            items: [{ type: "equipment", label: "기자재 10:15", time: "10:15", count: 3, availableCount: 112, sharePercent: 3 }]
+          },
+          equipmentUtilization: [],
+          cancellationRate: { totalRequests: 5, cancelledRequests: 1, percent: 20 },
+          warnings: []
+        }
+      }
+    };
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+
+  const requestPromise = page.waitForRequest((request) => request.url().includes("/api/admin/reservations?"));
+  await page.locator(".admin-dashboard-insight-card").first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
+  const requestUrl = new URL((await requestPromise).url());
+  expect(requestUrl.searchParams.get("from")).toBe("2026-08-07");
+  expect(requestUrl.searchParams.get("to")).toBe("2026-09-03");
+  expect(requestUrl.searchParams.get("time")).toBe("10:15");
+  await expect.poll(() => page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    return { from: state.adminReservationDateFrom, to: state.adminReservationDateTo, time: state.adminReservationTimeFilter };
+  })).toEqual({ from: "2026-08-07", to: "2026-09-03", time: "10:15" });
+  expect(consoleErrors.filter((message) => message.includes("same key"))).toEqual([]);
+});
+
+test("React Admin hides cancellation insight until five requests are available", async ({ page }) => {
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.summary = {
+      ...(state.summary || {}),
+      metrics: {
+        ...(state.summary?.metrics || {}),
+        insights: {
+          congestion: { items: [] },
+          equipmentUtilization: [],
+          cancellationRate: { totalRequests: 4, cancelledRequests: 2, percent: 50 },
+          warnings: []
+        }
+      }
+    };
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+  await expect(page.locator(".admin-dashboard-insight-card").filter({ hasText: "취소율" })).toHaveCount(0);
+  await expect(page.getByText("최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다.", { exact: true })).toBeVisible();
+});
+
+test("React Admin cancellation insight keeps the cancelled status filter", async ({ page }) => {
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.summary = {
+      ...(state.summary || {}),
+      metrics: {
+        ...(state.summary?.metrics || {}),
+        insights: {
+          period: { from: "2026-08-07", to: "2026-09-03", days: 28 },
+          congestion: { items: [] },
+          equipmentUtilization: [],
+          cancellationRate: { totalRequests: 5, cancelledRequests: 2, percent: 40 },
+          warnings: []
+        }
+      }
+    };
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+
+  const requestPromise = page.waitForRequest((request) => request.url().includes("/api/admin/reservations?"));
+  await page.locator(".admin-dashboard-insight-card").filter({ hasText: "취소율" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
+  const requestUrl = new URL((await requestPromise).url());
+  expect(requestUrl.searchParams.get("status")).toBe("cancelled_or_rejected");
+  expect(requestUrl.searchParams.get("from")).toBe("2026-08-07");
+  expect(requestUrl.searchParams.get("to")).toBe("2026-09-03");
+});
+
 test("React Admin action toast is announced once across a follow-up render", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(() => {

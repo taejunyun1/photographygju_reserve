@@ -1465,7 +1465,7 @@ export async function handleApiRequest(ctx) {
             typeCounts,
             popularEquipment,
             latestNotice,
-            insights: buildOperationsInsights({ reservations: detailedReservations, equipment: db.equipment, now: new Date() })
+            insights: buildOperationsInsights({ reservations: detailedReservations, equipment: db.equipment, settings: db.settings, now: new Date() })
           }
         });
       }
