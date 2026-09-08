@@ -24,6 +24,7 @@ function listParams(searchParams, defaultPageSize = 100) {
     from: String(searchParams.get("from") || "").trim(),
     to: String(searchParams.get("to") || "").trim(),
     time: String(searchParams.get("time") || "").trim().toLocaleLowerCase(),
+    dateBasis: searchParams.get("dateBasis") === "created" ? "created" : "reserved",
     sort: String(searchParams.get("sort") || "").trim(),
     direction: ["asc", "desc"].includes(String(searchParams.get("direction") || "").trim().toLowerCase())
       ? String(searchParams.get("direction")).trim().toLowerCase()
@@ -175,9 +176,17 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
       .filter((item) => !params.status
         || (params.status === "cancelled_or_rejected"
           ? ["cancelled", "admin_cancelled", "rejected"].includes(item.status)
-          : item.status === params.status))
-      .filter((item) => dateInRange(reservationDate(item), params.from, params.to))
-      .filter((item) => !params.time || reservationTimes(item).some((value) => value === params.time || value.includes(params.time)))
+          : params.status === "operational"
+            ? ["pending_approval", "approved", "checked_out", "returned", "auto_confirmed", "completed"].includes(item.status)
+            : item.status === params.status))
+      .filter((item) => {
+        const created = new Date(item.createdAt || item.submittedAt || "");
+        const date = params.dateBasis === "created" && !Number.isNaN(created.getTime())
+          ? new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(created)
+          : reservationDate(item);
+        return dateInRange(date, params.from, params.to);
+      })
+      .filter((item) => !params.time || reservationTimes(item).includes(params.time))
       .filter((item) => !params.q || searchableRecord({
         id: item.id,
         type: item.type,

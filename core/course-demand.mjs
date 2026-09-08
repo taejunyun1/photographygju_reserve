@@ -288,6 +288,14 @@ export function validateCourseDemandResponse({ survey, student, rankings, now = 
 }
 
 export function summarizeSurvey({ survey, responses = [], eligibleStudentCount = 0 } = {}) {
+  const latestByStudent = new Map();
+  for (const response of responses) {
+    const key = response.studentId || response.id;
+    if (!key) continue;
+    const previous = latestByStudent.get(key);
+    if (!previous || String(response.submittedAt || "") >= String(previous.submittedAt || "")) latestByStudent.set(key, response);
+  }
+  const uniqueResponses = [...latestByStudent.values()];
   const courseRows = (survey?.catalogSnapshot || []).map((course) => ({
     courseId: String(course.id || ""),
     courseName: String(course.name || "과목"),
@@ -298,17 +306,19 @@ export function summarizeSurvey({ survey, responses = [], eligibleStudentCount =
     rankCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   }));
   const byCourseId = new Map(courseRows.map((course) => [course.courseId, course]));
-  for (const response of responses) {
+  for (const response of uniqueResponses) {
+    const seenCourses = new Set();
     for (const ranking of response?.rankings || []) {
       const course = byCourseId.get(String(ranking?.courseId || ""));
       const rank = Number(ranking?.rank);
-      if (!course || !SCORE_BY_RANK[rank]) continue;
+      if (!course || !SCORE_BY_RANK[rank] || seenCourses.has(course.courseId)) continue;
+      seenCourses.add(course.courseId);
       course.selections += 1;
       course.rankCounts[rank] += 1;
       course.demandScore += SCORE_BY_RANK[rank];
     }
   }
-  const responseCount = responses.length;
+  const responseCount = uniqueResponses.length;
   const eligible = Math.max(0, Number(eligibleStudentCount || 0));
   return {
     surveyId: survey?.id || "",

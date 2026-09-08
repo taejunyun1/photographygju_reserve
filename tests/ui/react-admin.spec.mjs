@@ -96,6 +96,8 @@ test("React Admin insight navigation keeps the period and selected time", async 
   expect(requestUrl.searchParams.get("from")).toBe("2026-08-07");
   expect(requestUrl.searchParams.get("to")).toBe("2026-09-03");
   expect(requestUrl.searchParams.get("time")).toBe("10:15");
+  expect(requestUrl.searchParams.get("status")).toBe("operational");
+  expect(requestUrl.searchParams.get("semester")).toBeNull();
   await expect.poll(() => page.evaluate(async () => {
     const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
     return { from: state.adminReservationDateFrom, to: state.adminReservationDateTo, time: state.adminReservationTimeFilter };
@@ -152,8 +154,23 @@ test("React Admin cancellation insight keeps the cancelled status filter", async
   await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
   const requestUrl = new URL((await requestPromise).url());
   expect(requestUrl.searchParams.get("status")).toBe("cancelled_or_rejected");
+  expect(requestUrl.searchParams.get("dateBasis")).toBe("created");
   expect(requestUrl.searchParams.get("from")).toBe("2026-08-07");
   expect(requestUrl.searchParams.get("to")).toBe("2026-09-03");
+});
+
+test("React Admin paginated badge uses server total, not visible rows", async ({ page }) => {
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260714-mobile-card-r6");
+    state.adminView = "reservations";
+    state.adminReservations = ["one", "two"].map((id) => ({ id, type: "equipment", status: "approved", fields: {} }));
+    state.adminReservationsPage = { total: 105, page: 1, pageSize: 2, hasMore: true };
+    const { render } = await import("/js/renderer.js?v=20260714-mobile-card-r6");
+    render();
+  });
+  await expect(page.getByText("105건 · 현재 표시 2건", { exact: true })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
 });
 
 test("React Admin action toast is announced once across a follow-up render", async ({ page }) => {

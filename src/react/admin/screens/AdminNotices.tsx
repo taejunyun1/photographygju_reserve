@@ -74,7 +74,7 @@ export function AdminNotices({ state, actions }: AdminNoticesProps) {
 
   return (
     <section className="grid admin-react-screen">
-      <GjuCard title="공지사항" actions={<span className="tag blue">{notices.length}건</span>} surface="workspace">
+      <GjuCard title="공지사항" actions={<span className="tag blue">{state.adminNoticesPage?.total ?? notices.length}건 · 현재 표시 {notices.length}건</span>} surface="workspace">
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>
             <span className="sr-only">공지 검색</span>

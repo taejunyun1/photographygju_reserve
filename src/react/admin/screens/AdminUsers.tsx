@@ -410,7 +410,7 @@ export function AdminUsers({ state, actions }: AdminUsersProps) {
   const page = getUsersPageState(state);
   const allUsers = asUsers(state.adminUsers).filter((user) => user.role !== "admin");
   const users = allUsers;
-  const total = Number(page.total || allUsers.length || 0);
+  const total = Number(page.total ?? allUsers.length ?? 0);
   const shown = Math.min(allUsers.length, total);
   const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

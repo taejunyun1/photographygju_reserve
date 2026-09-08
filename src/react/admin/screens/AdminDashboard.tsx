@@ -299,7 +299,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
     {
       label: "반납 완료",
       value: returned,
-      caption: "기자재 반납 상태",
+      caption: "오늘 예약 중 반납 완료",
       badge: "예약 관리",
       tone: "green",
       targetView: "reservations",
@@ -308,7 +308,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
     {
       label: "취소/반려",
       value: cancelled,
-      caption: "기자재 취소 상태",
+      caption: "오늘 예약 중 취소·반려",
       badge: "예약 관리",
       tone: "neutral",
       targetView: "reservations",
@@ -393,7 +393,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
             label: "예약 많은 시간",
             value: `${item.time || "시간 미정"} · ${Number(item.count || 0)}건`,
             detail: `${item.label || "예약"} · 최근 ${Number(insightPeriod.days || 28)}일 예약 건수 (취소·반려 제외)`,
-            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "all", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
+            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "operational", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
           })),
           ...utilization.slice(0, 3).map((item) => insightCard({
             cardKey: `utilization:${item.equipmentId || item.code || item.name || "unknown"}`,
@@ -408,7 +408,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
               label: "취소율 (반려 포함)",
               value: `${Number(cancellationRate?.percent || 0)}%`,
               detail: `기간 내 접수 ${Number(cancellationRate?.totalRequests || 0)}건 중 취소·반려 ${Number(cancellationRate?.cancelledRequests || 0)}건${Number(cancellationRate?.totalRequests || 0) < 20 ? " · 표본이 적어 참고용입니다" : ""}`,
-              onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", ...insightDateFilters, time: "", page: 1 }); }
+              onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", ...insightDateFilters, dateBasis: "created", time: "", page: 1 }); }
             })
             : null
         )

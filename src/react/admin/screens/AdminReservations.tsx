@@ -260,11 +260,14 @@ function activeReservationFilters(state: LegacyState) {
     type,
     status: q
       ? "all"
-      : type === "equipment" || state.adminEquipmentReservationStatusFilter === "cancelled_or_rejected"
+      : type === "equipment" || ["cancelled_or_rejected", "operational"].includes(state.adminEquipmentReservationStatusFilter || "")
         ? String(state.adminEquipmentReservationStatusFilter || "all")
         : "all",
     semester: state.adminReservationSemesterFilter || "all",
     time: state.adminReservationTimeFilter || "",
+    dateBasis: state.adminReservationDateBasis || "reserved",
+    from: state.adminReservationDateFrom || "",
+    to: state.adminReservationDateTo || "",
     q
   };
 }
@@ -537,9 +540,12 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
     <section className="grid admin-react-screen">
       <GjuCard
         title="예약 관리"
-        actions={<span className="tag blue">{reservations.length}건</span>}
+        actions={<span className="tag blue">{state.adminReservationsPage?.total ?? reservations.length}건 · 현재 표시 {reservations.length}건</span>}
         surface="workspace"
       >
+        {(state.adminReservationDateFrom || state.adminReservationDateTo || state.adminReservationTimeFilter) && (
+          <p className="muted">{state.adminReservationDateBasis === "created" ? "접수일" : "예약일"} 기준 {state.adminReservationDateFrom || "전체"} ~ {state.adminReservationDateTo || "전체"}{state.adminReservationTimeFilter ? ` · ${state.adminReservationTimeFilter}` : ""}{statusFilter === "operational" ? " · 취소·반려 제외" : ""}</p>
+        )}
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>
             <span className="sr-only">예약 검색</span>

@@ -292,7 +292,7 @@ const reactAdminActions = {
     state.adminView = view;
     renderWithScrollState(scrollState);
     try {
-      const nextFilters = view === "reservations" ? { from: "", to: "", time: "", ...filters } : filters;
+      const nextFilters = view === "reservations" ? { from: "", to: "", time: "", dateBasis: "reserved", semester: "all", ...filters } : filters;
       await loadAdminView(view, nextFilters);
       renderWithScrollState(scrollState);
     } catch (error) {

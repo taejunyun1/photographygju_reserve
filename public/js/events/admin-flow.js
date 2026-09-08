@@ -69,10 +69,13 @@ function currentBulkDeleteConfig(kind, scope) {
       semester: state.adminReservationSemesterFilter,
       q: query,
       type: query ? "" : state.adminReservationTab,
-      status: !query && (state.adminReservationTab === "equipment" || state.adminEquipmentReservationStatusFilter === "cancelled_or_rejected")
+      status: !query && (state.adminReservationTab === "equipment" || ["cancelled_or_rejected", "operational"].includes(state.adminEquipmentReservationStatusFilter))
         ? state.adminEquipmentReservationStatusFilter
         : "",
-      time: state.adminReservationTimeFilter || ""
+      time: state.adminReservationTimeFilter || "",
+      dateBasis: state.adminReservationDateBasis || "reserved",
+      from: state.adminReservationDateFrom || "",
+      to: state.adminReservationDateTo || ""
     };
     return {
       path: "/api/admin/reservations/bulk",

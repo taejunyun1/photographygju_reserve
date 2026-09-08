@@ -162,7 +162,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
       <GjuCard
         title="보고서"
         surface="workspace"
-        actions={<span className="tag blue">{reports.length}건</span>}
+        actions={<span className="tag blue">{state.adminReportsPage?.total ?? reports.length}건 · 현재 표시 {reports.length}건</span>}
       >
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitSearch}>
           <label>

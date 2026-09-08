@@ -239,6 +239,13 @@ const summary = summarizeSurvey({
   ]
 });
 assert.equal(summary.responseRate, 50);
+const deduplicated = summarizeSurvey({ survey: rankingSurvey, eligibleStudentCount: 4, responses: [
+  { studentId: "same-student", submittedAt: "2099-01-01", rankings: [{ courseId: "course_a", rank: 1 }] },
+  { studentId: "same-student", submittedAt: "2099-01-02", rankings: [{ courseId: "course_b", rank: 1 }, { courseId: "course_b", rank: 2 }] }
+] });
+assert.equal(deduplicated.responseCount, 1, "one student contributes one latest response");
+assert.equal(deduplicated.courses.find((course) => course.courseId === "course_a").selections, 0);
+assert.equal(deduplicated.courses.find((course) => course.courseId === "course_b").selections, 1, "duplicate course choices must not inflate counts");
 assert.deepEqual(
   summary.courses.map((course) => ({ courseId: course.courseId, selections: course.selections, demandScore: course.demandScore })),
   [
@@ -505,6 +512,14 @@ assert.equal(duplicateResponse.status, 400, "duplicate course rankings must be r
 const surveySummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
 assert.equal(surveySummary.status, 200);
 assert.equal(surveySummary.body.data.responseCount, 1);
+const respondingStudent = apiDb.users.find((user) => user.studentId === "20260001");
+const previousApproval = respondingStudent.approvalStatus;
+respondingStudent.approvalStatus = "approval_pending";
+const changedEligibilitySummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
+assert.equal(changedEligibilitySummary.body.data.responseCount, 1);
+assert.ok(changedEligibilitySummary.body.data.eligibleStudentCount >= 1, "existing respondent remains in the denominator after eligibility changes");
+assert.ok(changedEligibilitySummary.body.data.responseRate <= 100);
+respondingStudent.approvalStatus = previousApproval;
 assert.equal(Array.isArray(surveySummary.body.data.categories), true);
 assert.equal(JSON.stringify(surveySummary.body.data).includes("20260001"), false, "admin summary must remain anonymous");
 

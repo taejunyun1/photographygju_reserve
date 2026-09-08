@@ -328,12 +328,19 @@ function coursePlanningSurveySnapshot(planning, semesterPlan, targetStudentYears
     }));
 }
 
+function surveyTargetCount(db, survey, planning) {
+  const students = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).map((user) => user.id);
+  // Keep existing respondents in the denominator if their grade or approval later changes.
+  const respondents = planning.responses.filter((response) => response.surveyId === survey.id).map((response) => response.studentId).filter(Boolean);
+  return new Set([...students, ...respondents]).size;
+}
+
 function courseDemandByCourseId(planning, planId, db) {
   const scores = {};
   const semesterPlanIds = new Set((coursePlanningAnnualPlan(planning, planId)?.semesterPlans || []).map((item) => item.id));
   for (const survey of planning.surveys || []) {
     if (!semesterPlanIds.has(survey.semesterPlanId)) continue;
-    const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
+    const eligibleStudentCount = surveyTargetCount(db, survey, planning);
     const summary = summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount });
     for (const course of summary.courses) scores[course.courseId] = Number(scores[course.courseId] || 0) + course.demandScore;
   }
@@ -1161,7 +1168,7 @@ export async function handleApiRequest(ctx) {
           validation: validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory })
         }));
         const surveys = planning.surveys.map((survey) => {
-          const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
+          const eligibleStudentCount = surveyTargetCount(db, survey, planning);
           return {
             id: survey.id,
             title: survey.title || "교과 수요조사",
@@ -1333,7 +1340,7 @@ export async function handleApiRequest(ctx) {
         const planning = coursePlanningForDb(db);
         const survey = planning.surveys.find((item) => item.id === courseDemandSummaryMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
-        const eligibleStudentCount = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approved" && (survey.eligibleCurrentYears || []).map(Number).includes(coursePlanningStudentYear(user))).length;
+        const eligibleStudentCount = surveyTargetCount(db, survey, planning);
         return ok(summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount }));
       }
 
@@ -1385,7 +1392,7 @@ export async function handleApiRequest(ctx) {
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
         const today = todayKeySeoul();
         const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned" && item.fields?.reservedDate === today).length;
-        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "rejected"].includes(item.status) && item.fields?.reservedDate === today).length;
+        const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "admin_cancelled", "rejected"].includes(item.status) && item.fields?.reservedDate === today).length;
         const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
         const weekFrom = addDaysToDateKey(today, -(weekday === 0 ? 6 : weekday - 1));
         const weekTo = addDaysToDateKey(weekFrom, 6);
@@ -1481,7 +1488,7 @@ export async function handleApiRequest(ctx) {
             repairEquipment,
             equipmentAvailableRate: activeEquipment.length ? Math.round((availableEquipment / activeEquipment.length) * 100) : 0,
             cancelledReservations,
-            reportQueueCount: db.reports.filter((report) => !report.status || report.status === "submitted").length,
+            reportQueueCount: adminReportList(db, new URLSearchParams({ status: "submitted", pageSize: "1" })).total,
             openLectures: db.lectures.filter((lecture) => lecture.status === "모집중").length,
             typeCounts,
             popularEquipment,

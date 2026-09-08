@@ -72,7 +72,7 @@ for (const stateKey of [
   assert(stateSource.includes(`${stateKey}:`), `admin state must initialize ${stateKey}`);
   assert(dataSource.includes(`state.${stateKey} =`), `admin logout must clear ${stateKey}`);
 }
-for (const label of ["운영 인사이트", "주의 필요", "혼잡 시간", "장비 가동률", "취소율", "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다."]) {
+for (const label of ["운영 인사이트", "주의 필요", "예약 많은 시간", "장비 예약일 비율", "취소율", "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다."]) {
   assert(adminDashboardSource.includes(label), `Admin dashboard must render ${label}`);
 }
 assert(adminNavSource.includes("교과 수요조사"), "administrator navigation must expose course demand surveys");

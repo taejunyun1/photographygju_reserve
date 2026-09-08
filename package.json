@@ -20,7 +20,7 @@
     "test:admin-ui": "node --no-warnings scripts/admin-dashboard-ux-test.mjs",
     "test:notifications": "node --no-warnings scripts/native-notifications-test.mjs",
     "test:backend-domains": "node --no-warnings scripts/backend-domain-timing-test.mjs",
-    "test:dashboard-integrity": "node --no-warnings scripts/dashboard-data-integrity-test.mjs",
+    "test:dashboard-integrity": "node --no-warnings scripts/dashboard-data-integrity-test.mjs && node scripts/count-consistency-test.mjs",
     "test:ui": "playwright test --config playwright.config.mjs",
     "test:ui:headed": "playwright test --config playwright.config.mjs --headed",
     "test:security": "node scripts/security-smoke-test.mjs",

@@ -57,6 +57,7 @@ export const state = {
   adminReservationTab: "equipment",
   adminReservationSearch: "",
   adminReservationTimeFilter: "",
+  adminReservationDateBasis: "reserved",
   adminReservationSemesterFilter: "all",
   adminEquipmentReservationStatusFilter: "all",
   adminReportSearch: "",

@@ -481,6 +481,7 @@ export type AdminViewFilterMap = {
     from: string;
     to: string;
     time: string;
+    dateBasis: string;
     page: number;
     pageSize: number;
     sort: "createdAt" | "reservedDate" | "status" | "type" | "name" | "title";
@@ -644,6 +645,7 @@ export type LegacyState = Record<string, unknown> & {
   adminReservations?: AdminReservationRecord[];
   adminReservationSearch?: string;
   adminReservationTimeFilter?: string;
+  adminReservationDateBasis?: string;
   adminReservationTab?: string;
   adminEquipmentReservationStatusFilter?: string;
   adminReservationSemesterFilter?: string;

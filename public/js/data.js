@@ -165,7 +165,7 @@ function adminReservationsPath(filters = {}) {
   const activeType = filterValue(filters, "type", state.adminReservationTab);
   const type = query ? "" : activeType;
   const requestedStatus = filterValue(filters, "status", state.adminEquipmentReservationStatusFilter);
-  const status = query || (activeType !== "equipment" && requestedStatus !== "cancelled_or_rejected")
+  const status = query || (activeType !== "equipment" && !["cancelled_or_rejected", "operational"].includes(requestedStatus))
     ? ""
     : requestedStatus;
   const sort = sortValue(filters, "adminReservationSort", "createdAt", "desc");
@@ -178,6 +178,7 @@ function adminReservationsPath(filters = {}) {
     from: filterValue(filters, "from", state.adminReservationDateFrom),
     to: filterValue(filters, "to", state.adminReservationDateTo),
     time: filterValue(filters, "time", state.adminReservationTimeFilter),
+    dateBasis: filterValue(filters, "dateBasis", state.adminReservationDateBasis),
     q: query,
     ...sort
   })}`;
@@ -254,6 +255,7 @@ function applyFilterState(view, filters) {
     if ("from" in filters) state.adminReservationDateFrom = String(filters.from || "");
     if ("to" in filters) state.adminReservationDateTo = String(filters.to || "");
     if ("time" in filters) state.adminReservationTimeFilter = String(filters.time || "");
+    if ("dateBasis" in filters) state.adminReservationDateBasis = String(filters.dateBasis || "reserved");
     if ("page" in filters) setPage("adminReservationsPage", filters.page);
     if ("pageSize" in filters) setPageSize("adminReservationsPage", filters.pageSize);
     setSort("adminReservationSort", filters, "createdAt", "desc");
