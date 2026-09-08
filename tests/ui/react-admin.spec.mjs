@@ -49,7 +49,8 @@ test("React Admin congestion insight uses a compact card hierarchy", async ({ pa
 
   const card = page.locator(".admin-dashboard-insight-card");
   await expect(card).toHaveCount(1);
-  await expect(card).toContainText("혼잡 시간");
+  await expect(card).toContainText("예약 많은 시간");
+  await expect(card).not.toContainText("점유율");
   const dimensions = await card.evaluate((element) => {
     const value = element.querySelector(".gju-card__body > strong");
     return {

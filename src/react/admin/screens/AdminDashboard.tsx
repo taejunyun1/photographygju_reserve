@@ -235,7 +235,7 @@ function warningCopy(warning: AdminOperationsWarning): WarningNavigation {
   if (warning.kind === "shortage") {
     return {
       title: "장비 부족 위험",
-      detail: `${warning.name || warning.code || "기자재"} 가동률 ${Number(warning.utilizationPercent || 0)}%`,
+      detail: `${warning.name || warning.code || "기자재"} 예약일 비율 ${Number(warning.utilizationPercent || 0)}%`,
       target: "equipment" as const,
       filters: { q: String(warning.name || warning.code || warning.category || "") }
     };
@@ -332,7 +332,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const popularEquipment = Array.isArray(metrics.popularEquipment) ? metrics.popularEquipment : [];
   const typeTotal = Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0);
   const operationsInsights = metrics.insights;
-  const congestion = Array.isArray(operationsInsights?.congestion?.items) ? operationsInsights.congestion.items : [];
+  const congestion = Array.isArray(operationsInsights?.congestion?.items) ? operationsInsights.congestion.items.filter((item) => Number(item.count || 0) >= 3) : [];
   const utilization = Array.isArray(operationsInsights?.equipmentUtilization) ? operationsInsights.equipmentUtilization : [];
   const cancellationRate = operationsInsights?.cancellationRate;
   const warnings = Array.isArray(operationsInsights?.warnings) ? operationsInsights.warnings : [];
@@ -382,22 +382,22 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
     React.createElement(
       GjuCard,
       { title: "운영 인사이트" },
+      React.createElement("p", { style: styles.caption }, `집계 기간: ${insightPeriod.from || "-"} ~ ${insightPeriod.to || "-"} · 예약 기준 통계`),
+      congestion.length === 0 ? React.createElement("p", { style: styles.caption }, "시간대별 예약이 3건 이상 쌓이면 예약 많은 시간을 표시합니다.") : null,
       hasOperationsInsights
         ? React.createElement(
           "div",
           { className: "admin-dashboard-insights__grid" },
           ...congestion.map((item) => insightCard({
             cardKey: `congestion:${item.type || "all"}:${item.time || "unknown"}`,
-            label: "혼잡 시간",
+            label: "예약 많은 시간",
             value: `${item.time || "시간 미정"} · ${Number(item.count || 0)}건`,
-            detail: Number(item.availableCount || 0) > 0
-              ? `${item.label || "예약"}의 최근 4주 점유율 ${Number(item.sharePercent || 0)}% · 예약 ${Number(item.count || 0)}/${Number(item.availableCount || 0)}회`
-              : `${item.label || "예약"}의 최근 4주 점유율 ${Number(item.sharePercent || 0)}%`,
+            detail: `${item.label || "예약"} · 최근 ${Number(insightPeriod.days || 28)}일 예약 건수 (취소·반려 제외)`,
             onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "all", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
           })),
           ...utilization.slice(0, 3).map((item) => insightCard({
             cardKey: `utilization:${item.equipmentId || item.code || item.name || "unknown"}`,
-            label: "장비 가동률",
+            label: "장비 예약일 비율",
             value: `${Number(item.utilizationPercent || 0)}%`,
             detail: `${item.name || item.code || "기자재"} · 최근 ${Number(insightPeriod.days || 28)}일 중 ${Number(item.reservedDays || 0)}일 예약`,
             onClick: () => { void actions.setAdminView("equipment", { q: String(item.name || item.code || "") }); }
@@ -405,9 +405,9 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
           Number(cancellationRate?.totalRequests || 0) >= 5
             ? insightCard({
               cardKey: "cancellation-rate",
-              label: "취소율",
+              label: "취소율 (반려 포함)",
               value: `${Number(cancellationRate?.percent || 0)}%`,
-              detail: `최근 4주 ${Number(cancellationRate?.cancelledRequests || 0)}건 / ${Number(cancellationRate?.totalRequests || 0)}건`,
+              detail: `기간 내 접수 ${Number(cancellationRate?.totalRequests || 0)}건 중 취소·반려 ${Number(cancellationRate?.cancelledRequests || 0)}건${Number(cancellationRate?.totalRequests || 0) < 20 ? " · 표본이 적어 참고용입니다" : ""}`,
               onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", ...insightDateFilters, time: "", page: 1 }); }
             })
             : null

@@ -59,17 +59,15 @@ const uniqueSlotReservations = [
   { id: "slot-studio-1200", type: "studio", status: "auto_confirmed", fields: { reservedDate: "2099-01-12", timeSlots: ["12:00-14:00"] } }
 ];
 const capacityAwareInsights = buildOperationsInsights({ reservations: uniqueSlotReservations, equipment, settings: insightSettings, now });
-assert.equal(capacityAwareInsights.congestion.insufficientData, false, "configured capacity must provide enough sample slots");
-assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "equipment" && item.time === "10:15")?.availableCount, 56, "equipment congestion must use reservable inventory across the period as its denominator");
-assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "equipment" && item.time === "10:15")?.sharePercent, 2, "one of 56 available equipment slots must not be reported as 25% congestion");
-assert.equal(capacityAwareInsights.congestion.items.find((item) => item.type === "studio")?.availableCount, 56, "studio congestion must use configured spaces across the period as its denominator");
+assert.equal(capacityAwareInsights.congestion.insufficientData, true, "inventory size is not a reservation sample size");
+assert.deepEqual(capacityAwareInsights.congestion.items, [], "single bookings must not be described as congestion");
 const capacityWithRepairEquipment = buildOperationsInsights({
   reservations: [uniqueSlotReservations[0]],
   equipment: [...equipment, { id: "eq_repair", code: "CAM-REPAIR", name: "수리중 카메라", category: "Camera", active: true, reservable: true, status: "수리중" }],
   settings: insightSettings,
   now
 });
-assert.equal(capacityWithRepairEquipment.congestion.items[0]?.availableCount, 56, "수리중 장비 must not increase available equipment capacity");
+assert.deepEqual(capacityWithRepairEquipment.congestion.items, [], "inventory changes must not turn one booking into a trend");
 const rankedByOccupancyInsights = buildOperationsInsights({
   reservations: [
     { id: "rank-equipment-1", type: "equipment", status: "approved", fields: { reservedDate: "2099-01-10", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },
@@ -82,7 +80,12 @@ const rankedByOccupancyInsights = buildOperationsInsights({
   settings: { ...insightSettings, studioSpaces: ["Studio A", "Studio B", "Studio C", "Studio D"] },
   now
 });
-assert.equal(rankedByOccupancyInsights.congestion.items[0]?.type, "equipment", "congestion cards must rank by occupancy percentage, not raw reservation count");
+assert.equal(rankedByOccupancyInsights.congestion.items[0]?.type, "studio", "popular times must rank by booking count with at least three observations");
+assert.equal(rankedByOccupancyInsights.congestion.items[0]?.count, 3);
+assert.equal(rankedByOccupancyInsights.congestion.items[0]?.availableCount, undefined, "do not divide reservation count by inventory capacity");
+const spanning = { ...reservations[0], fields: { ...reservations[0].fields, reservedDate: "2098-12-31" }, timing: { startAt: "2098-12-31T01:00:00Z", endAt: "2099-01-03T08:00:00Z" } };
+const spanningInsights = buildOperationsInsights({ reservations: [spanning, { ...spanning, id: "overlapping" }, reservations[1]], equipment, now });
+assert.equal(spanningInsights.equipmentUtilization[0].reservedDays, 3, "count all overlapping rental days once, including rentals beginning before the window; exclude cancellations");
 
 const requestDateInsights = buildOperationsInsights({
   reservations: [

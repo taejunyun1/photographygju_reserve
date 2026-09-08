@@ -70,39 +70,17 @@ function reservationTypeLabel(type) {
   return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실" }[type] || "예약";
 }
 
-function availableEquipmentCount(equipment) {
-  return (Array.isArray(equipment) ? equipment : []).filter(isReservableEquipment).length;
-}
-
-function congestionCapacity(type, settings, equipmentCount, days) {
-  if (type === "equipment") return equipmentCount * days;
-  if (type === "studio") return (Array.isArray(settings.studioSpaces) ? settings.studioSpaces.length : 0) * days;
-  if (type === "darkroom") return Math.max(0, Number(settings.darkroomCapacity || 0)) * days;
-  if (type === "print") return Math.max(0, Number(settings.printCapacityPerWindow || 0)) * days;
-  return 0;
-}
-
-function buildCongestion(reservations, { settings = defaultSettings, equipment = [], days = 28 } = {}) {
+function buildCongestion(reservations) {
   const counts = new Map();
   for (const reservation of reservations) {
-    for (const time of slotLabels(reservation)) {
+    for (const time of new Set(slotLabels(reservation))) {
       const key = `${reservation.type}:${time}`;
       counts.set(key, { type: reservation.type, time, count: Number(counts.get(key)?.count || 0) + 1 });
     }
   }
-  const safeSettings = { ...defaultSettings, ...(settings || {}) };
-  const equipmentCount = availableEquipmentCount(equipment);
   const items = [...counts.values()]
-    .map((item) => {
-      const availableCount = congestionCapacity(item.type, safeSettings, equipmentCount, days);
-      return {
-        ...item,
-        availableCount,
-        sharePercent: percentage(item.count, availableCount)
-      };
-    })
-    .filter((item) => item.availableCount >= 3)
-    .sort((left, right) => right.sharePercent - left.sharePercent || right.count - left.count || left.time.localeCompare(right.time, "ko"))
+    .filter((item) => item.count >= 3)
+    .sort((left, right) => right.count - left.count || left.time.localeCompare(right.time, "ko"))
     .slice(0, 3)
     .map((item) => ({
       ...item,
@@ -114,16 +92,22 @@ function buildCongestion(reservations, { settings = defaultSettings, equipment =
   };
 }
 
-function buildEquipmentUtilization(reservations, equipment, days) {
+function buildEquipmentUtilization(reservations, equipment, days, from, to) {
   const activeEquipment = (Array.isArray(equipment) ? equipment : [])
     .filter(isReservableEquipment)
     .map((item) => ({ id: String(item.id || ""), code: String(item.code || ""), name: String(item.name || ""), category: String(item.category || "") }))
     .filter((item) => item.id);
   const daysByEquipment = new Map(activeEquipment.map((item) => [item.id, new Set()]));
   for (const reservation of reservations) {
-    const key = reservationDateKey(reservation);
-    if (!key) continue;
-    for (const equipmentId of reservationEquipmentIds(reservation)) daysByEquipment.get(equipmentId)?.add(key);
+    if (reservation.type !== "equipment") continue;
+    const start = reservationDateKey(reservation);
+    const end = dateKey(reservation?.timing?.endAt) || start;
+    if (!start || end < start) continue;
+    // Count each calendar day touched by the booking once, clipped to the reporting period.
+    const endDay = end > to ? to : end;
+    for (let key = start < from ? from : start; key <= endDay; key = addDays(key, 1)) {
+      for (const equipmentId of reservationEquipmentIds(reservation)) daysByEquipment.get(equipmentId)?.add(key);
+    }
   }
   return activeEquipment
     .map((item) => {
@@ -203,7 +187,7 @@ export function buildOperationsInsights({ reservations = [], equipment = [], set
   });
   const operational = scoped.filter((reservation) => OPERATIONAL_STATUSES.has(reservation?.status));
   const cancelled = requestScoped.filter((reservation) => CANCELLED_STATUSES.has(reservation?.status));
-  const utilization = buildEquipmentUtilization(operational, equipment, safeDays);
+  const utilization = buildEquipmentUtilization(allReservations.filter((reservation) => OPERATIONAL_STATUSES.has(reservation?.status)), equipment, safeDays, from, to);
   const equipmentById = new Map((Array.isArray(equipment) ? equipment : []).map((item) => [String(item?.id || ""), item]));
   const warnings = [
     ...buildOverdueWarnings(allReservations, now),
@@ -213,7 +197,7 @@ export function buildOperationsInsights({ reservations = [], equipment = [], set
 
   return {
     period: { from, to, days: safeDays },
-    congestion: buildCongestion(operational, { settings, equipment, days: safeDays }),
+    congestion: buildCongestion(operational),
     equipmentUtilization: utilization,
     cancellationRate: {
       totalRequests: requestScoped.length,
