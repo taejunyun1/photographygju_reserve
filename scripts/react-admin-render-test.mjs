@@ -474,7 +474,7 @@ assert.deepEqual(
   "dashboard action cards must pass their target filters through the typed navigation action"
 );
 const dashboardParityMarkup = renderToStaticMarkup(dashboardTree);
-for (const label of ["운영 큐", "오늘 예약 타임라인", "대여/반납 큐", "운영 지표", "이번 주 예약 수", "기자재 가용률", "Sony FX3", "운영 공지"]) {
+for (const label of ["운영 큐", "오늘 예약 타임라인", "대여/반납 큐", "운영 지표", "이번 주 예약 수", "현재 대여 가능 비율", "설정상 제한", "최근 28일 취소/반려", "Sony FX3", "운영 공지"]) {
   assert(dashboardParityMarkup.includes(label), `dashboard must render ${label}`);
 }
 assert(dashboardParityMarkup.includes("반납 17:10"), "dashboard return queue must display the computed return action and time instead of rental time");

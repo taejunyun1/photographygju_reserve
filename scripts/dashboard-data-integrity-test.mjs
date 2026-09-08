@@ -111,13 +111,28 @@ assert.deepEqual(
   "checkout/return queue must show each reservation only for its current action"
 );
 assert.equal(metricSummary.body.data.metrics.activeEquipment, 3);
-assert.equal(metricSummary.body.data.metrics.availableEquipment, 1, "inquiry-only equipment must not count as available");
-assert.equal(metricSummary.body.data.metrics.equipmentAvailableRate, 33);
+assert.equal(metricSummary.body.data.metrics.availableEquipment, 0, "checked-out and inquiry-only equipment must not count as currently available");
+assert.equal(metricSummary.body.data.metrics.equipmentAvailableRate, 0);
+assert.equal(metricSummary.body.data.metrics.occupiedEquipment, 1, "multiple bookings of one device must count once");
+assert.equal(metricSummary.body.data.metrics.restrictedEquipment, 2);
 assert.equal(metricSummary.body.data.metrics.weekReservations, 4, "weekly reservations must exclude cancelled and rejected requests");
 assert.deepEqual(metricSummary.body.data.metrics.typeCounts, { equipment: 3, studio: 1 });
 assert.equal(metricSummary.body.data.metrics.popularEquipment.some((item) => item.name === "취소 장비"), false);
 assert.equal(metricSummary.body.data.equipmentReturned, 1);
 assert.equal(metricSummary.body.data.equipmentCancelled, 2);
+
+db.reservations.push(
+  equipmentReservation("old-metric", "returned", "metric-reservable", "10:00", "17:00", dateKeyOffset(today, -40)),
+  equipmentReservation("old-cancellation", "cancelled", "metric-inquiry", "10:00", "17:00", dateKeyOffset(today, -40)),
+  equipmentReservation("future-cancellation", "cancelled", "metric-inquiry", "10:00", "17:00", dateKeyOffset(today, 40))
+);
+const bounded = await handleApiRequest({ method: "GET", pathname: "/api/admin/summary", authorization: `Bearer ${token}`, readText: async () => "{}", db, saveDb: async () => {}, slackWebhook: "" });
+assert.equal(bounded.body.data.metrics.cancelledReservations, 2, "recent cancellations must exclude older and future reservation dates");
+assert.deepEqual(bounded.body.data.metrics.typeCounts, { equipment: 3, studio: 1 });
+assert.equal(bounded.body.data.metrics.popularEquipment[0].count, 3, "older rentals must not inflate recent popularity");
+assert.deepEqual(bounded.body.data.metrics.period, { from: dateKeyOffset(today, -27), to: today, days: 28 });
+const weekdayIndex = new Date(`${today}T00:00:00Z`).getUTCDay();
+assert.equal(bounded.body.data.metrics.weekPeriod.from, dateKeyOffset(today, -(weekdayIndex === 0 ? 6 : weekdayIndex - 1)));
 
 db.reservations.push(
   equipmentReservation("returned-before-today", "returned", "metric-reservable", "11:00", "18:00", dateKeyOffset(today, -1)),

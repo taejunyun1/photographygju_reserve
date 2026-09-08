@@ -302,6 +302,11 @@ export type AdminOperationsInsights = {
 };
 
 export type AdminDashboardMetrics = {
+  period?: { from: string; to: string; days: number };
+  weekPeriod?: { from: string; to: string };
+  measuredAt?: string;
+  restrictedEquipment?: number;
+  occupiedEquipment?: number;
   weekReservations?: number;
   activeEquipment?: number;
   availableEquipment?: number;

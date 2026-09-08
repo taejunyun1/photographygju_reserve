@@ -439,12 +439,12 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
       React.createElement(
         "div",
         { style: styles.metrics },
-        metric("이번 주 예약 수", Number(metrics.weekReservations || 0)),
-        metric("기자재 가용률", `${Number(metrics.equipmentAvailableRate || 0)}%`, `가능 ${Number(metrics.availableEquipment || 0)} / 전체 ${Number(metrics.activeEquipment || 0)}`),
-        metric("수리중 기자재", Number(metrics.repairEquipment || 0)),
-        metric("취소/반려 예약", Number(metrics.cancelledReservations || 0)),
-        metric("보고서 확인 큐", Number(metrics.reportQueueCount || 0)),
-        metric("모집중 특강", Number(metrics.openLectures || 0))
+        metric("이번 주 예약 수", Number(metrics.weekReservations || 0), `${metrics.weekPeriod?.from || "-"} ~ ${metrics.weekPeriod?.to || "-"} · 예약일 기준, 취소·반려 제외`),
+        metric("현재 대여 가능 비율", Number(metrics.activeEquipment || 0) > 0 ? `${Number(metrics.equipmentAvailableRate || 0)}%` : "—", `가능 ${Number(metrics.availableEquipment || 0)} / 등록 ${Number(metrics.activeEquipment || 0)}대 · 예약·대여 중 ${Number(metrics.occupiedEquipment || 0)} · 설정상 제한 ${Number(metrics.restrictedEquipment || 0)}`),
+        metric("수리중 기자재", Number(metrics.repairEquipment || 0), "현재 등록 장비의 수리 상태"),
+        metric("최근 28일 취소/반려", Number(metrics.cancelledReservations || 0), `${metrics.period?.from || "-"} ~ ${metrics.period?.to || "-"} · 예약일 기준, 관리자 취소 포함`),
+        metric("보고서 확인 큐", Number(metrics.reportQueueCount || 0), "제출된 보고서 중 확인 대기"),
+        metric("모집중 특강", Number(metrics.openLectures || 0), "현재 모집중으로 설정된 특강")
       ),
       React.createElement(
         "div",
@@ -452,7 +452,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
         React.createElement(
           "section",
           { className: "admin-insight-panel" },
-          React.createElement("h3", null, "예약 유형별 비중"),
+          React.createElement("h3", null, "최근 28일 예약 유형별 비중"),
+          React.createElement("p", { style: styles.caption }, typeTotal ? `예약일 기준 ${typeTotal}건 · 취소·반려 제외` : "집계 기간에 유효 예약이 없습니다."),
           ...Object.entries(typeCounts).map(([type, count]) => React.createElement(
             "p",
             { key: type, style: styles.caption },
@@ -462,7 +463,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
         React.createElement(
           "section",
           { className: "admin-insight-panel" },
-          React.createElement("h3", null, "인기 기자재 Top 5"),
+          React.createElement("h3", null, "최근 28일 인기 기자재 Top 5"),
           popularEquipment.length
             ? React.createElement("ul", null, ...popularEquipment.map((item) => React.createElement("li", { key: item.name, style: styles.caption }, `${item.name} ${item.count}회`)))
             : React.createElement("p", { style: styles.caption }, "선택 기자재 데이터 없음")

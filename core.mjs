@@ -1413,18 +1413,34 @@ export async function handleApiRequest(ctx) {
         const todayReservations = todaySchedule.length;
         const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
         const activeEquipment = db.equipment.filter((item) => item.active !== false);
-        const availableEquipment = activeEquipment.filter((item) => item.status === "가능" && item.reservable !== false && item.inquiryOnly !== true).length;
+        const metricNow = new Date();
+        const metricFrom = addDaysToDateKey(today, -27);
+        const reservableEquipment = activeEquipment.filter((item) => item.status === "가능" && item.reservable !== false && item.inquiryOnly !== true);
+        const occupiedIds = new Set();
+        for (const reservation of detailedReservations) {
+          if (reservation.type !== "equipment") continue;
+          const occupiesNow = reservation.status === "checked_out" || (
+            ["approved", "pending_approval"].includes(reservation.status)
+            && new Date(reservation.timing?.startAt).getTime() <= metricNow.getTime()
+            && new Date(reservation.timing?.endAt).getTime() > metricNow.getTime()
+          );
+          if (!occupiesNow) continue;
+          for (const id of reservation.fields?.equipmentItemIds || []) occupiedIds.add(String(id));
+        }
+        const availableEquipment = reservableEquipment.filter((item) => !occupiedIds.has(String(item.id))).length;
         const repairEquipment = activeEquipment.filter((item) => item.status === "수리중").length;
-        const cancelledReservations = db.reservations.filter((item) => ["cancelled", "admin_cancelled", "rejected"].includes(item.status)).length;
+        const periodReservations = detailedReservations.filter((item) => item.fields?.reservedDate >= metricFrom && item.fields?.reservedDate <= today);
+        const cancelledReservations = periodReservations.filter((item) => ["cancelled", "admin_cancelled", "rejected"].includes(item.status)).length;
         const excludedMetricStatuses = new Set(["cancelled", "admin_cancelled", "rejected"]);
         const metricReservations = detailedReservations.filter((item) => !excludedMetricStatuses.has(item.status));
-        const typeCounts = metricReservations.reduce((counts, item) => {
+        const periodOperational = periodReservations.filter((item) => !excludedMetricStatuses.has(item.status));
+        const typeCounts = periodOperational.reduce((counts, item) => {
           const type = item.type || "unknown";
           counts[type] = Number(counts[type] || 0) + 1;
           return counts;
         }, {});
         const equipmentUse = new Map();
-        for (const reservation of metricReservations) {
+        for (const reservation of periodOperational) {
           for (const item of reservation.equipmentItems || []) {
             const name = String(item.name || item.code || "").trim();
             if (name) equipmentUse.set(name, Number(equipmentUse.get(name) || 0) + 1);
@@ -1451,6 +1467,11 @@ export async function handleApiRequest(ctx) {
           todaySchedule,
           checkoutReturnQueue,
           metrics: {
+            period: { from: metricFrom, to: today, days: 28 },
+            weekPeriod: { from: weekFrom, to: weekTo },
+            measuredAt: metricNow.toISOString(),
+            restrictedEquipment: activeEquipment.length - reservableEquipment.length,
+            occupiedEquipment: reservableEquipment.length - availableEquipment,
             weekReservations: metricReservations.filter((item) => {
               const reservedDate = String(item.fields?.reservedDate || "");
               return reservedDate >= weekFrom && reservedDate <= weekTo;
