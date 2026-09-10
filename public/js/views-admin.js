@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260714-mobile-card-r6";
+import { state } from "./state.js?v=20260910-reliability-r1";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260714-mobile-card-r6";
+} from "./constants.js?v=20260910-reliability-r1";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260714-mobile-card-r6";
+} from "./utils.js?v=20260910-reliability-r1";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260714-mobile-card-r6";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260714-mobile-card-r6";
-import { noticeCard } from "./views-student.js?v=20260714-mobile-card-r6";
+} from "./ui.js?v=20260910-reliability-r1";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260910-reliability-r1";
+import { noticeCard } from "./views-student.js?v=20260910-reliability-r1";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260714-mobile-card-r6";
+} from "./admin-equipment.js?v=20260910-reliability-r1";
 
 export function adminShell() {
   return `

@@ -20,11 +20,15 @@ import {
   createCoursePlanningSeed,
   normalizeCoursePlanning,
   publicSurveyForStudent,
-  summarizeSurvey,
   validateAnnualPlan,
   validateCourseDemandSurveyDefinition,
   validateCourseDemandResponse
 } from "./core/course-demand.mjs";
+import {
+  captureSurveySnapshot,
+  finalizeExpiredSurveys,
+  readSurveySummary
+} from "./core/course-demand-snapshot.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
 import {
   darkroomChemicals,
@@ -335,13 +339,32 @@ function surveyTargetCount(db, survey, planning) {
   return new Set([...students, ...respondents]).size;
 }
 
+async function finalizeExpiredCourseDemandSurveys(db, planning, saveDb, now = new Date()) {
+  const finalized = finalizeExpiredSurveys({
+    surveys: planning.surveys,
+    responses: planning.responses,
+    eligibleStudentCountForSurvey: (survey) => surveyTargetCount(db, survey, planning),
+    now
+  });
+  if (finalized.length) await saveDb();
+  return finalized;
+}
+
+function courseDemandSurveySummary(db, survey, planning) {
+  return readSurveySummary({
+    survey,
+    responses: planning.responses.filter((response) => response.surveyId === survey.id),
+    eligibleStudentCount: surveyTargetCount(db, survey, planning)
+  });
+}
+
 function courseDemandByCourseId(planning, planId, db) {
   const scores = {};
   const semesterPlanIds = new Set((coursePlanningAnnualPlan(planning, planId)?.semesterPlans || []).map((item) => item.id));
   for (const survey of planning.surveys || []) {
     if (!semesterPlanIds.has(survey.semesterPlanId)) continue;
     const eligibleStudentCount = surveyTargetCount(db, survey, planning);
-    const summary = summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount });
+    const summary = readSurveySummary({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount });
     for (const course of summary.courses) scores[course.courseId] = Number(scores[course.courseId] || 0) + course.demandScore;
   }
   return scores;
@@ -951,6 +974,7 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/me/course-demand-surveys") {
         const user = requireApprovedStudent(authorization, db);
         const planning = coursePlanningForDb(db);
+        await finalizeExpiredCourseDemandSurveys(db, planning, saveDb);
         const surveys = planning.surveys
           .map((survey) => publicSurveyForStudent({
             survey,
@@ -967,6 +991,7 @@ export async function handleApiRequest(ctx) {
       if (method === "PUT" && courseDemandResponseMatch) {
         const user = requireApprovedStudent(authorization, db);
         const planning = coursePlanningForDb(db);
+        await finalizeExpiredCourseDemandSurveys(db, planning, saveDb);
         const survey = planning.surveys.find((item) => item.id === courseDemandResponseMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
         const body = await parseBody(readText);
@@ -1163,6 +1188,7 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/admin/course-planning") {
         requireAdmin(authorization, db);
         const planning = coursePlanningForDb(db);
+        await finalizeExpiredCourseDemandSurveys(db, planning, saveDb);
         const annualPlans = planning.annualPlans.map((plan) => ({
           ...plan,
           validation: validateAnnualPlan({ plan, courses: planning.courses, history: planning.offeringHistory })
@@ -1182,7 +1208,7 @@ export async function handleApiRequest(ctx) {
             status: survey.status,
             catalogCount: (survey.catalogSnapshot || []).length,
             catalogSnapshot: survey.catalogSnapshot || [],
-            summary: summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount })
+            summary: courseDemandSurveySummary(db, survey, planning)
           };
         });
         return ok({ curriculumVersions: planning.curriculumVersions, courses: planning.courses, annualPlans, surveys });
@@ -1292,6 +1318,8 @@ export async function handleApiRequest(ctx) {
         const survey = planning.surveys.find((item) => item.id === courseDemandSurveyMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
         if (survey.status === "closed") throw Object.assign(new Error("마감된 수요조사는 수정할 수 없습니다."), { status: 400 });
+        const previousSurvey = JSON.parse(JSON.stringify(survey));
+        const previousAuditLogCount = db.auditLogs.length;
         if (survey.status === "open") {
           const allowedKeys = new Set(["status", "closesAt"]);
           if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
@@ -1307,7 +1335,16 @@ export async function handleApiRequest(ctx) {
             }
             survey.closesAt = closesAt;
           }
-          if (body.status === "closed") survey.status = "closed";
+          if (body.status === "closed") {
+            survey.statisticsSnapshot = captureSurveySnapshot({
+              survey,
+              responses: planning.responses.filter((response) => response.surveyId === survey.id),
+              eligibleStudentCount: surveyTargetCount(db, survey, planning),
+              now: new Date(),
+              source: "manual_close"
+            });
+            survey.status = "closed";
+          }
           survey.updatedAt = nowIso();
         } else {
           if (body.status === "closed") throw Object.assign(new Error("임시저장 설문은 공개 후 마감할 수 있습니다."), { status: 400 });
@@ -1330,7 +1367,14 @@ export async function handleApiRequest(ctx) {
           term: survey.term,
           catalogCount: (survey.catalogSnapshot || []).length
         });
-        await saveDb();
+        try {
+          await saveDb();
+        } catch (error) {
+          for (const key of Object.keys(survey)) delete survey[key];
+          Object.assign(survey, previousSurvey);
+          db.auditLogs.splice(previousAuditLogCount);
+          throw error;
+        }
         return ok(survey);
       }
 
@@ -1338,10 +1382,10 @@ export async function handleApiRequest(ctx) {
       if (method === "GET" && courseDemandSummaryMatch) {
         requireAdmin(authorization, db);
         const planning = coursePlanningForDb(db);
+        await finalizeExpiredCourseDemandSurveys(db, planning, saveDb);
         const survey = planning.surveys.find((item) => item.id === courseDemandSummaryMatch[1]);
         if (!survey) throw Object.assign(new Error("수요조사를 찾을 수 없습니다."), { status: 404 });
-        const eligibleStudentCount = surveyTargetCount(db, survey, planning);
-        return ok(summarizeSurvey({ survey, responses: planning.responses.filter((response) => response.surveyId === survey.id), eligibleStudentCount }));
+        return ok(courseDemandSurveySummary(db, survey, planning));
       }
 
       const courseDemandRecommendationMatch = pathname.match(/^\/api\/admin\/annual-offering-plans\/([^/]+)\/recommendations$/);

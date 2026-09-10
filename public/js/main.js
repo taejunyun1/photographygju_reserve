@@ -1,10 +1,11 @@
-import { $app, state } from "./state.js?v=20260714-mobile-card-r6";
-import { loadAdminData, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260714-mobile-card-r6";
-import { setupEventHandlers } from "./events.js?v=20260714-mobile-card-r6";
-import { createNativeAppResumeLifecycle } from "./native-app-lifecycle.js?v=20260711-native-resume";
-import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260714-mobile-card-r6";
-import { render } from "./renderer.js?v=20260714-mobile-card-r6";
-import { escapeHtml } from "./utils.js?v=20260714-mobile-card-r6";
+import { $app, state } from "./state.js?v=20260910-reliability-r1";
+import { loadAdminData, loadAdminView, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260910-reliability-r1";
+import { configureAdminRefreshLifecycle, requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260910-reliability-r1";
+import { setupEventHandlers } from "./events.js?v=20260910-reliability-r1";
+import { createNativeAppResumeLifecycle } from "./native-app-lifecycle.js?v=20260910-reliability-r1";
+import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260910-reliability-r1";
+import { render } from "./renderer.js?v=20260910-reliability-r1";
+import { escapeHtml } from "./utils.js?v=20260910-reliability-r1";
 
 async function reloadActiveAccount() {
   await loadBootstrap();
@@ -16,10 +17,39 @@ async function reloadActiveAccount() {
 }
 
 async function refreshAfterNativeResume() {
-  await reloadActiveAccount();
+  if (state.user?.role === "admin") await requestAdminRefresh();
+  else await reloadActiveAccount();
   await handleNativeNotificationResume();
   render();
 }
+
+const adminRefreshLifecycle = configureAdminRefreshLifecycle({
+  canRefresh: () => Boolean(state.token && state.user?.role === "admin"),
+  async refresh() {
+    state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true, error: "" };
+    render();
+    try {
+      await loadBootstrap();
+      await loadAdminView(state.adminView || "dashboard", { force: true });
+      state.adminRefresh = { ...(state.adminRefresh || {}), lastSucceededAt: new Date().toISOString(), error: "" };
+    } catch (error) {
+      state.adminRefresh = { ...(state.adminRefresh || {}), error: error.message || "데이터 새로고침에 실패했습니다." };
+      throw error;
+    } finally {
+      state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };
+      render();
+    }
+  }
+});
+
+function requestBackgroundAdminRefresh() {
+  adminRefreshLifecycle.request().catch(() => {});
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") requestBackgroundAdminRefresh();
+});
+window.addEventListener("focus", requestBackgroundAdminRefresh);
 
 async function setupNativeAppResumeLifecycle() {
   const appPlugin = globalThis.window?.Capacitor?.Plugins?.App;

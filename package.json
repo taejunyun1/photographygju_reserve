@@ -7,6 +7,7 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "build": "node scripts/build-static.js",
+    "build:worker": "npm run build:react-admin && node scripts/generate-release-manifest.mjs --directory public --target worker",
     "build:react-admin": "node scripts/build-react-admin.mjs --target public",
     "icons:generate": "node scripts/generate-app-icons.mjs",
     "build:native": "node scripts/build-native.js",
@@ -47,7 +48,7 @@
     "pages:deploy": "npm run pages:build && wrangler pages deploy dist --project-name gju-reserve",
     "pages:check": "node scripts/check-pages-readiness.mjs",
     "deploy:check": "node scripts/check-production-deploy.mjs",
-    "deploy": "wrangler deploy --config wrangler.worker.jsonc",
+    "deploy": "npm run build:worker && wrangler deploy --config wrangler.worker.jsonc",
     "preview": "wrangler dev --config wrangler.worker.jsonc",
     "upload:dothome": "bash scripts/upload-dothome.sh"
   },

@@ -56,6 +56,38 @@ function reservationEquipmentIds(reservation) {
     : [];
 }
 
+function historicalEquipmentIndex(reservations, equipment) {
+  const indexed = new Map();
+  for (const reservation of reservations) {
+    if (reservation?.type !== "equipment") continue;
+    const details = new Map((Array.isArray(reservation.equipmentItems) ? reservation.equipmentItems : [])
+      .map((item) => [String(item?.id || ""), item])
+      .filter(([id]) => id));
+    for (const id of reservationEquipmentIds(reservation)) {
+      const item = details.get(id) || {};
+      const previous = indexed.get(id) || {};
+      indexed.set(id, {
+        id,
+        code: String(item.code || previous.code || ""),
+        name: String(item.name || previous.name || "기록상 장비"),
+        category: String(item.category || previous.category || "기타")
+      });
+    }
+  }
+  for (const item of Array.isArray(equipment) ? equipment : []) {
+    const id = String(item?.id || "");
+    if (!id || !indexed.has(id)) continue;
+    const previous = indexed.get(id);
+    indexed.set(id, {
+      id,
+      code: String(item.code || previous.code || ""),
+      name: String(item.name || previous.name || "기록상 장비"),
+      category: String(item.category || previous.category || "기타")
+    });
+  }
+  return indexed;
+}
+
 function slotLabels(reservation) {
   const fields = reservation?.fields || {};
   if (reservation?.type === "equipment") return fields.rentalTime ? [String(fields.rentalTime)] : [];
@@ -93,11 +125,9 @@ function buildCongestion(reservations) {
 }
 
 function buildEquipmentUtilization(reservations, equipment, days, from, to) {
-  const activeEquipment = (Array.isArray(equipment) ? equipment : [])
-    .filter(isReservableEquipment)
-    .map((item) => ({ id: String(item.id || ""), code: String(item.code || ""), name: String(item.name || ""), category: String(item.category || "") }))
-    .filter((item) => item.id);
-  const daysByEquipment = new Map(activeEquipment.map((item) => [item.id, new Set()]));
+  const indexedEquipment = historicalEquipmentIndex(reservations, equipment);
+  const historicalEquipment = [...indexedEquipment.values()];
+  const daysByEquipment = new Map(historicalEquipment.map((item) => [item.id, new Set()]));
   for (const reservation of reservations) {
     if (reservation.type !== "equipment") continue;
     const start = reservationDateKey(reservation);
@@ -109,14 +139,13 @@ function buildEquipmentUtilization(reservations, equipment, days, from, to) {
       for (const equipmentId of reservationEquipmentIds(reservation)) daysByEquipment.get(equipmentId)?.add(key);
     }
   }
-  return activeEquipment
+  return historicalEquipment
     .map((item) => {
       const reservedDays = daysByEquipment.get(item.id)?.size || 0;
       return { equipmentId: item.id, code: item.code, name: item.name, category: item.category, reservedDays, utilizationPercent: percentage(reservedDays, days) };
     })
     .filter((item) => item.reservedDays > 0)
-    .sort((left, right) => right.utilizationPercent - left.utilizationPercent || right.reservedDays - left.reservedDays || left.name.localeCompare(right.name, "ko"))
-    .slice(0, 5);
+    .sort((left, right) => right.utilizationPercent - left.utilizationPercent || right.reservedDays - left.reservedDays || left.name.localeCompare(right.name, "ko"));
 }
 
 function buildDemandWarnings(reservations, equipmentById, from, to) {
@@ -144,13 +173,15 @@ function buildDemandWarnings(reservations, equipmentById, from, to) {
 
 function buildShortageWarnings(utilization, equipment) {
   const availableByCategory = new Map();
+  const availableEquipmentIds = new Set();
   for (const item of equipment) {
     if (!isReservableEquipment(item)) continue;
+    availableEquipmentIds.add(String(item.id || ""));
     const category = String(item.category || "");
     availableByCategory.set(category, Number(availableByCategory.get(category) || 0) + 1);
   }
   return utilization.flatMap((item) => {
-    if (item.utilizationPercent < 80 || Number(availableByCategory.get(item.category) || 0) > 1) return [];
+    if (!availableEquipmentIds.has(item.equipmentId) || item.utilizationPercent < 80 || Number(availableByCategory.get(item.category) || 0) > 1) return [];
     return [{ kind: "shortage", equipmentId: item.equipmentId, code: item.code, name: item.name, category: item.category, utilizationPercent: item.utilizationPercent }];
   });
 }
@@ -187,18 +218,18 @@ export function buildOperationsInsights({ reservations = [], equipment = [], set
   });
   const operational = scoped.filter((reservation) => OPERATIONAL_STATUSES.has(reservation?.status));
   const cancelled = requestScoped.filter((reservation) => CANCELLED_STATUSES.has(reservation?.status));
-  const utilization = buildEquipmentUtilization(allReservations.filter((reservation) => OPERATIONAL_STATUSES.has(reservation?.status)), equipment, safeDays, from, to);
+  const allUtilization = buildEquipmentUtilization(allReservations.filter((reservation) => OPERATIONAL_STATUSES.has(reservation?.status)), equipment, safeDays, from, to);
   const equipmentById = new Map((Array.isArray(equipment) ? equipment : []).map((item) => [String(item?.id || ""), item]));
   const warnings = [
     ...buildOverdueWarnings(allReservations, now),
-    ...buildShortageWarnings(utilization, equipment),
+    ...buildShortageWarnings(allUtilization, equipment),
     ...buildDemandWarnings(operational, equipmentById, from, to)
   ].slice(0, 3);
 
   return {
     period: { from, to, days: safeDays },
     congestion: buildCongestion(operational),
-    equipmentUtilization: utilization,
+    equipmentUtilization: allUtilization.slice(0, 5),
     cancellationRate: {
       totalRequests: requestScoped.length,
       cancelledRequests: cancelled.length,

@@ -72,7 +72,9 @@ export const state = {
   adminLogSearch: "",
   adminBlockedScheduleSearch: "",
   adminRefresh: {
-    refreshing: false
+    refreshing: false,
+    lastSucceededAt: "",
+    error: ""
   },
   adminReportSort: {
     field: "submittedAt",

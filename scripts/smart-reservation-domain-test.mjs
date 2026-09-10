@@ -87,6 +87,43 @@ const spanning = { ...reservations[0], fields: { ...reservations[0].fields, rese
 const spanningInsights = buildOperationsInsights({ reservations: [spanning, { ...spanning, id: "overlapping" }, reservations[1]], equipment, now });
 assert.equal(spanningInsights.equipmentUtilization[0].reservedDays, 3, "count all overlapping rental days once, including rentals beginning before the window; exclude cancellations");
 
+const historicalReservation = {
+  id: "historical-equipment",
+  type: "equipment",
+  status: "returned",
+  fields: { reservedDate: "2099-01-08", rentalTime: "10:15", equipmentItemIds: ["eq_historical"] },
+  equipmentItems: [{ id: "eq_historical", code: "CAM-H01", name: "Historical Camera", category: "Camera" }]
+};
+const historicalAvailable = buildOperationsInsights({
+  reservations: [historicalReservation],
+  equipment: [{ id: "eq_historical", code: "CAM-H01", name: "Current Camera Name", category: "Camera", active: true, reservable: true, status: "가능" }],
+  now
+});
+const historicalRepair = buildOperationsInsights({
+  reservations: [historicalReservation],
+  equipment: [{ id: "eq_historical", code: "CAM-H01", name: "Current Camera Name", category: "Camera", active: true, reservable: true, status: "수리중" }],
+  now
+});
+assert.deepEqual(
+  historicalRepair.equipmentUtilization,
+  historicalAvailable.equipmentUtilization,
+  "historical utilization must not change when the equipment's current availability changes"
+);
+assert.equal(historicalRepair.equipmentUtilization[0]?.name, "Current Camera Name", "current metadata should label historical usage when it still exists");
+
+const deletedEquipmentInsights = buildOperationsInsights({ reservations: [historicalReservation], equipment: [], now });
+assert.equal(deletedEquipmentInsights.equipmentUtilization[0]?.equipmentId, "eq_historical", "deleted equipment must remain in historical utilization");
+assert.equal(deletedEquipmentInsights.equipmentUtilization[0]?.name, "Historical Camera", "reservation metadata should label deleted equipment history");
+
+const metadataMissingReservation = {
+  ...historicalReservation,
+  id: "historical-metadata-missing",
+  fields: { ...historicalReservation.fields, equipmentItemIds: ["eq_missing"] },
+  equipmentItems: []
+};
+const metadataMissingInsights = buildOperationsInsights({ reservations: [metadataMissingReservation], equipment: [], now });
+assert.equal(metadataMissingInsights.equipmentUtilization[0]?.name, "기록상 장비", "missing historical metadata must use a stable fallback label");
+
 const requestDateInsights = buildOperationsInsights({
   reservations: [
     { id: "old-approved", type: "equipment", status: "approved", createdAt: "2098-12-01T00:00:00.000Z", fields: { reservedDate: "2099-01-10", rentalTime: "10:15", equipmentItemIds: ["eq_camera"] } },

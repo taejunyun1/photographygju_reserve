@@ -356,7 +356,13 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
         "p",
         { style: styles.intro },
         "학생 승인과 기자재 승인·대여 흐름, 보고서 확인 대상을 빠르게 확인합니다."
-      )
+      ),
+      state.adminRefresh?.lastSucceededAt
+        ? React.createElement("p", { style: styles.caption }, `최근 갱신 ${new Date(state.adminRefresh.lastSucceededAt).toLocaleString("ko-KR")}`)
+        : null,
+      state.adminRefresh?.error
+        ? React.createElement("p", { style: { ...styles.caption, color: "#b42318" } }, `일부 최신 목록을 불러오지 못했습니다: ${state.adminRefresh.error}`)
+        : null
     ),
     React.createElement("section", { className: "admin-dashboard-action-grid", style: styles.grid }, cards.map((card) => renderActionCard(card, actions))),
     React.createElement(

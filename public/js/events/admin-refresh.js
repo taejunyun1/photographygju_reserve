@@ -1,6 +1,7 @@
-import { state } from "../state.js?v=20260714-mobile-card-r6";
-import { render, toast } from "../renderer.js?v=20260714-mobile-card-r6";
-import { captureScrollState, refreshAdminDataPreservingScroll, restoreScrollState } from "./shared.js?v=20260714-mobile-card-r6";
+import { state } from "../state.js?v=20260910-reliability-r1";
+import { toast } from "../renderer.js?v=20260910-reliability-r1";
+import { captureScrollState } from "./shared.js?v=20260910-reliability-r1";
+import { requestAdminRefresh } from "../admin-refresh-lifecycle.js?v=20260910-reliability-r1";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;
@@ -13,19 +14,11 @@ function refreshButtonFromEvent(event) {
 }
 
 async function runRefresh(scrollState = captureScrollState()) {
-  if (state.adminRefresh?.refreshing) return;
-  state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };
-  render();
-  restoreScrollState(scrollState);
   try {
-    await refreshAdminDataPreservingScroll({ includeBootstrap: true, scrollState });
-    toast("최신 데이터를 불러왔습니다.", { scrollState });
+    const refreshed = await requestAdminRefresh({ force: true });
+    toast(refreshed ? "최신 데이터를 불러왔습니다." : "이미 최신 데이터를 확인 중입니다.", { scrollState });
   } catch (error) {
     toast(error.message || "데이터 새로고침에 실패했습니다.", { scrollState });
-  } finally {
-    state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };
-    render();
-    restoreScrollState(scrollState);
   }
 }
 

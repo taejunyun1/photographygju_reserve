@@ -288,6 +288,8 @@ export function AdminCourseDemand({ state, actions }: AdminCourseDemandProps) {
       {tab === "results" ? <GjuCard title="수요조사 결과" surface="workspace">
         {planning.surveys.length ? <>
           <label className="admin-course-demand__result-select">설문 선택<select className="input" value={resultSurvey?.id || ""} onChange={(event) => setResultSurveyId(event.target.value)}>{planning.surveys.map((survey) => <option key={survey.id} value={survey.id}>{survey.title || "교과 수요조사"} · {STATUS_LABELS[survey.status || "draft"] || survey.status}</option>)}</select></label>
+          {resultSurvey?.summary?.statisticsBasis === "snapshot" ? <p className="muted">마감 시점에 확정된 통계입니다{resultSurvey.summary.statisticsSnapshot?.capturedAt ? ` · ${new Date(resultSurvey.summary.statisticsSnapshot.capturedAt).toLocaleString("ko-KR")}` : ""}.</p> : null}
+          {resultSurvey?.summary?.statisticsBasis === "legacy_live" ? <p className="muted">기존 마감 설문으로, 현재 학생 정보 기준의 참고 통계입니다.</p> : null}
           <div className="admin-course-demand__result-metrics" aria-label="익명 응답 통계"><span><strong>{resultSurvey?.summary?.responseCount ?? 0}</strong><small>응답</small></span><span><strong>{resultSurvey?.summary?.responseRate ?? 0}%</strong><small>응답률</small></span><span><strong>{resultSurvey?.summary?.eligibleStudentCount ?? 0}</strong><small>대상 학생</small></span></div>
           <div className="admin-course-demand__category-summary">
             {DEMAND_CATEGORIES.map((category) => {

@@ -12,6 +12,10 @@ const {
   validateCourseDemandSurveyDefinition,
   validateCourseDemandResponse
 } = await import("../core/course-demand.mjs").catch(() => ({}));
+const {
+  captureSurveySnapshot,
+  readSurveySummary
+} = await import("../core/course-demand-snapshot.mjs").catch(() => ({}));
 
 for (const [name, value] of Object.entries({
   buildCourseDemandCatalog,
@@ -25,6 +29,8 @@ for (const [name, value] of Object.entries({
 })) {
   assert.equal(typeof value, "function", `${name} must be exported`);
 }
+assert.equal(typeof captureSurveySnapshot, "function", "survey close snapshot builder must be exported");
+assert.equal(typeof readSurveySummary, "function", "survey summary reader must be exported");
 
 const seed = createCoursePlanningSeed();
 assert.equal(seed.curriculumVersions[0].curriculumCreditLimit, 130);
@@ -512,6 +518,19 @@ assert.equal(duplicateResponse.status, 400, "duplicate course rankings must be r
 const surveySummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
 assert.equal(surveySummary.status, 200);
 assert.equal(surveySummary.body.data.responseCount, 1);
+assert.equal(surveySummary.body.data.statisticsBasis, "live");
+const failedClose = await handleApiRequest({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${surveyId}`,
+  authorization: "Bearer course-admin-token",
+  readText: async () => JSON.stringify({ status: "closed" }),
+  db: apiDb,
+  saveDb: async () => { throw new Error("simulated persistence failure"); },
+  slackWebhook: ""
+});
+assert.equal(failedClose.status, 500);
+assert.equal(apiDb.coursePlanning.surveys.find((survey) => survey.id === surveyId).status, "open", "failed persistence must roll back survey closure");
+assert.equal(apiDb.coursePlanning.surveys.find((survey) => survey.id === surveyId).statisticsSnapshot, undefined, "failed persistence must roll back its statistics snapshot");
 const respondingStudent = apiDb.users.find((user) => user.studentId === "20260001");
 const previousApproval = respondingStudent.approvalStatus;
 respondingStudent.approvalStatus = "approval_pending";
@@ -522,6 +541,22 @@ assert.ok(changedEligibilitySummary.body.data.responseRate <= 100);
 respondingStudent.approvalStatus = previousApproval;
 assert.equal(Array.isArray(surveySummary.body.data.categories), true);
 assert.equal(JSON.stringify(surveySummary.body.data).includes("20260001"), false, "admin summary must remain anonymous");
+
+const closedSurvey = await courseApi({
+  method: "PUT",
+  pathname: `/api/admin/course-demand-surveys/${surveyId}`,
+  token: "course-admin-token",
+  body: { status: "closed" }
+});
+assert.equal(closedSurvey.status, 200);
+assert.equal(closedSurvey.body.data.statisticsSnapshot?.schemaVersion, 1);
+const frozenSummary = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
+assert.equal(frozenSummary.body.data.statisticsBasis, "snapshot");
+respondingStudent.approvalStatus = "approval_pending";
+apiDb.coursePlanning.responses.find((response) => response.surveyId === surveyId).rankings = [];
+const frozenSummaryAfterDrift = await courseApi({ pathname: `/api/admin/course-demand-surveys/${surveyId}/summary`, token: "course-admin-token" });
+assert.deepEqual(frozenSummaryAfterDrift.body.data, frozenSummary.body.data, "closed survey totals must remain frozen after later user or response changes");
+respondingStudent.approvalStatus = previousApproval;
 
 const enrichedPlanning = await courseApi({ pathname: "/api/admin/course-planning", token: "course-admin-token" });
 const enrichedSurvey = enrichedPlanning.body.data.surveys.find((survey) => survey.id === surveyId);

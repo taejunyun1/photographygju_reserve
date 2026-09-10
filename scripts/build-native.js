@@ -43,4 +43,6 @@ fs.writeFileSync(
 `
 );
 
+execFileSync(process.execPath, [path.join(__dirname, "generate-release-manifest.mjs"), "--directory", "dist", "--target", "native"], { stdio: "inherit" });
+
 console.log(`Native build written to dist/ with API base ${nativeApiBase}`);

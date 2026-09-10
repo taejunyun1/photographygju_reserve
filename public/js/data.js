@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260714-mobile-card-r6";
-import { api } from "./api.js?v=20260714-mobile-card-r6";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260714-mobile-card-r6";
+import { state } from "./state.js?v=20260910-reliability-r1";
+import { api } from "./api.js?v=20260910-reliability-r1";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260910-reliability-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();
@@ -452,6 +452,7 @@ export async function loadAdminView(view, filters = {}, options = {}) {
     descriptor.apply(value);
     adminViewCache.set(cacheKey, { at: Date.now(), value });
     if (requestedView === "dashboard") {
+      state.adminRefresh = { ...(state.adminRefresh || {}), lastSucceededAt: new Date().toISOString(), error: "" };
       await syncNativeReservationNotifications({ silent: true });
     }
   }

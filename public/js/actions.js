@@ -1,8 +1,8 @@
-import { state } from "./state.js?v=20260714-mobile-card-r6";
-import { api } from "./api.js?v=20260714-mobile-card-r6";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260714-mobile-card-r6";
-import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20260714-mobile-card-r6";
-import { render, toast } from "./renderer.js?v=20260714-mobile-card-r6";
+import { state } from "./state.js?v=20260910-reliability-r1";
+import { api } from "./api.js?v=20260910-reliability-r1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20260910-reliability-r1";
+import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20260910-reliability-r1";
+import { render, toast } from "./renderer.js?v=20260910-reliability-r1";
 import {
   areSlotsConsecutive,
   csvEscape,
@@ -28,7 +28,7 @@ import {
   studioSlotBlocked,
   studioSelectionConflicts,
   todayKey
-} from "./utils.js?v=20260714-mobile-card-r6";
+} from "./utils.js?v=20260910-reliability-r1";
 
 export async function login(form) {
   const data = formData(form);

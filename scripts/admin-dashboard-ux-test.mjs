@@ -23,10 +23,10 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260714-mobile-card-r6");
-const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260714-mobile-card-r6");
-const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260714-mobile-card-r6");
-const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260714-mobile-card-r6");
+const { state } = await import("../public/js/state.js?v=20260910-reliability-r1");
+const { adminShell, adminDashboardView, adminSettingsView, adminDashboardMetrics, adminReservationsView, adminReportsView, adminLecturesView, adminNoticesView, adminEquipmentView, adminUsersView, adminLogsView } = await import("../public/js/views-admin.js?v=20260910-reliability-r1");
+const { plannedAdminNotifications } = await import("../public/js/native-notifications.js?v=20260910-reliability-r1");
+const { captureScrollState, restoreScrollState } = await import("../public/js/events/scroll-state.js?v=20260910-reliability-r1");
 
 function seoulTodayKey() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -132,6 +132,8 @@ const searchSource = fs.readFileSync("public/js/events/search.js", "utf8");
 const rendererSource = fs.readFileSync("public/js/renderer.js", "utf8");
 const formsSource = fs.readFileSync("public/js/events/forms.js", "utf8");
 const adminRefreshSource = fs.readFileSync("public/js/events/admin-refresh.js", "utf8");
+const adminRefreshLifecycleSource = fs.readFileSync("public/js/admin-refresh-lifecycle.js", "utf8");
+const mainSource = fs.readFileSync("public/js/main.js", "utf8");
 const stateSource = fs.readFileSync("public/js/state.js", "utf8");
 const reactUsersSourcePath = "src/react/admin/screens/AdminUsers.tsx";
 const reactEquipmentSourcePath = "src/react/admin/screens/AdminEquipment.tsx";
@@ -392,11 +394,12 @@ assert(adminRefreshSource.includes("pendingRefreshScrollState"), "manual admin r
 assert(adminRefreshSource.includes("pendingRefreshScrollState = captureScrollState();"), "manual admin refresh must capture scroll before button focus changes it");
 assert(adminRefreshSource.includes("pendingRefreshScrollState || captureScrollState()"), "manual admin refresh must fall back to click-time scroll capture for keyboard activation");
 assert(adminRefreshSource.includes('document.addEventListener("pointerdown"'), "manual admin refresh button must capture scroll before click focus changes it");
-assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();'), "admin refresh must render immediately after entering the refreshing state");
-assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();'), "admin refresh must render immediately after clearing the refreshing state");
-assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };\n  render();\n  restoreScrollState(scrollState);'), "admin refresh busy render must restore the pre-refresh scroll snapshot");
-assert(adminRefreshSource.includes('state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };\n    render();\n    restoreScrollState(scrollState);'), "admin refresh clear render must restore the pre-refresh scroll snapshot");
-assert(adminRefreshSource.includes('toast("최신 데이터를 불러왔습니다.", { scrollState })'), "manual admin refresh success toast must reuse the pre-refresh scroll snapshot");
+assert(adminRefreshSource.includes("requestAdminRefresh({ force: true })"), "manual refresh must use the shared refresh lifecycle");
+assert(adminRefreshLifecycleSource.includes("if (pending) return pending"), "concurrent refresh triggers must be deduplicated");
+assert(mainSource.includes('document.addEventListener("visibilitychange"'), "browser visibility resume must request an admin refresh");
+assert(mainSource.includes('window.addEventListener("focus"'), "browser focus resume must request an admin refresh");
+assert(mainSource.includes("refreshing: true") && mainSource.includes("refreshing: false"), "shared refresh lifecycle must expose busy state around the request");
+assert(adminRefreshSource.includes("scrollState"), "manual admin refresh toast must reuse the pre-refresh scroll snapshot");
 assert(!adminRefreshSource.includes("gju-react-admin-refresh"), "React Admin refresh must not depend on a document event listener");
 assert(!adminRefreshSource.includes("includeMe: true"), "React Admin refresh must not bypass legacy refresh semantics with a special includeMe path");
 assert(!adminRefreshSource.includes('document.addEventListener("pointermove"'), "Admin refresh must not bind pointermove scroll gestures");

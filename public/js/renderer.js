@@ -1,12 +1,13 @@
-import { $app, state } from "./state.js?v=20260714-mobile-card-r6";
-import { api } from "./api.js?v=20260714-mobile-card-r6";
+import { $app, state } from "./state.js?v=20260910-reliability-r1";
+import { api } from "./api.js?v=20260910-reliability-r1";
 import {
   invalidateAdminViewCache,
   loadAdminView,
   loadBootstrap,
   loadLectures,
   loadMyReservations
-} from "./data.js?v=20260714-mobile-card-r6";
+} from "./data.js?v=20260910-reliability-r1";
+import { requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260910-reliability-r1";
 import {
   clearNativeNotificationAccount,
   disableNativeReservationNotifications,
@@ -14,12 +15,12 @@ import {
   handleNativeNotificationResume,
   notifyNativeReservationCreated,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260714-mobile-card-r6";
-import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260711-react-student";
-import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260714-mobile-card-r6";
-import { adminShell } from "./views-admin.js?v=20260714-mobile-card-r6";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260714-mobile-card-r6";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260714-mobile-card-r6";
+} from "./native-notifications.js?v=20260910-reliability-r1";
+import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260910-reliability-r1";
+import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260910-reliability-r1";
+import { adminShell } from "./views-admin.js?v=20260910-reliability-r1";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260910-reliability-r1";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260910-reliability-r1";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();
@@ -162,7 +163,7 @@ async function runAdminMutation(view, mutation, successMessage, options = {}) {
   }
 
   const message = typeof successMessage === "function" ? successMessage(result) : successMessage;
-  invalidateAdminViewCache(...(options.invalidateViews || [view, "dashboard"]));
+  invalidateAdminViewCache(...new Set([view, "dashboard", ...(options.invalidateViews || [])].filter(Boolean)));
   toast(message, { scrollState });
   if (options.refresh !== false && view) {
     try {
@@ -300,23 +301,13 @@ const reactAdminActions = {
     }
   },
   async refreshAdminData() {
-    if (state.adminRefresh?.refreshing) return;
     const scrollState = captureScrollState();
-    state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: true };
-    renderWithScrollState(scrollState);
-    let error = null;
     try {
-      await loadAdminView(currentAdminView(), { force: true });
-    } catch (caught) {
-      error = caught;
-    } finally {
-      state.adminRefresh = { ...(state.adminRefresh || {}), refreshing: false };
-      renderWithScrollState(scrollState);
+      const refreshed = await requestAdminRefresh({ force: true });
+      toast(refreshed ? "최신 데이터를 불러왔습니다." : "이미 최신 데이터를 확인 중입니다.", { tone: "status", scrollState });
+    } catch (error) {
+      toast(actionErrorMessage(error), { tone: "error", scrollState });
     }
-    toast(error ? actionErrorMessage(error) : "최신 데이터를 불러왔습니다.", {
-      tone: error ? "error" : "status",
-      scrollState
-    });
   },
   async setAdminFilters(view, filters) {
     const scrollState = captureScrollState();

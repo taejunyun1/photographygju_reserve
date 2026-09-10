@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
 const productionUrl = (process.env.GJU_PRODUCTION_URL || "https://photographygju-reserve.taejunyun.workers.dev").replace(/\/$/, "");
 const isWorkerUrl = /\.workers\.dev$/i.test(new URL(productionUrl).hostname);
+const verifyManifest = process.argv.includes("--manifest");
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), "utf8");
@@ -20,10 +22,35 @@ function ok(message) {
 }
 
 async function fetchText(pathname, expectedStatus = 200, options = {}) {
-  const response = await fetch(`${productionUrl}${pathname}`, options);
+  const response = await fetch(`${productionUrl}${pathname}`, { cache: "no-store", ...options });
   const text = await response.text();
   assert(response.status === expectedStatus, `${pathname} returned ${response.status}, expected ${expectedStatus}: ${text.slice(0, 180)}`);
   return { response, text };
+}
+
+async function fetchBytes(pathname) {
+  const response = await fetch(`${productionUrl}${pathname}`, { cache: "no-store" });
+  const bytes = Buffer.from(await response.arrayBuffer());
+  assert(response.status === 200, `${pathname} returned ${response.status}, expected 200`);
+  return bytes;
+}
+
+if (verifyManifest) {
+  const { text: remoteManifestText } = await fetchText("/release.json");
+  const remoteManifest = JSON.parse(remoteManifestText);
+  const localManifestPath = path.join(root, remoteManifest.target === "pages" ? "dist" : "public", "release.json");
+  assert(fs.existsSync(localManifestPath), `local ${remoteManifest.target} release manifest is missing`);
+  const localManifest = JSON.parse(fs.readFileSync(localManifestPath, "utf8"));
+  assert(remoteManifest.commit === localManifest.commit, `deployed commit ${remoteManifest.commit} does not match local ${localManifest.commit}`);
+  for (const [asset, expectedHash] of Object.entries(localManifest.assets || {})) {
+    const bytes = await fetchBytes(`/${asset}`);
+    const actualHash = crypto.createHash("sha256").update(bytes).digest("hex");
+    assert(actualHash === expectedHash, `asset hash mismatch for ${asset}`);
+  }
+  const { text: versionText } = await fetchText("/api/version");
+  const version = JSON.parse(versionText);
+  assert(version.data?.commit === localManifest.commit, "API version and deployed asset manifest commits differ");
+  ok(`release manifest and API commit ${localManifest.commit.slice(0, 12)}`);
 }
 
 const indexHtml = read("public/index.html");

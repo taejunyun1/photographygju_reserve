@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260714-mobile-card-r6";
-import { api } from "./api.js?v=20260714-mobile-card-r6";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260714-mobile-card-r6";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260714-mobile-card-r6";
+import { state } from "./state.js?v=20260910-reliability-r1";
+import { api } from "./api.js?v=20260910-reliability-r1";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20260910-reliability-r1";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260910-reliability-r1";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

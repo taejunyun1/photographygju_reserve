@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260714-mobile-card-r6";
-import { state } from "./state.js?v=20260714-mobile-card-r6";
+import { statusLabel, typeLabel } from "./constants.js?v=20260910-reliability-r1";
+import { state } from "./state.js?v=20260910-reliability-r1";
 import {
   planAdminNotifications,
   planReservationNotifications,

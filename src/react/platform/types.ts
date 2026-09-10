@@ -395,6 +395,13 @@ export type AdminAnnualOfferingPlan = {
 };
 
 export type AdminCourseDemandSurveySummary = {
+  statisticsBasis?: "live" | "snapshot" | "legacy_live";
+  statisticsSnapshot?: {
+    schemaVersion?: number;
+    capturedAt?: string;
+    effectiveCloseAt?: string;
+    source?: "manual_close" | "deadline_observed" | string;
+  };
   eligibleStudentCount?: number;
   responseCount?: number;
   responseRate?: number;
@@ -630,7 +637,7 @@ export type AdminToastState = {
 export type LegacyState = Record<string, unknown> & {
   token?: string;
   adminView?: string;
-  adminRefresh?: { refreshing?: boolean };
+  adminRefresh?: { refreshing?: boolean; lastSucceededAt?: string; error?: string };
   user?: { role?: string; name?: string; email?: string; studentId?: string; phone?: string };
   bootstrap?: { settings?: AdminSettings } | null;
   summary?: AdminDashboardSummary | null;

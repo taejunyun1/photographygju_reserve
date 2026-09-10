@@ -163,6 +163,12 @@ export class GjuReserveDb extends DurableObject {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/version") {
+      const releaseResponse = await env.ASSETS.fetch(new Request(new URL("/release.json", request.url), { headers: { "cache-control": "no-cache" } }));
+      if (!releaseResponse.ok) return jsonResponse({ ok: false, error: "Release metadata unavailable" }, 503);
+      const release = await releaseResponse.json();
+      return jsonResponse({ ok: true, data: { commit: release.commit, target: release.target, generatedAt: release.generatedAt } }, 200);
+    }
     if (url.pathname.startsWith("/api/")) {
       const stub = env.GJU_RESERVE_DB.getByName("global");
       return stub.fetch(request);

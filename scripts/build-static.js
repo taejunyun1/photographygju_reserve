@@ -15,4 +15,9 @@ const reactBuild = spawnSync(process.execPath, [path.join(root, "scripts/build-r
 });
 if (reactBuild.status !== 0) process.exit(reactBuild.status || 1);
 
+const manifestBuild = spawnSync(process.execPath, [path.join(root, "scripts/generate-release-manifest.mjs"), "--directory", "dist", "--target", "pages"], {
+  stdio: "inherit"
+});
+if (manifestBuild.status !== 0) process.exit(manifestBuild.status || 1);
+
 console.log("Static build written to dist/");

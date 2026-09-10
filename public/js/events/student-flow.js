@@ -1,21 +1,21 @@
-import { state } from "../state.js?v=20260714-mobile-card-r6";
-import { api } from "../api.js?v=20260714-mobile-card-r6";
-import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260714-mobile-card-r6";
-import { logout, openReport } from "../actions.js?v=20260714-mobile-card-r6";
+import { state } from "../state.js?v=20260910-reliability-r1";
+import { api } from "../api.js?v=20260910-reliability-r1";
+import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20260910-reliability-r1";
+import { logout, openReport } from "../actions.js?v=20260910-reliability-r1";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
   syncNativeReservationNotifications
-} from "../native-notifications.js?v=20260714-mobile-card-r6";
-import { render, toast } from "../renderer.js?v=20260714-mobile-card-r6";
-import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260714-mobile-card-r6";
+} from "../native-notifications.js?v=20260910-reliability-r1";
+import { render, toast } from "../renderer.js?v=20260910-reliability-r1";
+import { reservationDateUnavailable, reservationDateUnavailableMessage } from "../utils.js?v=20260910-reliability-r1";
 import {
   renderAtTop,
   renderPreservingScroll,
   setReservationFlowStep,
   goReservationFlowStep,
   canAdvanceReservationFlow
-} from "./shared.js?v=20260714-mobile-card-r6";
+} from "./shared.js?v=20260910-reliability-r1";
 
 export function setupStudentFlowClickHandlers() {
   document.addEventListener("click", async (event) => {
