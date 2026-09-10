@@ -17,5 +17,9 @@ assert.equal(first.target, "test");
 assert.notEqual(first.assets["app.js"], second.assets["app.js"], "asset content changes must change its release hash");
 assert.equal("release.json" in second.assets, false, "manifest must not hash itself");
 assert.equal(".htaccess" in second.assets, false, "manifest must exclude dotfiles that static hosting does not deploy");
+fs.mkdirSync(path.join(directory, "api"));
+fs.writeFileSync(path.join(directory, "api", "index.php"), "legacy host adapter");
+const workerManifest = buildReleaseManifest({ directory, commit: "abc123", target: "worker" });
+assert.equal("api/index.php" in workerManifest.assets, false, "worker manifest must exclude API paths handled by the Worker runtime");
 
 console.log("Release manifest checks passed.");

@@ -18,7 +18,8 @@ function assetFiles(directory, current = directory) {
 }
 
 export function buildReleaseManifest({ directory, commit, target = "web", generatedAt = new Date().toISOString() }) {
-  const assets = Object.fromEntries(assetFiles(directory).map((relative) => [
+  const files = assetFiles(directory).filter((relative) => target !== "worker" || !relative.startsWith("api/"));
+  const assets = Object.fromEntries(files.map((relative) => [
     relative,
     crypto.createHash("sha256").update(fs.readFileSync(path.join(directory, relative))).digest("hex")
   ]));
