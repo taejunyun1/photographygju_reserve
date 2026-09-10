@@ -9,6 +9,7 @@ const projectRoot = path.resolve(scriptDirectory, "..");
 
 function assetFiles(directory, current = directory) {
   return fs.readdirSync(current, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name.startsWith(".")) return [];
     const absolute = path.join(current, entry.name);
     if (entry.isDirectory()) return assetFiles(directory, absolute);
     const relative = path.relative(directory, absolute).split(path.sep).join("/");
