@@ -2,8 +2,18 @@ import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
+import sharp from "sharp";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const approvedArtwork = join(root, "assets/branding/gju-reserve-approved.png");
+
+async function renderApprovedIcon(destination, size, adaptive = false) {
+  const artwork = await sharp(approvedArtwork).resize(adaptive ? Math.round(size * 0.72) : size).removeAlpha().png().toBuffer();
+  const image = adaptive
+    ? sharp({ create: { width: size, height: size, channels: 4, background: "#075de0" } }).composite([{ input: artwork, gravity: "centre" }])
+    : sharp(artwork);
+  await image.removeAlpha().png().toFile(destination);
+}
 
 const colors = {
   ink: [7, 11, 20, 255],
@@ -198,7 +208,7 @@ const iosSlots = [
 ];
 
 for (const [filename, , , , pixelSize] of iosSlots) {
-  writePng(join(iosIconDir, filename), pixelSize, pixelSize, makeIcon(pixelSize, { markScale: 0.74 }));
+  await renderApprovedIcon(join(iosIconDir, filename), pixelSize);
 }
 
 writeFileSync(join(iosIconDir, "Contents.json"), `${JSON.stringify({
@@ -224,9 +234,13 @@ const densities = [
 
 for (const [dir, iconSize, foregroundSize] of densities) {
   const base = join(root, "android/app/src/main/res", dir);
-  writePng(join(base, "ic_launcher.png"), iconSize, iconSize, makeIcon(iconSize, { markScale: 0.74 }));
-  writePng(join(base, "ic_launcher_round.png"), iconSize, iconSize, makeIcon(iconSize, { markScale: 0.74 }));
-  writePng(join(base, "ic_launcher_foreground.png"), foregroundSize, foregroundSize, makeIcon(foregroundSize, { transparent: true, foreground: true, markScale: 0.56 }));
+  await renderApprovedIcon(join(base, "ic_launcher.png"), iconSize);
+  await renderApprovedIcon(join(base, "ic_launcher_round.png"), iconSize);
+  await renderApprovedIcon(join(base, "ic_launcher_foreground.png"), foregroundSize, true);
+}
+
+for (const size of [32, 64, 180]) {
+  await renderApprovedIcon(join(root, "public", `favicon-${size}.png`), size);
 }
 
 console.log("Generated native app icons.");
