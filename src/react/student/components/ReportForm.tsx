@@ -53,11 +53,17 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
   }, [reservation.id]);
 
   const allPhotos = currentPhotos(form);
+  const hasRentalEquipment = isEquipment || Boolean(
+    reservation.fields.requiredEquipment ||
+    reservation.fields.equipmentItemIds?.length ||
+    reservation.equipmentItems?.length ||
+    form.equipmentDamageAnswer
+  );
   const damageChecks = isEquipment
     ? [{ kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }]
     : [
       { kind: "studio" as const, answer: form.studioDamageAnswer || "", description: form.damageDescription || "", category: "studio_damage" },
-      { kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }
+      ...(hasRentalEquipment ? [{ kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }] : [])
     ];
 
   return (
@@ -73,7 +79,7 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
             event.preventDefault();
             if (submitting) return;
             setError("");
-            if (damageChecks.some((check) => !check.answer)) { setError("스튜디오와 대여 기자재의 파손·이상 여부를 모두 선택하세요."); return; }
+            if (damageChecks.some((check) => !check.answer)) { setError(hasRentalEquipment ? "스튜디오와 대여 기자재의 파손·이상 여부를 모두 선택하세요." : "파손·이상 여부를 선택하세요."); return; }
             if (damageChecks.some((check) => check.answer === "yes" && (!check.description.trim() || allPhotos.filter((photo) => photo.category === check.category).length < 1))) { setError("파손·이상 상세와 사진을 1장 이상 입력하세요."); return; }
             setSubmitting(true);
             try {

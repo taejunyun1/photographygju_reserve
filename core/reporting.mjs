@@ -155,7 +155,13 @@ export function validateReportDraft({ reservation, type = reservation?.type, bod
   const equipmentAnswer = answerFrom(body, "equipment");
   const activeAnswer = type === "studio" ? studioAnswer : equipmentAnswer;
   if (activeAnswer === null) throw Object.assign(new Error("파손·이상 여부를 선택하세요."), { status: 400 });
-  const combinedStudioChecks = type === "studio" && body?._legacy !== true;
+  const hasRentalEquipment = type === "studio" && Boolean(
+    reservation.fields?.requiredEquipment ||
+    reservation.fields?.equipmentItemIds?.length ||
+    reservation.equipmentItems?.length ||
+    equipmentAnswer !== null
+  );
+  const combinedStudioChecks = type === "studio" && body?._legacy !== true && hasRentalEquipment;
   if (combinedStudioChecks && equipmentAnswer === null) {
     throw Object.assign(new Error("스튜디오와 대여 기자재의 파손·이상 여부를 모두 선택하세요."), { status: 400 });
   }

@@ -383,7 +383,12 @@ export function createStudentReactActions(dependencies) {
     },
     async submitReport(id, payload) {
       const reservation = asArray(state.myReservations).find((item) => item.id === id);
-      const isNewReportPayload = Boolean(payload?.photos || payload?.studioDamageAnswer || payload?.equipmentDamageAnswer || reservation?.type === "equipment");
+      const isNewReportPayload = Boolean(
+        (Array.isArray(payload?.photos) && payload.photos.length > 0) ||
+        payload?.equipmentDamageAnswer ||
+        payload?.studioDamageAnswer === "yes" ||
+        reservation?.type === "equipment"
+      );
       if (!isNewReportPayload && reservation?.type !== "equipment") {
         await api("/api/reports/studio", { method: "POST", body: { reservationId: id, ...payload } });
       } else {
