@@ -6,6 +6,8 @@
  * the same source of truth.
  */
 
+import { reservationTiming } from "./reservation-timing.mjs";
+
 export const REPORT_SCHEMA_VERSION = 2;
 export const REPORT_POLICY_VERSION = 2;
 export const REPORT_PHOTO_LIMIT = 5;
@@ -28,14 +30,15 @@ function isoOrNull(value) {
   return date ? date.toISOString() : null;
 }
 
-function reservationEnd(reservation) {
-  const explicit = asDate(reservation?.timing?.endAt || reservation?.fields?.endAt);
-  if (explicit) return explicit;
-  const date = String(reservation?.fields?.reservedDate || "");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  // A date-only fallback is deliberately end-of-day. It prevents an old
-  // reservation from being blocked forever when timing could not be rebuilt.
-  return new Date(`${date}T23:59:59.999+09:00`);
+function reservationTimingFor(reservation, settings = {}) {
+  const existing = reservation?.timing;
+  if (existing && (asDate(existing.startAt) || asDate(existing.endAt))) return existing;
+  return reservationTiming(reservation, settings);
+}
+
+function reservationEnd(reservation, settings = {}) {
+  const timing = reservationTimingFor(reservation, settings);
+  return asDate(reservation?.fields?.endAt || timing?.endAt);
 }
 
 function historyAt(reservation, actions) {
@@ -56,22 +59,26 @@ function settingHours(settings, key, fallback) {
 }
 
 function requirementForTiming({ reservation, type, now, settings }) {
-  const endAt = reservationEnd(reservation);
+  const timing = reservationTimingFor(reservation, settings);
+  const endAt = reservationEnd(reservation, settings);
   const endMs = endAt?.getTime() || 0;
   const nowMs = now.getTime();
   const studio = type === "studio";
   const checkedOut = reservation?.status === "checked_out";
   const returned = reservation?.status === "returned";
   const hasStarted = studio
-    ? endMs > 0 && nowMs >= (asDate(reservation?.timing?.startAt)?.getTime() || 0)
+    ? Boolean(asDate(timing?.startAt) && endMs > 0 && nowMs >= asDate(timing.startAt).getTime())
     : checkedOut || returned;
   const canDraft = studio
     ? Boolean(reservation?.fields?.reservedDate) && (hasStarted || nowMs >= endMs)
     : checkedOut || returned;
   const canSubmit = studio ? Boolean(endMs && nowMs >= endMs) : Boolean(returned || (endMs && nowMs >= endMs));
+  const actualEnd = asDate(historyAt(reservation, new Set(["returned", "return_inspected"])));
   const anchor = studio
     ? endAt
-    : (asDate(historyAt(reservation, new Set(["returned", "return_inspected"]))) || endAt);
+    : actualEnd && endAt
+      ? new Date(Math.min(actualEnd.getTime(), endAt.getTime()))
+      : (actualEnd || endAt);
   const deadlineHours = settingHours(settings, studio ? "studioReportDeadlineHours" : "equipmentReportDeadlineHours", studio ? 48 : DEFAULT_EQUIPMENT_REPORT_DEADLINE_HOURS);
   const deadlineAt = anchor ? new Date(anchor.getTime() + deadlineHours * 60 * 60 * 1000) : null;
   return { canDraft, canSubmit, endAt, deadlineAt, deadlineHours };
@@ -104,11 +111,10 @@ export function getReportRequirement(db, reservation, now = new Date(), settings
   // Equipment reports begin at physical hand-off. Approved requests are not
   // report obligations because the student may never receive the item.
   if (type === "equipment" && !["checked_out", "returned"].includes(reservation.status)) return base;
+  if (type === "equipment" && reservation.status === "returned" && Number(reservation?.fields?.reportPolicyVersion || 0) < REPORT_POLICY_VERSION) return base;
   const timing = requirementForTiming({ reservation, type, now: asDate(now) || new Date(), settings });
   const nowDate = asDate(now) || new Date();
-  const required = type === "studio"
-    ? Boolean(reservation.fields?.reservedDate) && (timing.canDraft || new Date(`${reservation.fields.reservedDate}T00:00:00+09:00`) <= nowDate)
-    : true;
+  const required = type === "studio" ? timing.canDraft || timing.canSubmit : true;
   const overdue = Boolean(timing.deadlineAt && nowDate.getTime() > timing.deadlineAt.getTime());
   return {
     ...base,

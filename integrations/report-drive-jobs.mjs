@@ -27,6 +27,13 @@ export async function syncReportToDrive({ client, connection, report, attachment
   const semester = await client.ensureFolder(semesterFolder(dateKey), connection.folderId);
   const typeFolder = await client.ensureFolder(typeLabel, semester.id);
   const reportFolder = await client.ensureFolder(`${safeName(dateKey)}_${safeName(report.reservationId)}`, typeFolder.id);
+  report.drive = {
+    ...(report.drive || {}),
+    status: "syncing",
+    connectionId: connection.id,
+    folderId: reportFolder.id,
+    folderUrl: reportFolder.webViewLink || report.drive?.folderUrl || ""
+  };
   const reportJson = await client.uploadFile({
     name: "보고서.json",
     mimeType: "application/json",
@@ -34,6 +41,7 @@ export async function syncReportToDrive({ client, connection, report, attachment
     fileId: report.drive?.jsonFileId || "",
     body: jsonBytes({ ...report, drive: undefined, htmlSnapshot: undefined })
   });
+  report.drive = { ...(report.drive || {}), jsonFileId: reportJson.id, errorCode: null };
   const reportHtml = await client.uploadFile({
     name: "보고서.html",
     mimeType: "text/html",
@@ -41,6 +49,7 @@ export async function syncReportToDrive({ client, connection, report, attachment
     fileId: report.drive?.htmlFileId || "",
     body: new TextEncoder().encode(`<!doctype html><meta charset="utf-8"><title>GJU 사용 보고서</title>${report.htmlSnapshot || ""}`)
   });
+  report.drive = { ...(report.drive || {}), htmlFileId: reportHtml.id, errorCode: null };
   const uploadedPhotos = [];
   for (let index = 0; index < attachments.length; index += 1) {
     const photo = attachments[index];
@@ -72,4 +81,3 @@ export async function syncReportToDrive({ client, connection, report, attachment
   connection.lastSyncedAt = now.toISOString();
   return report;
 }
-

@@ -681,9 +681,15 @@ function publicReportDraft(db, draft) {
     revision: Number(draft.revision || 0),
     fields: draft.fields || {},
     linkedEquipmentReservationId: draft.linkedEquipmentReservationId || null,
+    submittedAt: draft.submittedAt || null,
+    submissionKey: draft.submissionKey || "",
     updatedAt: draft.updatedAt || null,
-    photos: reportPhotosForDraft(db, draft)
+    photos: reportPhotosForDraft(db, draft.id)
   };
+}
+
+function assertReportDraftMutable(draft) {
+  if (draft?.submittedAt) throw Object.assign(new Error("제출 완료된 보고서는 변경할 수 없습니다."), { status: 409 });
 }
 
 function reportPhotoHeader(bytes) {
@@ -794,6 +800,13 @@ async function processReportDriveJobs(ctx, db, limit = 10) {
 }
 
 async function finalizeReportDraft({ db, user, reservation, type, draft, body = {}, saveDb, driveSync = null }) {
+  const submissionKey = String(body.submissionKey || "").trim();
+  const existing = db.reports.find((item) => item.reservationId === reservation.id && item.type === type);
+  if (existing) {
+    if (submissionKey && existing.submissionKey === submissionKey) return reportSubmissionResult(db, existing);
+    throw Object.assign(new Error("이미 제출된 보고서입니다."), { status: 409 });
+  }
+  assertReportDraftMutable(draft);
   const allPhotos = reportPhotosForDraft(db, draft?.id || "", { includeData: false });
   if (allPhotos.some((photo) => photo.status !== "uploaded")) throw Object.assign(new Error("사진 업로드가 끝난 뒤 제출하세요."), { status: 400 });
   const photos = allPhotos;
@@ -804,11 +817,6 @@ async function finalizeReportDraft({ db, user, reservation, type, draft, body = 
     photos,
     now: new Date()
   });
-  const existing = db.reports.find((item) => item.reservationId === reservation.id && item.type === type);
-  if (existing) {
-    if (body.submissionKey && existing.submissionKey === body.submissionKey) return reportSubmissionResult(db, existing);
-    throw Object.assign(new Error("이미 제출된 보고서입니다."), { status: 409 });
-  }
   const equipmentItems = reservation.type === "equipment"
     ? (reservation.fields?.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
     : [];
@@ -820,6 +828,7 @@ async function finalizeReportDraft({ db, user, reservation, type, draft, body = 
     status: "submitted",
     reservationId: reservation.id,
     userId: user.id,
+    submissionKey,
     fields,
     photoIds: photos.map((photo) => photo.id),
     reservationSnapshot: reservationSnapshot(reservation, user, equipmentItems),
@@ -835,7 +844,10 @@ async function finalizeReportDraft({ db, user, reservation, type, draft, body = 
       photo.status = "uploaded";
     }
   }
-  if (draft) draft.submittedAt = report.submittedAt;
+  if (draft) {
+    draft.submittedAt = report.submittedAt;
+    draft.submissionKey = submissionKey;
+  }
   reservation.fields = { ...(reservation.fields || {}), reportPolicyVersion: REPORT_POLICY_VERSION, reportStatus: "submitted" };
   reservation.updatedAt = nowIso();
   reservation.history = Array.isArray(reservation.history) ? reservation.history : [];
@@ -844,7 +856,7 @@ async function finalizeReportDraft({ db, user, reservation, type, draft, body = 
   db.reportDriveJobs.push({
     id: id("report_drive_job"),
     reportId: report.id,
-    submissionKey: String(body.submissionKey || ""),
+    submissionKey,
     draftId: draft?.id || "",
     connectionId: null,
     type: "sync_report",
@@ -1475,9 +1487,12 @@ export async function handleApiRequest(ctx) {
         assertRequired(body, ["reservationId"]);
         const reservation = reportReservationOrThrow(db, user, body.reservationId, body.type || "");
         if (!["studio", "equipment"].includes(reservation.type)) throw Object.assign(new Error("스튜디오 또는 기자재 예약만 보고서를 작성할 수 있습니다."), { status: 400 });
+        const existingReport = db.reports.find((item) => item.reservationId === reservation.id && item.type === reservation.type);
+        const existingDraft = reportDraftForReservation(db, reservation.id, user.id);
+        if (existingReport && existingDraft) return ok(publicReportDraft(db, existingDraft));
         const requirement = getReportRequirement(db, reservation, new Date());
         if (!requirement.canDraft && !requirement.canSubmit) throw Object.assign(new Error("아직 보고서 작성 기간이 아닙니다."), { status: 400 });
-        let draft = reportDraftForReservation(db, reservation.id, user.id);
+        let draft = existingDraft;
         if (!draft) {
           draft = { id: id("report_draft"), reservationId: reservation.id, userId: user.id, type: reservation.type, revision: 0, fields: {}, linkedEquipmentReservationId: null, createdAt: nowIso(), updatedAt: nowIso() };
           db.reportDrafts.push(draft);
@@ -1491,6 +1506,7 @@ export async function handleApiRequest(ctx) {
         const user = requireApprovedStudent(authorization, db);
         const draft = reportDraftFor(db, reportDraftMatch[1], user.id);
         if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
+        assertReportDraftMutable(draft);
         const body = await parseBody(readText);
         const expectedRevision = Number(body.revision);
         if (!Number.isInteger(expectedRevision) || expectedRevision !== Number(draft.revision || 0)) throw Object.assign(new Error("최신 초안을 다시 불러오세요."), { status: 409 });
@@ -1508,9 +1524,13 @@ export async function handleApiRequest(ctx) {
         const user = requireApprovedStudent(authorization, db);
         const draft = reportDraftFor(db, reportPhotoReserveMatch[1], user.id);
         if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
+        assertReportDraftMutable(draft);
         const body = await parseBody(readText);
         const existingClient = (db.reportAttachments || []).find((photo) => photo.draftId === draft.id && photo.clientPhotoId === String(body.clientPhotoId || "") && photo.status !== "deleted");
-        if (existingClient) return ok(existingClient);
+        if (existingClient) {
+          const { data, ...publicPhoto } = existingClient;
+          return ok(publicPhoto);
+        }
         const activePhotos = reportPhotosForDraft(db, draft.id);
         if (activePhotos.length >= REPORT_PHOTO_LIMIT) throw Object.assign(new Error(`사진은 보고서당 ${REPORT_PHOTO_LIMIT}장까지 첨부할 수 있습니다.`), { status: 400 });
         const mimeType = String(body.mimeType || "").toLowerCase();
@@ -1528,6 +1548,7 @@ export async function handleApiRequest(ctx) {
         const draft = reportDraftFor(db, reportPhotoContentMatch[1], user.id);
         const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoContentMatch[2] && item.draftId === draft?.id && item.userId === user.id && item.status !== "deleted");
         if (!draft || !photo) throw Object.assign(new Error("사진 업로드 대상을 찾을 수 없습니다."), { status: 404 });
+        assertReportDraftMutable(draft);
         const bytes = ctx.readBytes ? new Uint8Array(await ctx.readBytes(REPORT_PHOTO_MAX_BYTES + 1)) : null;
         if (!bytes || !bytes.length || bytes.length > REPORT_PHOTO_MAX_BYTES) throw Object.assign(new Error("사진 파일을 읽을 수 없습니다."), { status: 400 });
         const detected = reportPhotoHeader(bytes);
@@ -1546,6 +1567,7 @@ export async function handleApiRequest(ctx) {
         const draft = reportDraftFor(db, reportPhotoDeleteMatch[1], user.id);
         const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoDeleteMatch[2] && item.draftId === draft?.id && item.userId === user.id);
         if (!draft || !photo) throw Object.assign(new Error("사진을 찾을 수 없습니다."), { status: 404 });
+        assertReportDraftMutable(draft);
         photo.status = "deleted";
         photo.data = "";
         await saveDb();
@@ -1567,6 +1589,13 @@ export async function handleApiRequest(ctx) {
         const draft = reportDraftFor(db, reportSubmitMatch[1], user.id);
         if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
         const body = await parseBody(readText);
+        const submissionKey = String(body.submissionKey || "").trim();
+        const existing = db.reports.find((item) => item.reservationId === draft.reservationId && item.type === draft.type);
+        if (existing) {
+          if (submissionKey && existing.submissionKey === submissionKey) return ok(reportSubmissionResult(db, existing));
+          throw Object.assign(new Error("이미 제출된 보고서입니다."), { status: 409 });
+        }
+        assertReportDraftMutable(draft);
         if (Number(body.revision) !== Number(draft.revision || 0)) throw Object.assign(new Error("최신 초안을 다시 불러오세요."), { status: 409 });
         const reservation = reportReservationOrThrow(db, user, draft.reservationId, draft.type);
         const requirement = getReportRequirement(db, reservation, new Date());

@@ -24,7 +24,7 @@ assert.equal(getReportRequirement(base, checkedOutRental, new Date("2026-09-21T0
 const cancelled = { ...checkedOutRental, id: "r-cancelled", status: "cancelled" };
 assert.equal(getReportRequirement(base, cancelled, new Date("2026-09-22T00:00:00Z")).required, false);
 
-const returned = { ...checkedOutRental, id: "r-returned", status: "returned", history: [{ action: "returned", at: "2026-09-21T08:30:00.000Z" }] };
+const returned = { ...checkedOutRental, id: "r-returned", status: "returned", fields: { ...checkedOutRental.fields, reportPolicyVersion: 2 }, history: [{ action: "returned", at: "2026-09-21T08:30:00.000Z" }] };
 assert.equal(getReportRequirement(base, returned, new Date("2026-09-21T09:00:00Z")).required, true);
 
 assert.throws(() => validateReportDraft({ reservation: returned, type: "equipment", body: { equipmentDamageAnswer: "yes", returnReadyConfirmed: true, equipmentDamageDescription: "렌즈 흠집" }, photos: [] }), /사진/);
@@ -46,8 +46,15 @@ const studio = {
   fields: { reservedDate: "2026-09-21" },
   timing: { startAt: "2026-09-21T01:00:00.000Z", endAt: "2026-09-21T03:00:00.000Z" }
 };
-assert.throws(() => validateReportDraft({
+const bareStudio = validateReportDraft({
   reservation: studio,
+  type: "studio",
+  body: { actualTime: "10:00-12:00", participants: "2", cleanupConfirmed: true, studioDamageAnswer: "no" },
+  photos: []
+});
+assert.equal(bareStudio.checks.equipment.answer, "not_applicable");
+assert.throws(() => validateReportDraft({
+  reservation: { ...studio, fields: { ...studio.fields, equipmentItemIds: ["equipment-1"] } },
   type: "studio",
   body: { actualTime: "10:00-12:00", participants: "2", cleanupConfirmed: true, studioDamageAnswer: "no" },
   photos: []

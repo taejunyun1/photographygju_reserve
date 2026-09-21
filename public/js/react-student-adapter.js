@@ -415,7 +415,7 @@ export function createStudentReactActions(dependencies) {
         }
         await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/submit`, {
           method: "POST",
-          body: { revision: Number(updatedDraft.revision || 0), submissionKey: `${id}:${Date.now()}` }
+          body: { revision: Number(updatedDraft.revision || 0), submissionKey: draft.submissionKey || `report:${id}:${draft.id}` }
         });
       }
       state.activeReportReservationId = "";
