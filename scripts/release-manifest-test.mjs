@@ -21,5 +21,7 @@ fs.mkdirSync(path.join(directory, "api"));
 fs.writeFileSync(path.join(directory, "api", "index.php"), "legacy host adapter");
 const workerManifest = buildReleaseManifest({ directory, commit: "abc123", target: "worker" });
 assert.equal("api/index.php" in workerManifest.assets, false, "worker manifest must exclude API paths handled by the Worker runtime");
+const pagesManifest = buildReleaseManifest({ directory, commit: "abc123", target: "pages" });
+assert.equal("api/index.php" in pagesManifest.assets, false, "Pages manifest must exclude legacy API adapter paths handled by Pages Functions");
 
 console.log("Release manifest checks passed.");
