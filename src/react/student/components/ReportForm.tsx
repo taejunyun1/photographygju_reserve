@@ -78,6 +78,26 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
   }, [reservation.id, reservation.reportDraft?.updatedAt, reservation.userId]);
 
   useEffect(() => {
+    const draftId = reservation.reportDraft?.id;
+    const serverPhotos = reservation.reportDraft?.photos || [];
+    if (!draftId || !serverPhotos.length || !actions.loadReportDraftPhoto) return;
+    let cancelled = false;
+    void Promise.all(serverPhotos.map(async (photo) => {
+      if (photo.dataUrl || !photo.id) return photo;
+      try {
+        const result = await actions.loadReportDraftPhoto?.(draftId, photo.id);
+        return result ? { ...photo, dataUrl: result.data } : photo;
+      } catch {
+        return photo;
+      }
+    })).then((photos) => {
+      if (cancelled) return;
+      setForm((current) => ({ ...current, photos: current.photos?.map((photo) => photos.find((candidate) => candidate.id === photo.id) || photo) || photos }));
+    });
+    return () => { cancelled = true; };
+  }, [actions, reservation.reportDraft?.id, reservation.reportDraft?.photos]);
+
+  useEffect(() => {
     const timer = globalThis.setTimeout(() => {
       setSaveState("saving_local");
       void saveReportDraftLocal(String(reservation.userId || "current"), reservation.id, form, Number(reservation.reportDraft?.revision || 0))
