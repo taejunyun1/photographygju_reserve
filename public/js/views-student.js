@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260910-reliability-r1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260910-reliability-r1";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260910-reliability-r1";
+import { state } from "./state.js?v=20260921-studio-report-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260921-studio-report-r1";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260921-studio-report-r1";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260910-reliability-r1";
+} from "./utils.js?v=20260921-studio-report-r1";
 import {
   actionRow,
   card,
@@ -52,7 +52,7 @@ import {
   tabIds,
   tabPanel,
   tabs
-} from "./ui.js?v=20260910-reliability-r1";
+} from "./ui.js?v=20260921-studio-report-r1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -1441,6 +1441,7 @@ function reportDeadlineLabel(reservation) {
 
 export function reportsView() {
   const query = normalizeSearchText(state.reportSearch).trim();
+  const deadlineHours = Math.max(1, Number(state.bootstrap.settings.studioReportDeadlineHours || 48));
   const reportSearchText = (reservation) => searchableText([
     reservation.id,
     reservation.status,
@@ -1464,11 +1465,10 @@ export function reportsView() {
       ${card({
         title: "스튜디오 보고서",
         body: `
-          <p class="muted">스튜디오 사용 후 48시간 이내 작성합니다. 날짜, 시간, 장소는 예약 데이터로 자동 연동됩니다.</p>
+          <p class="muted">스튜디오 사용 종료 후 ${deadlineHours}시간 이내 보고서를 제출해 주세요. 날짜, 시간, 장소는 예약 데이터로 자동 연동됩니다.</p>
           <div class="report-policy-panel">
             <strong>보고서/패널티 기준</strong>
-            <span>결과 사진은 구글 드라이브에 업로드한 뒤 링크를 보고서에 입력합니다. 미제출 및 이상 내용은 기존 자체 패널티 규칙을 유지합니다.</span>
-            ${state.bootstrap.settings.googleDriveUrl ? `<a class="button compact" href="${escapeHtml(state.bootstrap.settings.googleDriveUrl)}" target="_blank" rel="noopener noreferrer">${icon("external")}구글 드라이브 열기</a>` : ""}
+            <span>결과 사진이 있다면 공유 링크를 보고서에 입력할 수 있습니다. 미제출 및 이상 내용은 기존 자체 패널티 규칙을 유지합니다.</span>
           </div>
         `
       })}
@@ -1506,7 +1506,7 @@ export function studioReportForm(reservation) {
       <div class="field"><label>실제 사용 시간</label><input class="input" name="actualTime" value="${escapeHtml((f.timeSlots || []).join(", "))}" required /></div>
       <div class="field"><label>실제 사용 인원</label><input class="input" name="participants" value="${escapeHtml(f.participants || state.user.name)}" required /></div>
       <div class="field"><label>사용 장비</label><textarea class="textarea" name="usedEquipment" placeholder="사용한 조명/스탠드/배경지 등"></textarea></div>
-      <div class="field"><label>결과 사진 링크</label><input class="input" name="resultPhotoUrl" type="url" placeholder="구글 드라이브 결과 사진 URL" /></div>
+      <div class="field"><label>결과 사진 링크 (선택)</label><input class="input" name="resultPhotoUrl" type="url" placeholder="담당자가 열람할 수 있는 결과 사진 URL" /><span class="muted">사진을 공유하는 경우 담당자가 열람할 수 있는 링크를 입력해 주세요.</span></div>
       <label class="field consent"><span><input type="checkbox" name="cleanupConfirmed" value="true" required /> 정리정돈을 완료했습니다.</span></label>
       <label class="field consent"><span><input type="checkbox" name="damageFound" value="true" /> 파손 또는 이상이 있습니다.</span></label>
       <div class="field"><label>파손/이상 내용</label><textarea class="textarea" name="damageDescription" placeholder="없으면 비워두세요."></textarea></div>

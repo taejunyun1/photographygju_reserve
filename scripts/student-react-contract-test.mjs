@@ -512,7 +512,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
 assert(markup.includes("실제 사용 시간"), "an eligible active report ID must open its form");
 assert(markup.includes("보고서 제출 기한"), "reports must explain the configured submission deadline");
 assert(markup.includes("D-1"), "report cards must expose the server-computed deadline state");
-assert(markup.includes(settings.googleDriveUrl), "reports must expose the configured Google Drive link");
+assert(!markup.includes(settings.googleDriveUrl), "reports must not expose the print-room Google Drive link");
 button("닫기").onClick();
 assert(recorded.calls.some(([name, value]) => name === "openReport" && value === null), "report close must clear the controlled ID with null");
 assert(fs.readFileSync("src/react/student/screens/ReportsScreen.tsx", "utf8").includes("key={active.id}"), "report form must be keyed by reservation ID so its draft resets");
@@ -527,9 +527,9 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   }),
   actions: actionRecorder().actions
 }));
-assert(markup.includes("보고서 작성을 시작할 수 없습니다."), "reports must explain how to recover when Drive is missing");
-assert(!markup.includes("실제 사용 시간"), "reports must not open the submission form without a Drive destination");
-assert.equal(button("작성")?.disabled, true, "report compose actions must be disabled while Drive is missing");
+assert(markup.includes("실제 사용 시간"), "eligible report must open without print Drive configuration");
+assert(!markup.includes("보고서 작성을 시작할 수 없습니다."), "reports must not block composition when Drive is missing");
+assert.equal(Boolean(button("작성")?.disabled), false, "report compose actions must stay enabled while Drive is missing");
 
 // Notice detail is controlled by activeNoticeId and closes through openNotice(null).
 student.resetCaptures();

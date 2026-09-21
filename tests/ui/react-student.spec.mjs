@@ -119,8 +119,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -140,8 +140,8 @@ test("Student React reservation cards align actions and summarize the schedule o
   test.skip(!viewport || viewport.width > 430, "phone card contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "mobile-card-fixture",
@@ -286,10 +286,10 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "reports";
-    state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
+    state.bootstrap.settings.googleDriveUrl = "";
     state.myReservations = [{
       id: "report-error-fixture",
       type: "studio",
@@ -314,6 +314,48 @@ test("Student React report submission keeps the form open and announces server e
   await expect(submit).toBeEnabled();
 });
 
+test("Student React can submit an eligible report without a Drive setting", async ({ page }) => {
+  await loginReactStudent(page);
+  const reservation = {
+    id: "report-drive-optional-fixture",
+    type: "studio",
+    status: "auto_confirmed",
+    fields: {
+      reservedDate: "2026-07-10",
+      reportStatus: "required",
+      participants: "2명",
+      timeSlots: ["10:30-12:00"],
+      studioSpaces: ["Studio A Front"]
+    }
+  };
+  await page.route("**/api/reports/studio", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, data: { id: "report-drive-optional", status: "submitted", fields: { resultPhotoUrl: "" } } })
+    });
+  });
+  await page.route("**/api/reservations/my", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: [{ ...reservation, fields: { ...reservation.fields, reportStatus: "submitted" } }] }) });
+  });
+  await page.evaluate(async (fixture) => {
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
+    state.view = "reports";
+    state.bootstrap.settings.googleDriveUrl = "";
+    state.myReservations = [fixture];
+    state.activeReportReservationId = fixture.id;
+    render();
+  }, reservation);
+
+  await expect(page.getByRole("heading", { name: "스튜디오 보고서" })).toBeVisible();
+  await expect(page.getByText("보고서 작성을 시작할 수 없습니다.")).toHaveCount(0);
+  await page.getByLabel("정리정돈을 완료했습니다.").check();
+  await page.getByRole("button", { name: "보고서 제출" }).click();
+  await expect(page.getByRole("heading", { name: "제출 완료" })).toBeVisible();
+  await expect(page.getByText("제출 완료된 보고서가 없습니다.")).toHaveCount(0);
+});
+
 test("Student React lecture actions recover and announce request errors", async ({ page }) => {
   await loginReactStudent(page);
   await page.route("**/api/lectures/lecture-error-fixture/apply", async (route) => {
@@ -324,8 +366,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -353,8 +395,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-      const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+      const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+      const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
       state.view = "reserve";
       state.reservationType = "";
       state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
@@ -372,8 +414,8 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -436,8 +478,8 @@ test("Student React mobile equipment selection uses an expandable dock above nav
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -506,8 +548,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260910-reliability-r1");
-    const { render } = await import("/js/renderer.js?v=20260910-reliability-r1");
+    const { state } = await import("/js/state.js?v=20260921-studio-report-r1");
+    const { render } = await import("/js/renderer.js?v=20260921-studio-report-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

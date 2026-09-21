@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260910-reliability-r1";
-import { loadAdminData } from "../data.js?v=20260910-reliability-r1";
-import { render } from "../renderer.js?v=20260910-reliability-r1";
-import { normalizeUnicodeText } from "../utils.js?v=20260910-reliability-r1";
-import { resetAdminPage } from "./shared.js?v=20260910-reliability-r1";
+import { state } from "../state.js?v=20260921-studio-report-r1";
+import { loadAdminData } from "../data.js?v=20260921-studio-report-r1";
+import { render } from "../renderer.js?v=20260921-studio-report-r1";
+import { normalizeUnicodeText } from "../utils.js?v=20260921-studio-report-r1";
+import { resetAdminPage } from "./shared.js?v=20260921-studio-report-r1";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {

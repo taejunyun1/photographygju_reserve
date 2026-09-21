@@ -1,1 +1,1 @@
-import "./js/main.js?v=20260910-reliability-r1";
+import "./js/main.js?v=20260921-studio-report-r1";

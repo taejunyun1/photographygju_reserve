@@ -1,16 +1,16 @@
-import { state } from "../state.js?v=20260910-reliability-r1";
-import { api } from "../api.js?v=20260910-reliability-r1";
-import { loadBootstrap, loadMyReservations } from "../data.js?v=20260910-reliability-r1";
+import { state } from "../state.js?v=20260921-studio-report-r1";
+import { api } from "../api.js?v=20260921-studio-report-r1";
+import { loadBootstrap, loadMyReservations } from "../data.js?v=20260921-studio-report-r1";
 import {
   changePassword,
   deleteAccount,
   login,
   signup,
   submitReservation
-} from "../actions.js?v=20260910-reliability-r1";
-import { toast } from "../renderer.js?v=20260910-reliability-r1";
-import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260910-reliability-r1";
-import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260910-reliability-r1";
+} from "../actions.js?v=20260921-studio-report-r1";
+import { toast } from "../renderer.js?v=20260921-studio-report-r1";
+import { equipmentCategories, formData, parseCsv } from "../utils.js?v=20260921-studio-report-r1";
+import { refreshAdminDataPreservingScroll } from "./shared.js?v=20260921-studio-report-r1";
 
 export function setupFormEventHandlers() {
   document.addEventListener("change", async (event) => {

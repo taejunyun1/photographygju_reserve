@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260910-reliability-r1";
-import { state } from "./state.js?v=20260910-reliability-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260921-studio-report-r1";
+import { state } from "./state.js?v=20260921-studio-report-r1";
 import {
   planAdminNotifications,
   planReservationNotifications,
