@@ -11,7 +11,7 @@ assert.equal(pkg.scripts["pages:build"], "npm run build");
 assert.equal(pkg.scripts["pages:preview"], "npm run pages:build && wrangler pages dev dist");
 assert.equal(pkg.scripts["pages:deploy"], "npm run pages:build && wrangler pages deploy dist --project-name gju-reserve");
 assert.equal(pkg.scripts["pages:check"], "node scripts/check-pages-readiness.mjs");
-assert.equal(pkg.scripts["deploy"], "wrangler deploy --config wrangler.worker.jsonc");
+assert.equal(pkg.scripts["deploy"], "npm run build:worker && wrangler deploy --config wrangler.worker.jsonc");
 assert.equal(pkg.scripts["preview"], "wrangler dev --config wrangler.worker.jsonc");
 assert(pagesConfig.includes('"name": "gju-reserve"'), "root wrangler.jsonc must target the Pages project");
 assert(pagesConfig.includes('"pages_build_output_dir": "./dist"'), "root wrangler.jsonc must define Pages output directory");

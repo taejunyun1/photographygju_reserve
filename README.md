@@ -77,7 +77,7 @@ Cloudflare Worker
 The connected Cloudflare Worker deploys with:
 
 ```text
-Deploy command: npx wrangler deploy --config wrangler.worker.jsonc
+Deploy command: npm run deploy
 Assets directory: public
 ```
 
