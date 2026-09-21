@@ -1258,11 +1258,13 @@ export async function handleApiRequest(ctx) {
             const detailed = withReservationDetails(db, item);
             const requirement = getReportRequirement(db, detailed, new Date());
             const draft = reportDraftForReservation(db, item.id, user.id);
+            const report = db.reports.find((candidate) => candidate.reservationId === item.id && candidate.userId === user.id && candidate.type === item.type);
             return {
               ...detailed,
               ...(item.type === "studio" || item.type === "equipment" ? {
                 reportRequirement: { ...requirement, draftId: draft?.id || null },
-                reportDraft: publicReportDraft(db, draft)
+                reportDraft: publicReportDraft(db, draft),
+                report: report ? reportSubmissionResult(db, report) : null
               } : {})
             };
           });
@@ -1543,6 +1545,13 @@ export async function handleApiRequest(ctx) {
       }
 
       const reportPhotoContentMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)\/photos\/([^/]+)\/content$/);
+      if (method === "GET" && reportPhotoContentMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportPhotoContentMatch[1], user.id);
+        const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoContentMatch[2] && item.draftId === draft?.id && item.userId === user.id && item.status !== "deleted" && item.data);
+        if (!draft || !photo) throw Object.assign(new Error("사진을 찾을 수 없습니다."), { status: 404 });
+        return ok({ id: photo.id, mimeType: photo.mimeType, data: `data:${photo.mimeType};base64,${photo.data}` });
+      }
       if (method === "POST" && reportPhotoContentMatch) {
         const user = requireApprovedStudent(authorization, db);
         const draft = reportDraftFor(db, reportPhotoContentMatch[1], user.id);
@@ -1575,6 +1584,13 @@ export async function handleApiRequest(ctx) {
       }
 
       const reportPhotoReadMatch = pathname.match(/^\/api\/reports\/([^/]+)\/photos\/([^/]+)\/content$/);
+      const reportDetailMatch = pathname.match(/^\/api\/reports\/([^/]+)$/);
+      if (method === "GET" && reportDetailMatch) {
+        const user = requireUser(authorization, db);
+        const report = db.reports.find((item) => item.id === reportDetailMatch[1]);
+        if (!report || (user.role !== "admin" && report.userId !== user.id)) throw Object.assign(new Error("보고서를 찾을 수 없습니다."), { status: 404 });
+        return ok(reportSubmissionResult(db, report));
+      }
       if (method === "GET" && reportPhotoReadMatch) {
         const user = requireUser(authorization, db);
         const report = db.reports.find((item) => item.id === reportPhotoReadMatch[1]);

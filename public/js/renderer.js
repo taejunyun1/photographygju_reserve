@@ -635,6 +635,9 @@ const reactAdminActions = {
       { invalidateViews: ["reports", "settings", "dashboard"] }
     );
   },
+  async loadReportPhoto(reportId, photoId) {
+    return api(`/api/reports/${encodeURIComponent(reportId)}/photos/${encodeURIComponent(photoId)}/content`);
+  },
   async deleteAllReports(collectionTotal) {
     await runAdminFullDelete(
       "reports",

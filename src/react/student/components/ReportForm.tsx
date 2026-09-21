@@ -4,6 +4,7 @@ import { GjuButton, GjuCard } from "../../design-system";
 import { ReportDamageSection } from "./ReportDamageSection";
 import { ReportPhotoPicker } from "./ReportPhotoPicker";
 import type { StudentActions, StudentReportPayload, StudentReportPhoto, StudentReservation } from "../types";
+import { dataUrlToFile, loadReportDraftLocal, saveReportDraftLocal } from "../reportDraftStorage";
 
 const EMPTY_REPORT: StudentReportPayload = {
   actualTime: "",
@@ -35,7 +36,10 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
     photos: (reservation.reportDraft?.photos || []).map((photo) => ({ ...photo, status: photo.status || "uploaded" }))
   });
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving_local" | "local_saved" | "saving_server" | "server_saved" | "failed">("idle");
   const [error, setError] = useState("");
+  const [restoredLocal, setRestoredLocal] = useState(false);
 
   function setField<Key extends keyof StudentReportPayload>(key: Key, value: StudentReportPayload[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -52,6 +56,37 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
     heading.focus({ preventScroll: true });
   }, [reservation.id]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const userId = String(reservation.userId || "current");
+    void (async () => {
+      const local = await loadReportDraftLocal(userId, reservation.id).catch(() => null);
+      if (cancelled || !local) return;
+      const serverUpdatedAt = Date.parse(String(reservation.reportDraft?.updatedAt || "")) || 0;
+      const localUpdatedAt = Date.parse(local.updatedAt) || 0;
+      if (localUpdatedAt <= serverUpdatedAt) return;
+      const photos = await Promise.all((local.photos || []).map(async (photo) => ({
+        ...photo,
+        file: photo.dataUrl ? await dataUrlToFile(photo.dataUrl, `${photo.id || "report-photo"}.jpg`) : undefined,
+        status: photo.status || "local"
+      })));
+      if (cancelled) return;
+      setForm((current) => ({ ...current, ...local.fields, photos }));
+      setRestoredLocal(true);
+    })();
+    return () => { cancelled = true; };
+  }, [reservation.id, reservation.reportDraft?.updatedAt, reservation.userId]);
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => {
+      setSaveState("saving_local");
+      void saveReportDraftLocal(String(reservation.userId || "current"), reservation.id, form, Number(reservation.reportDraft?.revision || 0))
+        .then(() => setSaveState("local_saved"))
+        .catch(() => setSaveState("failed"));
+    }, 800);
+    return () => globalThis.clearTimeout(timer);
+  }, [form, reservation.id, reservation.reportDraft?.revision, reservation.userId]);
+
   const allPhotos = currentPhotos(form);
   const hasRentalEquipment = isEquipment || Boolean(
     reservation.fields.requiredEquipment ||
@@ -66,6 +101,22 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
       ...(hasRentalEquipment ? [{ kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }] : [])
     ];
 
+  async function saveDraft() {
+    if (!actions.saveReportDraft || saving) return;
+    setSaving(true);
+    setError("");
+    setSaveState("saving_server");
+    try {
+      await actions.saveReportDraft(reservation.id, form);
+      setSaveState("server_saved");
+    } catch (caught) {
+      setSaveState("failed");
+      setError(caught instanceof Error ? caught.message : "임시저장에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div ref={formRef}>
       <GjuCard title={`${isEquipment ? "기자재" : "스튜디오"} 사용 보고서`} className="student-react-report-form-card">
@@ -73,6 +124,10 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
           <strong>{reservation.fields.reservedDate || "사용일 미정"}</strong>
           <span>{isEquipment ? reservation.equipmentItems?.map((item) => [item.code, item.name].filter(Boolean).join(" · ")).join(", ") : (reservation.fields.studioSpaces || [reservation.fields.studioSpace]).filter(Boolean).join(", ")}</span>
         </div>
+        <p className="muted" role="status">
+          {restoredLocal ? "기기에서 저장한 내용을 복구했습니다. " : ""}
+          {saveState === "saving_local" ? "기기에 저장 중…" : saveState === "local_saved" ? "기기에 저장됨" : saveState === "saving_server" ? "서버에 저장 중…" : saveState === "server_saved" ? "서버에 저장됨" : saveState === "failed" ? "저장 실패 · 다시 시도하세요" : "입력 내용은 잠시 후 기기에 자동 저장됩니다."}
+        </p>
         <form
           className="report-form"
           onSubmit={async (event) => {
@@ -110,6 +165,7 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
           <div className="field"><label htmlFor="report-notes">비고</label><textarea id="report-notes" className="textarea" maxLength={2000} value={form.notes || ""} onChange={(event) => setField("notes", event.target.value)} /></div>
           {error ? <p className="student-react-submit-error" role="alert">{error}</p> : null}
           <div className="row-actions">
+            {actions.saveReportDraft ? <GjuButton type="button" variant="outline" icon="fileText" loading={saving} disabled={submitting} onClick={() => void saveDraft()}>임시저장</GjuButton> : null}
             <GjuButton type="submit" icon="check" loading={submitting}>보고서 제출</GjuButton>
             <GjuButton type="button" variant="ghost" disabled={submitting} onClick={() => actions.openReport(null)}>닫기</GjuButton>
           </div>

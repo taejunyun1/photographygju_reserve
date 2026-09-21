@@ -72,7 +72,7 @@ function reportPhoto(value: unknown) {
   return <a href={url} target="_blank" rel="noreferrer">{url}</a>;
 }
 
-function reportDetails(report: AdminReportRecord) {
+function reportDetails(report: AdminReportRecord, actions: ReactAdminActions) {
   if (report.isMissing) {
     return <p className="muted">학생 보고서 제출을 기다리고 있습니다.</p>;
   }
@@ -97,7 +97,7 @@ function reportDetails(report: AdminReportRecord) {
       {checks.equipment ? property("대여 기자재 점검", checkLabel(checks.equipment.answer)) : null}
       {checks.equipment?.answer === "yes" ? property("대여 기자재 파손 상세", checks.equipment.description || "내용 없음") : null}
       {property("비고", String(reportField(report, "notes") || "-"))}
-      {property("첨부 사진", `${Number(report.photos?.length || report.photoIds?.length || 0)}장`)}
+      {property("첨부 사진", <span className="row-actions"><span>{Number(report.photos?.length || report.photoIds?.length || 0)}장</span>{(report.photos || []).map((photo, index) => photo.id ? <button key={photo.id} className="button compact" type="button" onClick={async () => { try { const result = await actions.loadReportPhoto(report.id, photo.id || ""); const link = document.createElement("a"); link.href = result.data; link.target = "_blank"; link.rel = "noreferrer"; link.click(); } catch (error) { actions.notify(error instanceof Error ? error.message : "사진을 불러오지 못했습니다.", "error"); } }}>사진 {index + 1}</button> : null)}</span>)}
       {report.drive?.folderUrl ? property("Drive", <a href={report.drive.folderUrl} target="_blank" rel="noreferrer">폴더 열기</a>) : property("Drive 저장", report.drive?.status === "synced" ? "완료" : report.drive?.status === "failed" ? "실패" : "대기")}
     </dl>
   );
@@ -252,7 +252,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                       {reportReviewAction(report, actions)} {reportDriveAction(report, actions)}
                     </td>
                     <td>{formatDateTime(report.submittedAt || report.createdAt)}</td>
-                    <td>{reportDetails(report)}</td>
+                    <td>{reportDetails(report, actions)}</td>
                   </tr>
                 ))
               ) : (
@@ -283,7 +283,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                 {property("예약", report.reservationId || report.reservation?.id || "-")}
                 {property("제출일", formatDateTime(report.submittedAt || report.createdAt))}
               </dl>
-              {reportDetails(report)}
+              {reportDetails(report, actions)}
             </article>
           )) : <GjuEmptyState title="보고서가 없습니다." message="검색어와 학기 필터를 확인하세요." />}
         </div>

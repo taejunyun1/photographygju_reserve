@@ -1295,6 +1295,8 @@
 .report-photo-thumb, .report-photo-add { position: relative; min-height: 92px; margin: 0; border: 1px dashed var(--gju-border, #d8e0ed); border-radius: 12px; overflow: hidden; background: var(--gju-surface-muted, #f4f7fb); }
 .report-photo-thumb img { display: block; width: 100%; height: 92px; object-fit: cover; }
 .report-photo-thumb button { position: absolute; right: 4px; bottom: 4px; padding: 3px 6px; border: 0; border-radius: 6px; color: white; background: rgb(0 0 0 / 70%); font-size: 11px; }
+.report-photo-lightbox { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: rgb(15 23 42 / 78%); }
+.report-photo-lightbox img { max-width: min(92vw, 900px); max-height: 88vh; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 60px rgb(0 0 0 / 35%); }
 .report-photo-add { display: grid; place-items: center; padding: 8px; color: var(--gju-blue, #1756a9); text-align: center; cursor: pointer; }
 .report-photo-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 

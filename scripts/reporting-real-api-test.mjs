@@ -58,6 +58,11 @@ const submitted = await api("POST", `/api/reports/drafts/${draft.id}/submit`, { 
 assert.equal(submitted.status, 200);
 const retry = await api("POST", `/api/reports/drafts/${draft.id}/submit`, { revision: patched.body.data.revision, submissionKey: "qa-submit" });
 assert.equal(retry.status, 200, "동일 제출 키 재시도는 기존 결과를 반환해야 함");
+const reportDetail = await api("GET", `/api/reports/${submitted.body.data.id}`);
+assert.equal(reportDetail.status, 200, "학생은 제출 후 보고서 상세를 다시 조회할 수 있어야 함");
+assert.equal(reportDetail.body.data.photos.length, 5, "제출 상세에 첨부 사진 메타데이터가 포함되어야 함");
+const photoContent = await api("GET", `/api/reports/${submitted.body.data.id}/photos/${firstPhoto.id}/content`);
+assert.equal(photoContent.status, 200, "학생은 제출 사진을 다시 열람할 수 있어야 함");
 const deleted = await api("DELETE", `/api/reports/drafts/${draft.id}/photos/${firstPhoto.id}`);
 assert.equal(deleted.status, 409, "제출 후 사진 삭제는 차단해야 함");
 

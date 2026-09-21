@@ -127,7 +127,19 @@ export type StudentReservation = {
   };
   reportRequirement?: StudentReportRequirement;
   reportDraft?: StudentReportDraft | null;
+  report?: StudentReportSummary | null;
   createdAt?: string;
+};
+
+export type StudentReportSummary = {
+  id: string;
+  type?: "studio" | "equipment" | string;
+  status?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  fields?: Record<string, unknown>;
+  photos?: readonly StudentReportPhoto[];
+  drive?: { status?: string };
 };
 
 export type StudentReportRequirement = {
@@ -163,6 +175,8 @@ export type StudentReportDraft = {
   fields?: Record<string, unknown>;
   photos?: readonly StudentReportPhoto[];
   updatedAt?: string;
+  submittedAt?: string | null;
+  submissionKey?: string;
 };
 
 export type StudentFavoriteEquipmentGroup = {
@@ -461,6 +475,9 @@ export type StudentActions = {
   submitReservation(draft: ReservationDraft): Promise<void> | void;
   cancelReservation(id: string): Promise<void> | void;
   openReport(id: string | null): Promise<void> | void;
+  saveReportDraft?(id: string, payload: StudentReportPayload): Promise<StudentReportDraft> | void;
+  loadReportDraftPhoto?(draftId: string, photoId: string): Promise<{ data: string; mimeType: string }>;
+  loadReportPhoto?(reportId: string, photoId: string): Promise<{ data: string; mimeType: string }>;
   submitReport(id: string, payload: StudentReportPayload): Promise<void> | void;
   applyLecture(id: string): Promise<void> | void;
   cancelLecture(lectureId: string): Promise<void> | void;

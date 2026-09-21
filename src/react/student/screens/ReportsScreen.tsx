@@ -2,6 +2,7 @@ import React from "react";
 
 import { GjuButton, GjuCard, GjuEmptyState, GjuStatusBadge } from "../../design-system";
 import { ReportForm } from "../components/ReportForm";
+import { ReportDetail } from "../components/ReportDetail";
 import { ScreenHeader } from "../components/StudentPrimitives";
 import { isReportDue, reportDeadlineLabel } from "../reporting";
 import type { StudentActions, StudentState } from "../types";
@@ -9,8 +10,9 @@ import type { StudentActions, StudentState } from "../types";
 export { isReportDue } from "../reporting";
 
 export function ReportsScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
+  const [selectedReportId, setSelectedReportId] = React.useState("");
   const pending = state.myReservations.filter((reservation) => isReportDue(reservation, state.today));
-  const submitted = state.myReservations.filter((item) => ["studio", "equipment"].includes(item.type) && item.fields.reportStatus === "submitted");
+  const submitted = state.myReservations.filter((item) => ["studio", "equipment"].includes(item.type) && (item.report || item.fields.reportStatus === "submitted"));
   const deadlineHours = Math.max(1, Number(state.bootstrap.settings.studioReportDeadlineHours || 48));
   const active = state.activeReportReservationId
     ? pending.find((item) => item.id === state.activeReportReservationId)
@@ -30,15 +32,22 @@ export function ReportsScreen({ state, actions }: { state: StudentState; actions
               <div className="chips"><strong>{reservation.fields.reservedDate || "사용일 미정"}</strong><GjuStatusBadge tone="amber">{reportDeadlineLabel(reservation, deadlineHours, state.today)}</GjuStatusBadge></div>
               <p className="muted">{reservation.type === "equipment" ? reservation.equipmentItems?.map((item) => [item.code, item.name].filter(Boolean).join(" · ")).join(", ") : `${(reservation.fields.timeSlots || []).join(", ")} · ${(reservation.fields.studioSpaces || [reservation.fields.studioSpace]).filter(Boolean).join(", ")}`}</p>
             </div>
-            <GjuButton icon="fileText" onClick={() => actions.openReport(reservation.id)}>작성</GjuButton>
+            <GjuButton icon="fileText" onClick={() => actions.openReport(reservation.id)}>{reservation.reportDraft?.updatedAt ? "이어서 작성" : "작성"}</GjuButton>
           </div>
         )) : <GjuEmptyState title="제출할 보고서가 없습니다." message="사용 종료 또는 기자재 반납 후 보고서 작성 버튼이 표시됩니다." />}
       </GjuCard>
       <GjuCard title="제출 완료">
         {submitted.length ? submitted.map((reservation) => (
-          <div key={reservation.id} className="student-react-report-row"><span>{reservation.fields.reservedDate || "사용일 미정"}</span><GjuStatusBadge tone="green">제출완료</GjuStatusBadge></div>
+          <div key={reservation.id} className="student-react-report-row">
+            <span>{reservation.fields.reservedDate || "사용일 미정"}</span>
+            <span className="row-actions"><GjuStatusBadge tone={reservation.report?.status === "reviewed" ? "green" : "blue"}>{reservation.report?.status === "reviewed" ? "확인완료" : "제출완료"}</GjuStatusBadge>{reservation.report ? <GjuButton variant="outline" icon="fileText" onClick={() => setSelectedReportId(reservation.report?.id || "")}>내용 보기</GjuButton> : null}</span>
+          </div>
         )) : <p className="muted">제출 완료된 보고서가 없습니다.</p>}
       </GjuCard>
+      {selectedReportId ? (() => {
+        const reservation = submitted.find((item) => item.report?.id === selectedReportId);
+        return reservation?.report ? <ReportDetail reservation={reservation} report={reservation.report} actions={actions} onClose={() => setSelectedReportId("")} /> : null;
+      })() : null}
     </section>
   );
 }

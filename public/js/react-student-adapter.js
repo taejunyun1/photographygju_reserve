@@ -266,6 +266,39 @@ export function createStudentReactActions(dependencies) {
     }
   }
 
+  async function saveReportDraft(id, payload) {
+    const reservation = asArray(state.myReservations).find((item) => item.id === id);
+    if (!reservation || !["studio", "equipment"].includes(reservation.type)) throw new Error("보고서 예약을 찾을 수 없습니다.");
+    const draft = await api("/api/reports/drafts", { method: "POST", body: { reservationId: id, type: reservation.type } });
+    const fields = { ...(payload || {}) };
+    delete fields.photos;
+    let updatedDraft = draft;
+    if (Object.keys(fields).length) {
+      updatedDraft = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}`, {
+        method: "PATCH",
+        body: { revision: Number(draft.revision || 0), fields }
+      });
+    }
+    for (const photo of asArray(payload?.photos)) {
+      if (!photo?.file || ["uploaded", "deleted"].includes(photo.status)) continue;
+      const reserved = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos`, {
+        method: "POST",
+        body: {
+          clientPhotoId: photo.clientPhotoId || photo.id,
+          category: photo.category || "usage",
+          mimeType: photo.mimeType || photo.file.type,
+          size: Number(photo.size || photo.file.size)
+        }
+      });
+      if (typeof uploadBinary !== "function") throw new Error("사진 업로드 기능을 초기화하지 못했습니다.");
+      await uploadBinary(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos/${encodeURIComponent(reserved.id)}/content`, photo.file, { contentType: photo.mimeType || photo.file.type });
+    }
+    const reloaded = await api("/api/reports/drafts", { method: "POST", body: { reservationId: id, type: reservation.type } });
+    state.myReservations = asArray(state.myReservations).map((item) => item.id === id ? { ...item, reportDraft: reloaded } : item);
+    render();
+    return reloaded;
+  }
+
   return {
     async setView(view) {
       if (!STUDENT_VIEWS.has(view)) return;
@@ -381,6 +414,13 @@ export function createStudentReactActions(dependencies) {
       state.activeReportReservationId = id || "";
       render();
     },
+    saveReportDraft,
+    async loadReportDraftPhoto(draftId, photoId) {
+      return api(`/api/reports/drafts/${encodeURIComponent(draftId)}/photos/${encodeURIComponent(photoId)}/content`);
+    },
+    async loadReportPhoto(reportId, photoId) {
+      return api(`/api/reports/${encodeURIComponent(reportId)}/photos/${encodeURIComponent(photoId)}/content`);
+    },
     async submitReport(id, payload) {
       const reservation = asArray(state.myReservations).find((item) => item.id === id);
       const isNewReportPayload = Boolean(
@@ -392,30 +432,10 @@ export function createStudentReactActions(dependencies) {
       if (!isNewReportPayload && reservation?.type !== "equipment") {
         await api("/api/reports/studio", { method: "POST", body: { reservationId: id, ...payload } });
       } else {
-        const draft = await api("/api/reports/drafts", { method: "POST", body: { reservationId: id, type: reservation?.type } });
-        const fields = { ...(payload || {}) };
-        delete fields.photos;
-        const updatedDraft = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}`, {
-          method: "PATCH",
-          body: { revision: Number(draft.revision || 0), fields }
-        });
-        for (const photo of asArray(payload?.photos)) {
-          if (!photo?.file) continue;
-          const reserved = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos`, {
-            method: "POST",
-            body: {
-              clientPhotoId: photo.clientPhotoId || photo.id,
-              category: photo.category || "usage",
-              mimeType: photo.mimeType || photo.file.type,
-              size: Number(photo.size || photo.file.size)
-            }
-          });
-          if (typeof uploadBinary !== "function") throw new Error("사진 업로드 기능을 초기화하지 못했습니다.");
-          await uploadBinary(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos/${encodeURIComponent(reserved.id)}/content`, photo.file, { contentType: photo.mimeType || photo.file.type });
-        }
-        await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/submit`, {
+        const updatedDraft = await saveReportDraft(id, payload);
+        await api(`/api/reports/drafts/${encodeURIComponent(updatedDraft.id)}/submit`, {
           method: "POST",
-          body: { revision: Number(updatedDraft.revision || 0), submissionKey: draft.submissionKey || `report:${id}:${draft.id}` }
+          body: { revision: Number(updatedDraft.revision || 0), submissionKey: updatedDraft.submissionKey || `report:${id}:${updatedDraft.id}` }
         });
       }
       state.activeReportReservationId = "";

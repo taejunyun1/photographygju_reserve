@@ -770,6 +770,7 @@ export type ReactAdminActions = {
   deleteAllReports(collectionTotal: number): Promise<void>;
   reviewReport(reportId: string): Promise<void>;
   retryReportDrive(reportId: string): Promise<void>;
+  loadReportPhoto(reportId: string, photoId: string): Promise<{ data: string; mimeType: string }>;
   saveLecture(lectureId: string | null, input: AdminLectureInput): Promise<void>;
   deleteLecture(lectureId: string, title?: string): Promise<void>;
   bulkDeleteLectures(filters: Partial<AdminViewFilterMap["lectures"]>): Promise<void>;
