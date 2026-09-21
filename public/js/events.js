@@ -1,10 +1,10 @@
-import { captureEquipmentInteractionScroll, setupSharedEventHandlers } from "./events/shared.js?v=20260921-studio-report-r1";
-import { setupAdminRefreshHandlers } from "./events/admin-refresh.js?v=20260921-studio-report-r1";
-import { setupAdminFlowClickHandlers } from "./events/admin-flow.js?v=20260921-studio-report-r1";
-import { setupFormEventHandlers } from "./events/forms.js?v=20260921-studio-report-r1";
-import { setupReservationInputHandlers } from "./events/reservation-inputs.js?v=20260921-studio-report-r1";
-import { setupSearchEventHandlers } from "./events/search.js?v=20260921-studio-report-r1";
-import { setupStudentFlowClickHandlers } from "./events/student-flow.js?v=20260921-studio-report-r1";
+import { captureEquipmentInteractionScroll, setupSharedEventHandlers } from "./events/shared.js?v=20260921-report-drive-r1";
+import { setupAdminRefreshHandlers } from "./events/admin-refresh.js?v=20260921-report-drive-r1";
+import { setupAdminFlowClickHandlers } from "./events/admin-flow.js?v=20260921-report-drive-r1";
+import { setupFormEventHandlers } from "./events/forms.js?v=20260921-report-drive-r1";
+import { setupReservationInputHandlers } from "./events/reservation-inputs.js?v=20260921-report-drive-r1";
+import { setupSearchEventHandlers } from "./events/search.js?v=20260921-report-drive-r1";
+import { setupStudentFlowClickHandlers } from "./events/student-flow.js?v=20260921-report-drive-r1";
 
 export function setupEventHandlers() {
   document.addEventListener("pointerdown", captureEquipmentInteractionScroll, { capture: true, passive: true });

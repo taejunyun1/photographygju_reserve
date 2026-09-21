@@ -28,7 +28,9 @@ function listParams(searchParams, defaultPageSize = 100) {
     sort: String(searchParams.get("sort") || "").trim(),
     direction: ["asc", "desc"].includes(String(searchParams.get("direction") || "").trim().toLowerCase())
       ? String(searchParams.get("direction")).trim().toLowerCase()
-      : ""
+      : "",
+    driveStatus: String(searchParams.get("driveStatus") || "").trim(),
+    damage: String(searchParams.get("damage") || "").trim()
   };
 }
 
@@ -162,7 +164,7 @@ const USER_SORT_FIELDS = {
   createdAt: (item) => item.createdAt
 };
 
-export function createAdminListHelpers({ withReservationDetails, reportWithDetails, publicUser, lectureDetail, isStudioReportDue = () => false }) {
+export function createAdminListHelpers({ withReservationDetails, reportWithDetails, publicUser, lectureDetail, isStudioReportDue = () => false, isReportDue = isStudioReportDue }) {
   function hasListQuery(searchParams) {
     return Boolean(searchParams && [...searchParams.keys()].length);
   }
@@ -211,12 +213,13 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
 
   function missingReportRows(db) {
     return db.reservations
-      .filter((reservation) => isStudioReportDue(db, reservation))
+      .filter((reservation) => isReportDue(db, reservation))
+      .filter((reservation) => reservation.type === "studio" || Number(reservation.fields?.reportPolicyVersion || 0) >= 2)
       .map((reservation) => {
         const detailedReservation = withReservationDetails(db, reservation);
         return {
           id: `missing:${reservation.id}`,
-          type: "studio",
+          type: reservation.type,
           reservationId: reservation.id,
           userId: reservation.userId,
           status: "missing",
@@ -229,13 +232,20 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
   }
 
   function filterReports(db, params, { includeMissing = true } = {}) {
-    const persisted = db.reports.map((item) => reportWithDetails(db, item));
+    const persisted = db.reports.map((item) => ({
+      ...reportWithDetails(db, item),
+      photos: (db.reportAttachments || [])
+        .filter((photo) => photo.reportId === item.id && photo.status !== "deleted")
+        .map(({ data, ...photo }) => photo)
+    }));
     const source = includeMissing ? [...persisted, ...missingReportRows(db)] : persisted;
     const semesterOptions = academicSemesterOptionsFromDates(source.map(reportDate));
     const matchesReport = (item) => (
       (!params.semester || params.semester === "all" || dateMatchesAcademicSemester(reportDate(item), params.semester)) &&
       (!params.type || item.type === params.type) &&
       (!params.status || reportStatus(item) === params.status) &&
+      (!params.driveStatus || String(item.drive?.status || "pending") === params.driveStatus) &&
+      (!params.damage || (params.damage === "yes" ? Boolean(item.fields?.damageFound || item.fields?.checks?.studio?.answer === "yes" || item.fields?.checks?.equipment?.answer === "yes") : !Boolean(item.fields?.damageFound || item.fields?.checks?.studio?.answer === "yes" || item.fields?.checks?.equipment?.answer === "yes"))) &&
       dateInRange(reportDate(item), params.from, params.to) &&
       (!params.q || searchableRecord({
         id: item.id,

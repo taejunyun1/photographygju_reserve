@@ -61,6 +61,26 @@ import {
 import { createReportsLecturesNoticesHelpers } from "./core/reports-lectures-notices.mjs";
 import { createReservationValidationHelpers } from "./core/reservation-validation.mjs";
 import { createReservationViewHelpers } from "./core/reservation-views.mjs";
+import {
+  DEFAULT_EQUIPMENT_REPORT_DEADLINE_HOURS,
+  REPORT_PHOTO_LIMIT,
+  REPORT_PHOTO_MAX_BYTES,
+  REPORT_POLICY_VERSION,
+  getReportRequirement,
+  reportQueueCount,
+  reservationSnapshot,
+  validateReportDraft
+} from "./core/reporting.mjs";
+import {
+  buildReportDriveConnectUrl,
+  decryptRefreshToken,
+  encryptRefreshToken,
+  exchangeReportDriveCode,
+  createReportDriveClient,
+  refreshReportDriveAccessToken,
+  reportDrivePublicConnection
+} from "./integrations/report-drive.mjs";
+import { syncReportToDrive } from "./integrations/report-drive-jobs.mjs";
 
 const PRODUCTION_STUDENT_URL = "https://gjureserve.co.kr";
 const LEGACY_STUDENT_URL = "https://photographygju.dothome.co.kr";
@@ -411,6 +431,10 @@ export async function initialDb(adminPassword = "admin") {
     equipment: equipmentHelpers.seedEquipment(),
     reservations: [],
     reports: [],
+    reportDrafts: [],
+    reportAttachments: [],
+    reportDriveJobs: [],
+    reportDriveConnections: [],
     lectures: [],
     lectureApplications: [],
     notices: [],
@@ -524,12 +548,10 @@ function isStudioReportSubmitted(db, reservation) {
 }
 
 function isStudioReportDue(db, reservation, today = todayKeySeoul()) {
+  if (reservation?.type !== "studio") return false;
   const reservedDate = String(reservation?.fields?.reservedDate || "");
-  return reservation?.type === "studio" &&
-    !isStudioReportSubmitted(db, reservation) &&
-    !REPORT_INELIGIBLE_RESERVATION_STATUSES.has(reservation?.status) &&
-    Boolean(reservedDate) &&
-    reservedDate <= today;
+  if (!reservedDate || reservedDate > today) return false;
+  return getReportRequirement(db, reservation, new Date(`${today}T23:59:59+09:00`)).required;
 }
 
 function studioSpaces(fields = {}) {
@@ -618,7 +640,10 @@ const {
   reportWithDetails,
   publicUser,
   lectureDetail,
-  isStudioReportDue
+  isStudioReportDue,
+  isReportDue: (db, reservation) => reservation?.type === "studio"
+    ? isStudioReportDue(db, reservation)
+    : getReportRequirement(db, reservation, new Date()).required
 });
 
 function noticeWithActive(notice) {
@@ -630,22 +655,245 @@ function audit(db, actor, action, targetId, detail = {}) {
   db.auditLogs.push({ id: id("audit"), actorId: actor ? actor.id : null, action, targetId, detail, createdAt: nowIso() });
 }
 
+function reportDraftFor(db, draftId, userId = "") {
+  return (db.reportDrafts || []).find((draft) => draft.id === draftId && (!userId || draft.userId === userId)) || null;
+}
+
+function reportDraftForReservation(db, reservationId, userId) {
+  return (db.reportDrafts || []).find((draft) => draft.reservationId === reservationId && draft.userId === userId) || null;
+}
+
+function reportPhotosForDraft(db, draftId, { includeData = false } = {}) {
+  return (db.reportAttachments || [])
+    .filter((photo) => photo.draftId === draftId && photo.status !== "deleted")
+    .map((photo) => includeData ? photo : (() => {
+      const { data, ...publicPhoto } = photo;
+      return publicPhoto;
+    })());
+}
+
+function publicReportDraft(db, draft) {
+  if (!draft) return null;
+  return {
+    id: draft.id,
+    reservationId: draft.reservationId,
+    type: draft.type,
+    revision: Number(draft.revision || 0),
+    fields: draft.fields || {},
+    linkedEquipmentReservationId: draft.linkedEquipmentReservationId || null,
+    updatedAt: draft.updatedAt || null,
+    photos: reportPhotosForDraft(db, draft)
+  };
+}
+
+function reportPhotoHeader(bytes) {
+  if (!bytes || bytes.length < 12) return "";
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const jpeg = view[0] === 0xff && view[1] === 0xd8 && view[2] === 0xff;
+  const png = view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47 && view[4] === 0x0d && view[5] === 0x0a && view[6] === 0x1a && view[7] === 0x0a;
+  return jpeg ? "image/jpeg" : png ? "image/png" : "";
+}
+
+async function sha256Hex(bytes) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes instanceof ArrayBuffer ? bytes : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return typeof btoa === "function" ? btoa(binary) : Buffer.from(binary, "binary").toString("base64");
+}
+
+function reportReservationOrThrow(db, user, reservationId, type = "") {
+  const reservation = db.reservations.find((item) => item.id === reservationId && (!type || item.type === type));
+  if (!reservation) throw Object.assign(new Error("보고서 예약을 찾을 수 없습니다."), { status: 404 });
+  if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약 보고서만 작성할 수 있습니다."), { status: 403 });
+  return reservation;
+}
+
+function reportSubmissionResult(db, report) {
+  const attachments = (db.reportAttachments || []).filter((photo) => photo.reportId === report.id && photo.status !== "deleted");
+  return {
+    ...reportWithDetails(db, report),
+    photos: attachments.map(({ data, ...photo }) => photo),
+    drive: report.drive || { status: "pending" }
+  };
+}
+
+function reportDriveConfig(ctx) {
+  return ctx.reportDriveConfig || {};
+}
+
+function reportDriveConnection(db) {
+  return (db.reportDriveConnections || []).find((item) => item.status !== "disconnected") || null;
+}
+
+async function reportDriveAccessToken(ctx, connection) {
+  const config = reportDriveConfig(ctx);
+  if (!connection || !config.tokenEncryptionKey) return "";
+  const now = Date.now();
+  if (connection.accessTokenEncrypted && Number(connection.accessTokenExpiresAt || 0) > now + 60_000) return decryptRefreshToken(connection.accessTokenEncrypted, config.tokenEncryptionKey);
+  const refreshToken = await decryptRefreshToken(connection.refreshTokenEncrypted, config.tokenEncryptionKey);
+  if (!refreshToken) throw Object.assign(new Error("Google Drive 재연결이 필요합니다."), { status: 401, code: "reauth_required" });
+  const token = await refreshReportDriveAccessToken({ fetchImpl: config.fetchImpl || fetch, clientId: config.clientId, clientSecret: config.clientSecret, refreshToken });
+  connection.accessTokenEncrypted = await encryptRefreshToken(token.access_token, config.tokenEncryptionKey);
+  connection.accessTokenExpiresAt = Date.now() + Number(token.expires_in || 3600) * 1000;
+  connection.updatedAt = nowIso();
+  return token.access_token;
+}
+
+async function reportDriveClientFor(ctx, db, connection = reportDriveConnection(db)) {
+  if (!connection) throw Object.assign(new Error("보고서 Google Drive가 연결되지 않았습니다."), { status: 409 });
+  const token = await reportDriveAccessToken(ctx, connection);
+  if (!token) throw Object.assign(new Error("보고서 Google Drive 재연결이 필요합니다."), { status: 401, code: "reauth_required" });
+  return createReportDriveClient({ fetchImpl: reportDriveConfig(ctx).fetchImpl || fetch, accessToken: token });
+}
+
+async function syncReportIfConnected(ctx, db, report, attachments) {
+  const connection = reportDriveConnection(db);
+  if (!connection || connection.status !== "connected") return report;
+  const client = await reportDriveClientFor(ctx, db, connection);
+  return syncReportToDrive({ client, connection, report, attachments });
+}
+
+async function processReportDriveJobs(ctx, db, limit = 10) {
+  const connection = reportDriveConnection(db);
+  if (!connection || connection.status !== "connected") return 0;
+  const now = Date.now();
+  const jobs = (db.reportDriveJobs || [])
+    .filter((job) => ["pending", "failed"].includes(job.status) && (!job.nextAttemptAt || new Date(job.nextAttemptAt).getTime() <= now))
+    .sort((left, right) => String(left.nextAttemptAt || "").localeCompare(String(right.nextAttemptAt || "")))
+    .slice(0, limit);
+  let changed = false;
+  for (const job of jobs) {
+    const report = db.reports.find((item) => item.id === job.reportId);
+    if (!report) { job.status = "completed"; changed = true; continue; }
+    job.status = "syncing";
+    try {
+      await syncReportIfConnected(ctx, db, report, (db.reportAttachments || []).filter((photo) => photo.reportId === report.id && photo.status !== "deleted"));
+      job.status = report.drive?.status === "synced" ? "completed" : "pending";
+      job.attempts = Number(job.attempts || 0);
+      job.lastError = "";
+    } catch (error) {
+      job.status = "failed";
+      job.attempts = Number(job.attempts || 0) + 1;
+      job.errorCode = error.code || "drive_sync_failed";
+      job.lastError = String(error.message || "").slice(0, 240);
+      const delay = Math.min(2 * 60 * 60 * 1000, [60_000, 5 * 60_000, 30 * 60_000][Math.min(job.attempts - 1, 2)] || 2 * 60 * 60 * 1000);
+      job.nextAttemptAt = new Date(Date.now() + delay).toISOString();
+      report.drive = { ...(report.drive || {}), status: "failed", errorCode: job.errorCode };
+    }
+    changed = true;
+  }
+  if (changed) await ctx.saveDb();
+  return jobs.length;
+}
+
+async function finalizeReportDraft({ db, user, reservation, type, draft, body = {}, saveDb, driveSync = null }) {
+  const allPhotos = reportPhotosForDraft(db, draft?.id || "", { includeData: false });
+  if (allPhotos.some((photo) => photo.status !== "uploaded")) throw Object.assign(new Error("사진 업로드가 끝난 뒤 제출하세요."), { status: 400 });
+  const photos = allPhotos;
+  const fields = validateReportDraft({
+    reservation: withReservationDetails(db, reservation),
+    type,
+    body: { ...(draft?.fields || {}), ...(body.fields || body) },
+    photos,
+    now: new Date()
+  });
+  const existing = db.reports.find((item) => item.reservationId === reservation.id && item.type === type);
+  if (existing) {
+    if (body.submissionKey && existing.submissionKey === body.submissionKey) return reportSubmissionResult(db, existing);
+    throw Object.assign(new Error("이미 제출된 보고서입니다."), { status: 409 });
+  }
+  const equipmentItems = reservation.type === "equipment"
+    ? (reservation.fields?.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean)
+    : [];
+  const report = {
+    id: id("report"),
+    schemaVersion: 2,
+    policyVersion: REPORT_POLICY_VERSION,
+    type,
+    status: "submitted",
+    reservationId: reservation.id,
+    userId: user.id,
+    fields,
+    photoIds: photos.map((photo) => photo.id),
+    reservationSnapshot: reservationSnapshot(reservation, user, equipmentItems),
+    drive: { status: "pending", connectionId: null, folderId: null, htmlFileId: null, jsonFileId: null, lastSyncedAt: null, errorCode: null },
+    htmlSnapshot: `<article><h1>${type === "studio" ? "스튜디오" : "기자재"} 사용 보고서</h1><p>예약: ${escapeHtml(reservation.id)}</p><p>파손·이상: ${escapeHtml(fields.damageFound ? "있음" : "없음")}</p><p>상세: ${escapeHtml(fields.damageDescription || "-")}</p><p>사진: ${photos.length}장</p></article>`,
+    submittedAt: nowIso(),
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * REPORT_HTML_RETENTION_DAYS).toISOString()
+  };
+  db.reports.push(report);
+  for (const photo of db.reportAttachments || []) {
+    if (photo.draftId === draft?.id && photo.status !== "deleted") {
+      photo.reportId = report.id;
+      photo.status = "uploaded";
+    }
+  }
+  if (draft) draft.submittedAt = report.submittedAt;
+  reservation.fields = { ...(reservation.fields || {}), reportPolicyVersion: REPORT_POLICY_VERSION, reportStatus: "submitted" };
+  reservation.updatedAt = nowIso();
+  reservation.history = Array.isArray(reservation.history) ? reservation.history : [];
+  reservation.history.push({ at: report.submittedAt, actorId: user.id, action: `${type}_report_submitted`, reportId: report.id });
+  db.reportDriveJobs = db.reportDriveJobs || [];
+  db.reportDriveJobs.push({
+    id: id("report_drive_job"),
+    reportId: report.id,
+    submissionKey: String(body.submissionKey || ""),
+    draftId: draft?.id || "",
+    connectionId: null,
+    type: "sync_report",
+    status: "pending",
+    attempts: 0,
+    nextAttemptAt: report.submittedAt,
+    createdAt: report.submittedAt
+  });
+  audit(db, user, `${type}_report.created`, report.id, { reservationId: reservation.id, photoCount: photos.length });
+  await saveDb();
+  if (typeof driveSync === "function") {
+    try {
+      const synced = await driveSync({ db, report, attachments: (db.reportAttachments || []).filter((photo) => photo.reportId === report.id && photo.status !== "deleted") });
+      const job = (db.reportDriveJobs || []).find((item) => item.reportId === report.id && item.status === "pending");
+      if (job && synced?.drive?.status === "synced") job.status = "completed";
+      await saveDb();
+    } catch (error) {
+      report.drive = { ...(report.drive || {}), status: "failed", errorCode: error.code || "drive_sync_failed" };
+      const job = (db.reportDriveJobs || []).find((item) => item.reportId === report.id && item.status === "pending");
+      if (job) { job.status = "failed"; job.errorCode = error.code || "drive_sync_failed"; job.lastError = String(error.message || "").slice(0, 240); }
+      await saveDb();
+    }
+  }
+  return reportSubmissionResult(db, report);
+}
+
 function deleteUserAccount(db, user, actor, action = "user.deleted", detail = {}) {
   if (!user) return null;
   if (user.role === "admin") {
     throw Object.assign(new Error("관리자 계정은 삭제할 수 없습니다."), { status: 400 });
   }
   const reservationIds = new Set((db.reservations || []).filter((item) => item.userId === user.id).map((item) => item.id));
+  const reportIds = new Set((db.reports || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).map((item) => item.id));
   const summary = {
     id: user.id,
     removedReservations: reservationIds.size,
     removedReports: (db.reports || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).length,
+    removedReportDrafts: (db.reportDrafts || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).length,
+    removedReportAttachments: (db.reportAttachments || []).filter((item) => item.userId === user.id).length,
     removedLectureApplications: (db.lectureApplications || []).filter((item) => item.userId === user.id).length,
     removedWarnings: (db.warnings || []).filter((item) => item.userId === user.id).length,
     revokedSessions: (db.sessions || []).filter((item) => item.userId === user.id).length
   };
   db.reservations = (db.reservations || []).filter((item) => item.userId !== user.id);
   db.reports = (db.reports || []).filter((item) => item.userId !== user.id && !reservationIds.has(item.reservationId));
+  const removedDraftIds = new Set((db.reportDrafts || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).map((item) => item.id));
+  db.reportDrafts = (db.reportDrafts || []).filter((item) => !removedDraftIds.has(item.id));
+  db.reportAttachments = (db.reportAttachments || []).filter((item) => item.userId !== user.id && !removedDraftIds.has(item.draftId));
+  db.reportDriveJobs = (db.reportDriveJobs || []).filter((item) => !reportIds.has(item.reportId) && !removedDraftIds.has(item.draftId));
   db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
   db.lectureApplications = (db.lectureApplications || []).filter((item) => item.userId !== user.id);
   db.sessions = (db.sessions || []).filter((item) => item.userId !== user.id);
@@ -682,6 +930,10 @@ export function normalizeDb(db) {
   db.equipmentInspections = db.equipmentInspections || [];
   db.reservations = db.reservations || [];
   db.reports = db.reports || [];
+  db.reportDrafts = db.reportDrafts || [];
+  db.reportAttachments = db.reportAttachments || [];
+  db.reportDriveJobs = db.reportDriveJobs || [];
+  db.reportDriveConnections = db.reportDriveConnections || [];
   db.lectures = db.lectures || [];
   db.lectureApplications = db.lectureApplications || [];
   db.slackLogs = db.slackLogs || [];
@@ -790,6 +1042,45 @@ export async function handleApiRequest(ctx) {
   const meta = requestMeta(ctx);
 
   try {
+      await processReportDriveJobs(ctx, db, 10).catch(() => 0);
+      if (routeKey(method, pathname) === "GET /api/oauth/report-drive/callback") {
+        const config = reportDriveConfig(ctx);
+        const state = String(searchParams?.get("state") || "");
+        const code = String(searchParams?.get("code") || "");
+        const connection = (db.reportDriveConnections || []).find((item) => item.oauthState === state && item.status === "authorizing");
+        if (!connection || !state || !code || !connection.stateExpiresAt || new Date(connection.stateExpiresAt).getTime() < Date.now()) {
+          throw Object.assign(new Error("Google Drive 연결 상태가 만료되었거나 올바르지 않습니다."), { status: 400 });
+        }
+        const token = await exchangeReportDriveCode({
+          fetchImpl: config.fetchImpl || fetch,
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          code,
+          redirectUri: config.redirectUri
+        });
+        if (!token.refresh_token && !connection.refreshTokenEncrypted) throw Object.assign(new Error("Google Drive 재연결 토큰을 받지 못했습니다."), { status: 502 });
+        const refreshToken = token.refresh_token || await decryptRefreshToken(connection.refreshTokenEncrypted, config.tokenEncryptionKey);
+        const accessToken = token.access_token || "";
+        const client = createReportDriveClient({ fetchImpl: config.fetchImpl || fetch, accessToken });
+        const about = await client.about();
+        const folder = await client.ensureFolder("GJU 사용보고서");
+        connection.status = "connected";
+        connection.oauthState = "";
+        connection.stateExpiresAt = "";
+        connection.accountEmail = about?.user?.emailAddress || "";
+        connection.folderId = folder.id;
+        connection.folderName = folder.name || "GJU 사용보고서";
+        connection.folderUrl = folder.webViewLink || client.folderUrl(folder.id);
+        connection.refreshTokenEncrypted = await encryptRefreshToken(refreshToken, config.tokenEncryptionKey);
+        connection.accessTokenEncrypted = accessToken ? await encryptRefreshToken(accessToken, config.tokenEncryptionKey) : connection.accessTokenEncrypted;
+        connection.accessTokenExpiresAt = Date.now() + Number(token.expires_in || 3600) * 1000;
+        connection.lastVerifiedAt = nowIso();
+        connection.errorCode = null;
+        connection.updatedAt = nowIso();
+        await saveDb();
+        return ok({ connected: true, connection: reportDrivePublicConnection(connection) });
+      }
+
       if (routeKey(method, pathname) === "GET /api/bootstrap") {
         const user = getAuthUser(authorization, db);
         return ok({
@@ -800,7 +1091,13 @@ export async function handleApiRequest(ctx) {
           reservations: user
             ? db.reservations
               .filter(isOperationalReservation)
-              .map((reservation) => publicReservationSummary(db, reservation))
+            .map((reservation) => {
+              const summary = publicReservationSummary(db, reservation);
+              const requirement = getReportRequirement(db, reservation, new Date());
+              return (reservation.type === "studio" || reservation.type === "equipment")
+                ? { ...summary, reportRequirement: requirement }
+                : summary;
+            })
             : []
         });
       }
@@ -945,7 +1242,18 @@ export async function handleApiRequest(ctx) {
         const user = requireUser(authorization, db);
         const reservations = db.reservations
           .filter((item) => item.userId === user.id)
-          .map((item) => withReservationDetails(db, item));
+          .map((item) => {
+            const detailed = withReservationDetails(db, item);
+            const requirement = getReportRequirement(db, detailed, new Date());
+            const draft = reportDraftForReservation(db, item.id, user.id);
+            return {
+              ...detailed,
+              ...(item.type === "studio" || item.type === "equipment" ? {
+                reportRequirement: { ...requirement, draftId: draft?.id || null },
+                reportDraft: publicReportDraft(db, draft)
+              } : {})
+            };
+          });
         const lectureApplications = (db.lectureApplications || [])
           .filter((item) => item.userId === user.id)
           .map((item) => withLectureApplicationDetails(db, item));
@@ -1091,7 +1399,12 @@ export async function handleApiRequest(ctx) {
           type: body.type,
           userId: user.id,
           status,
-          fields: { ...body.fields, studentStatus: user.studentStatus, phone: body.fields.phone || user.phone },
+          fields: {
+            ...body.fields,
+            studentStatus: user.studentStatus,
+            phone: body.fields.phone || user.phone,
+            ...(body.type === "equipment" ? { reportPolicyVersion: REPORT_POLICY_VERSION } : {})
+          },
           history: [{ at: nowIso(), actorId: user.id, action: "created", status }],
           createdAt: nowIso(),
           updatedAt: nowIso()
@@ -1144,45 +1457,144 @@ export async function handleApiRequest(ctx) {
         return ok(withReservationDetails(db, reservation));
       }
 
+      if (routeKey(method, pathname) === "GET /api/reports/my") {
+        const user = requireUser(authorization, db);
+        const reservations = db.reservations
+          .filter((item) => item.userId === user.id && ["studio", "equipment"].includes(item.type))
+          .map((reservation) => ({
+            reservation: withReservationDetails(db, reservation),
+            requirement: { ...getReportRequirement(db, reservation, new Date()), draftId: reportDraftForReservation(db, reservation.id, user.id)?.id || null },
+            draft: publicReportDraft(db, reportDraftForReservation(db, reservation.id, user.id))
+          }));
+        return ok({ reports: db.reports.filter((item) => item.userId === user.id).map((item) => reportSubmissionResult(db, item)), reservations });
+      }
+
+      if (routeKey(method, pathname) === "POST /api/reports/drafts") {
+        const user = requireApprovedStudent(authorization, db);
+        const body = await parseBody(readText);
+        assertRequired(body, ["reservationId"]);
+        const reservation = reportReservationOrThrow(db, user, body.reservationId, body.type || "");
+        if (!["studio", "equipment"].includes(reservation.type)) throw Object.assign(new Error("스튜디오 또는 기자재 예약만 보고서를 작성할 수 있습니다."), { status: 400 });
+        const requirement = getReportRequirement(db, reservation, new Date());
+        if (!requirement.canDraft && !requirement.canSubmit) throw Object.assign(new Error("아직 보고서 작성 기간이 아닙니다."), { status: 400 });
+        let draft = reportDraftForReservation(db, reservation.id, user.id);
+        if (!draft) {
+          draft = { id: id("report_draft"), reservationId: reservation.id, userId: user.id, type: reservation.type, revision: 0, fields: {}, linkedEquipmentReservationId: null, createdAt: nowIso(), updatedAt: nowIso() };
+          db.reportDrafts.push(draft);
+          await saveDb();
+        }
+        return ok(publicReportDraft(db, draft));
+      }
+
+      const reportDraftMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)$/);
+      if (method === "PATCH" && reportDraftMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportDraftMatch[1], user.id);
+        if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
+        const body = await parseBody(readText);
+        const expectedRevision = Number(body.revision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision !== Number(draft.revision || 0)) throw Object.assign(new Error("최신 초안을 다시 불러오세요."), { status: 409 });
+        const fields = body.fields && typeof body.fields === "object" ? body.fields : body;
+        draft.fields = { ...(draft.fields || {}), ...fields };
+        if (body.linkedEquipmentReservationId !== undefined) draft.linkedEquipmentReservationId = body.linkedEquipmentReservationId || null;
+        draft.revision = expectedRevision + 1;
+        draft.updatedAt = nowIso();
+        await saveDb();
+        return ok(publicReportDraft(db, draft));
+      }
+
+      const reportPhotoReserveMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)\/photos$/);
+      if (method === "POST" && reportPhotoReserveMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportPhotoReserveMatch[1], user.id);
+        if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
+        const body = await parseBody(readText);
+        const existingClient = (db.reportAttachments || []).find((photo) => photo.draftId === draft.id && photo.clientPhotoId === String(body.clientPhotoId || "") && photo.status !== "deleted");
+        if (existingClient) return ok(existingClient);
+        const activePhotos = reportPhotosForDraft(db, draft.id);
+        if (activePhotos.length >= REPORT_PHOTO_LIMIT) throw Object.assign(new Error(`사진은 보고서당 ${REPORT_PHOTO_LIMIT}장까지 첨부할 수 있습니다.`), { status: 400 });
+        const mimeType = String(body.mimeType || "").toLowerCase();
+        const size = Number(body.size || 0);
+        if (!/^image\/(jpeg|png)$/.test(mimeType) || size <= 0 || size > REPORT_PHOTO_MAX_BYTES) throw Object.assign(new Error("JPG 또는 PNG 3MiB 이하 사진만 업로드할 수 있습니다."), { status: 400 });
+        const photo = { id: id("report_photo"), clientPhotoId: String(body.clientPhotoId || id("client_photo")), draftId: draft.id, reportId: null, userId: user.id, category: ["studio_damage", "equipment_damage", "usage"].includes(body.category) ? body.category : "usage", mimeType, size, sha256: String(body.sha256 || ""), status: "reserved", createdAt: nowIso(), data: "" };
+        db.reportAttachments.push(photo);
+        await saveDb();
+        return ok({ id: photo.id, draftId: photo.draftId, category: photo.category, mimeType: photo.mimeType, size: photo.size, status: photo.status });
+      }
+
+      const reportPhotoContentMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)\/photos\/([^/]+)\/content$/);
+      if (method === "POST" && reportPhotoContentMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportPhotoContentMatch[1], user.id);
+        const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoContentMatch[2] && item.draftId === draft?.id && item.userId === user.id && item.status !== "deleted");
+        if (!draft || !photo) throw Object.assign(new Error("사진 업로드 대상을 찾을 수 없습니다."), { status: 404 });
+        const bytes = ctx.readBytes ? new Uint8Array(await ctx.readBytes(REPORT_PHOTO_MAX_BYTES + 1)) : null;
+        if (!bytes || !bytes.length || bytes.length > REPORT_PHOTO_MAX_BYTES) throw Object.assign(new Error("사진 파일을 읽을 수 없습니다."), { status: 400 });
+        const detected = reportPhotoHeader(bytes);
+        if (!detected || detected !== photo.mimeType) throw Object.assign(new Error("JPG 또는 PNG 사진만 업로드할 수 있습니다."), { status: 400 });
+        photo.size = bytes.byteLength;
+        photo.sha256 = await sha256Hex(bytes);
+        photo.data = bytesToBase64(bytes);
+        photo.status = "uploaded";
+        await saveDb();
+        return ok({ id: photo.id, category: photo.category, mimeType: photo.mimeType, size: photo.size, sha256: photo.sha256, status: photo.status });
+      }
+
+      const reportPhotoDeleteMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)\/photos\/([^/]+)$/);
+      if (method === "DELETE" && reportPhotoDeleteMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportPhotoDeleteMatch[1], user.id);
+        const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoDeleteMatch[2] && item.draftId === draft?.id && item.userId === user.id);
+        if (!draft || !photo) throw Object.assign(new Error("사진을 찾을 수 없습니다."), { status: 404 });
+        photo.status = "deleted";
+        photo.data = "";
+        await saveDb();
+        return ok({ id: photo.id, deleted: true });
+      }
+
+      const reportPhotoReadMatch = pathname.match(/^\/api\/reports\/([^/]+)\/photos\/([^/]+)\/content$/);
+      if (method === "GET" && reportPhotoReadMatch) {
+        const user = requireUser(authorization, db);
+        const report = db.reports.find((item) => item.id === reportPhotoReadMatch[1]);
+        const photo = (db.reportAttachments || []).find((item) => item.id === reportPhotoReadMatch[2] && item.reportId === report?.id && item.status !== "deleted");
+        if (!report || !photo || (user.role !== "admin" && report.userId !== user.id)) throw Object.assign(new Error("사진을 찾을 수 없습니다."), { status: 404 });
+        return ok({ id: photo.id, mimeType: photo.mimeType, data: `data:${photo.mimeType};base64,${photo.data}` });
+      }
+
+      const reportSubmitMatch = pathname.match(/^\/api\/reports\/drafts\/([^/]+)\/submit$/);
+      if (method === "POST" && reportSubmitMatch) {
+        const user = requireApprovedStudent(authorization, db);
+        const draft = reportDraftFor(db, reportSubmitMatch[1], user.id);
+        if (!draft) throw Object.assign(new Error("보고서 초안을 찾을 수 없습니다."), { status: 404 });
+        const body = await parseBody(readText);
+        if (Number(body.revision) !== Number(draft.revision || 0)) throw Object.assign(new Error("최신 초안을 다시 불러오세요."), { status: 409 });
+        const reservation = reportReservationOrThrow(db, user, draft.reservationId, draft.type);
+        const requirement = getReportRequirement(db, reservation, new Date());
+        if (!requirement.canSubmit) throw Object.assign(new Error("예약 종료 또는 반납 처리 후 보고서를 제출할 수 있습니다."), { status: 400 });
+        const result = await finalizeReportDraft({ db, user, reservation, type: draft.type, draft, body, saveDb, driveSync: (input) => syncReportIfConnected(ctx, db, input.report, input.attachments) });
+        await postSlack(slackWebhook, db, `${draft.type}_report`, reservation);
+        return ok(result);
+      }
+
       if (routeKey(method, pathname) === "POST /api/reports/studio") {
         const user = requireApprovedStudent(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["reservationId", "actualTime", "participants", "cleanupConfirmed"]);
-        const reservation = db.reservations.find((item) => item.id === body.reservationId && item.type === "studio");
-        if (!reservation) throw Object.assign(new Error("스튜디오 예약을 찾을 수 없습니다."), { status: 404 });
-        if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 스튜디오 예약 보고서만 제출할 수 있습니다."), { status: 403 });
-        if (db.reports.some((item) => item.reservationId === reservation.id && item.type === "studio")) {
-          throw Object.assign(new Error("이미 제출된 스튜디오 보고서입니다."), { status: 409 });
-        }
-        if (["cancelled", "admin_cancelled", "rejected"].includes(reservation.status)) {
-          throw Object.assign(new Error("취소되었거나 반려된 스튜디오 예약에는 보고서를 제출할 수 없습니다."), { status: 400 });
-        }
+        const reservation = reportReservationOrThrow(db, user, body.reservationId, "studio");
+        if (db.reports.some((item) => item.reservationId === reservation.id && item.type === "studio")) throw Object.assign(new Error("이미 제출된 스튜디오 보고서입니다."), { status: 409 });
         const resultPhotoUrl = sanitizeHttpUrl(body.resultPhotoUrl || "", "결과 사진 링크");
-        if (resultPhotoUrl.length > 500) {
-          throw Object.assign(new Error("결과 사진 링크는 500자 이하로 입력하세요."), { status: 400 });
-        }
-        const report = {
-          id: id("report"),
-          type: "studio",
-          status: "submitted",
-          reservationId: reservation.id,
-          userId: user.id,
-          fields: {
-            ...body,
-            resultPhotoUrl
-          },
-          htmlSnapshot: `<article><h1>스튜디오 보고서</h1><p>예약: ${escapeHtml(reservation.id)}</p><p>사용 시간: ${escapeHtml(body.actualTime)}</p><p>인원: ${escapeHtml(body.participants)}</p><p>결과 사진: ${escapeHtml(resultPhotoUrl || "-")}</p><p>파손/이상: ${escapeHtml(body.damageFound ? body.damageDescription || "있음" : "없음")}</p></article>`,
-          submittedAt: nowIso(),
-          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 183).toISOString()
+        if (resultPhotoUrl.length > 500) throw Object.assign(new Error("결과 사진 링크는 500자 이하로 입력하세요."), { status: 400 });
+        const normalizedBody = {
+          ...body,
+          _legacy: true,
+          resultPhotoUrl,
+          damageFound: body.damageFound === true,
+          studioDamageAnswer: body.studioDamageAnswer || (body.damageFound === true ? "yes" : "no")
         };
-        db.reports.push(report);
-        reservation.fields.reportStatus = "submitted";
-        reservation.updatedAt = nowIso();
-        reservation.history.push({ at: nowIso(), actorId: user.id, action: "studio_report_submitted", reportId: report.id });
-        audit(db, user, "studio_report.created", report.id, { reservationId: reservation.id });
+        const draft = { id: "legacy", reservationId: reservation.id, userId: user.id, type: "studio", revision: 0, fields: normalizedBody };
+        const result = await finalizeReportDraft({ db, user, reservation, type: "studio", draft, body: normalizedBody, saveDb, driveSync: (input) => syncReportIfConnected(ctx, db, input.report, input.attachments) });
         await postSlack(slackWebhook, db, "studio_report", reservation);
-        await saveDb();
-        return ok(report);
+        return ok(result);
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/course-planning") {
@@ -1462,9 +1874,10 @@ export async function handleApiRequest(ctx) {
           })
           .sort((left, right) => String(left.queueAt || "").localeCompare(String(right.queueAt || "")));
         const todayReservations = todaySchedule.length;
-        const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
         const activeEquipment = db.equipment.filter((item) => item.active !== false);
         const metricNow = new Date();
+        const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
+        const equipmentMissingReports = reportQueueCount(db, metricNow) - missingReports;
         const metricFrom = addDaysToDateKey(today, -27);
         const reservableEquipment = activeEquipment.filter((item) => item.status === "가능" && item.reservable !== false && item.inquiryOnly !== true);
         const occupiedIds = new Set();
@@ -1515,6 +1928,7 @@ export async function handleApiRequest(ctx) {
           equipmentCancelled,
           todayReservations,
           missingReports,
+          equipmentMissingReports: Math.max(0, equipmentMissingReports),
           todaySchedule,
           checkoutReturnQueue,
           metrics: {
@@ -1722,8 +2136,13 @@ export async function handleApiRequest(ctx) {
         const reservation = db.reservations.find((item) => item.id === reservationId);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         const deletedReports = db.reports.filter((item) => item.reservationId === reservationId).length;
+        const reportIds = new Set(db.reports.filter((item) => item.reservationId === reservationId).map((item) => item.id));
+        const draftIds = new Set((db.reportDrafts || []).filter((item) => item.reservationId === reservationId).map((item) => item.id));
         db.reservations = db.reservations.filter((item) => item.id !== reservationId);
         db.reports = db.reports.filter((item) => item.reservationId !== reservationId);
+        db.reportDrafts = (db.reportDrafts || []).filter((item) => !draftIds.has(item.id));
+        db.reportAttachments = (db.reportAttachments || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
+        db.reportDriveJobs = (db.reportDriveJobs || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
         audit(db, admin, "reservation.deleted", reservationId, {
           type: reservation.type,
           deletedReservations: 1,
@@ -2346,7 +2765,7 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/admin/reports") {
         requireAdmin(authorization, db);
         if (hasListQuery(searchParams)) return ok(adminReportList(db, searchParams));
-        return ok(db.reports.map((report) => reportWithDetails(db, report)));
+        return ok(db.reports.map((report) => reportSubmissionResult(db, report)));
       }
 
       const reportStatusMatch = pathname.match(/^\/api\/admin\/reports\/([^/]+)\/status$/);
@@ -2508,6 +2927,93 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "GET /api/admin/settings") {
         requireAdmin(authorization, db);
         return ok(db.settings);
+      }
+
+      if (routeKey(method, pathname) === "GET /api/admin/report-drive") {
+        requireAdmin(authorization, db);
+        const connection = reportDriveConnection(db);
+        const pending = (db.reportDriveJobs || []).filter((job) => ["pending", "syncing"].includes(job.status)).length;
+        const failed = (db.reportDriveJobs || []).filter((job) => job.status === "failed").length;
+        return ok({ connection: reportDrivePublicConnection(connection), pending, failed });
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/report-drive/connect") {
+        const admin = requireAdmin(authorization, db);
+        const config = reportDriveConfig(ctx);
+        if (!config.clientId || !config.clientSecret || !config.tokenEncryptionKey || !config.redirectUri) {
+          throw Object.assign(new Error("Google Drive OAuth 환경변수(REPORT_DRIVE_CLIENT_ID/SECRET/TOKEN_ENCRYPTION_KEY)가 필요합니다."), { status: 503 });
+        }
+        const state = randomHex(24);
+        let connection = reportDriveConnection(db);
+        if (!connection) {
+          connection = { id: id("report_drive"), adminUserId: admin.id, status: "authorizing", folderName: "GJU 사용보고서", createdAt: nowIso() };
+          db.reportDriveConnections.push(connection);
+        }
+        connection.adminUserId = admin.id;
+        connection.status = "authorizing";
+        connection.oauthState = state;
+        connection.stateExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        connection.updatedAt = nowIso();
+        await saveDb();
+        return ok({ url: buildReportDriveConnectUrl({ clientId: config.clientId, redirectUri: config.redirectUri, state }) });
+      }
+
+      if (routeKey(method, pathname) === "POST /api/admin/report-drive/verify") {
+        const admin = requireAdmin(authorization, db);
+        const connection = reportDriveConnection(db);
+        if (!connection || connection.adminUserId !== admin.id) throw Object.assign(new Error("먼저 보고서 Google Drive를 연결하세요."), { status: 409 });
+        try {
+          const client = await reportDriveClientFor(ctx, db, connection);
+          const folder = await client.verifyFolder(connection.folderId);
+          if (folder.mimeType !== "application/vnd.google-apps.folder") throw new Error("보고서 폴더가 아닙니다.");
+          connection.status = "connected";
+          connection.folderName = folder.name || connection.folderName;
+          connection.folderUrl = folder.webViewLink || client.folderUrl(folder.id);
+          connection.lastVerifiedAt = nowIso();
+          connection.errorCode = null;
+          connection.updatedAt = nowIso();
+          await saveDb();
+          return ok({ connection: reportDrivePublicConnection(connection) });
+        } catch (error) {
+          connection.status = error.code === "reauth_required" ? "reauth_required" : "error";
+          connection.errorCode = error.code || "verify_failed";
+          connection.updatedAt = nowIso();
+          await saveDb();
+          throw error;
+        }
+      }
+
+      if (routeKey(method, pathname) === "DELETE /api/admin/report-drive") {
+        const admin = requireAdmin(authorization, db);
+        const connection = reportDriveConnection(db);
+        if (connection && connection.adminUserId === admin.id) {
+          connection.status = "disconnected";
+          connection.refreshTokenEncrypted = "";
+          connection.accessTokenEncrypted = "";
+          connection.oauthState = "";
+          connection.updatedAt = nowIso();
+          await saveDb();
+        }
+        return ok({ connection: reportDrivePublicConnection(null) });
+      }
+
+      const reportDriveRetryMatch = pathname.match(/^\/api\/admin\/reports\/([^/]+)\/drive-retry$/);
+      if (method === "POST" && reportDriveRetryMatch) {
+        const admin = requireAdmin(authorization, db);
+        const report = db.reports.find((item) => item.id === reportDriveRetryMatch[1]);
+        if (!report) throw Object.assign(new Error("보고서를 찾을 수 없습니다."), { status: 404 });
+        try {
+          await syncReportIfConnected(ctx, db, report, (db.reportAttachments || []).filter((photo) => photo.reportId === report.id && photo.status !== "deleted"));
+          const job = (db.reportDriveJobs || []).find((item) => item.reportId === report.id);
+          if (job) { job.status = report.drive?.status === "synced" ? "completed" : "pending"; job.lastError = ""; }
+          audit(db, admin, "report_drive.retried", report.id, { status: report.drive?.status || "pending" });
+          await saveDb();
+          return ok(reportSubmissionResult(db, report));
+        } catch (error) {
+          report.drive = { ...(report.drive || {}), status: "failed", errorCode: error.code || "drive_sync_failed" };
+          await saveDb();
+          throw error;
+        }
       }
 
       if (routeKey(method, pathname) === "PATCH /api/admin/settings") {

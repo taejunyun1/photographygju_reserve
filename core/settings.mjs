@@ -39,6 +39,7 @@ export const defaultSettings = {
   ],
   studioMaxSlots: 3,
   studioReportDeadlineHours: DEFAULT_STUDIO_REPORT_DEADLINE_HOURS,
+  equipmentReportDeadlineHours: 48,
   darkroomCapacity: 6,
   darkroomSlots: [
     "00:00-02:00",
@@ -145,6 +146,13 @@ export function createSettingsHelpers({ assertPlainObject, assertDateKey, assert
         throw Object.assign(new Error(`스튜디오 보고서 제출 기한은 ${MIN_STUDIO_REPORT_DEADLINE_HOURS}-${MAX_STUDIO_REPORT_DEADLINE_HOURS}시간 사이로 입력하세요.`), { status: 400 });
       }
       patch.studioReportDeadlineHours = Math.floor(deadlineHours);
+    }
+    if (body.equipmentReportDeadlineHours !== undefined) {
+      const deadlineHours = parseStudioReportDeadlineHours(body.equipmentReportDeadlineHours);
+      if (deadlineHours === null) {
+        throw Object.assign(new Error("기자재 보고서 제출 기한은 1-720시간 사이로 입력하세요."), { status: 400 });
+      }
+      patch.equipmentReportDeadlineHours = Math.floor(deadlineHours);
     }
     if (body.printAvailableStart !== undefined) {
       assertTimeValue(body.printAvailableStart, "출력실 시작 시간");

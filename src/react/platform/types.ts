@@ -145,6 +145,10 @@ export type AdminReportRecord = {
   };
   user?: AdminUserRecord | null;
   reservation?: AdminReservationRecord | null;
+  type?: "studio" | "equipment" | string;
+  photoIds?: string[];
+  photos?: Array<{ id?: string; category?: string; mimeType?: string; size?: number; status?: string }>;
+  drive?: { status?: string; folderUrl?: string; errorCode?: string | null; lastSyncedAt?: string | null };
 };
 
 export type AdminLectureApplication = {
@@ -248,7 +252,27 @@ export type AdminSettings = {
   equipmentBagKeywords?: string[];
   equipmentCameraBagNotice?: string;
   studioReportDeadlineHours?: number;
+  equipmentReportDeadlineHours?: number;
   vacationMode?: boolean;
+};
+
+export type AdminReportDriveConnection = {
+  id?: string;
+  status?: string;
+  accountEmail?: string;
+  folderId?: string;
+  folderName?: string;
+  folderUrl?: string;
+  lastVerifiedAt?: string | null;
+  lastSyncedAt?: string | null;
+  errorCode?: string | null;
+  updatedAt?: string | null;
+};
+
+export type AdminReportDriveState = {
+  connection?: AdminReportDriveConnection;
+  pending?: number;
+  failed?: number;
 };
 
 export type AdminSettingsInput = Pick<AdminSettings,
@@ -256,6 +280,7 @@ export type AdminSettingsInput = Pick<AdminSettings,
   | "googleDriveUrl"
   | "darkroomCapacity"
   | "studioReportDeadlineHours"
+  | "equipmentReportDeadlineHours"
   | "printAvailableStart"
   | "printAvailableEnd"
   | "printUploadStartDate"
@@ -702,6 +727,7 @@ export type LegacyState = Record<string, unknown> & {
   adminBlockedScheduleSearch?: string;
   nativeNotifications?: AdminNativeNotificationState;
   adminCoursePlanning?: AdminCoursePlanningData | null;
+  reportDrive?: AdminReportDriveState | null;
 };
 
 export type ReactAdminActions = {
@@ -743,6 +769,7 @@ export type ReactAdminActions = {
   bulkDeleteReports(filters: Partial<AdminViewFilterMap["reports"]>): Promise<void>;
   deleteAllReports(collectionTotal: number): Promise<void>;
   reviewReport(reportId: string): Promise<void>;
+  retryReportDrive(reportId: string): Promise<void>;
   saveLecture(lectureId: string | null, input: AdminLectureInput): Promise<void>;
   deleteLecture(lectureId: string, title?: string): Promise<void>;
   bulkDeleteLectures(filters: Partial<AdminViewFilterMap["lectures"]>): Promise<void>;
@@ -753,6 +780,10 @@ export type ReactAdminActions = {
   bulkDeleteNotices(filters: Partial<AdminViewFilterMap["notices"]>): Promise<void>;
   deleteAllNotices(collectionTotal: number): Promise<void>;
   saveSettings(settings: AdminSettingsInput): Promise<void>;
+  loadReportDrive(): Promise<AdminReportDriveState>;
+  connectReportDrive(): Promise<string>;
+  verifyReportDrive(): Promise<AdminReportDriveState>;
+  disconnectReportDrive(): Promise<void>;
   saveBlockedSchedules(schedules: AdminBlockedSchedule[]): Promise<void>;
   cleanupAdminData(): Promise<void>;
   closeSemester(): Promise<void>;

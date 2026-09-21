@@ -47,8 +47,12 @@ export function deleteAdminReservations(db, { scope, filters = {}, confirmText, 
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const reservationIds = new Set(selected.items.map((item) => item.id));
   const reportIds = new Set((db.reports || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));
+  const draftIds = new Set((db.reportDrafts || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));
   db.reservations = (db.reservations || []).filter((item) => !reservationIds.has(item.id));
   db.reports = (db.reports || []).filter((item) => !reportIds.has(item.id));
+  db.reportDrafts = (db.reportDrafts || []).filter((item) => !draftIds.has(item.id));
+  db.reportAttachments = (db.reportAttachments || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
+  db.reportDriveJobs = (db.reportDriveJobs || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
   return {
     summary: {
       deletedReservations: reservationIds.size,
@@ -73,7 +77,11 @@ export function deleteAdminReports(db, { scope, filters = {}, confirmText, admin
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
   const reportIds = new Set(selected.items.map((item) => item.id));
   const resetReservationIds = new Set(selected.items.map((item) => item.reservationId).filter(Boolean));
+  const draftIds = new Set((db.reportDrafts || []).filter((item) => reportIds.has(item.reportId) || resetReservationIds.has(item.reservationId)).map((item) => item.id));
   db.reports = (db.reports || []).filter((item) => !reportIds.has(item.id));
+  db.reportDrafts = (db.reportDrafts || []).filter((item) => !draftIds.has(item.id));
+  db.reportAttachments = (db.reportAttachments || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
+  db.reportDriveJobs = (db.reportDriveJobs || []).filter((item) => !reportIds.has(item.reportId) && !draftIds.has(item.draftId));
   let resetReservations = 0;
   for (const reservation of db.reservations || []) {
     if (resetReservationIds.has(reservation.id) && reservation.fields?.reportStatus === "submitted") {

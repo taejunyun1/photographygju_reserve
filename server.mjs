@@ -89,6 +89,27 @@ function readRawBody(req) {
   });
 }
 
+function readRawBytes(req, maxBytes = 3 * 1024 * 1024 + 1) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    req.on("data", (chunk) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        reject(Object.assign(new Error("사진 파일이 너무 큽니다."), { status: 413 }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      resolve(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength));
+    });
+    req.on("error", reject);
+  });
+}
+
 async function handleApi(req, res, url) {
   let result;
   try {
@@ -99,11 +120,19 @@ async function handleApi(req, res, url) {
       searchParams: url.searchParams,
       authorization: req.headers.authorization || "",
       readText: () => readRawBody(req),
+      readBytes: (maxBytes) => readRawBytes(req, maxBytes),
       db,
       saveDb: async () => writeDb(db),
       slackWebhook: process.env.SLACK_WEBHOOK_URL,
       clientIp: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0],
-      userAgent: req.headers["user-agent"] || ""
+      userAgent: req.headers["user-agent"] || "",
+      reportDriveConfig: {
+        clientId: process.env.REPORT_DRIVE_CLIENT_ID,
+        clientSecret: process.env.REPORT_DRIVE_CLIENT_SECRET,
+        tokenEncryptionKey: process.env.REPORT_DRIVE_TOKEN_ENCRYPTION_KEY,
+        redirectUri: process.env.REPORT_DRIVE_REDIRECT_URI || "http://127.0.0.1:5173/api/oauth/report-drive/callback",
+        fetchImpl: fetch
+      }
     });
   } catch (error) {
     result = { status: error.status || 500, body: { ok: false, error: error.message || "서버 오류가 발생했습니다." } };

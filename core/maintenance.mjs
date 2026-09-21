@@ -68,6 +68,16 @@ export function createMaintenanceHelpers({
       summary.deletedReportHtmlSnapshots += 1;
     }
 
+    const expiredReportIds = new Set(db.reports
+      .filter((report) => report.htmlDeletedAt && parseRecordTime(report.htmlDeletedAt) <= nowMs)
+      .map((report) => report.id));
+    const expiredDraftIds = new Set(db.reportDrafts
+      .filter((draft) => draft.submittedAt && parseRecordTime(draft.submittedAt) <= reportHtmlCutoff)
+      .map((draft) => draft.id));
+    db.reportAttachments = db.reportAttachments.filter((photo) => !expiredReportIds.has(photo.reportId) && !expiredDraftIds.has(photo.draftId));
+    db.reportDriveJobs = db.reportDriveJobs.filter((job) => !expiredReportIds.has(job.reportId) && !expiredDraftIds.has(job.draftId));
+    db.reportDrafts = db.reportDrafts.filter((draft) => !expiredDraftIds.has(draft.id));
+
     const beforeSessions = db.sessions.length;
     db.sessions = db.sessions.filter((session) => parseRecordTime(session.expiresAt) > nowDate.getTime());
     summary.deletedExpiredSessions = beforeSessions - db.sessions.length;
@@ -92,6 +102,8 @@ export function createMaintenanceHelpers({
   function closeSemesterData(db, actorId = "system") {
     normalizeDb(db);
     const reservationIds = new Set(db.reservations.map((reservation) => reservation.id));
+    const reportIds = new Set(db.reports.filter((report) => reservationIds.has(report.reservationId)).map((report) => report.id));
+    const draftIds = new Set(db.reportDrafts.filter((draft) => reservationIds.has(draft.reservationId)).map((draft) => draft.id));
     const summary = {
       deletedReservations: db.reservations.length,
       deletedReports: db.reports.filter((report) => reservationIds.has(report.reservationId)).length,
@@ -100,6 +112,9 @@ export function createMaintenanceHelpers({
 
     db.reservations = [];
     db.reports = db.reports.filter((report) => !reservationIds.has(report.reservationId));
+    db.reportDrafts = db.reportDrafts.filter((draft) => !draftIds.has(draft.id));
+    db.reportAttachments = db.reportAttachments.filter((photo) => !reportIds.has(photo.reportId) && !draftIds.has(photo.draftId));
+    db.reportDriveJobs = db.reportDriveJobs.filter((job) => !reportIds.has(job.reportId) && !draftIds.has(job.draftId));
     db.sessions = [];
     db.auditLogs.push({
       id: id("audit"),

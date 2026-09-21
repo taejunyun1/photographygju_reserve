@@ -216,6 +216,7 @@ export function createStudentReactActions(dependencies) {
   const {
     state,
     api,
+    uploadBinary,
     render,
     toast,
     loadBootstrap,
@@ -381,13 +382,43 @@ export function createStudentReactActions(dependencies) {
       render();
     },
     async submitReport(id, payload) {
-      await api("/api/reports/studio", { method: "POST", body: { reservationId: id, ...payload } });
+      const reservation = asArray(state.myReservations).find((item) => item.id === id);
+      const isNewReportPayload = Boolean(payload?.photos || payload?.studioDamageAnswer || payload?.equipmentDamageAnswer || reservation?.type === "equipment");
+      if (!isNewReportPayload && reservation?.type !== "equipment") {
+        await api("/api/reports/studio", { method: "POST", body: { reservationId: id, ...payload } });
+      } else {
+        const draft = await api("/api/reports/drafts", { method: "POST", body: { reservationId: id, type: reservation?.type } });
+        const fields = { ...(payload || {}) };
+        delete fields.photos;
+        const updatedDraft = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}`, {
+          method: "PATCH",
+          body: { revision: Number(draft.revision || 0), fields }
+        });
+        for (const photo of asArray(payload?.photos)) {
+          if (!photo?.file) continue;
+          const reserved = await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos`, {
+            method: "POST",
+            body: {
+              clientPhotoId: photo.clientPhotoId || photo.id,
+              category: photo.category || "usage",
+              mimeType: photo.mimeType || photo.file.type,
+              size: Number(photo.size || photo.file.size)
+            }
+          });
+          if (typeof uploadBinary !== "function") throw new Error("사진 업로드 기능을 초기화하지 못했습니다.");
+          await uploadBinary(`/api/reports/drafts/${encodeURIComponent(draft.id)}/photos/${encodeURIComponent(reserved.id)}/content`, photo.file, { contentType: photo.mimeType || photo.file.type });
+        }
+        await api(`/api/reports/drafts/${encodeURIComponent(draft.id)}/submit`, {
+          method: "POST",
+          body: { revision: Number(updatedDraft.revision || 0), submissionKey: `${id}:${Date.now()}` }
+        });
+      }
       state.activeReportReservationId = "";
       state.myReservations = asArray(state.myReservations).map((item) => item.id === id
         ? { ...item, fields: { ...(item.fields || {}), reportStatus: "submitted" } }
         : item);
       render();
-      toast("스튜디오 보고서가 제출되었습니다.");
+      toast(reservation?.type === "equipment" ? "기자재 사용 보고서가 제출되었습니다." : "스튜디오 보고서가 제출되었습니다.");
       await refreshAfterMutation("보고서는 제출됐지만", { includeLectures: false });
     },
     async applyLecture(id) {

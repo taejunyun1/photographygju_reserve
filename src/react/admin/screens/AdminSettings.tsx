@@ -100,6 +100,7 @@ function settingsPayload(form: HTMLFormElement) {
     googleDriveUrl: fieldValue(form, "googleDriveUrl"),
     darkroomCapacity: Number(fieldValue(form, "darkroomCapacity") || 6),
     studioReportDeadlineHours: Number(fieldValue(form, "studioReportDeadlineHours") || 48),
+    equipmentReportDeadlineHours: Number(fieldValue(form, "equipmentReportDeadlineHours") || 48),
     printAvailableStart: fieldValue(form, "printAvailableStart"),
     printAvailableEnd: fieldValue(form, "printAvailableEnd"),
     printUploadStartDate: fieldValue(form, "printUploadStartDate"),
@@ -217,6 +218,30 @@ function SettingsDisclosure({
   );
 }
 
+function ReportDrivePanel({ state, actions }: AdminSettingsProps) {
+  const drive = (state.reportDrive || {}) as { connection?: { status?: string; accountEmail?: string; folderName?: string; folderUrl?: string; lastVerifiedAt?: string | null; errorCode?: string | null }; pending?: number; failed?: number };
+  const connection = drive.connection || {};
+  const connected = connection.status === "connected";
+  return <section className="admin-report-drive-panel">
+    <div className="section-heading"><div><p className="eyebrow">보고서 저장소</p><h3>Google Drive 연결</h3></div><span className="tag blue">스튜디오 · 기자재</span></div>
+    <div className="property-list">
+      {property("상태", connected ? "연결됨" : connection.status === "reauth_required" ? "재연결 필요" : "연결 안 됨")}
+      {property("연결 계정", connection.accountEmail || "-")}
+      {property("저장 폴더", connection.folderName || "GJU 사용보고서")}
+      {property("대기 / 실패", `${Number(drive.pending || 0)}건 / ${Number(drive.failed || 0)}건`)}
+      {property("마지막 확인", connection.lastVerifiedAt ? formatDateTime(connection.lastVerifiedAt) : "확인 전")}
+    </div>
+    {connection.folderUrl ? <p><a href={connection.folderUrl} target="_blank" rel="noreferrer">드라이브에서 보고서 폴더 열기</a></p> : null}
+    {connection.errorCode ? <p className="muted warning-text">저장 상태: {connection.errorCode}</p> : null}
+    <div className="button-row">
+      {connected ? <button className="button" type="button" onClick={() => runAdminAction(actions.verifyReportDrive)}>연결 확인</button> : null}
+      <button className="button primary" type="button" onClick={() => runAdminAction(actions.connectReportDrive)}>{connected ? "다른 계정으로 재연결" : "Google Drive 연결"}</button>
+      {connected ? <button className="button danger" type="button" onClick={() => runAdminAction(actions.disconnectReportDrive)}>연결 해제</button> : null}
+    </div>
+    <p className="muted">관리자 계정만 연결하며, 학생에게 Google 로그인이나 폴더 공유 권한을 요구하지 않습니다.</p>
+  </section>;
+}
+
 export function AdminSettings({ state, actions }: AdminSettingsProps) {
   const settings = adminSettings(state);
   const schedules = blockedSchedules(state);
@@ -225,6 +250,10 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
   const startDateRef = React.useRef<HTMLInputElement>(null);
   const query = normalizedQuery(state.adminBlockedScheduleSearch);
   const filteredSchedules = schedules.filter((item) => blockMatches(item, query));
+
+  React.useEffect(() => {
+    void actions.loadReportDrive().catch(() => null);
+  }, [actions]);
 
   const onCalendarDate = (key: string) => {
     const date = new Date(`${key}T00:00:00`);
@@ -364,6 +393,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
         </div>
       </GjuCard>
       <SettingsDisclosure title="운영 설정" description="운영값·출력·기자재 규칙">
+        <ReportDrivePanel state={state} actions={actions} />
         <form className="admin-react-form-grid" onSubmit={submitSettings}>
           <label className="admin-react-form-wide">
             출력비 계좌 안내
@@ -380,6 +410,10 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
           <label>
             스튜디오 보고서 제출 기한
             <input className="input" name="studioReportDeadlineHours" type="number" min="1" max="720" defaultValue={String(settings.studioReportDeadlineHours || 48)} />
+          </label>
+          <label>
+            기자재 보고서 제출 기한
+            <input className="input" name="equipmentReportDeadlineHours" type="number" min="1" max="720" defaultValue={String(settings.equipmentReportDeadlineHours || 48)} />
           </label>
           <label>
             출력실 시작

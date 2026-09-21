@@ -1,11 +1,11 @@
-import { $app, state } from "./state.js?v=20260921-studio-report-r1";
-import { loadAdminData, loadAdminView, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260921-studio-report-r1";
-import { configureAdminRefreshLifecycle, requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260921-studio-report-r1";
-import { setupEventHandlers } from "./events.js?v=20260921-studio-report-r1";
-import { createNativeAppResumeLifecycle } from "./native-app-lifecycle.js?v=20260921-studio-report-r1";
-import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260921-studio-report-r1";
-import { render } from "./renderer.js?v=20260921-studio-report-r1";
-import { escapeHtml } from "./utils.js?v=20260921-studio-report-r1";
+import { $app, state } from "./state.js?v=20260921-report-drive-r1";
+import { loadAdminData, loadAdminView, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20260921-report-drive-r1";
+import { configureAdminRefreshLifecycle, requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260921-report-drive-r1";
+import { setupEventHandlers } from "./events.js?v=20260921-report-drive-r1";
+import { createNativeAppResumeLifecycle } from "./native-app-lifecycle.js?v=20260921-report-drive-r1";
+import { handleNativeNotificationResume, initializeNativeNotifications } from "./native-notifications.js?v=20260921-report-drive-r1";
+import { render } from "./renderer.js?v=20260921-report-drive-r1";
+import { escapeHtml } from "./utils.js?v=20260921-report-drive-r1";
 
 async function reloadActiveAccount() {
   await loadBootstrap();

@@ -173,6 +173,9 @@ GJU_ANDROID_KEY_PASSWORD
 | `ADMIN_PASSWORD` | 최초 운영 관리자 해시 생성 | Worker secret |
 | `INTERNAL_CRON_SECRET` | 내부 보관정책 Cron 인증 | Worker secret |
 | `SLACK_WEBHOOK_URL` | Slack Incoming Webhook | Worker secret |
+| `REPORT_DRIVE_CLIENT_ID` | 보고서용 Google OAuth 웹 클라이언트 ID | Worker secret |
+| `REPORT_DRIVE_CLIENT_SECRET` | 보고서용 Google OAuth 웹 클라이언트 보안값 | Worker secret |
+| `REPORT_DRIVE_TOKEN_ENCRYPTION_KEY` | Drive refresh token AES-GCM 암호화 키 | Worker secret |
 
 설정:
 
@@ -180,6 +183,9 @@ GJU_ANDROID_KEY_PASSWORD
 npx wrangler secret put ADMIN_PASSWORD
 npx wrangler secret put INTERNAL_CRON_SECRET
 npx wrangler secret put SLACK_WEBHOOK_URL
+npx wrangler secret put REPORT_DRIVE_CLIENT_ID
+npx wrangler secret put REPORT_DRIVE_CLIENT_SECRET
+npx wrangler secret put REPORT_DRIVE_TOKEN_ENCRYPTION_KEY
 ```
 
 ### 금지
@@ -452,4 +458,3 @@ GJU_PRODUCTION_URL=https://gjureserve.co.kr npm run deploy:check
 9. 실기기 핵심 플로우 검증
 10. 스토어 빌드·제출
 11. 배포 버전과 롤백 지점 기록
-

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260921-studio-report-r1";
+import { state } from "./state.js?v=20260921-report-drive-r1";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);
@@ -24,6 +24,25 @@ export async function api(path, options = {}) {
     const payload = await response.json().catch(() => ({ ok: false, error: "서버 응답을 읽을 수 없습니다." }));
     if (!payload.ok) {
       const error = new Error(payload.error || "요청 실패");
+      error.status = response.status;
+      throw error;
+    }
+    return payload.data;
+  } finally {
+    if (loading) setLoading(-1);
+  }
+}
+
+export async function apiBinary(path, body, { contentType = "application/octet-stream", loading = true } = {}) {
+  const apiBase = String(window.GJU_API_BASE || "").replace(/\/$/, "");
+  const headers = { "content-type": contentType };
+  if (state.token) headers.authorization = `Bearer ${state.token}`;
+  if (loading) setLoading(1);
+  try {
+    const response = await fetch(`${apiBase}${path}`, { method: "POST", headers, body });
+    const payload = await response.json().catch(() => ({ ok: false, error: "서버 응답을 읽을 수 없습니다." }));
+    if (!payload.ok) {
+      const error = new Error(payload.error || "업로드 실패");
       error.status = response.status;
       throw error;
     }

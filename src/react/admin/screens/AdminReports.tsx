@@ -77,8 +77,14 @@ function reportDetails(report: AdminReportRecord) {
     return <p className="muted">학생 보고서 제출을 기다리고 있습니다.</p>;
   }
   const damageFound = reportField(report, "damageFound") === true;
+  const checks = (reportField(report, "checks") || {}) as {
+    studio?: { answer?: string; description?: string };
+    equipment?: { answer?: string; description?: string };
+  };
+  const checkLabel = (answer?: string) => answer === "yes" ? "있음 (O)" : answer === "no" ? "없음 (X)" : answer === "not_applicable" ? "해당 없음" : "미응답";
   return (
     <dl className="property-list compact admin-report-detail-list">
+      {property("구분", report.type === "equipment" ? "기자재" : "스튜디오")}
       {property("사용 시간", String(reportField(report, "actualTime") || "-"))}
       {property("참여 인원", String(reportField(report, "participants") || "-"))}
       {property("사용 장비", reportEquipment(reportField(report, "usedEquipment")))}
@@ -86,7 +92,13 @@ function reportDetails(report: AdminReportRecord) {
       {property("정리 확인", reportField(report, "cleanupConfirmed") === true ? "확인" : "미확인")}
       {property("파손/이상", damageFound ? "발견" : "없음")}
       {damageFound ? property("파손 상세", String(reportField(report, "damageDescription") || "내용 없음")) : null}
+      {checks.studio ? property("스튜디오 점검", checkLabel(checks.studio.answer)) : null}
+      {checks.studio?.answer === "yes" ? property("스튜디오 파손 상세", checks.studio.description || "내용 없음") : null}
+      {checks.equipment ? property("대여 기자재 점검", checkLabel(checks.equipment.answer)) : null}
+      {checks.equipment?.answer === "yes" ? property("대여 기자재 파손 상세", checks.equipment.description || "내용 없음") : null}
       {property("비고", String(reportField(report, "notes") || "-"))}
+      {property("첨부 사진", `${Number(report.photos?.length || report.photoIds?.length || 0)}장`)}
+      {report.drive?.folderUrl ? property("Drive", <a href={report.drive.folderUrl} target="_blank" rel="noreferrer">폴더 열기</a>) : property("Drive 저장", report.drive?.status === "synced" ? "완료" : report.drive?.status === "failed" ? "실패" : "대기")}
     </dl>
   );
 }
@@ -110,6 +122,11 @@ function reportReviewAction(report: AdminReportRecord, actions: ReactAdminAction
       확인 완료
     </button>
   );
+}
+
+function reportDriveAction(report: AdminReportRecord, actions: ReactAdminActions) {
+  if (report.isMissing || reportStatus(report) === "missing" || report.drive?.status !== "failed") return null;
+  return <button className="button compact" type="button" onClick={() => runAdminAction(() => actions.retryReportDrive(report.id))}>Drive 재시도</button>;
 }
 
 function bulkDeleteReports(state: LegacyState, actions: ReactAdminActions) {
@@ -232,7 +249,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                       <GjuStatusBadge tone={reportTone(reportStatus(report))}>
                         {reportStatusLabel(reportStatus(report))}
                       </GjuStatusBadge>
-                      {reportReviewAction(report, actions)}
+                      {reportReviewAction(report, actions)} {reportDriveAction(report, actions)}
                     </td>
                     <td>{formatDateTime(report.submittedAt || report.createdAt)}</td>
                     <td>{reportDetails(report)}</td>
@@ -260,7 +277,7 @@ export function AdminReports({ state, actions }: AdminReportsProps) {
                   {reportStatusLabel(reportStatus(report))}
                 </GjuStatusBadge>
               </div>
-              {reportReviewAction(report, actions)}
+              {reportReviewAction(report, actions)} {reportDriveAction(report, actions)}
               <dl className="property-list">
                 {property("학기", reportSemester(report))}
                 {property("예약", report.reservationId || report.reservation?.id || "-")}

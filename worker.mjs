@@ -20,7 +20,7 @@ const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data:",
+  "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self' https://photographygju-reserve.taejunyun.workers.dev",
   "base-uri 'none'",
@@ -148,13 +148,26 @@ export class GjuReserveDb extends DurableObject {
       searchParams: url.searchParams,
       authorization: request.headers.get("authorization") || "",
       readText: () => request.text(),
+      readBytes: async (maxBytes = 3 * 1024 * 1024 + 1) => {
+        const contentLength = Number(request.headers.get("content-length") || 0);
+        if (contentLength > maxBytes) throw Object.assign(new Error("사진 파일이 너무 큽니다."), { status: 413 });
+        const bytes = await request.arrayBuffer();
+        if (bytes.byteLength > maxBytes) throw Object.assign(new Error("사진 파일이 너무 큽니다."), { status: 413 });
+        return bytes;
+      },
       db,
       saveDb: () => this.saveDb(),
       slackWebhook: this.env.SLACK_WEBHOOK_URL,
       clientIp: request.headers.get("cf-connecting-ip") ||
         request.headers.get("x-forwarded-for")?.split(",")[0] ||
         "",
-      userAgent: request.headers.get("user-agent") || ""
+      userAgent: request.headers.get("user-agent") || "",
+      reportDriveConfig: {
+        clientId: this.env.REPORT_DRIVE_CLIENT_ID,
+        clientSecret: this.env.REPORT_DRIVE_CLIENT_SECRET,
+        tokenEncryptionKey: this.env.REPORT_DRIVE_TOKEN_ENCRYPTION_KEY,
+        redirectUri: this.env.REPORT_DRIVE_REDIRECT_URI || "https://gjureserve.co.kr/api/oauth/report-drive/callback"
+      }
     });
     return jsonResponse(result.body, result.status, cors);
   }

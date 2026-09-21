@@ -1,20 +1,20 @@
-import { state } from "../state.js?v=20260921-studio-report-r1";
-import { api } from "../api.js?v=20260921-studio-report-r1";
-import { loadAdminData, loadBootstrap } from "../data.js?v=20260921-studio-report-r1";
-import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260921-studio-report-r1";
+import { state } from "../state.js?v=20260921-report-drive-r1";
+import { api } from "../api.js?v=20260921-report-drive-r1";
+import { loadAdminData, loadBootstrap } from "../data.js?v=20260921-report-drive-r1";
+import { downloadAdminBackup, downloadLectureCsv, logout } from "../actions.js?v=20260921-report-drive-r1";
 import {
   patchAdminEquipment,
   syncAdminEquipmentDom
-} from "../admin-equipment.js?v=20260921-studio-report-r1";
-import { render, toast } from "../renderer.js?v=20260921-studio-report-r1";
-import { formData, parseCsv } from "../utils.js?v=20260921-studio-report-r1";
+} from "../admin-equipment.js?v=20260921-report-drive-r1";
+import { render, toast } from "../renderer.js?v=20260921-report-drive-r1";
+import { formData, parseCsv } from "../utils.js?v=20260921-report-drive-r1";
 import {
   captureScrollState,
   refreshAdminDataPreservingScroll,
   renderPreservingScroll,
   resetAdminPage,
   setAdminPage
-} from "./shared.js?v=20260921-studio-report-r1";
+} from "./shared.js?v=20260921-report-drive-r1";
 
 const FULL_DELETE_CONFIRM_TEXT = "전체 삭제";
 

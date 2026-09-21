@@ -1,14 +1,14 @@
-import { state } from "../state.js?v=20260921-studio-report-r1";
+import { state } from "../state.js?v=20260921-report-drive-r1";
 import {
   setAdminEquipmentSelection,
   setVisibleAdminEquipmentSelection,
   syncAdminEquipmentSelectionDom
-} from "../admin-equipment.js?v=20260921-studio-report-r1";
+} from "../admin-equipment.js?v=20260921-report-drive-r1";
 import {
   renderPreservingScroll,
   setReservationFlowStep,
   applyPrintTimeSlot
-} from "./shared.js?v=20260921-studio-report-r1";
+} from "./shared.js?v=20260921-report-drive-r1";
 
 export function setupReservationInputHandlers() {
   document.addEventListener("change", (event) => {

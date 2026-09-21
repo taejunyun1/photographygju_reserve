@@ -2,9 +2,11 @@ import { todayKeySeoul } from "./availability";
 import type { StudentReservation } from "./types";
 
 export function isReportDue(reservation: StudentReservation, today = todayKeySeoul()): boolean {
-  if (reservation.type !== "studio") return false;
+  if (!["studio", "equipment"].includes(reservation.type)) return false;
   if (reservation.fields.reportStatus === "submitted") return false;
   if (["cancelled", "admin_cancelled", "rejected"].includes(reservation.status || "")) return false;
+  if (reservation.reportRequirement) return Boolean(reservation.reportRequirement.required && (reservation.reportRequirement.canDraft || reservation.reportRequirement.canSubmit));
+  if (reservation.type === "equipment" && !["checked_out", "returned"].includes(reservation.status || "")) return false;
   const reservedDate = String(reservation.fields.reservedDate || "");
   return Boolean(reservedDate && reservedDate <= today);
 }

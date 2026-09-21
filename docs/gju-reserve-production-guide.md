@@ -105,7 +105,14 @@ Required secrets:
 SESSION_SECRET
 SLACK_WEBHOOK_URL
 ADMIN_BOOTSTRAP_TOKEN
+REPORT_DRIVE_CLIENT_ID
+REPORT_DRIVE_CLIENT_SECRET
+REPORT_DRIVE_TOKEN_ENCRYPTION_KEY
 ```
+
+보고서 Google Drive를 사용할 때는 Google Cloud OAuth 웹 클라이언트의 redirect URI를
+`https://gjureserve.co.kr/api/oauth/report-drive/callback`으로 등록하고, 위 세 값을 Worker Secret으로 저장합니다.
+`REPORT_DRIVE_TOKEN_ENCRYPTION_KEY`는 기존 토큰을 복호화할 수 있도록 연결 후 변경하지 않습니다.
 
 Required public/config values:
 

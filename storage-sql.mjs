@@ -156,6 +156,89 @@ const COLLECTIONS = [
       VALUES (?, ?, ?, ?, ?, ?, ?)`
   },
   {
+    key: "reportDrafts",
+    table: "report_drafts",
+    create: `CREATE TABLE IF NOT EXISTS report_drafts (
+      id TEXT PRIMARY KEY,
+      reservation_id TEXT,
+      user_id TEXT,
+      type TEXT,
+      updated_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_report_drafts_reservation_user ON report_drafts (reservation_id, user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_report_drafts_updated_at ON report_drafts (updated_at)"
+    ],
+    params: (item, data) => [item.id, item.reservationId || "", item.userId || "", item.type || "", item.updatedAt || "", data],
+    insert: `INSERT OR REPLACE INTO report_drafts
+      (id, reservation_id, user_id, type, updated_at, data)
+      VALUES (?, ?, ?, ?, ?, ?)`
+  },
+  {
+    key: "reportAttachments",
+    table: "report_attachments",
+    create: `CREATE TABLE IF NOT EXISTS report_attachments (
+      id TEXT PRIMARY KEY,
+      draft_id TEXT,
+      report_id TEXT,
+      user_id TEXT,
+      category TEXT,
+      status TEXT,
+      created_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_report_attachments_draft ON report_attachments (draft_id)",
+      "CREATE INDEX IF NOT EXISTS idx_report_attachments_report ON report_attachments (report_id)",
+      "CREATE INDEX IF NOT EXISTS idx_report_attachments_user ON report_attachments (user_id)"
+    ],
+    params: (item, data) => [item.id, item.draftId || "", item.reportId || "", item.userId || "", item.category || "", item.status || "", item.createdAt || "", data],
+    insert: `INSERT OR REPLACE INTO report_attachments
+      (id, draft_id, report_id, user_id, category, status, created_at, data)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  },
+  {
+    key: "reportDriveJobs",
+    table: "report_drive_jobs",
+    create: `CREATE TABLE IF NOT EXISTS report_drive_jobs (
+      id TEXT PRIMARY KEY,
+      report_id TEXT,
+      status TEXT,
+      next_attempt_at TEXT,
+      created_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_report_drive_jobs_status_next ON report_drive_jobs (status, next_attempt_at)",
+      "CREATE INDEX IF NOT EXISTS idx_report_drive_jobs_report ON report_drive_jobs (report_id)"
+    ],
+    params: (item, data) => [item.id, item.reportId || "", item.status || "pending", item.nextAttemptAt || "", item.createdAt || "", data],
+    insert: `INSERT OR REPLACE INTO report_drive_jobs
+      (id, report_id, status, next_attempt_at, created_at, data)
+      VALUES (?, ?, ?, ?, ?, ?)`
+  },
+  {
+    key: "reportDriveConnections",
+    table: "report_drive_connections",
+    create: `CREATE TABLE IF NOT EXISTS report_drive_connections (
+      id TEXT PRIMARY KEY,
+      admin_user_id TEXT,
+      status TEXT,
+      folder_id TEXT,
+      updated_at TEXT,
+      data TEXT NOT NULL
+    )`,
+    indexes: [
+      "CREATE INDEX IF NOT EXISTS idx_report_drive_connections_status ON report_drive_connections (status)",
+      "CREATE INDEX IF NOT EXISTS idx_report_drive_connections_admin ON report_drive_connections (admin_user_id)"
+    ],
+    params: (item, data) => [item.id, item.adminUserId || "", item.status || "disconnected", item.folderId || "", item.updatedAt || "", data],
+    insert: `INSERT OR REPLACE INTO report_drive_connections
+      (id, admin_user_id, status, folder_id, updated_at, data)
+      VALUES (?, ?, ?, ?, ?, ?)`
+  },
+  {
     key: "lectures",
     table: "lectures",
     create: `CREATE TABLE IF NOT EXISTS lectures (

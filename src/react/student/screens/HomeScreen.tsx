@@ -75,6 +75,7 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
     }
     return { tone: "neutral" as const, label: "준비 중", message: "관리자가 설문을 공개하면 이곳에서 바로 응답할 수 있습니다." };
   })();
+  const reportCount = state.myReservations.filter((reservation) => reservation.reportRequirement?.required || (reservation.fields.reportStatus !== "submitted" && ["studio", "equipment"].includes(reservation.type) && ["checked_out", "returned"].includes(reservation.status || ""))).length;
 
   function closeFavoriteSheet() {
     setFavoriteSheetOpen(false);
@@ -106,6 +107,13 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
           {approved && courseDemandSurvey?.isOpen ? (
             <GjuButton onClick={() => setCourseDemandSurveyId(courseDemandSurvey.id)}>{courseDemandSurvey.response ? "응답 수정" : "응답하기"}</GjuButton>
           ) : null}
+        </div>
+      </GjuCard>
+
+      <GjuCard title="사용 보고서" eyebrow="스튜디오 · 기자재" className="student-react-report-summary-card">
+        <div className="student-react-course-demand-card__actions">
+          <span>{reportCount ? `작성할 보고서 ${reportCount}건이 있습니다.` : "작성할 보고서가 없습니다."}</span>
+          <GjuButton variant={reportCount ? "solid" : "ghost"} onClick={() => actions.setView("reports")}>보고서 확인</GjuButton>
         </div>
       </GjuCard>
 

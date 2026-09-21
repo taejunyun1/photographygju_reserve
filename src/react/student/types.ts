@@ -125,7 +125,44 @@ export type StudentReservation = {
     endAt?: string;
     reportDeadlineAt?: string;
   };
+  reportRequirement?: StudentReportRequirement;
+  reportDraft?: StudentReportDraft | null;
   createdAt?: string;
+};
+
+export type StudentReportRequirement = {
+  required?: boolean;
+  canDraft?: boolean;
+  canSubmit?: boolean;
+  dueAt?: string | null;
+  deadlineAt?: string | null;
+  reportId?: string | null;
+  draftId?: string | null;
+  submitted?: boolean;
+  reviewed?: boolean;
+  overdue?: boolean;
+  type?: "studio" | "equipment" | null;
+};
+
+export type StudentReportPhoto = {
+  id: string;
+  clientPhotoId?: string;
+  category?: "usage" | "studio_damage" | "equipment_damage" | string;
+  mimeType?: string;
+  size?: number;
+  status?: string;
+  dataUrl?: string;
+  file?: File;
+};
+
+export type StudentReportDraft = {
+  id: string;
+  reservationId?: string;
+  type?: "studio" | "equipment";
+  revision?: number;
+  fields?: Record<string, unknown>;
+  photos?: readonly StudentReportPhoto[];
+  updatedAt?: string;
 };
 
 export type StudentFavoriteEquipmentGroup = {
@@ -222,6 +259,7 @@ export type StudentSettings = {
   blockedSchedules?: readonly StudentBlockedSchedule[];
   googleDriveUrl?: string;
   studioReportDeadlineHours?: number;
+  equipmentReportDeadlineHours?: number;
   equipmentCameraBagNotice?: string;
   [key: string]: unknown;
 };
@@ -328,14 +366,25 @@ export type StudentReservationSelectionPatch = {
 };
 
 export type StudentReportPayload = {
-  actualTime: string;
-  participants: string;
-  usedEquipment: string;
-  resultPhotoUrl: string;
-  cleanupConfirmed: boolean;
-  damageFound: boolean;
-  damageDescription: string;
-  notes: string;
+  actualTime?: string;
+  participants?: string;
+  usedEquipment?: string;
+  resultPhotoUrl?: string;
+  cleanupConfirmed?: boolean;
+  returnReadyConfirmed?: boolean;
+  damageFound?: boolean;
+  damageDescription?: string;
+  equipmentDamageDescription?: string;
+  studioDamageAnswer?: "yes" | "no";
+  equipmentDamageAnswer?: "yes" | "no";
+  studioEquipmentLabel?: string;
+  equipmentIds?: readonly string[];
+  checks?: {
+    studio?: { answer?: "yes" | "no" | "not_applicable"; description?: string; equipmentLabel?: string };
+    equipment?: { answer?: "yes" | "no" | "not_applicable"; description?: string; equipmentIds?: readonly string[] };
+  };
+  notes?: string;
+  photos?: readonly StudentReportPhoto[];
 };
 
 export type StudentProfileUpdate = {

@@ -1260,6 +1260,48 @@
   }
 }
 
+.student-react-report-summary-card {
+  border-color: color-mix(in srgb, var(--gju-blue, #1756a9) 24%, white);
+}
+
+.report-reservation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--gju-surface-muted, #f4f7fb);
+}
+
+.report-reservation-summary span { color: var(--gju-text-muted, #52617a); }
+
+.report-damage-section {
+  display: grid;
+  gap: 12px;
+  margin: 4px 0;
+  padding: 16px;
+  border: 1px solid var(--gju-border, #d8e0ed);
+  border-radius: 14px;
+}
+
+.report-damage-section legend { padding-inline: 4px; font-weight: 700; }
+.report-choice-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.report-choice { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border: 1px solid var(--gju-border, #d8e0ed); border-radius: 10px; cursor: pointer; }
+.report-choice.selected { border-color: var(--gju-blue, #1756a9); background: color-mix(in srgb, var(--gju-blue, #1756a9) 10%, white); }
+.report-damage-detail { margin-top: 4px; }
+.report-photo-picker { display: grid; gap: 12px; }
+.report-photo-picker__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.report-photo-picker__grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.report-photo-thumb, .report-photo-add { position: relative; min-height: 92px; margin: 0; border: 1px dashed var(--gju-border, #d8e0ed); border-radius: 12px; overflow: hidden; background: var(--gju-surface-muted, #f4f7fb); }
+.report-photo-thumb img { display: block; width: 100%; height: 92px; object-fit: cover; }
+.report-photo-thumb button { position: absolute; right: 4px; bottom: 4px; padding: 3px 6px; border: 0; border-radius: 6px; color: white; background: rgb(0 0 0 / 70%); font-size: 11px; }
+.report-photo-add { display: grid; place-items: center; padding: 8px; color: var(--gju-blue, #1756a9); text-align: center; cursor: pointer; }
+.report-photo-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+@media (max-width: 720px) {
+  .report-photo-picker__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .student-react-shell *,
   .student-react-shell *::before,

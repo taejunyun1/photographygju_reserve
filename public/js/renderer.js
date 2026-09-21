@@ -1,13 +1,13 @@
-import { $app, state } from "./state.js?v=20260921-studio-report-r1";
-import { api } from "./api.js?v=20260921-studio-report-r1";
+import { $app, state } from "./state.js?v=20260921-report-drive-r1";
+import { api, apiBinary } from "./api.js?v=20260921-report-drive-r1";
 import {
   invalidateAdminViewCache,
   loadAdminView,
   loadBootstrap,
   loadLectures,
   loadMyReservations
-} from "./data.js?v=20260921-studio-report-r1";
-import { requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260921-studio-report-r1";
+} from "./data.js?v=20260921-report-drive-r1";
+import { requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20260921-report-drive-r1";
 import {
   clearNativeNotificationAccount,
   disableNativeReservationNotifications,
@@ -15,12 +15,12 @@ import {
   handleNativeNotificationResume,
   notifyNativeReservationCreated,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20260921-studio-report-r1";
-import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260921-studio-report-r1";
-import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260921-studio-report-r1";
-import { adminShell } from "./views-admin.js?v=20260921-studio-report-r1";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260921-studio-report-r1";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260921-studio-report-r1";
+} from "./native-notifications.js?v=20260921-report-drive-r1";
+import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20260921-report-drive-r1";
+import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20260921-report-drive-r1";
+import { adminShell } from "./views-admin.js?v=20260921-report-drive-r1";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20260921-report-drive-r1";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20260921-report-drive-r1";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();
@@ -268,6 +268,7 @@ async function runAdminUtility(task, successMessage) {
 const reactStudentActions = createStudentReactActions({
   state,
   api,
+  uploadBinary: apiBinary,
   render,
   toast,
   loadBootstrap,
@@ -626,6 +627,14 @@ const reactAdminActions = {
       { invalidateViews: ["reports", "dashboard"] }
     );
   },
+  async retryReportDrive(reportId) {
+    await runAdminMutation(
+      "reports",
+      () => api(`/api/admin/reports/${encodeURIComponent(reportId)}/drive-retry`, { method: "POST" }),
+      "보고서 Drive 저장을 다시 시도했습니다.",
+      { invalidateViews: ["reports", "settings", "dashboard"] }
+    );
+  },
   async deleteAllReports(collectionTotal) {
     await runAdminFullDelete(
       "reports",
@@ -777,6 +786,32 @@ const reactAdminActions = {
       () => api("/api/admin/settings", { method: "PATCH", body: settings }),
       "설정을 저장했습니다."
     );
+  },
+  async loadReportDrive() {
+    const result = await api("/api/admin/report-drive");
+    state.reportDrive = result;
+    renderWithScrollState(captureScrollState());
+    return result;
+  },
+  async connectReportDrive() {
+    const result = await api("/api/admin/report-drive/connect", { method: "POST" });
+    if (result?.url) window.open(result.url, "gju-report-drive", "noopener,noreferrer");
+    toast("Google Drive 연결 창을 열었습니다.", { tone: "status", preserveScroll: true });
+    return result?.url || "";
+  },
+  async verifyReportDrive() {
+    const result = await api("/api/admin/report-drive/verify", { method: "POST" });
+    state.reportDrive = result;
+    renderWithScrollState(captureScrollState());
+    toast("보고서 Drive 연결을 확인했습니다.", { tone: "status", preserveScroll: true });
+    return result;
+  },
+  async disconnectReportDrive() {
+    if (!confirm("보고서 Google Drive 연결을 해제할까요? 기존 파일은 Drive에 남습니다.")) return;
+    const result = await api("/api/admin/report-drive", { method: "DELETE" });
+    state.reportDrive = result;
+    renderWithScrollState(captureScrollState());
+    toast("보고서 Drive 연결을 해제했습니다.", { tone: "status", preserveScroll: true });
   },
   async saveBlockedSchedules(blockedSchedules) {
     await runAdminMutation(

@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260921-studio-report-r1";
-import { api } from "./api.js?v=20260921-studio-report-r1";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260921-studio-report-r1";
+import { state } from "./state.js?v=20260921-report-drive-r1";
+import { api } from "./api.js?v=20260921-report-drive-r1";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20260921-report-drive-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();

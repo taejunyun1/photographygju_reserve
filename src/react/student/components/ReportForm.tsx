@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { GjuButton, GjuCard } from "../../design-system";
-import type { StudentActions, StudentReportPayload, StudentReservation } from "../types";
+import { ReportDamageSection } from "./ReportDamageSection";
+import { ReportPhotoPicker } from "./ReportPhotoPicker";
+import type { StudentActions, StudentReportPayload, StudentReportPhoto, StudentReservation } from "../types";
 
 const EMPTY_REPORT: StudentReportPayload = {
   actualTime: "",
@@ -9,23 +11,38 @@ const EMPTY_REPORT: StudentReportPayload = {
   usedEquipment: "",
   resultPhotoUrl: "",
   cleanupConfirmed: false,
-  damageFound: false,
+  returnReadyConfirmed: false,
+  studioDamageAnswer: undefined,
+  equipmentDamageAnswer: undefined,
   damageDescription: "",
-  notes: ""
+  equipmentDamageDescription: "",
+  notes: "",
+  photos: []
 };
+
+function currentPhotos(payload: StudentReportPayload) {
+  return Array.isArray(payload.photos) ? [...payload.photos] : [];
+}
 
 export function ReportForm({ reservation, actions }: { reservation: StudentReservation; actions: StudentActions }) {
   const formRef = useRef<HTMLDivElement>(null);
+  const isEquipment = reservation.type === "equipment";
   const [form, setForm] = useState<StudentReportPayload>({
     ...EMPTY_REPORT,
-    actualTime: (reservation.fields.timeSlots || []).join(", "),
-    participants: String(reservation.fields.participants || "")
+    ...(reservation.reportDraft?.fields || {}),
+    actualTime: String(reservation.reportDraft?.fields?.actualTime || (reservation.fields.timeSlots || []).join(", ")),
+    participants: String(reservation.reportDraft?.fields?.participants || reservation.fields.participants || reservation.fields.participantCount || ""),
+    photos: (reservation.reportDraft?.photos || []).map((photo) => ({ ...photo, status: photo.status || "uploaded" }))
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   function setField<Key extends keyof StudentReportPayload>(key: Key, value: StudentReportPayload[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function setPhotos(photos: StudentReportPhoto[]) {
+    setForm((current) => ({ ...current, photos }));
   }
 
   useEffect(() => {
@@ -35,40 +52,63 @@ export function ReportForm({ reservation, actions }: { reservation: StudentReser
     heading.focus({ preventScroll: true });
   }, [reservation.id]);
 
+  const allPhotos = currentPhotos(form);
+  const damageChecks = isEquipment
+    ? [{ kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }]
+    : [
+      { kind: "studio" as const, answer: form.studioDamageAnswer || "", description: form.damageDescription || "", category: "studio_damage" },
+      { kind: "equipment" as const, answer: form.equipmentDamageAnswer || "", description: form.equipmentDamageDescription || "", category: "equipment_damage" }
+    ];
+
   return (
     <div ref={formRef}>
-    <GjuCard title="스튜디오 보고서" className="student-react-report-form-card">
-      <form
-        className="report-form"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          if (submitting) return;
-          setError("");
-          setSubmitting(true);
-          try {
-            await actions.submitReport(reservation.id, form);
-          } catch (submissionError) {
-            setError(submissionError instanceof Error ? submissionError.message : "보고서를 제출하지 못했습니다.");
-          } finally {
-            setSubmitting(false);
-          }
-        }}
-      >
-        <div className="field"><label htmlFor="report-actual-time">실제 사용 시간</label><input id="report-actual-time" className="input" required value={form.actualTime} onChange={(event) => setField("actualTime", event.target.value)} /></div>
-        <div className="field"><label htmlFor="report-participants">실제 사용 인원</label><input id="report-participants" className="input" required value={form.participants} onChange={(event) => setField("participants", event.target.value)} /></div>
-        <div className="field"><label htmlFor="report-used-equipment">사용 장비</label><textarea id="report-used-equipment" className="textarea" value={form.usedEquipment} onChange={(event) => setField("usedEquipment", event.target.value)} /></div>
-        <div className="field"><label htmlFor="report-photo-url">결과 사진 링크 (선택)</label><input id="report-photo-url" className="input" type="url" value={form.resultPhotoUrl} onChange={(event) => setField("resultPhotoUrl", event.target.value)} /><span className="muted">사진을 공유하는 경우 담당자가 열람할 수 있는 링크를 입력해 주세요.</span></div>
-        <label className="field consent"><span><input type="checkbox" checked={form.cleanupConfirmed} required onChange={(event) => setField("cleanupConfirmed", event.target.checked)} /> 정리정돈을 완료했습니다.</span></label>
-        <label className="field consent"><span><input type="checkbox" checked={form.damageFound} onChange={(event) => setField("damageFound", event.target.checked)} /> 파손 또는 이상이 있습니다.</span></label>
-        <div className="field"><label htmlFor="report-damage-description">파손/이상 내용</label><textarea id="report-damage-description" className="textarea" value={form.damageDescription} onChange={(event) => setField("damageDescription", event.target.value)} /></div>
-        <div className="field"><label htmlFor="report-notes">비고</label><textarea id="report-notes" className="textarea" value={form.notes} onChange={(event) => setField("notes", event.target.value)} /></div>
-        {error ? <p className="student-react-submit-error" role="alert">{error}</p> : null}
-        <div className="row-actions">
-          <GjuButton type="submit" icon="check" loading={submitting}>보고서 제출</GjuButton>
-          <GjuButton type="button" variant="ghost" disabled={submitting} onClick={() => actions.openReport(null)}>닫기</GjuButton>
+      <GjuCard title={`${isEquipment ? "기자재" : "스튜디오"} 사용 보고서`} className="student-react-report-form-card">
+        <div className="report-reservation-summary">
+          <strong>{reservation.fields.reservedDate || "사용일 미정"}</strong>
+          <span>{isEquipment ? reservation.equipmentItems?.map((item) => [item.code, item.name].filter(Boolean).join(" · ")).join(", ") : (reservation.fields.studioSpaces || [reservation.fields.studioSpace]).filter(Boolean).join(", ")}</span>
         </div>
-      </form>
-    </GjuCard>
+        <form
+          className="report-form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (submitting) return;
+            setError("");
+            if (damageChecks.some((check) => !check.answer)) { setError("스튜디오와 대여 기자재의 파손·이상 여부를 모두 선택하세요."); return; }
+            if (damageChecks.some((check) => check.answer === "yes" && (!check.description.trim() || allPhotos.filter((photo) => photo.category === check.category).length < 1))) { setError("파손·이상 상세와 사진을 1장 이상 입력하세요."); return; }
+            setSubmitting(true);
+            try {
+              await actions.submitReport(reservation.id, form);
+            } catch (submissionError) {
+              setError(submissionError instanceof Error ? submissionError.message : "보고서를 제출하지 못했습니다.");
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        >
+          {!isEquipment ? <>
+            <div className="field"><label htmlFor="report-actual-time">실제 사용 시간</label><input id="report-actual-time" className="input" required value={form.actualTime || ""} onChange={(event) => setField("actualTime", event.target.value)} /></div>
+            <div className="field"><label htmlFor="report-participants">실제 사용 인원</label><input id="report-participants" className="input" required value={form.participants || ""} onChange={(event) => setField("participants", event.target.value)} /></div>
+            <div className="field"><label htmlFor="report-used-equipment">사용 장비</label><textarea id="report-used-equipment" className="textarea" value={form.usedEquipment || ""} onChange={(event) => setField("usedEquipment", event.target.value)} /></div>
+          </> : null}
+
+          {damageChecks.map((check) => {
+            const photos = allPhotos.filter((photo) => photo.category === check.category);
+            const otherPhotoCount = allPhotos.length - photos.length;
+            return <React.Fragment key={check.kind}>
+              <ReportDamageSection reservation={reservation} kind={check.kind} answer={check.answer as "yes" | "no" | ""} description={check.description} onChange={(patch) => setForm((current) => ({ ...current, ...patch }))} />
+              <ReportPhotoPicker category={check.category} maxPhotos={5 - otherPhotoCount} photos={photos} onChange={(nextPhotos) => setPhotos([...currentPhotos(form).filter((photo) => photo.category !== check.category), ...nextPhotos])} />
+            </React.Fragment>;
+          })}
+
+          <label className="field consent"><span><input type="checkbox" checked={Boolean(isEquipment ? form.returnReadyConfirmed : form.cleanupConfirmed)} required onChange={(event) => setField(isEquipment ? "returnReadyConfirmed" : "cleanupConfirmed", event.target.checked)} /> {isEquipment ? "반납할 기자재의 상태와 구성품을 확인했습니다." : "정리정돈을 완료했습니다."}</span></label>
+          <div className="field"><label htmlFor="report-notes">비고</label><textarea id="report-notes" className="textarea" maxLength={2000} value={form.notes || ""} onChange={(event) => setField("notes", event.target.value)} /></div>
+          {error ? <p className="student-react-submit-error" role="alert">{error}</p> : null}
+          <div className="row-actions">
+            <GjuButton type="submit" icon="check" loading={submitting}>보고서 제출</GjuButton>
+            <GjuButton type="button" variant="ghost" disabled={submitting} onClick={() => actions.openReport(null)}>닫기</GjuButton>
+          </div>
+        </form>
+      </GjuCard>
     </div>
   );
 }
