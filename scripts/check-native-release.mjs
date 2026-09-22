@@ -35,6 +35,7 @@ const androidVersionCode = Number((androidBuildGradle.match(/versionCode\s+(\d+)
 const androidVersionName = (androidBuildGradle.match(/versionName\s+"([^"]+)"/) || [])[1] || "";
 const infoPlist = read("ios/App/App/Info.plist");
 const xcodeProject = read("ios/App/App.xcodeproj/project.pbxproj");
+const sceneDelegate = fileExists("ios/App/App/SceneDelegate.swift") ? read("ios/App/App/SceneDelegate.swift") : "";
 const iosBuildNumber = Number((xcodeProject.match(/CURRENT_PROJECT_VERSION = (\d+);/) || [])[1] || 0);
 const iosMarketingVersion = (xcodeProject.match(/MARKETING_VERSION = ([^;]+);/) || [])[1] || "";
 const rootGitignore = read(".gitignore");
@@ -59,6 +60,9 @@ const checks = [
   ["student UI imports native notifications", contains("public/js/views-student.js", "nativeNotificationSettingsCard")],
   ["iOS privacy manifest file", fileExists("ios/App/App/PrivacyInfo.xcprivacy")],
   ["iOS privacy manifest in xcode project", contains("ios/App/App.xcodeproj/project.pbxproj", "PrivacyInfo.xcprivacy in Resources")],
+  ["iOS scene manifest", infoPlist.includes("UIApplicationSceneManifest") && infoPlist.includes("UISceneDelegateClassName") && infoPlist.includes("UISceneStoryboardFile")],
+  ["iOS scene delegate source", fileExists("ios/App/App/SceneDelegate.swift") && sceneDelegate.includes("UIWindowSceneDelegate") && sceneDelegate.includes("ApplicationDelegateProxy")],
+  ["iOS scene delegate in xcode sources", contains("ios/App/App.xcodeproj/project.pbxproj", "SceneDelegate.swift in Sources")],
   ["iOS iPhone portrait release target", infoPlist.includes("UIInterfaceOrientationPortrait") && !infoPlist.includes("UIInterfaceOrientationLandscape") && xcodeProject.includes("TARGETED_DEVICE_FAMILY = 1;")],
   ["iOS plugin generated package", contains("ios/App/CapApp-SPM/Package.swift", "CapacitorLocalNotifications")],
   ["Android plugin generated settings", contains("android/capacitor.settings.gradle", "capacitor-local-notifications")],
