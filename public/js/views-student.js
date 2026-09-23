@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260921-report-drive-r1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260921-report-drive-r1";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260921-report-drive-r1";
+import { state } from "./state.js?v=20260923-reservation-requests-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260923-reservation-requests-r1";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260923-reservation-requests-r1";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -40,7 +40,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260921-report-drive-r1";
+} from "./utils.js?v=20260923-reservation-requests-r1";
 import {
   actionRow,
   card,
@@ -52,7 +52,7 @@ import {
   tabIds,
   tabPanel,
   tabs
-} from "./ui.js?v=20260921-report-drive-r1";
+} from "./ui.js?v=20260923-reservation-requests-r1";
 
 export function authView() {
   const isLogin = state.authMode === "login";

@@ -233,6 +233,7 @@ function makeState(overrides = {}) {
     selectedEquipmentRentalTime: "",
     selectedEquipmentReturnTime: "",
     selectedEquipmentItemIds: [],
+    selectedRequestedEquipment: [],
     selectedStudioSpace: "",
     selectedStudioSlots: [],
     selectedDarkroomSlots: [],
@@ -282,6 +283,29 @@ function iconButton(label) {
 
 let markup = "";
 
+const homeBookings = [
+  { id: "past-home", type: "studio", status: "approved", fields: { title: "지난 예약 제외", reservedDate: "2026-07-09", timeSlots: ["10:30-12:00"] } },
+  { id: "future-home-4", type: "print", status: "auto_confirmed", fields: { title: "네 번째 예약 제외", reservedDate: "2026-07-24", startTime: "10:00", endTime: "12:00" } },
+  { id: "future-home-2", type: "equipment", status: "approved", fields: { title: "기자재 두 번째 예약", reservedDate: "2026-07-20", rentalTime: "10:15", returnTime: "12:00", requestedEquipment: [{ name: "무선 마이크", quantity: 2, note: "" }] } },
+  { id: "cancelled-home", type: "studio", status: "cancelled", fields: { title: "취소 예약 제외", reservedDate: "2026-07-12", timeSlots: ["12:00-14:00"] } },
+  { id: "future-home-3", type: "darkroom", status: "approved", fields: { title: "암실 세 번째 예약", reservedDate: "2026-07-21", timeSlots: ["12:00-14:00"] } },
+  { id: "future-home-1", type: "studio", status: "auto_confirmed", fields: { title: "스튜디오 첫 번째 예약", reservedDate: "2026-07-18", studioSpace: "Studio B Front", timeSlots: ["12:00-14:00"] } }
+];
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({ myReservations: homeBookings }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("내 예약"), "home must identify the user's booking list");
+for (const title of ["스튜디오 첫 번째 예약", "기자재 두 번째 예약", "암실 세 번째 예약"]) {
+  assert(markup.includes(title), `home must show ${title}`);
+}
+for (const title of ["지난 예약 제외", "취소 예약 제외", "네 번째 예약 제외"]) {
+  assert(!markup.includes(title), `home must not show ${title}`);
+}
+assert(markup.includes("무선 마이크"), "home must show unlisted equipment requests in booking summaries");
+assert(markup.includes("전체 예약 보기"), "home must link to the full booking history");
+assert(markup.indexOf("student-react-home-bookings") < markup.indexOf("student-react-course-demand-card"), "home bookings must appear before secondary dashboard cards");
+
 // Exact legacy availability behavior is derived from the bootstrap snapshot.
 const availabilityBootstrap = { settings, notices: [], equipment, darkroomChemicals: chemicals, reservations };
 assert.equal(student.reservationDateAvailability("equipment", "2026-07-11", settings, "2026-07-11").available, false, "equipment must reject same-day reservations");
@@ -325,6 +349,8 @@ for (const text of ["기자재 검색", "카테고리", "Canon 렌즈 추천", "
 for (const text of ["선택 목록", "1개 선택", "Camera", "검색 결과"]) {
   assert(markup.includes(text), `React equipment picker must expose the ${text} manifest contract`);
 }
+assert(markup.includes("목록에 없는 기자재 요청"), "equipment selection must allow unlisted requests");
+assert(markup.includes("요청 장비 추가"), "equipment selection must allow multiple unlisted rows");
 
 const expandedEquipment = [
   ...equipment,
@@ -422,6 +448,29 @@ const validDetails = {
   darkroom: { purpose: "필름 현상", phone: "010-1111-2222", darkroomPolicyConfirmed: true },
   print: { count: 2, memo: "A 파일", phone: "010-1111-2222" }
 };
+
+const twoRequests = [
+  { name: "무선 마이크", quantity: 2, note: "인터뷰" },
+  { name: "조명 스탠드", quantity: 3, note: "" }
+];
+const requestOnlyEquipment = student.buildReservationDraft("equipment", {
+  ...validStates.equipment,
+  selectedEquipmentItemIds: [],
+  selectedRequestedEquipment: twoRequests
+}, validDetails.equipment);
+assert.deepEqual(requestOnlyEquipment.fields.requestedEquipment, twoRequests, "request-only booking must send every unlisted row");
+assert.deepEqual(requestOnlyEquipment.fields.equipmentItemIds, [], "request-only booking must not invent inventory items");
+
+const studioWithRequests = student.buildReservationDraft("studio", validStates.studio, {
+  ...validDetails.studio,
+  requestedEquipment: twoRequests
+});
+assert.deepEqual(studioWithRequests.fields.requestedEquipment, twoRequests, "studio booking must send multiple request rows");
+assert.throws(() => student.buildReservationDraft("equipment", {
+  ...validStates.equipment,
+  selectedEquipmentItemIds: [],
+  selectedRequestedEquipment: [{ name: "", quantity: 1, note: "필요" }]
+}, validDetails.equipment), /장비명|기자재 이름/, "partial unlisted rows must be rejected");
 
 assert.throws(
   () => student.buildReservationDraft("print", {

@@ -1,3 +1,5 @@
+import { normalizeRequestedEquipment } from "./equipment-requests.mjs";
+
 const WEEKDAY_INDEX = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 
 export function createReservationValidationHelpers({
@@ -206,6 +208,10 @@ export function createReservationValidationHelpers({
     if (!["equipment", "studio", "darkroom", "print"].includes(type)) throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
     assertOptionalDateKey(fields.reservedDate, "예약일");
     if (reservationDateClosed(type, fields.reservedDate)) throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });
+    if (fields.requestedEquipment !== undefined) {
+      if (type !== "equipment" && type !== "studio") throw Object.assign(new Error("이 예약 종류에는 기자재 요청을 추가할 수 없습니다."), { status: 400 });
+      fields.requestedEquipment = normalizeRequestedEquipment(fields.requestedEquipment);
+    }
 
     if (type === "equipment") {
       assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
@@ -226,7 +232,7 @@ export function createReservationValidationHelpers({
       if (requestedRange?.start === requestedRange?.end && rentalMinutes !== null && returnMinutes !== null && returnMinutes <= rentalMinutes) {
         throw Object.assign(new Error("당일 대여는 반납 시간이 대여 시작 시간보다 늦어야 합니다."), { status: 400 });
       }
-      if (!Array.isArray(fields.equipmentItemIds) || fields.equipmentItemIds.length === 0) throw Object.assign(new Error("기자재를 1개 이상 선택해야 합니다."), { status: 400 });
+      if (!Array.isArray(fields.equipmentItemIds) || (!fields.equipmentItemIds.length && !fields.requestedEquipment?.length)) throw Object.assign(new Error("기자재를 선택하거나 목록에 없는 기자재를 요청하세요."), { status: 400 });
       const blockedDate = dateKeysInRange(requestedRange).find((key) => blockingSchedulesFor(db, "equipment", key).length);
       if (blockedDate) throw Object.assign(new Error(`${blockedDate}은 기자재 예약 차단 일정이 있어 예약할 수 없습니다.`), { status: 409 });
       const selectedEquipmentItems = [];

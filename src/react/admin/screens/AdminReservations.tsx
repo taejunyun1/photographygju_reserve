@@ -141,6 +141,18 @@ function detailList(value: unknown) {
   return Array.isArray(value) ? value.map(String).filter(Boolean).join(", ") : String(value || "");
 }
 
+function requestedEquipmentDetail(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  return value.map((row) => {
+    if (!row || typeof row !== "object") return "";
+    const item = row as { name?: unknown; quantity?: unknown; note?: unknown };
+    const name = String(item.name || "").trim();
+    if (!name) return "";
+    const note = String(item.note || "").trim();
+    return `${name} × ${Number(item.quantity) || 1}${note ? ` (${note})` : ""}`;
+  }).filter(Boolean).join(", ");
+}
+
 function reservationDetailRows(reservation: AdminReservationRecord): Array<[string, string]> {
   const fields = reservation.fields || {};
   if (reservation.type === "equipment") {
@@ -155,6 +167,7 @@ function reservationDetailRows(reservation: AdminReservationRecord): Array<[stri
       ["대여/반납", `${fields.rentalTime || "-"} / ${fields.returnTime || "-"}`],
       ["기간", String(fields.period || "-")],
       ["장비", equipment || "-"],
+      ["목록 외 요청", requestedEquipmentDetail(fields.requestedEquipment) || "-"],
       ["가방 확인", bag],
       ["연락처", String(fields.phone || reservation.user?.phone || "-")],
       ["목적", String(fields.purpose || "-")]
@@ -165,7 +178,7 @@ function reservationDetailRows(reservation: AdminReservationRecord): Array<[stri
       ["시간", detailList(fields.timeSlots) || "-"],
       ["공간", detailList(fields.studioSpaces || (fields.studioSpace ? [fields.studioSpace] : [])) || "-"],
       ["명단", String(fields.participants || "-")],
-      ["필요 장비", String(fields.requiredEquipment || "-")]
+      ["필요 장비", requestedEquipmentDetail(fields.requestedEquipment) || String(fields.requiredEquipment || "-")]
     ];
   }
   if (reservation.type === "darkroom") {

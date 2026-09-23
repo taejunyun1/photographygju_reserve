@@ -119,8 +119,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -140,8 +140,8 @@ test("Student React reservation cards align actions and summarize the schedule o
   test.skip(!viewport || viewport.width > 430, "phone card contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "mobile-card-fixture",
@@ -286,8 +286,8 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "";
     state.myReservations = [{
@@ -340,8 +340,8 @@ test("Student React can submit an eligible report without a Drive setting", asyn
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: [{ ...reservation, fields: { ...reservation.fields, reportStatus: "submitted" } }] }) });
   });
   await page.evaluate(async (fixture) => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "";
     state.myReservations = [fixture];
@@ -368,8 +368,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -397,8 +397,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-      const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+      const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+      const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
       state.view = "reserve";
       state.reservationType = "";
       state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
@@ -416,8 +416,8 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -475,13 +475,110 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   await expectNoHorizontalOverflow(page);
 });
 
+test("Student React adds multiple unlisted equipment requests and shows them on the home booking list", async ({ page }, testInfo) => {
+  test.skip(!["mobile-390", "desktop-1440"].includes(testInfo.project.name), "representative phone and desktop viewports");
+  const errors = [];
+  const consoleIssues = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (["error", "warning"].includes(message.type())) consoleIssues.push(`${message.type()}: ${message.text()}`);
+  });
+  await loginReactStudent(page);
+  expect(page.url()).toMatch(/^http:\/\/127\.0\.0\.1:4179\//);
+  await expect(page).toHaveTitle(/GJU Photography Reservation/);
+  await expect(page.locator("vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay")).toHaveCount(0);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    state.view = "reserve";
+    state.reservationType = "equipment";
+    state.reservationFlowStep.equipment = "select";
+    state.selectedDates.equipment = "2099-07-20";
+    state.selectedEquipmentPeriod = "당일";
+    state.selectedEquipmentRentalTime = "10:15";
+    state.selectedEquipmentReturnTime = "17:10";
+    state.selectedEquipmentItemIds = [];
+    state.selectedRequestedEquipment = [];
+    render();
+  });
+  const editor = page.getByRole("region", { name: "목록에 없는 기자재 요청" });
+  await expect(editor).toBeVisible();
+  await editor.getByLabel("장비명").first().fill("무선 마이크");
+  await editor.getByLabel("수량").first().fill("2");
+  await editor.getByRole("button", { name: "요청 장비 추가" }).click();
+  await editor.getByLabel("장비명").nth(1).fill("마이크 스탠드");
+  await editor.getByLabel("수량").nth(1).fill("3");
+  await expect(editor.getByLabel("장비명")).toHaveCount(2);
+  const savedRows = await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    return state.selectedRequestedEquipment;
+  });
+  expect(savedRows.map(({ name, quantity }) => [name, quantity])).toEqual([["무선 마이크", 2], ["마이크 스탠드", 3]]);
+  await expectNoHorizontalOverflow(page);
+  await expect(page.getByText("로그인되었습니다.")).toBeHidden();
+  await page.screenshot({ path: `/tmp/gju-equipment-requests-${testInfo.project.name}.png`, fullPage: false });
+  const nextStep = page.locator(".student-react-flow-actions").getByRole("button", { name: "다음" });
+  await expect(nextStep).toBeEnabled();
+  await nextStep.click();
+  await expect(page.getByText("목록 외 요청 2개")).toBeVisible();
+
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    state.view = "home";
+    state.myReservations = [{
+      id: "request-home-fixture",
+      type: "equipment",
+      status: "pending_approval",
+      fields: { title: "인터뷰 장비 예약", reservedDate: "2099-07-20", rentalTime: "10:15", returnTime: "17:10", requestedEquipment: state.selectedRequestedEquipment }
+    }];
+    render();
+  });
+  const bookingSection = page.getByRole("region", { name: "내 예약" });
+  await expect(bookingSection.getByText("인터뷰 장비 예약")).toBeVisible();
+  await expect(bookingSection).toContainText("무선 마이크 × 2");
+  await expect(bookingSection.getByRole("button", { name: "전체 예약 보기" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await bookingSection.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `/tmp/gju-home-booking-${testInfo.project.name}.png`, fullPage: false });
+  expect(errors).toEqual([]);
+  expect(consoleIssues).toEqual([]);
+});
+
+test("Student React studio details can add and remove multiple equipment request rows", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390", "representative phone viewport");
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    state.view = "reserve";
+    state.reservationType = "studio";
+    state.reservationFlowStep.studio = "details";
+    state.selectedDates.studio = "2099-07-20";
+    state.selectedStudioSpace = "Studio A Front";
+    state.selectedStudioSlots = ["12:00-14:00"];
+    render();
+  });
+  const editor = page.getByRole("region", { name: "함께 사용할 기자재 요청" });
+  await editor.getByLabel("장비명").first().fill("LED 조명");
+  await editor.getByRole("button", { name: "요청 장비 추가" }).click();
+  await editor.getByLabel("장비명").nth(1).fill("소프트박스");
+  await expect(editor.getByLabel("장비명")).toHaveCount(2);
+  await expect(page.getByText("로그인되었습니다.")).toBeHidden();
+  await page.screenshot({ path: "/tmp/gju-studio-requests-mobile-390.png", fullPage: false });
+  await editor.getByRole("button", { name: "요청 장비 1 삭제" }).click();
+  await expect(editor.getByLabel("장비명")).toHaveCount(1);
+  await expect(editor.getByLabel("장비명")).toHaveValue("소프트박스");
+  await expectNoHorizontalOverflow(page);
+});
+
 test("Student React mobile equipment selection uses an expandable dock above navigation", async ({ page }) => {
   const viewport = page.viewportSize();
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -550,8 +647,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260921-report-drive-r1");
-    const { render } = await import("/js/renderer.js?v=20260921-report-drive-r1");
+    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

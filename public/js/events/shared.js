@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260921-report-drive-r1";
-import { logout } from "../actions.js?v=20260921-report-drive-r1";
-import { render, toast } from "../renderer.js?v=20260921-report-drive-r1";
-import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260921-report-drive-r1";
+import { state } from "../state.js?v=20260923-reservation-requests-r1";
+import { logout } from "../actions.js?v=20260923-reservation-requests-r1";
+import { render, toast } from "../renderer.js?v=20260923-reservation-requests-r1";
+import { loadAdminData, loadBootstrap, loadMe } from "../data.js?v=20260923-reservation-requests-r1";
 import {
   equipmentPeriodDays,
   equipmentRangeBlocked,
@@ -12,13 +12,13 @@ import {
   printSelectionBlocked,
   printSelectionConflicts,
   timeToMinutes
-} from "../utils.js?v=20260921-report-drive-r1";
+} from "../utils.js?v=20260923-reservation-requests-r1";
 import {
   captureScrollState,
   restoreScrollState,
   scrollToPageTop,
   SCROLL_RESTORE_TARGET_SELECTOR
-} from "./scroll-state.js?v=20260921-report-drive-r1";
+} from "./scroll-state.js?v=20260923-reservation-requests-r1";
 
 export const EQUIPMENT_SCROLL_INTERACTION_SELECTOR = [
   "[data-equipment-category]",

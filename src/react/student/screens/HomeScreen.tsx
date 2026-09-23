@@ -3,7 +3,7 @@ import React, { useRef, useState } from "react";
 import { GjuButton, GjuCard, GjuEmptyState, GjuStatusBadge } from "../../design-system";
 import { FavoriteEquipmentSheet } from "../components/FavoriteEquipmentSheet";
 import { CourseDemandSurveySheet } from "../components/CourseDemandSurveySheet";
-import { FacilityCard, LectureSummary, NoticeList, ReservationCard, ScreenHeader } from "../components/StudentPrimitives";
+import { FacilityCard, LectureSummary, NoticeList, reservationDisplayMeta, reservationStatusLabel, ScreenHeader, statusTone } from "../components/StudentPrimitives";
 import type { StudentActions, StudentState } from "../types";
 
 const APPROVAL_LABELS: Record<string, string> = {
@@ -17,7 +17,8 @@ const RESERVATION_TYPE_LABELS: Record<string, string> = {
   equipment: "기자재",
   studio: "스튜디오",
   darkroom: "암실",
-  print: "출력실"
+  print: "출력실",
+  lecture: "특강"
 };
 
 function courseDemandDeadline(value?: string) {
@@ -35,10 +36,25 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
   const [favoriteSheetOpen, setFavoriteSheetOpen] = useState(false);
   const [courseDemandSurveyId, setCourseDemandSurveyId] = useState("");
   const favoriteTriggerRef = useRef<HTMLSpanElement>(null);
-  const nextReservation = state.myReservations
-    .filter((item) => !["cancelled", "admin_cancelled", "rejected"].includes(item.status || ""))
+  const today = state.today || "";
+  const activeReservations = state.myReservations
+    .filter((item) => {
+      if (["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(item.status || "")) return false;
+      if (item.status === "checked_out") return true;
+      const date = item.fields.reservedDate || item.lecture?.lectureDate || "";
+      const endAt = item.timing?.endAt ? new Date(item.timing.endAt).getTime() : NaN;
+      const todayStart = today ? new Date(`${today}T00:00:00+09:00`).getTime() : NaN;
+      return Number.isFinite(endAt) && Number.isFinite(todayStart) ? endAt >= todayStart : !date || !today || date >= today;
+    })
     .slice()
-    .sort((a, b) => String(a.fields.reservedDate || "").localeCompare(String(b.fields.reservedDate || "")))[0];
+    .sort((a, b) => {
+      if (a.status === "checked_out" || b.status === "checked_out") {
+        if (a.status !== b.status) return a.status === "checked_out" ? -1 : 1;
+      }
+      const aTime = String(a.timing?.startAt || a.fields.reservedDate || a.lecture?.lectureDate || "");
+      const bTime = String(b.timing?.startAt || b.fields.reservedDate || b.lecture?.lectureDate || "");
+      return (aTime || "\uffff").localeCompare(bTime || "\uffff");
+    });
   const lectures = state.lectures.filter((lecture) => (lecture.status || "모집중") === "모집중").slice(0, 3);
   const notices = state.bootstrap.notices.slice(0, 3);
   const approved = state.user.approvalStatus === "approved";
@@ -97,6 +113,39 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
         </GjuCard>
       ) : null}
 
+      <section className="student-react-home-bookings" aria-label="내 예약">
+        <div className="student-react-home-bookings__heading">
+          <div><h2>내 예약</h2><p className="muted">진행 중이거나 예정된 예약 {activeReservations.length}건</p></div>
+          <GjuButton variant="ghost" onClick={() => actions.setView("mine")}>전체 예약 보기</GjuButton>
+        </div>
+        {activeReservations.length ? (
+          <div className="student-react-home-bookings__list">
+            {activeReservations.slice(0, 3).map((reservation) => {
+              const meta = reservationDisplayMeta(reservation);
+              const typeLabel = RESERVATION_TYPE_LABELS[reservation.type] || "예약";
+              const firstEquipment = reservation.equipmentItems?.[0];
+              const title = String(reservation.fields.title || (
+                reservation.type === "equipment" && firstEquipment
+                  ? `${firstEquipment.name || firstEquipment.code}${reservation.equipmentItems!.length > 1 ? ` 외 ${reservation.equipmentItems!.length - 1}개` : ""}`
+                  : reservation.type === "studio"
+                    ? reservation.fields.studioSpace || reservation.fields.studioSpaces?.[0] || "스튜디오"
+                    : reservation.type === "lecture" ? reservation.lecture?.title || "특강" : `${typeLabel} 예약`
+              ));
+              return (
+                <article key={reservation.id} className="student-react-home-bookings__item">
+                  <div className="student-react-home-bookings__item-heading">
+                    <strong>{title}</strong>
+                    <GjuStatusBadge tone={statusTone(reservation.status)}>{reservationStatusLabel(reservation.status)}</GjuStatusBadge>
+                  </div>
+                  {meta.date || meta.time ? <p>{[meta.date, meta.time].filter(Boolean).join(" · ")}</p> : null}
+                  {meta.details ? <small>{meta.details}</small> : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : <div className="student-react-home-bookings__empty"><GjuEmptyState title="예정된 예약이 없습니다." action={<GjuButton onClick={() => actions.setView("reserve")}>예약 시작</GjuButton>} /></div>}
+      </section>
+
       <GjuCard title={courseDemandSurvey?.title || "다음 학기 희망 과목 조사"} eyebrow={`${courseDemandTarget(courseDemandSurvey?.targetStudentYears, courseDemandSurvey?.term)} · 다음 학기 희망 과목 조사`} className="student-react-course-demand-card">
         <div className="student-react-course-demand-card__status">
           <GjuStatusBadge tone={courseDemandSummary.tone}>{courseDemandSummary.label}</GjuStatusBadge>
@@ -123,24 +172,6 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
           {(["equipment", "studio", "darkroom", "print"] as const).map((type) => <FacilityCard key={type} type={type} onSelect={actions.startReservation} />)}
         </div>
       </section>
-
-      {nextReservation ? (
-        <section className="surface-stack next-reservation-section">
-          <h2>다음 예약</h2>
-          <ReservationCard
-            reservation={nextReservation}
-            onCancel={actions.cancelReservation}
-            onCancelLecture={actions.cancelLecture}
-            onReport={actions.openReport}
-            lectureCanCancel={nextReservation.type === "lecture"
-              ? state.lectures.find((lecture) => lecture.id === nextReservation.lecture?.id)?.canCancelApplication
-              : undefined}
-            today={state.today}
-          />
-        </section>
-      ) : (
-        <GjuEmptyState title="예정된 예약이 없습니다." action={<GjuButton onClick={() => actions.setView("reserve")}>예약 시작</GjuButton>} />
-      )}
 
       <GjuCard
         title="빠른 예약"

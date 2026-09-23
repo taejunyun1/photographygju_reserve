@@ -13,6 +13,7 @@ function baseState() {
     reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
     selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
     selectedEquipmentItemIds: [],
+    selectedRequestedEquipment: [],
     selectedStudioSlots: [],
     selectedDarkroomSlots: [],
     selectedDarkroomProcessTypes: [],
@@ -63,6 +64,18 @@ assert.equal(snapshot.today, "2099-01-01");
 assert.equal(snapshot.reservationType, "studio");
 assert.equal(snapshot.selectedDates.studio, "2099-01-05");
 assert.equal(snapshot.user.name, "학생");
+const requestedRows = [
+  { name: "무선 마이크", quantity: 2, note: "인터뷰" },
+  { name: "LED 조명", quantity: 1, note: "" }
+];
+const requestBridge = harness();
+requestBridge.actions.updateReservationSelection({ type: "equipment", requestedEquipment: requestedRows });
+assert.deepEqual(studentReactSnapshot(requestBridge.state).selectedRequestedEquipment, requestedRows, "equipment request rows must survive the React bridge");
+requestBridge.actions.startReservation("studio");
+assert.deepEqual(requestBridge.state.selectedRequestedEquipment, requestedRows, "switching to a studio booking must not erase the equipment draft");
+requestBridge.actions.startReservation("equipment");
+await requestBridge.actions.setView("reserve");
+assert.deepEqual(requestBridge.state.selectedRequestedEquipment, [], "resetting an equipment flow must clear prior unlisted requests");
 
 const courseDemandBridge = harness({
   apiImplementation: async (path, options = {}) => {

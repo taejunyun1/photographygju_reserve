@@ -1,3 +1,5 @@
+import { formatRequestedEquipment } from "./equipment-requests.mjs";
+
 export function createNotificationHelpers({
   id,
   maskPhone,
@@ -34,8 +36,9 @@ export function createNotificationHelpers({
     if (reservation.type === "equipment") {
       const items = (fields.equipmentItemIds || []).map((itemId) => db.equipment.find((item) => item.id === itemId)).filter(Boolean).map((item) => item.code).join(", ");
       lines.splice(4, 0, `대여시간: ${fields.rentalTime}`, `반납시간: ${fields.returnTime}`, `품목: ${items || fields.detailEquipment || "-"}`);
+      if (fields.requestedEquipment?.length) lines.splice(7, 0, `목록 외 요청: ${formatRequestedEquipment(fields.requestedEquipment)}`);
     }
-    if (reservation.type === "studio") lines.splice(4, 0, `시간: ${(fields.timeSlots || []).join(", ")}`, `장소: ${studioSpaces(fields).join(", ")}`, `필요 장비: ${fields.requiredEquipment || "-"}`);
+    if (reservation.type === "studio") lines.splice(4, 0, `시간: ${(fields.timeSlots || []).join(", ")}`, `장소: ${studioSpaces(fields).join(", ")}`, `필요 장비: ${formatRequestedEquipment(fields.requestedEquipment) || fields.requiredEquipment || "-"}`);
     if (reservation.type === "darkroom") {
       const chemicals = (fields.chemicals || []).map((item) => `${item.name} ${item.amount}`).join(", ");
       lines.splice(4, 0, `시간: ${(fields.timeSlots || []).join(", ")}`, `작업: ${(fields.processTypes || []).join(", ")}`, `사용 약품: ${chemicals || "-"}`);

@@ -1,7 +1,7 @@
-import { state } from "../state.js?v=20260921-report-drive-r1";
-import { toast } from "../renderer.js?v=20260921-report-drive-r1";
-import { captureScrollState } from "./shared.js?v=20260921-report-drive-r1";
-import { requestAdminRefresh } from "../admin-refresh-lifecycle.js?v=20260921-report-drive-r1";
+import { state } from "../state.js?v=20260923-reservation-requests-r1";
+import { toast } from "../renderer.js?v=20260923-reservation-requests-r1";
+import { captureScrollState } from "./shared.js?v=20260923-reservation-requests-r1";
+import { requestAdminRefresh } from "../admin-refresh-lifecycle.js?v=20260923-reservation-requests-r1";
 
 let adminRefreshHandlersBound = false;
 let pendingRefreshScrollState = null;

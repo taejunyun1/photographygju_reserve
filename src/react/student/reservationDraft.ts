@@ -19,6 +19,8 @@ import type {
   StudentState,
   StudioReservationDraft
 } from "./types";
+import { cleanEquipmentRequests, equipmentRequestSummary } from "./equipmentRequests";
+import type { StudentEquipmentRequest } from "./types";
 
 export type EquipmentReservationDetails = {
   cameraBagConfirmed: boolean;
@@ -31,6 +33,7 @@ export type EquipmentReservationDetails = {
 export type StudioReservationDetails = {
   participants: string;
   requiredEquipment: string;
+  requestedEquipment?: readonly StudentEquipmentRequest[];
   purpose: string;
   phone: string;
   studioPolicyConfirmed: boolean;
@@ -84,7 +87,8 @@ function equipmentDraft(state: StudentState, details: EquipmentReservationDetail
   const schedule = equipmentScheduleAvailability(state.bootstrap, reservedDate, period, rentalTime, returnTime, state.today);
   if (!schedule.available) throw new Error(schedule.reason || "대여 일정을 확인하세요.");
   const equipmentItemIds = [...new Set(state.selectedEquipmentItemIds)];
-  if (!equipmentItemIds.length) throw new Error("기자재를 1개 이상 선택하세요.");
+  const requestedEquipment = cleanEquipmentRequests(state.selectedRequestedEquipment);
+  if (!equipmentItemIds.length && !requestedEquipment.length) throw new Error("기자재를 선택하거나 목록에 없는 기자재를 요청하세요.");
   const selectedItems = equipmentItemIds.map((itemId) => {
     const item = (state.bootstrap.equipment || []).find((candidate) => candidate.id === itemId);
     if (!item) throw new Error("선택한 기자재 정보를 다시 확인하세요.");
@@ -108,6 +112,7 @@ function equipmentDraft(state: StudentState, details: EquipmentReservationDetail
       rentalTime,
       returnTime,
       equipmentItemIds,
+      requestedEquipment,
       cameraBagConfirmationRequired: highValue,
       pelicanBagReserved: highValue && cameraBag,
       cameraBagConfirmed: highValue ? cameraBag || details.cameraBagConfirmed : false,
@@ -128,6 +133,7 @@ function studioDraft(state: StudentState, details: StudioReservationDetails): St
   if (!details.studioPolicyConfirmed) {
     throw new Error("정리정돈 및 보고서 제출 규정을 확인하고 동의하세요.");
   }
+  const requestedEquipment = cleanEquipmentRequests(details.requestedEquipment);
   return {
     type: "studio",
     fields: {
@@ -136,7 +142,8 @@ function studioDraft(state: StudentState, details: StudioReservationDetails): St
       studioSpaces: [studioSpace],
       timeSlots,
       participants: required(details.participants, "사용 명단을 입력하세요."),
-      requiredEquipment: String(details.requiredEquipment || "").trim(),
+      requiredEquipment: String(details.requiredEquipment || "").trim() || equipmentRequestSummary(requestedEquipment),
+      requestedEquipment,
       purpose: String(details.purpose || "").trim(),
       phone: required(details.phone, "연락처를 입력하세요."),
       studioPolicyConfirmed: true,

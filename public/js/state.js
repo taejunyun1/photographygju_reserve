@@ -30,6 +30,7 @@ export const state = {
   reportSearch: "",
   noticeSearch: "",
   selectedEquipmentItemIds: [],
+  selectedRequestedEquipment: [],
   selectedEquipmentPeriod: "",
   selectedEquipmentRentalTime: "",
   selectedEquipmentReturnTime: "",

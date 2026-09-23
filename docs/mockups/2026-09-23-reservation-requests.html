@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>예약 목록·기자재 요청 목업 | GJU 사진영상미디어학과</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17191c;
+      --muted: #566171;
+      --line: #d8dde4;
+      --paper: #fff;
+      --ground: #edf2f7;
+      --blue: #174f8f;
+      --blue-soft: #e8f0fa;
+      --green: #075e54;
+      --green-soft: #e3f2ec;
+      --amber: #805300;
+      --amber-soft: #fff0c6;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--ground);
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.45;
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: default; }
+    .page { max-width: 1510px; margin: auto; padding: 34px 28px 48px; }
+    .page-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 26px; }
+    .page-kicker { margin: 0 0 6px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+    .page-head h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.2; letter-spacing: -.04em; }
+    .page-head p:last-child { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+    .sample-tag { flex: none; padding: 8px 12px; border: 1px solid #b9cad9; border-radius: 999px; background: #fff; color: var(--blue); font-size: 12px; font-weight: 800; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+    .frame { min-width: 0; border: 1px solid #cad5e0; border-radius: 24px; overflow: hidden; background: #f6f8fb; box-shadow: 0 16px 40px #24446319; }
+    .frame-top { height: 26px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #fff; color: #252a30; font-size: 11px; font-weight: 800; }
+    .frame-top span:last-child { letter-spacing: .12em; }
+    .appbar { display: flex; align-items: center; justify-content: space-between; height: 57px; padding: 0 20px; border-bottom: 1px solid var(--line); background: #fff; }
+    .appbar strong { font-size: 17px; letter-spacing: -.035em; }
+    .appbar small { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .screen { min-height: 678px; padding: 19px 17px 23px; }
+    .eyebrow { margin: 0 0 4px; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+    .screen h2 { margin: 0; font-size: 21px; letter-spacing: -.04em; }
+    .intro { margin: 4px 0 17px; color: var(--muted); font-size: 12px; }
+    .card { padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 3px 10px #142f4b08; }
+    .card + .card, .card + .block, .block + .card { margin-top: 10px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .card-header h3 { margin: 0; font-size: 15px; letter-spacing: -.025em; }
+    .text-link { padding: 0; border: 0; background: none; color: var(--blue); font-size: 12px; font-weight: 800; }
+    .reservation { padding: 12px 0; border-top: 1px solid #e8edf2; }
+    .reservation:first-of-type { border-top: 0; padding-top: 0; }
+    .reservation:last-of-type { padding-bottom: 0; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .row strong { min-width: 0; font-size: 14px; letter-spacing: -.025em; }
+    .badge { flex: none; padding: 4px 7px; border-radius: 6px; background: var(--blue-soft); color: #123f7f; font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .badge.green { background: var(--green-soft); color: #14523f; }
+    .badge.amber { background: var(--amber-soft); color: var(--amber); }
+    .meta { margin: 5px 0 0; color: #394759; font-size: 12px; }
+    .submeta { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .section-label { margin: 18px 0 9px; font-size: 13px; font-weight: 800; }
+    .quick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .quick div { padding: 11px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--blue); font-size: 12px; font-weight: 800; text-align: center; }
+    .steps { display: flex; align-items: center; gap: 6px; margin: 14px 0 16px; color: #657181; font-size: 11px; font-weight: 700; }
+    .steps span { white-space: nowrap; }
+    .steps i { flex: 1; height: 1px; background: #cad6e0; }
+    .steps .active { color: var(--green); }
+    .review { margin-bottom: 10px; padding: 13px 14px; border-radius: 11px; background: #e8f0fa; }
+    .review strong { display: block; color: #123f7f; font-size: 13px; }
+    .review span { display: block; margin-top: 3px; color: #35526f; font-size: 11px; }
+    .field { margin-top: 12px; }
+    .field label { display: block; margin-bottom: 6px; color: #344252; font-size: 12px; font-weight: 800; }
+    .field input, .field textarea { width: 100%; padding: 10px 11px; border: 1px solid #cbd6e1; border-radius: 9px; outline: none; background: #fff; color: #233242; font-size: 12px; }
+    .field textarea { min-height: 60px; resize: none; }
+    .field input:focus, .field textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #174f8f1a; }
+    .request-box { margin-top: 14px; padding: 14px; border: 1.5px solid #b9d1cb; border-radius: 13px; background: #f8fcfa; }
+    .request-box h3 { margin: 0; font-size: 14px; letter-spacing: -.02em; }
+    .request-box > p { margin: 5px 0 10px; color: var(--muted); font-size: 11px; }
+    .request-row { display: grid; grid-template-columns: minmax(0, 1fr) 58px; gap: 8px; }
+    .request-row .field { margin-top: 0; }
+    .request-entry { margin-top: 10px; padding: 10px; border: 1px solid #d8e6e2; border-radius: 9px; background: #fff; }
+    .request-entry strong { display: block; margin-bottom: 8px; font-size: 11px; }
+    .request-add { width: 100%; margin-top: 9px; padding: 9px; border: 1px dashed #79a99c; border-radius: 8px; background: #fff; color: #14523f; font-size: 11px; font-weight: 800; }
+    .request-box .field + .field { margin-top: 9px; }
+    .hint { margin: 9px 0 0; color: #4b5a66; font-size: 10px; }
+    .selection { padding: 11px; border: 1px solid #c6d6e9; border-radius: 10px; background: #fff; }
+    .selection span { display: block; font-size: 12px; font-weight: 800; }
+    .selection small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .primary { width: 100%; margin-top: 15px; padding: 13px; border: 0; border-radius: 9px; background: var(--blue); color: #fff; font-size: 13px; font-weight: 800; }
+    .admin { display: flex; justify-content: space-between; align-items: center; gap: 22px; margin-top: 19px; padding: 16px 20px; border: 1px solid #cbd6e1; border-radius: 14px; background: #fff; }
+    .admin h2 { margin: 0 0 3px; font-size: 15px; }
+    .admin p { margin: 0; color: var(--muted); font-size: 12px; }
+    .admin .admin-example { flex: none; padding: 9px 12px; border-radius: 8px; background: #f4f6f8; color: #344252; font-size: 12px; }
+    .page-foot { margin: 15px 0 0; color: #617083; font-size: 12px; }
+    @media (max-width: 1050px) { .page { max-width: 780px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 700px) { .page { padding: 22px 14px 35px; } .page-head { align-items: start; } .page-head p:last-child { font-size: 13px; } .grid { grid-template-columns: 1fr; } .screen { min-height: auto; } .admin { align-items: start; flex-direction: column; } .admin .admin-example { width: 100%; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <p class="page-kicker">GJU · 사진영상미디어학과 예약</p>
+        <h1>내 예약과 기자재 요청 화면 시안</h1>
+        <p>기존 예약 상태를 그대로 사용하고, 요청 장비는 예약 상세에 메모로 함께 표시합니다.</p>
+      </div>
+      <span class="sample-tag">목업 · 예시 데이터</span>
+    </header>
+
+    <div class="grid">
+      <section class="frame" aria-label="학생 메인 대시보드 목업">
+        <div class="frame-top"><span>9:41</span><span>●●● ▰</span></div>
+        <div class="appbar"><strong>대시보드</strong><small>사진영상미디어학과</small></div>
+        <div class="screen">
+          <p class="eyebrow">STUDENT HOME</p>
+          <h2>안녕하세요, 김학생님</h2>
+          <p class="intro">신청한 예약을 메인에서 바로 확인합니다.</p>
+
+          <div class="card">
+            <div class="card-header"><h3>내 예약 <span style="color:#657181;font-size:12px">3건</span></h3><button class="text-link" type="button">전체 보기 →</button></div>
+            <div class="reservation"><div class="row"><strong>스튜디오 B</strong><span class="badge green">자동 확정</span></div><p class="meta">9월 26일 · 12:00–14:00</p><p class="submeta">요청 장비: 조명 2대, 소프트박스 1개</p></div>
+            <div class="reservation"><div class="row"><strong>Sony A7M3 외 1개</strong><span class="badge amber">승인 대기</span></div><p class="meta">9월 27일 · 10:15 대여</p><p class="submeta">목록 외 요청: 무선 마이크 2개</p></div>
+            <div class="reservation"><div class="row"><strong>암실 · 현상 작업</strong><span class="badge green">자동 확정</span></div><p class="meta">9월 29일 · 15:00–17:00</p></div>
+          </div>
+
+          <p class="section-label">예약 바로가기</p>
+          <div class="quick"><div>기자재</div><div>스튜디오</div><div>암실</div><div>출력실</div></div>
+        </div>
+      </section>
+
+      <section class="frame" aria-label="스튜디오 기자재 요청 목업">
+        <div class="frame-top"><span>9:41</span><span>●●● ▰</span></div>
+        <div class="appbar"><strong>스튜디오 예약</strong><small>예약 종류 ↗</small></div>
+        <div class="screen">
+          <p class="eyebrow">STUDIO RESERVATION</p>
+          <h2>예약 확인</h2>
+          <div class="steps"><span>날짜</span><i></i><span>공간</span><i></i><span>시간</span><i></i><span class="active">확인</span></div>
+          <div class="review"><strong>스튜디오 B · 9월 26일</strong><span>12:00–14:00 · 자동 확정</span></div>
+          <div class="card">
+            <div class="field" style="margin-top:0"><label for="studio-users">사용 명단</label><input id="studio-users" value="김학생, 이학생" readonly></div>
+            <div class="request-box">
+              <h3>함께 사용할 기자재 요청</h3>
+              <p>스튜디오에서 필요한 장비를 적어 주세요.</p>
+              <div class="request-entry"><strong>요청 장비 1</strong><div class="request-row">
+                <div class="field"><label for="studio-item">장비명</label><input id="studio-item" value="LED 조명" readonly></div>
+                <div class="field"><label for="studio-quantity">수량</label><input id="studio-quantity" value="2" readonly></div>
+              </div><div class="field"><label for="studio-note">추가 설명</label><textarea id="studio-note" readonly>인물 촬영용</textarea></div></div>
+              <div class="request-entry"><strong>요청 장비 2</strong><div class="request-row">
+                <div class="field"><label for="studio-item-2">장비명</label><input id="studio-item-2" value="소프트박스" readonly></div>
+                <div class="field"><label for="studio-quantity-2">수량</label><input id="studio-quantity-2" value="1" readonly></div>
+              </div>
+              <div class="field"><label for="studio-note-2">추가 설명</label><textarea id="studio-note-2" readonly>LED 조명과 함께 사용</textarea></div></div>
+              <button class="request-add" type="button">＋ 요청 장비 추가</button>
+              <p class="hint">장비 제공 여부는 관리자가 예약 내용을 확인한 뒤 안내합니다.</p>
+            </div>
+            <div class="field"><label for="studio-purpose">사용 목적</label><input id="studio-purpose" value="인물 촬영" readonly></div>
+            <button class="primary" type="button">스튜디오 예약 신청</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="frame" aria-label="기자재 목록 외 요청 목업">
+        <div class="frame-top"><span>9:41</span><span>●●● ▰</span></div>
+        <div class="appbar"><strong>기자재 예약</strong><small>예약 종류 ↗</small></div>
+        <div class="screen">
+          <p class="eyebrow">EQUIPMENT RESERVATION</p>
+          <h2>필요한 장비 선택</h2>
+          <div class="steps"><span>날짜</span><i></i><span>시간</span><i></i><span class="active">장비</span><i></i><span>확인</span></div>
+          <div class="review"><strong>9월 27일 · 당일 대여</strong><span>10:15 대여 · 17:00 반납</span></div>
+          <div class="card">
+            <div class="field" style="margin-top:0"><label for="equipment-search">등록된 기자재 찾기</label><input id="equipment-search" placeholder="장비명·브랜드·코드 검색" readonly></div>
+            <p class="section-label" style="margin-top:13px">선택한 장비</p>
+            <div class="selection"><span>Sony A7M3</span><small>GJU-CAM-021 · 카메라</small></div>
+            <div class="request-box">
+              <h3>목록에 없는 기자재 요청</h3>
+              <p>찾는 장비가 없으면 이름과 수량을 적어 주세요.</p>
+              <div class="request-entry"><strong>요청 장비 1</strong><div class="request-row">
+                <div class="field"><label for="equipment-item">장비명</label><input id="equipment-item" value="무선 마이크" readonly></div>
+                <div class="field"><label for="equipment-quantity">수량</label><input id="equipment-quantity" value="2" readonly></div>
+              </div><div class="field"><label for="equipment-note">추가 설명</label><textarea id="equipment-note" readonly>인터뷰 촬영용 핀 마이크</textarea></div></div>
+              <div class="request-entry"><strong>요청 장비 2</strong><div class="request-row">
+                <div class="field"><label for="equipment-item-2">장비명</label><input id="equipment-item-2" value="마이크 스탠드" readonly></div>
+                <div class="field"><label for="equipment-quantity-2">수량</label><input id="equipment-quantity-2" value="2" readonly></div>
+              </div>
+              <div class="field"><label for="equipment-note-2">추가 설명</label><textarea id="equipment-note-2" readonly>낮은 높이 선호</textarea></div></div>
+              <button class="request-add" type="button">＋ 요청 장비 추가</button>
+              <p class="hint">등록된 장비를 선택하지 않아도 이 요청만으로 신청할 수 있습니다.</p>
+            </div>
+            <button class="primary" type="button">기자재 예약 신청</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="admin" aria-label="관리자 예약 상세 목업">
+      <div><h2>관리자 예약 상세에는 메모로 표시</h2><p>스튜디오와 기자재 예약의 기존 승인·취소 상태를 그대로 사용합니다. 요청 장비에 별도 상태나 승인 절차를 추가하지 않습니다.</p></div>
+      <div class="admin-example">필요 장비 요청　·　LED 조명 × 2 / 소프트박스 × 1</div>
+    </aside>
+    <p class="page-foot">이 파일은 화면 확인용 목업입니다. 실제 예약 데이터 저장과 버튼 동작은 포함하지 않습니다.</p>
+  </main>
+</body>
+</html>

@@ -31,6 +31,8 @@ import type {
   StudentState
 } from "../types";
 import { EquipmentSelectionSurface } from "./EquipmentSelectionSurface";
+import { EquipmentRequestEditor } from "./EquipmentRequestEditor";
+import { cleanEquipmentRequests } from "../equipmentRequests";
 
 type ReservationControlsProps = {
   type: ReservationType;
@@ -339,6 +341,13 @@ function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControls
         ) : null}
         {!items.length ? <p className="muted">검색 조건에 맞는 기자재가 없습니다.</p> : null}
       </div>
+      <EquipmentRequestEditor
+        idPrefix="equipment-request"
+        title="목록에 없는 기자재 요청"
+        description="찾는 장비가 없으면 장비명과 수량을 적어 주세요. 여러 개를 추가할 수 있습니다."
+        rows={state.selectedRequestedEquipment}
+        onChange={(requestedEquipment) => update(actions, "equipment", { requestedEquipment })}
+      />
       {recommendedLenses.length ? (
         <section className="student-react-equipment-recommendations" aria-label={`${recommendationBrands} 렌즈 추천`}>
           <div>
@@ -617,7 +626,13 @@ function currentStepAvailability(type: ReservationType, step: ReservationStep, s
       state.today
     );
     if (!schedule.available) return schedule;
-    if (!state.selectedEquipmentItemIds.length) return { available: false, reason: "기자재를 1개 이상 선택하세요." };
+    let requestedEquipment;
+    try {
+      requestedEquipment = cleanEquipmentRequests(state.selectedRequestedEquipment);
+    } catch (error) {
+      return { available: false, reason: errorMessage(error) };
+    }
+    if (!state.selectedEquipmentItemIds.length && !requestedEquipment.length) return { available: false, reason: "기자재를 선택하거나 목록에 없는 기자재를 요청하세요." };
     for (const itemId of state.selectedEquipmentItemIds) {
       const item = (state.bootstrap.equipment || []).find((candidate) => candidate.id === itemId);
       if (!item) return { available: false, reason: "선택한 기자재 정보를 다시 확인하세요." };
@@ -689,7 +704,7 @@ function FlowActions({ type, step, state, actions }: ReservationControlsProps & 
 
 function ReservationReview({ type, state }: { type: ReservationType; state: StudentState }) {
   const labels: Record<ReservationType, string> = {
-    equipment: `${state.selectedEquipmentItemIds.length}개 기자재`,
+    equipment: `${state.selectedEquipmentItemIds.length}개 기자재${state.selectedRequestedEquipment.filter((item) => item.name.trim()).length ? ` · 목록 외 요청 ${state.selectedRequestedEquipment.filter((item) => item.name.trim()).length}개` : ""}`,
     studio: `${state.selectedStudioSpace || "공간 미선택"} · ${state.selectedStudioSlots.join(", ")}`,
     darkroom: `${state.selectedDarkroomSlots.join(", ")} · ${state.selectedDarkroomProcessTypes.join(", ")}`,
     print: `${state.selectedPrintStartTime || "-"}-${state.selectedPrintEndTime || "-"}`
@@ -798,9 +813,12 @@ function EquipmentDetailsForm({ state, actions }: Omit<ReservationControlsProps,
 
 function StudioDetailsForm({ state, actions }: Omit<ReservationControlsProps, "type">) {
   const previous = rebookingFields("studio", state);
+  const previousRequests = previous.requestedEquipment || [];
+  const hasLegacyRequest = !previousRequests.length && Boolean(previous.requiredEquipment);
   const [details, setDetails] = useState<StudioReservationDetails>({
     participants: String(previous.participants || state.user.name),
-    requiredEquipment: String(previous.requiredEquipment || ""),
+    requiredEquipment: hasLegacyRequest ? String(previous.requiredEquipment || "") : "",
+    requestedEquipment: previousRequests,
     purpose: String(previous.purpose || ""),
     phone: state.user.phone || "",
     studioPolicyConfirmed: false
@@ -810,7 +828,14 @@ function StudioDetailsForm({ state, actions }: Omit<ReservationControlsProps, "t
     <form className="student-react-details-form" onSubmit={submission.submit}>
       <ReservationReview type="studio" state={state} />
       <div className="field"><label htmlFor="studio-participants">사용 명단</label><input id="studio-participants" className="input" required value={details.participants} onChange={(event) => setDetails((current) => ({ ...current, participants: event.target.value }))} /></div>
-      <div className="field"><label htmlFor="studio-equipment">필요 장비</label><textarea id="studio-equipment" className="textarea" value={details.requiredEquipment} onChange={(event) => setDetails((current) => ({ ...current, requiredEquipment: event.target.value }))} /></div>
+      <EquipmentRequestEditor
+        idPrefix="studio-request"
+        title="함께 사용할 기자재 요청"
+        description="스튜디오에서 필요한 장비를 여러 개 적을 수 있습니다."
+        rows={details.requestedEquipment || []}
+        onChange={(requestedEquipment) => setDetails((current) => ({ ...current, requestedEquipment }))}
+      />
+      {hasLegacyRequest ? <div className="field"><label htmlFor="studio-equipment-legacy">이전 장비 요청 메모</label><textarea id="studio-equipment-legacy" className="textarea" value={details.requiredEquipment} onChange={(event) => setDetails((current) => ({ ...current, requiredEquipment: event.target.value }))} /></div> : null}
       <div className="field"><label htmlFor="studio-purpose">사용 목적</label><textarea id="studio-purpose" className="textarea" value={details.purpose} onChange={(event) => setDetails((current) => ({ ...current, purpose: event.target.value }))} /></div>
       <div className="field"><label htmlFor="studio-phone">연락처</label><input id="studio-phone" className="input" required value={details.phone} onChange={(event) => setDetails((current) => ({ ...current, phone: event.target.value }))} /></div>
       <label className="field consent"><span><input type="checkbox" required checked={details.studioPolicyConfirmed} onChange={(event) => setDetails((current) => ({ ...current, studioPolicyConfirmed: event.target.checked }))} /> 사용 후 정리정돈과 보고서 제출 규정을 확인했습니다.</span></label>

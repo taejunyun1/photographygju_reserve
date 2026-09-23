@@ -68,6 +68,7 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     selectedEquipmentRentalTime: state.selectedEquipmentRentalTime || "",
     selectedEquipmentReturnTime: state.selectedEquipmentReturnTime || "",
     selectedEquipmentItemIds: asArray(state.selectedEquipmentItemIds),
+    selectedRequestedEquipment: asArray(state.selectedRequestedEquipment),
     selectedStudioSpace: state.selectedStudioSpace || "",
     selectedStudioSlots: asArray(state.selectedStudioSlots),
     selectedDarkroomSlots: asArray(state.selectedDarkroomSlots),
@@ -90,6 +91,7 @@ function resetReservationSelection(state, type) {
   if (state.selectedDates) state.selectedDates[type] = "";
   if (type === "equipment") {
     state.selectedEquipmentItemIds = [];
+    state.selectedRequestedEquipment = [];
     state.selectedEquipmentPeriod = "";
     state.selectedEquipmentRentalTime = "";
     state.selectedEquipmentReturnTime = "";
@@ -119,6 +121,7 @@ function applySelectionPatch(state, patch) {
     equipmentRentalTime: "selectedEquipmentRentalTime",
     equipmentReturnTime: "selectedEquipmentReturnTime",
     equipmentItemIds: "selectedEquipmentItemIds",
+    requestedEquipment: "selectedRequestedEquipment",
     studioSpace: "selectedStudioSpace",
     studioSlots: "selectedStudioSlots",
     darkroomSlots: "selectedDarkroomSlots",
@@ -155,6 +158,11 @@ function applyReusableReservationFields(state, reservation) {
   const fields = {
     period: reusableText(source.period),
     equipmentItemIds: reusableValues(source.equipmentItemIds),
+    requestedEquipment: asArray(source.requestedEquipment).map((item) => ({
+      name: reusableText(item?.name),
+      quantity: Number(item?.quantity) || 1,
+      note: reusableText(item?.note)
+    })).filter((item) => item.name),
     studioSpace: reusableText(source.studioSpace) || reusableValues(source.studioSpaces)[0] || "",
     studioSpaces: reusableValues(source.studioSpaces),
     processTypes: reusableValues(source.processTypes),
@@ -173,6 +181,7 @@ function applyReusableReservationFields(state, reservation) {
   if (type === "equipment") {
     state.selectedEquipmentPeriod = fields.period;
     state.selectedEquipmentItemIds = fields.equipmentItemIds;
+    state.selectedRequestedEquipment = fields.requestedEquipment;
   } else if (type === "studio") {
     state.selectedStudioSpace = fields.studioSpace;
   } else if (type === "darkroom") {
@@ -199,6 +208,7 @@ function clearAuthenticatedState(state, clearStoredSession) {
   state.token = "";
   state.user = null;
   state.myReservations = [];
+  state.selectedRequestedEquipment = [];
   state.favoriteGroups = [];
   state.recentReservations = [];
   state.courseDemandSurveys = [];
@@ -311,7 +321,7 @@ export function createStudentReactActions(dependencies) {
       }
       state.view = view;
       try {
-        if (view === "mine" || view === "reports") await loadMyReservations();
+        if (view === "home" || view === "mine" || view === "reports") await loadMyReservations();
         if (view === "lectures") await loadLectures();
       } catch (error) {
         toast(error.message || "데이터를 불러오지 못했습니다.", { tone: "error" });

@@ -60,6 +60,12 @@ export type StudentEquipment = {
   inquiryOnly?: boolean;
 };
 
+export type StudentEquipmentRequest = {
+  name: string;
+  quantity: number;
+  note: string;
+};
+
 export type StudentDarkroomChemical = {
   id: string;
   process?: string;
@@ -91,6 +97,7 @@ export type StudentReservationFields = {
   rentalTime?: string;
   returnTime?: string;
   equipmentItemIds?: readonly string[];
+  requestedEquipment?: readonly StudentEquipmentRequest[];
   studioSpace?: string;
   studioSpaces?: readonly string[];
   timeSlots?: readonly string[];
@@ -294,6 +301,7 @@ export type EquipmentReservationDraft = {
     rentalTime: string;
     returnTime: string;
     equipmentItemIds: readonly string[];
+    requestedEquipment: readonly StudentEquipmentRequest[];
     cameraBagConfirmationRequired: boolean;
     pelicanBagReserved: boolean;
     cameraBagConfirmed: boolean;
@@ -313,6 +321,7 @@ export type StudioReservationDraft = {
     timeSlots: readonly string[];
     participants: string;
     requiredEquipment: string;
+    requestedEquipment: readonly StudentEquipmentRequest[];
     purpose: string;
     phone: string;
     studioPolicyConfirmed: boolean;
@@ -366,6 +375,7 @@ export type StudentReservationSelectionPatch = {
   equipmentRentalTime?: string;
   equipmentReturnTime?: string;
   equipmentItemIds?: readonly string[];
+  requestedEquipment?: readonly StudentEquipmentRequest[];
   studioSpace?: string;
   studioSlots?: readonly string[];
   darkroomSlots?: readonly string[];
@@ -445,6 +455,7 @@ export type StudentState = {
   readonly selectedEquipmentRentalTime?: string;
   readonly selectedEquipmentReturnTime?: string;
   readonly selectedEquipmentItemIds: readonly string[];
+  readonly selectedRequestedEquipment: readonly StudentEquipmentRequest[];
   readonly selectedStudioSpace?: string;
   readonly selectedStudioSlots: readonly string[];
   readonly selectedDarkroomSlots: readonly string[];

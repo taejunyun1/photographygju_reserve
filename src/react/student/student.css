@@ -594,6 +594,83 @@
   max-width: 100%;
 }
 
+.student-react-equipment-request-editor {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--student-line);
+  border-radius: 10px;
+  background: var(--student-soft);
+}
+
+.student-react-equipment-request-editor__heading h3,
+.student-react-equipment-request-editor__heading p,
+.student-react-equipment-request-editor__hint {
+  margin: 0;
+}
+
+.student-react-equipment-request-editor__heading h3 {
+  font-size: 16px;
+}
+
+.student-react-equipment-request-editor__rows {
+  display: grid;
+  gap: 10px;
+}
+
+.student-react-equipment-request-editor__row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--student-line);
+  border-radius: 8px;
+  background: var(--student-surface);
+}
+
+.student-react-equipment-request-editor__row-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.student-react-equipment-request-editor__remove {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--student-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.student-react-equipment-request-editor__remove:hover,
+.student-react-equipment-request-editor__remove:focus-visible {
+  color: var(--student-danger);
+  background: #fbe9e8;
+}
+
+.student-react-equipment-request-editor__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  gap: 10px;
+}
+
+.student-react-equipment-request-editor__fields .field {
+  min-width: 0;
+}
+
+.student-react-equipment-request-editor__row .textarea {
+  min-height: 72px;
+}
+
+.student-react-equipment-request-editor__hint {
+  font-size: 13px;
+}
+
 .student-react-booking-progress {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -850,6 +927,93 @@
 
 .student-react-reservation-card {
   gap: 12px;
+}
+
+.student-react-home-bookings {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--student-line);
+  border-radius: 12px;
+  background: var(--student-surface);
+  box-shadow: 0 8px 20px #20375b0a;
+}
+
+.student-react-home-bookings__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.student-react-home-bookings__heading h2,
+.student-react-home-bookings__heading p {
+  margin: 0;
+}
+
+.student-react-home-bookings__heading h2 {
+  font-size: 19px;
+}
+
+.student-react-home-bookings__heading p {
+  font-size: 12px;
+}
+
+.student-react-home-bookings__heading .gju-button {
+  flex: 0 0 auto;
+}
+
+.student-react-home-bookings__list {
+  display: grid;
+  min-width: 0;
+}
+
+.student-react-home-bookings__item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--student-line);
+}
+
+.student-react-home-bookings__item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.student-react-home-bookings__item-heading strong {
+  min-width: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.student-react-home-bookings__item-heading .gju-status-badge {
+  flex: 0 0 auto;
+}
+
+.student-react-home-bookings__item p,
+.student-react-home-bookings__item small {
+  margin: 0;
+  color: var(--student-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.student-react-home-bookings__item small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.student-react-home-bookings__empty {
+  padding-top: 8px;
+  border-top: 1px solid var(--student-line);
 }
 
 .student-react-reservation-card__head {

@@ -14,6 +14,7 @@ import type {
   StudentReservation
 } from "../types";
 import { isReportDue } from "../reporting";
+import { equipmentRequestSummary } from "../equipmentRequests";
 
 const TYPE_LABELS: Record<ReservationType | "lecture", string> = {
   equipment: "기자재",
@@ -45,14 +46,14 @@ const RESERVATION_STATUS_LABELS: Record<string, string> = {
   lecture_applied: "신청완료"
 };
 
-function statusTone(status = "") {
+export function statusTone(status = "") {
   if (["approved", "auto_confirmed", "completed", "returned", "모집중"].includes(status)) return "green" as const;
   if (["pending_approval", "approval_pending", "checked_out", "진행완료"].includes(status)) return "amber" as const;
   if (["rejected", "cancelled", "admin_cancelled", "취소"].includes(status)) return "red" as const;
   return "blue" as const;
 }
 
-function reservationStatusLabel(status = "") {
+export function reservationStatusLabel(status = "") {
   return RESERVATION_STATUS_LABELS[status] || status || "접수";
 }
 
@@ -67,7 +68,7 @@ function formatReservationDate(value: unknown) {
   return `${Number(year)}. ${Number(month)}. ${Number(day)}. (${weekday})`;
 }
 
-function reservationDisplayMeta(reservation: StudentReservation) {
+export function reservationDisplayMeta(reservation: StudentReservation) {
   const fields = reservation.fields;
   const date = formatReservationDate(fields.reservedDate || reservation.lecture?.lectureDate);
   const time = fields.rentalTime && fields.returnTime
@@ -81,11 +82,13 @@ function reservationDisplayMeta(reservation: StudentReservation) {
   const equipmentSummary = equipment.length > 2
     ? `${equipment.slice(0, 2).join(", ")} 외 ${equipment.length - 2}개`
     : equipment.join(", ");
+  const requestedEquipment = equipmentRequestSummary(fields.requestedEquipment);
   const details = [
     fields.period,
     reservation.type === "lecture" ? reservation.lecture?.title : "",
     fields.studioSpace || (fields.studioSpaces || []).join(", "),
-    equipmentSummary
+    equipmentSummary,
+    requestedEquipment ? `요청: ${requestedEquipment}` : reservation.type === "studio" && fields.requiredEquipment ? `요청: ${fields.requiredEquipment}` : ""
   ].filter(Boolean).map(String);
   return {
     date,

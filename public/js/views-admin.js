@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260921-report-drive-r1";
+import { state } from "./state.js?v=20260923-reservation-requests-r1";
 import {
   adminNavItems,
   equipmentAdminStatusOptions,
@@ -11,7 +11,7 @@ import {
   typeLabel,
   userLimitOptions,
   weekdayLabel
-} from "./constants.js?v=20260921-report-drive-r1";
+} from "./constants.js?v=20260923-reservation-requests-r1";
 import {
   addMonths,
   adminGuide,
@@ -29,7 +29,7 @@ import {
   todayKey,
   userSortButton,
   userStatusCell
-} from "./utils.js?v=20260921-report-drive-r1";
+} from "./utils.js?v=20260923-reservation-requests-r1";
 import {
   card,
   emptyState,
@@ -39,15 +39,15 @@ import {
   searchField,
   sectionHeader,
   tabs
-} from "./ui.js?v=20260921-report-drive-r1";
-import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260921-report-drive-r1";
-import { noticeCard } from "./views-student.js?v=20260921-report-drive-r1";
+} from "./ui.js?v=20260923-reservation-requests-r1";
+import { nativeNotificationPreferenceEnabled, plannedAdminNotifications } from "./native-notifications.js?v=20260923-reservation-requests-r1";
+import { noticeCard } from "./views-student.js?v=20260923-reservation-requests-r1";
 import {
   equipmentReservableTag,
   equipmentStatusButtons,
   selectedAdminEquipmentSet,
   visibleAdminEquipmentItems
-} from "./admin-equipment.js?v=20260921-report-drive-r1";
+} from "./admin-equipment.js?v=20260923-reservation-requests-r1";
 
 export function adminShell() {
   return `

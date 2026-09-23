@@ -1,8 +1,8 @@
-import { state } from "../state.js?v=20260921-report-drive-r1";
-import { loadAdminData } from "../data.js?v=20260921-report-drive-r1";
-import { render } from "../renderer.js?v=20260921-report-drive-r1";
-import { normalizeUnicodeText } from "../utils.js?v=20260921-report-drive-r1";
-import { resetAdminPage } from "./shared.js?v=20260921-report-drive-r1";
+import { state } from "../state.js?v=20260923-reservation-requests-r1";
+import { loadAdminData } from "../data.js?v=20260923-reservation-requests-r1";
+import { render } from "../renderer.js?v=20260923-reservation-requests-r1";
+import { normalizeUnicodeText } from "../utils.js?v=20260923-reservation-requests-r1";
+import { resetAdminPage } from "./shared.js?v=20260923-reservation-requests-r1";
 
 export function setupSearchEventHandlers() {
   function rerenderSearch(selector, { restoreFocus = true } = {}) {
