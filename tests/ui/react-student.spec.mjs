@@ -20,6 +20,52 @@ test("Student React mounts without legacy student content", async ({ page }) => 
   await expectNoHorizontalOverflow(page);
 });
 
+test("Student React offers two-night equipment rentals on every weekday", async ({ page }, testInfo) => {
+  test.skip(!["mobile-390", "desktop-1440"].includes(testInfo.project.name), "representative phone and desktop viewports");
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (["error", "warning"].includes(message.type())) errors.push(message.text());
+  });
+  await loginReactStudent(page);
+  expect(page.url()).toMatch(/^http:\/\/127\.0\.0\.1:4179\//);
+  await expect(page).toHaveTitle(/GJU Photography Reservation/);
+  for (const date of ["2099-07-20", "2099-07-21", "2099-07-22", "2099-07-23", "2099-07-24"]) {
+    await page.evaluate(async (selectedDate) => {
+      const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+      const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+      state.view = "reserve";
+      state.reservationType = "equipment";
+      state.reservationFlowStep.equipment = "date";
+      state.selectedDates.equipment = selectedDate;
+      state.selectedEquipmentPeriod = "";
+      state.selectedEquipmentRentalTime = "";
+      state.selectedEquipmentReturnTime = "";
+      state.selectedEquipmentItemIds = [];
+      render();
+    }, date);
+    const next = page.locator(".student-react-flow-actions").getByRole("button", { name: "다음" });
+    await next.click();
+    const period = page.getByLabel("사용 기간", { exact: true });
+    await expect(period.locator('option[value="2박3일"]')).toHaveText("2박3일");
+    await expect(period.locator('option[value="주말사용"]')).toHaveCount(date === "2099-07-24" ? 1 : 0);
+    await period.selectOption("2박3일");
+    await page.getByLabel("대여 시간", { exact: true }).selectOption("17:30");
+    await page.getByLabel("반납 시간", { exact: true }).selectOption("10:15");
+    await expect(period).toHaveValue("2박3일");
+    await expect(next).toBeEnabled();
+    await expectNoHorizontalOverflow(page);
+    if (date === "2099-07-22") {
+      await expect(page.getByText("로그인되었습니다.")).toBeHidden();
+      await page.screenshot({ path: `/tmp/gju-two-night-hotfix-${testInfo.project.name}.png`, fullPage: false });
+    }
+    await next.click();
+    await expect(page.getByLabel("기자재 검색", { exact: true })).toBeVisible();
+  }
+  await expect(page.locator("vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test("Student React favorite manager opens as a reachable bottom sheet", async ({ page }) => {
   await loginReactStudent(page);
   const trigger = page.getByRole("button", { name: "즐겨찾기 관리" });
@@ -119,8 +165,8 @@ test("Student React mobile booking progress uses circular 24px markers", async (
   test.skip(!viewport || viewport.width > 700, "phone progress contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -140,8 +186,8 @@ test("Student React reservation cards align actions and summarize the schedule o
   test.skip(!viewport || viewport.width > 430, "phone card contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "mobile-card-fixture",
@@ -286,8 +332,8 @@ test("Student React report submission keeps the form open and announces server e
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "";
     state.myReservations = [{
@@ -340,8 +386,8 @@ test("Student React can submit an eligible report without a Drive setting", asyn
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: [{ ...reservation, fields: { ...reservation.fields, reportStatus: "submitted" } }] }) });
   });
   await page.evaluate(async (fixture) => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reports";
     state.bootstrap.settings.googleDriveUrl = "";
     state.myReservations = [fixture];
@@ -368,8 +414,8 @@ test("Student React lecture actions recover and announce request errors", async 
     });
   });
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "lectures";
     state.lectures = [{
       id: "lecture-error-fixture",
@@ -397,8 +443,8 @@ test("Student React opens every reservation type without viewport overflow", asy
 
   for (const label of types) {
     await page.evaluate(async () => {
-      const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-      const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+      const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+      const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
       state.view = "reserve";
       state.reservationType = "";
       state.bootstrap.settings.googleDriveUrl = "https://drive.google.com/";
@@ -416,8 +462,8 @@ test("Student React equipment selection keeps card surfaces inside the mobile vi
   test.skip(!viewport || viewport.width > 768, "mobile and tablet overflow contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -488,8 +534,8 @@ test("Student React adds multiple unlisted equipment requests and shows them on 
   await expect(page).toHaveTitle(/GJU Photography Reservation/);
   await expect(page.locator("vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay")).toHaveCount(0);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reserve";
     state.reservationType = "equipment";
     state.reservationFlowStep.equipment = "select";
@@ -510,7 +556,7 @@ test("Student React adds multiple unlisted equipment requests and shows them on 
   await editor.getByLabel("수량").nth(1).fill("3");
   await expect(editor.getByLabel("장비명")).toHaveCount(2);
   const savedRows = await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
     return state.selectedRequestedEquipment;
   });
   expect(savedRows.map(({ name, quantity }) => [name, quantity])).toEqual([["무선 마이크", 2], ["마이크 스탠드", 3]]);
@@ -523,8 +569,8 @@ test("Student React adds multiple unlisted equipment requests and shows them on 
   await expect(page.getByText("목록 외 요청 2개")).toBeVisible();
 
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "home";
     state.myReservations = [{
       id: "request-home-fixture",
@@ -549,8 +595,8 @@ test("Student React studio details can add and remove multiple equipment request
   test.skip(testInfo.project.name !== "mobile-390", "representative phone viewport");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "reserve";
     state.reservationType = "studio";
     state.reservationFlowStep.studio = "details";
@@ -577,8 +623,8 @@ test("Student React mobile equipment selection uses an expandable dock above nav
   test.skip(!viewport || viewport.width > 700, "phone selection dock contract");
   await loginReactStudent(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     const selected = (state.bootstrap.equipment || [])
       .filter((item) => item.active !== false && !item.inquiryOnly && item.source !== "fantasy_lab")
       .slice(0, 4)
@@ -647,8 +693,8 @@ test("Student React reservation cancellation keeps the card and announces reques
   });
   page.on("dialog", (dialog) => dialog.accept());
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260923-reservation-requests-r1");
-    const { render } = await import("/js/renderer.js?v=20260923-reservation-requests-r1");
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
     state.view = "mine";
     state.myReservations = [{
       id: "cancel-error-fixture",

@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20260923-reservation-requests-r1";
-import { state } from "./state.js?v=20260923-reservation-requests-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20260930-equipment-period-hotfix-r1";
+import { state } from "./state.js?v=20260930-equipment-period-hotfix-r1";
 import {
   planAdminNotifications,
   planReservationNotifications,

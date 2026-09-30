@@ -216,7 +216,7 @@ export function createReservationValidationHelpers({
     if (type === "equipment") {
       assertRequired(fields, ["reservedDate", "period", "rentalTime", "returnTime", "phone"]);
       if (equipmentReservationStartUnavailable(fields.reservedDate)) throw Object.assign(new Error("토요일/일요일은 기자재 예약을 시작할 수 없습니다. 금요일 2박3일 옵션을 이용하세요."), { status: 400 });
-      if ((String(fields.period).includes("2박3일") || String(fields.period).includes("주말")) && dayIndexForDateKey(fields.reservedDate) !== 5) throw Object.assign(new Error("2박3일(주말) 대여는 금요일에만 가능합니다."), { status: 400 });
+      if (String(fields.period).includes("주말") && dayIndexForDateKey(fields.reservedDate) !== 5) throw Object.assign(new Error("주말사용 대여는 금요일에만 가능합니다."), { status: 400 });
       const rentalMinutes = timeToMinutes(fields.rentalTime, { allowEndOfDay: false });
       const returnMinutes = timeToMinutes(fields.returnTime, { allowEndOfDay: false });
       const rentalOptions = Array.isArray(db.settings.equipmentRentalTimes) ? db.settings.equipmentRentalTimes : [];

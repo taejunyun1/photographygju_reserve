@@ -26,8 +26,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20260923-reservation-requests-r1");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260923-reservation-requests-r1");
+const { state } = await import("../public/js/state.js?v=20260930-equipment-period-hotfix-r1");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20260930-equipment-period-hotfix-r1");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -279,7 +279,7 @@ function resetStudentState() {
   };
   state.bootstrap = {
     settings: {
-      equipmentPeriods: ["당일", "1박2일", "2박3일"],
+      equipmentPeriods: ["당일", "1박2일", "2박3일", "주말사용"],
       equipmentRentalTimes: ["10:15", "12:00", "17:30"],
       equipmentReturnTimes: ["10:15", "12:00", "17:10"],
       equipmentCameraBagNotice: "카메라 가방을 지참하겠습니다.",
@@ -330,7 +330,22 @@ state.selectedDates.equipment = fridayDate;
 state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
 const fridayWeekendEquipmentForm = equipmentForm();
 assert(fridayWeekendEquipmentForm.includes('value="2박3일"'), "Friday equipment reservations must expose the 2-night 3-day option");
-assert(fridayWeekendEquipmentForm.includes("2박3일(주말)"), "Friday equipment reservations must label 2-night 3-day as the weekend option");
+assert(!fridayWeekendEquipmentForm.includes("2박3일(주말)"), "2-night 3-day rentals must not be labeled as weekend-only");
+assert(fridayWeekendEquipmentForm.includes('value="주말사용"'), "Friday must expose the separate weekend option");
+
+for (let offset = 3; offset <= 6; offset += 1) {
+  resetStudentState();
+  const weekday = new Date(`${fridayDate}T12:00:00`);
+  weekday.setDate(weekday.getDate() + offset);
+  state.selectedDates.equipment = formatLocalDate(weekday);
+  state.calendarMonth = state.selectedDates.equipment.slice(0, 7);
+  state.selectedEquipmentPeriod = "2박3일";
+  const weekdayForm = equipmentForm();
+  assert(weekdayForm.includes('value="2박3일" selected'), `${state.selectedDates.equipment}: weekday rentals must retain the selected 2박3일 option`);
+  assert(!weekdayForm.includes('value="주말사용"'), "weekday rentals must hide only the weekend option");
+  assert(!weekdayForm.includes("2박3일(주말)"), "weekday rentals must not display weekend-only guidance for 2박3일");
+  assert(!weekdayForm.includes('data-reserve-next="equipment:select" disabled'), "weekday 2박3일 rentals must allow advancing to equipment selection");
+}
 
 resetStudentState();
 state.selectedDates.equipment = saturdayDate;

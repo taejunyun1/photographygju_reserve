@@ -179,6 +179,26 @@ for (const testCase of midnightDarkroomCases) {
 
 const reservableEquipment = db.equipment.find((item) => item.active && item.reservable && item.category === "Lighting");
 assert.ok(reservableEquipment, "a reservable non-camera item is required for equipment timing tests");
+for (const [reservedDate, returnDate] of [
+  ["2099-01-05", "2099-01-07"],
+  ["2099-01-06", "2099-01-08"],
+  ["2099-01-07", "2099-01-09"],
+  ["2099-01-08", "2099-01-10"]
+]) {
+  const fields = { reservedDate, period: "2박3일", rentalTime: "17:30", returnTime: "10:15", phone: "01012345678", equipmentItemIds: [reservableEquipment.id] };
+  const response = await api("POST", "/api/reservations", { type: "equipment", fields });
+  assert.equal(response.status, 200, `${reservedDate}: weekday 2박3일 must be accepted by the API`);
+  assert.deepEqual(response.body.data.timing, {
+    startAt: `${reservedDate}T08:30:00.000Z`,
+    endAt: `${returnDate}T01:15:00.000Z`
+  }, "2박3일 must keep its two-calendar-day return calculation");
+  const conflict = await api("POST", "/api/reservations", { type: "equipment", fields });
+  assert.equal(conflict.status, 409, "weekday 2박3일 must still prevent overlapping equipment reservations");
+  db.reservations = db.reservations.filter((item) => item.id !== response.body.data.id);
+  const weekendOnly = await api("POST", "/api/reservations", { type: "equipment", fields: { ...fields, period: "주말사용" } });
+  assert.equal(weekendOnly.status, 400, "주말사용 must remain restricted to Friday");
+  assert.match(weekendOnly.body.error, /금요일/);
+}
 const weekendEquipmentFields = {
   reservedDate: "2099-01-09",
   period: "2박3일",

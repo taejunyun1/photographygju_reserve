@@ -213,8 +213,8 @@ export function equipmentScheduleAvailability(
   const dateResult = reservationDateAvailability("equipment", date, bootstrap.settings, today);
   if (!dateResult.available) return dateResult;
   if (!period || !rentalTime || !returnTime) return unavailable("대여 기간과 시간을 모두 선택하세요.");
-  if ((period.includes("2박3일") || period.includes("주말")) && dayIndex(date) !== 5) {
-    return unavailable("2박3일(주말) 대여는 금요일에만 가능합니다.");
+  if (period.includes("주말") && dayIndex(date) !== 5) {
+    return unavailable("주말사용 대여는 금요일에만 가능합니다.");
   }
   if (periodDays(period) === 0) {
     const rental = timeToMinutes(rentalTime);

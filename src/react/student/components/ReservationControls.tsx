@@ -206,7 +206,7 @@ function EquipmentScheduleStep({ state, actions }: Omit<ReservationControlsProps
   const date = state.selectedDates.equipment;
   const friday = date ? new Date(`${date}T00:00:00`).getDay() === 5 : false;
   const periods = values(settings.equipmentPeriods, ["당일"]).filter((period) => (
-    friday || (!period.includes("2박3일") && !period.includes("주말"))
+    friday || !period.includes("주말")
   ));
   const result = equipmentScheduleAvailability(
     state.bootstrap,

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20260923-reservation-requests-r1";
+import { state } from "./state.js?v=20260930-equipment-period-hotfix-r1";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

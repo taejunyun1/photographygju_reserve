@@ -308,6 +308,27 @@ assert(markup.indexOf("student-react-home-bookings") < markup.indexOf("student-r
 
 // Exact legacy availability behavior is derived from the bootstrap snapshot.
 const availabilityBootstrap = { settings, notices: [], equipment, darkroomChemicals: chemicals, reservations };
+for (const date of ["2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17"]) {
+  const friday = date === "2026-07-17";
+  assert.equal(student.equipmentScheduleAvailability(availabilityBootstrap, date, "2박3일", "12:00", "12:00", "2026-07-11").available, true, `${date}: 2박3일 must be bookable on every weekday`);
+  assert.equal(student.equipmentScheduleAvailability(availabilityBootstrap, date, "주말사용", "12:00", "12:00", "2026-07-11").available, friday, `${date}: only weekend use must require Friday`);
+  const scheduleMarkup = renderToStaticMarkup(React.createElement(student.ReservationControls, {
+    type: "equipment",
+    state: makeState({
+      reservationFlowStep: { equipment: "schedule", studio: "date", darkroom: "date", print: "date" },
+      selectedDates: { equipment: date, studio: "", darkroom: "", print: "" },
+      selectedEquipmentPeriod: "2박3일",
+      selectedEquipmentRentalTime: "12:00",
+      selectedEquipmentReturnTime: "12:00"
+    }),
+    actions: actionRecorder().actions
+  }));
+  assert.match(scheduleMarkup, /<option value="2박3일" selected="">2박3일<\/option>/, `${date}: the selected 2박3일 option must remain visible`);
+  assert.equal(scheduleMarkup.includes('value="주말사용"'), friday, `${date}: the weekend option must only appear on Friday`);
+}
+for (const date of ["2026-07-18", "2026-07-19"]) {
+  assert.equal(student.equipmentScheduleAvailability(availabilityBootstrap, date, "2박3일", "12:00", "12:00", "2026-07-11").available, false, `${date}: weekend starts must remain unavailable`);
+}
 assert.equal(student.reservationDateAvailability("equipment", "2026-07-11", settings, "2026-07-11").available, false, "equipment must reject same-day reservations");
 assert.equal(student.reservationDateAvailability("darkroom", "2026-07-11", settings, "2026-07-11").available, true, "darkroom must allow same-day reservations");
 assert.equal(student.reservationDateAvailability("equipment", "2026-07-19", settings, "2026-07-11").available, false, "equipment must reject weekend starts");
