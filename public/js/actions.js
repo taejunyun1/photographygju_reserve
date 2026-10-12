@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20261012-equipment-turnover-r1";
+import { state, setAuthenticatedUser } from "./state.js?v=20261012-equipment-turnover-r1";
 import { api } from "./api.js?v=20261012-equipment-turnover-r1";
 import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20261012-equipment-turnover-r1";
 import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20261012-equipment-turnover-r1";
@@ -40,7 +40,7 @@ export async function login(form) {
   }
   const rememberLogin = data.rememberLogin === "true";
   state.token = result.token;
-  state.user = result.user;
+  setAuthenticatedUser(result.user);
   state.view = "home";
   state.reservationType = "";
   state.warningPopupDismissed = false;
@@ -82,7 +82,7 @@ export async function logout() {
   const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   await api("/api/auth/logout", { method: "POST", body: { token: state.token } }).catch(() => null);
   state.token = "";
-  state.user = null;
+  setAuthenticatedUser(null);
   state.myReservations = [];
   state.lectures = [];
   state.view = "home";
@@ -270,7 +270,7 @@ export async function submitReservation(form) {
       throw new Error(`출력실 ${labels} 시간대는 예약 가능 인원이 가득 찼습니다.`);
     }
   }
-  if (type === "equipment") state.equipmentDraftFields = { phone: fields.phone, purpose: fields.purpose, standRequest: fields.standRequest };
+  if (type === "equipment") state.equipmentDraftFields = { userId: state.user?.id, phone: fields.phone, purpose: fields.purpose, standRequest: fields.standRequest };
   toast("예약을 처리 중입니다.");
   let reservation;
   try {
@@ -344,7 +344,7 @@ export async function changePassword(form) {
   const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   form.reset();
   state.token = "";
-  state.user = null;
+  setAuthenticatedUser(null);
   state.myReservations = [];
   state.lectures = [];
   state.adminSessions = [];
@@ -371,7 +371,7 @@ export async function deleteAccount(form) {
   });
   const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   state.token = "";
-  state.user = null;
+  setAuthenticatedUser(null);
   state.myReservations = [];
   state.lectures = [];
   state.adminSessions = [];

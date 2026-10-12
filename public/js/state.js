@@ -29,6 +29,7 @@ export const state = {
   myReservationSearch: "",
   reportSearch: "",
   noticeSearch: "",
+  equipmentDraftFields: null,
   selectedEquipmentItemIds: [],
   selectedRequestedEquipment: [],
   selectedEquipmentPeriod: "",
@@ -135,3 +136,8 @@ export const state = {
   loadingCount: 0,
   toast: ""
 };
+
+export function setAuthenticatedUser(user) {
+  if (!user?.id || state.equipmentDraftFields?.userId !== user.id) state.equipmentDraftFields = null;
+  state.user = user;
+}

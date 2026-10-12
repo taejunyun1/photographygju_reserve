@@ -205,6 +205,7 @@ function clearReservationRecommendations(state) {
 }
 
 function clearAuthenticatedState(state, clearStoredSession) {
+  state.equipmentDraftFields = null;
   state.token = "";
   state.user = null;
   state.myReservations = [];

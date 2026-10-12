@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import vm from "node:vm";
 
 function assert(condition, message) {
   if (!condition) {
@@ -26,7 +27,7 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state } = await import("../public/js/state.js?v=20261012-equipment-turnover-r1");
+const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261012-equipment-turnover-r1");
 const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20261012-equipment-turnover-r1");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
@@ -381,7 +382,7 @@ state.selectedEquipmentItemIds = ["eq1"];
 state.equipmentSelectionSheetOpen = true;
 const openSelectionSheetHtml = equipmentForm();
 // A server 409 refresh adds a real conflicting booking without changing the draft schedule.
-state.equipmentDraftFields = { phone: "01098765432", purpose: "실습" };
+state.equipmentDraftFields = { userId: state.user.id, phone: "01098765432", purpose: "실습", standRequest: "A 스탠드" };
 state.bootstrap.reservations.push({ id: "concurrent-409", type: "equipment", status: "pending", fields: { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime, equipmentItemIds: ["eq1"] }, equipmentItems: [{ id: "eq1" }] });
 const conflictHtml = equipmentForm();
 assert.equal(state.selectedEquipmentItemIds.join(","), "eq1", "409 bootstrap refresh retains equipment IDs");
@@ -390,6 +391,53 @@ assert(conflictHtml.includes('name="phone" value="01098765432"'), "409 rerender 
 assert(conflictHtml.includes('>실습</textarea>'), "409 rerender displays preserved purpose");
 assert(conflictHtml.includes('value="eq1" checked  />'), "conflicting selected checkbox remains enabled for explicit removal");
 assert(conflictHtml.includes('data-reserve-next="equipment:details" disabled'), "conflicting draft cannot advance");
+// Execute the production actions against a two-user API fixture.
+const actionSource = fs.readFileSync("public/js/actions.js", "utf8").replace(/^import[\s\S]*?from [^;]+;\n/gm, "").replace(/export /g, "");
+const fixture = { state, setAuthenticatedUser, localStorage, sessionStorage, render() {}, toast() {},
+  clearNativeNotificationAccount: async () => {}, handleNativeNotificationResume: async () => {},
+  notifyNativeReservationCreated: async () => {}, loadBootstrap: async () => {}, loadMyReservations: async () => {}, loadLectures: async () => {},
+  formData: (form) => form.fields, getChecked: () => [], isPastDate: () => false, isReservationDateClosed: () => false,
+  reservationDateUnavailable: () => false, equipmentRangeBlocked: () => [], equipmentItemReservedInRange: () => false,
+  equipmentIsHighValue: () => false, equipmentIsCameraBag: () => false,
+  api: async (path) => {
+    if (path === "/api/reservations") throw Object.assign(new Error("conflict"), { status: 409 });
+    if (path === "/api/auth/login") return { token: "B-token", user: { id: "studentB", role: "student", phone: "01022223333" } };
+    return {};
+  }
+};
+vm.createContext(fixture);
+vm.runInContext(actionSource, fixture);
+const failedSchedule = [state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime].join("|");
+await fixture.submitReservation({ dataset: { type: "equipment" }, fields: { reservedDate: state.selectedDates.equipment, phone: "01098765432", purpose: "실습", standRequest: "A 스탠드" } }).catch((error) => assert.equal(error.status, 409, "actual failed submit"));
+assert.equal(state.equipmentDraftFields.userId, "student1", "failed draft belongs to A");
+assert.equal(state.selectedEquipmentItemIds.join(","), "eq1", "failed submit preserves A selection");
+assert.equal([state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime].join("|"), failedSchedule, "failed submit preserves A schedule");
+assert(equipmentForm().includes('name="standRequest" value="A 스탠드"'), "same-account failed submit retains request");
+await fixture.logout();
+assert.equal(state.equipmentDraftFields, null, "logout clears private draft");
+await fixture.login({ fields: {} });
+state.selectedEquipmentItemIds = ["eq1"];
+state.selectedDates.equipment = futureDateKey();
+state.bootstrap.reservations = [];
+state.reservationFlowStep.equipment = "details";
+const bHtml = equipmentForm();
+assert(bHtml.includes('name="phone" value="01022223333"'), "B sees own phone");
+assert(!bHtml.includes("01098765432") && !bHtml.includes("A 스탠드") && !bHtml.includes(">실습</textarea>"), "B cannot see A private draft");
+// Defense in depth: even a stale foreign draft never renders.
+state.equipmentDraftFields = { userId: "student1", phone: "01098765432", purpose: "실습", standRequest: "A 스탠드" };
+assert(!equipmentForm().includes("01098765432"), "foreign owner draft is ignored");
+const expiredFixture = { state, setAuthenticatedUser, localStorage, sessionStorage,
+  api: async () => { throw Object.assign(new Error("expired"), { status: 401 }); }
+};
+vm.createContext(expiredFixture);
+vm.runInContext(fs.readFileSync("public/js/data.js", "utf8").replace(/^import[\s\S]*?from [^;]+;\n/gm, "").replace(/export /g, ""), expiredFixture);
+state.token = "expired-token";
+await expiredFixture.loadMe();
+assert.equal(state.equipmentDraftFields, null, "expired session clears private draft");
+assert.equal(state.user, null, "expired session clears current user");
+resetStudentState();
+state.selectedEquipmentItemIds = ["eq1"];
+state.bootstrap.reservations.push({ id: "concurrent-409", type: "equipment", status: "pending", fields: { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime, equipmentItemIds: ["eq1"] }, equipmentItems: [{ id: "eq1" }] });
 state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter(id => id !== "eq1");
 equipmentForm();
 assert.equal(state.selectedEquipmentItemIds.length, 0, "explicit deselection removes conflict");

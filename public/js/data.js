@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20261012-equipment-turnover-r1";
+import { state, setAuthenticatedUser } from "./state.js?v=20261012-equipment-turnover-r1";
 import { api } from "./api.js?v=20261012-equipment-turnover-r1";
 import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261012-equipment-turnover-r1";
 
@@ -20,7 +20,7 @@ export async function loadMe() {
     if (error.status !== 401) throw error;
     data = { user: null };
   }
-  state.user = data.user || null;
+  setAuthenticatedUser(data.user || null);
   if (!state.user) {
     clearAdminViewCache();
     state.token = "";

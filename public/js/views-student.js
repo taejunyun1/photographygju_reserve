@@ -646,6 +646,7 @@ function cameraBagConsent(selectedItems) {
 }
 
 function equipmentDetailStep(selectedItems, closedDate, dateUnavailable, rangeBlocked, activeStep) {
+  const draft = state.user?.id && state.equipmentDraftFields?.userId === state.user.id ? state.equipmentDraftFields : null;
   if (closedDate) {
     return reservationStep(4, "나머지 정보 입력", pastDateMessage("equipment"), flowStepOptions("equipment", "details", activeStep, { locked: true }));
   }
@@ -660,9 +661,9 @@ function equipmentDetailStep(selectedItems, closedDate, dateUnavailable, rangeBl
   }
   return reservationStep(4, "나머지 정보 입력", `
     ${cameraBagConsent(selectedItems)}
-    <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.equipmentDraftFields?.phone ?? state.user.phone)}" required /></div>
-    <div class="field"><label>스탠드/소프트박스 요청</label><input class="input" name="standRequest" value="${escapeHtml(state.equipmentDraftFields?.standRequest || "")}" placeholder="예약 후 조교와 직접 확인" /></div>
-    <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose" placeholder="촬영 목적을 간단히 입력">${escapeHtml(state.equipmentDraftFields?.purpose || "")}</textarea></div>
+    <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(draft?.phone ?? state.user.phone)}" required /></div>
+    <div class="field"><label>스탠드/소프트박스 요청</label><input class="input" name="standRequest" value="${escapeHtml(draft?.standRequest || "")}" placeholder="예약 후 조교와 직접 확인" /></div>
+    <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose" placeholder="촬영 목적을 간단히 입력">${escapeHtml(draft?.purpose || "")}</textarea></div>
     <label class="field consent"><span><input type="checkbox" required /> 파손/분실 자가부담 및 대리 대여/반납 불가에 동의합니다.</span></label>
     <button class="button primary full" type="submit">${icon("send")}승인 요청</button>
   `, flowStepOptions("equipment", "details", activeStep));
