@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 const scheduler = await import('../core/equipment-overdue-scheduler.mjs').catch(() => ({}));
 assert.equal(typeof scheduler.runEquipmentOverdueSweep, 'function', 'overdue scheduler must record execution');
-const { runEquipmentOverdueSweep, equipmentOverdueCronPath } = scheduler;
+const { runEquipmentOverdueSweep, equipmentOverdueCronPath, applyEquipmentOverdueActivation } = scheduler;
 assert.equal(equipmentOverdueCronPath('* * * * *'), '/api/internal/equipment-overdue');
 assert.equal(equipmentOverdueCronPath('0 18 */3 * *'), '/api/internal/cleanup');
 assert.equal(equipmentOverdueCronPath('unknown'), null);
@@ -15,3 +15,22 @@ assert.equal(runEquipmentOverdueSweep(restarted, now).createdCount, 0);
 assert.equal(restarted.warnings.length, 1);
 assert.equal(restarted.users[0].warningCount, 1);
 console.log('Equipment overdue Cron routing, execution and restart checks passed.');
+
+const rollout = {settings:{equipmentOverdueWarningsEnabled:false},meta:{}};
+assert.equal(applyEquipmentOverdueActivation(rollout, '', now), false);
+assert.equal(applyEquipmentOverdueActivation(rollout, '2026-10-14T00:00:00Z', now), false);
+assert.equal(applyEquipmentOverdueActivation(rollout, '2026-10-13T08:24:00Z', now), true);
+assert.equal(rollout.settings.equipmentOverdueWarningsEnabledAt, now);
+rollout.settings.equipmentOverdueWarningsEnabled = false;
+assert.equal(applyEquipmentOverdueActivation(rollout, '2026-10-13T08:24:00Z', now), false);
+assert.equal(rollout.settings.equipmentOverdueWarningsEnabled, false);
+console.log('One-time rollout activation and administrator disable checks passed.');
+
+assert.equal(applyEquipmentOverdueActivation(rollout, '2026-10-13T08:23:00Z', now), false);
+assert.equal(rollout.settings.equipmentOverdueWarningsEnabled, false);
+const previouslyActivated = {settings:{equipmentOverdueWarningsEnabled:false,equipmentOverdueWarningsEnabledAt:now},meta:{}};
+assert.equal(applyEquipmentOverdueActivation(previouslyActivated, '2026-10-13T08:23:00Z', now), false);
+const persistedEmptyMarker = {settings:{equipmentOverdueWarningsEnabled:false},meta:{equipmentOverdueActivationApplied:''}};
+assert.equal(applyEquipmentOverdueActivation(persistedEmptyMarker, '2026-10-13T08:23:00Z', now), false);
+assert.equal(persistedEmptyMarker.settings.equipmentOverdueWarningsEnabled, false);
+console.log('Changed ENV, prior server activation and any persisted marker preserve administrator disable.');

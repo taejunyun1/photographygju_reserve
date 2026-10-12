@@ -1484,6 +1484,9 @@ export async function handleApiRequest(ctx) {
           assertApprovedStudentAccess(user);
         }
         const body = await parseBody(readText);
+        if (reservation.type === "equipment" && reservation.status === "checked_out") {
+          throw Object.assign(new Error("대여 중 기자재 예약은 수정할 수 없습니다."), { status: 409 });
+        }
         const nextFields = { ...reservation.fields, ...(body.fields || {}) };
         validateReservation(db, reservation.type, nextFields, reservation.id, { skipDeadline: reservation.status === "checked_out", now: requestNow });
         reservation.fields = nextFields;
@@ -2046,6 +2049,9 @@ export async function handleApiRequest(ctx) {
         if (body.confirmText !== "학기 종료") {
           throw Object.assign(new Error("확인 문구가 일치하지 않습니다."), { status: 400 });
         }
+        if (db.reservations.some((reservation) => reservation.type === "equipment" && reservation.status === "checked_out")) {
+          throw Object.assign(new Error("대여 중인 기자재를 반납 처리한 뒤 학기를 종료하세요."), { status: 409 });
+        }
         const snapshot = JSON.stringify(db);
         const summary = closeSemesterData(db, admin.id);
         try {
@@ -2138,7 +2144,13 @@ export async function handleApiRequest(ctx) {
       const warningReviewMatch = pathname.match(/^\/api\/admin\/warnings\/([^/]+)\/review$/);
       if (method === "PATCH" && warningReviewMatch) {
         const admin = requireAdmin(authorization, db), body = await parseBody(readText);
-        const warning = reviewEquipmentOverdueWarning(db, { warningId: warningReviewMatch[1], actualReturnedAt: body.actualReturnedAt, reason: body.reason, adminId: admin.id, now: requestNow });
+        let warningId;
+        try {
+          warningId = decodeURIComponent(warningReviewMatch[1]);
+        } catch {
+          throw Object.assign(new Error("경고 ID 형식을 확인하세요."), { status: 400 });
+        }
+        const warning = reviewEquipmentOverdueWarning(db, { warningId, actualReturnedAt: body.actualReturnedAt, reason: body.reason, adminId: admin.id, now: requestNow });
         audit(db, admin, "warning.reviewed", warning.id, { status: warning.status, reason: body.reason });
         await saveDb(); return ok(warning);
       }
@@ -2152,6 +2164,7 @@ export async function handleApiRequest(ctx) {
         const before = reservation.actualReturnedAt;
         const actualReturnedAt = validateEquipmentActualReturnedAt(reservation, body.actualReturnedAt, requestNow);
         reservation.actualReturnedAt = actualReturnedAt;
+        reservation.returnTimeNote = String(body.reason).trim();
         syncEquipmentReturnWarning(db, reservation, { actualReturnedAt, reason: body.reason, adminId: admin.id, now: requestNow });
         reservation.updatedAt = requestNow.toISOString();
         reservation.history.push({ at: reservation.updatedAt, actorId: admin.id, action: "return_time_corrected", before, actualReturnedAt, reason: body.reason });
@@ -2382,6 +2395,9 @@ export async function handleApiRequest(ctx) {
         reservation.status = "returned";
         reservation.actualReturnedAt = actualReturnedAt;
         reservation.returnInspectionSignature = returnSignature;
+        reservation.returnProcessedAt = checkedAt;
+        reservation.returnProcessedBy = admin.id;
+        reservation.returnTimeNote = returnReason;
         reservation.returnTimeReason = returnReason;
         syncEquipmentReturnWarning(db, reservation, { actualReturnedAt, reason: returnReason, adminId: admin.id, now: requestNow });
         reservation.updatedAt = checkedAt;

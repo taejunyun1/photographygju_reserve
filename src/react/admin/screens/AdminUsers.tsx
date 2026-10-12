@@ -272,9 +272,9 @@ function WarningMemo({ user, actions }: { user: AdminUser; actions: ReactAdminAc
   };
   const review = async (record: AdminWarningRecord) => {
     if (!record.actualReturnedAt) { actions.setAdminView("reservations", { q: record.reservationId || "" }); setOpen(false); return; }
-    const value = prompt("확인한 실제 반납 시각 (Asia/Seoul, YYYY-MM-DDTHH:mm)", new Date(Date.parse(record.actualReturnedAt) + 9 * 3600000).toISOString().slice(0, 16));
+    const value = prompt("확인한 실제 반납 시각 (Asia/Seoul, YYYY-MM-DDTHH:mm[:ss])", new Date(Date.parse(record.actualReturnedAt) + 9 * 3600000).toISOString().slice(0, 19));
     if (!value) return;
-    const actual = new Date(`${value}:00+09:00`);
+    const actual = new Date(`${value}+09:00`);
     if (!Number.isFinite(actual.getTime())) { actions.notify("반납 시각 형식을 확인하세요.", "error"); return; }
     const reason = prompt("반납 시각 확인 사유 (필수). 실제 지각은 경고가 유지됩니다.", "");
     if (!reason?.trim()) return;

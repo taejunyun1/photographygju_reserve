@@ -241,9 +241,9 @@ function renderReservationStatusActions(
         />
       ) : null}
       {reservation.type === "equipment" && currentStatus === "returned" ? <GjuIconButton label="반납 시각 정정" icon="refresh" onClick={() => {
-        const value = prompt("실제 반납 시각 (Asia/Seoul, YYYY-MM-DDTHH:mm)", reservation.actualReturnedAt ? new Date(Date.parse(reservation.actualReturnedAt) + 9 * 3600000).toISOString().slice(0, 16) : "");
+        const value = prompt("실제 반납 시각 (Asia/Seoul, YYYY-MM-DDTHH:mm[:ss])", reservation.actualReturnedAt ? new Date(Date.parse(reservation.actualReturnedAt) + 9 * 3600000).toISOString().slice(0, 19) : "");
         if (!value) return;
-        const parsed = new Date(`${value}:00+09:00`);
+        const parsed = new Date(`${value}+09:00`);
         if (!Number.isFinite(parsed.getTime())) { actions.notify("반납 시각 형식을 확인하세요.", "error"); return; }
         const reason = prompt("반납 시각 정정 사유 (필수)", "");
         if (reason?.trim()) runAdminAction(() => actions.correctEquipmentReturnTime(reservation.id, { actualReturnedAt: parsed.toISOString(), reason: reason.trim() }));
@@ -375,7 +375,8 @@ function EquipmentReturnInspectionDialog({
   const processedAt = new Date();
   const [actualReturn, setActualReturn] = useState("");
   const [returnTimeNote, setReturnTimeNote] = useState("");
-  const actualReturnedAt = actualReturn ? new Date(`${actualReturn}:00+09:00`).toISOString() : "";
+  const actualReturnDate = new Date(`${actualReturn}+09:00`);
+  const actualReturnedAt = Number.isFinite(actualReturnDate.getTime()) ? actualReturnDate.toISOString() : "";
   const dueAt = reservation.timing?.endAt;
   const late = actualReturnedAt && dueAt && Date.parse(actualReturnedAt) > Date.parse(dueAt);
   const validReturnTime = Boolean(actualReturnedAt && Date.parse(actualReturnedAt) <= processedAt.getTime() && (!reservation.actualCheckedOutAt || Date.parse(actualReturnedAt) >= Date.parse(reservation.actualCheckedOutAt)));
@@ -448,8 +449,8 @@ function EquipmentReturnInspectionDialog({
         <legend>반납 시간 확인 · Asia/Seoul</legend>
         <p>예정 반납: {dueAt ? new Date(dueAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : "일정 확인 필요"}</p>
         <p>관리자 처리 시각: {processedAt.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
-        <label>실제 반납 시각 (필수)<input className="input" type="datetime-local" value={actualReturn} onChange={(event) => setActualReturn(event.currentTarget.value)} /></label>
-        <button className="btn" type="button" onClick={() => setActualReturn(new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 16))}>지금 반납한 것으로 입력</button>
+        <label>실제 반납 시각 (필수)<input className="input" type="datetime-local" step={1} value={actualReturn} onChange={(event) => setActualReturn(event.currentTarget.value)} /></label>
+        <button className="btn" type="button" onClick={() => setActualReturn(new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 19))}>지금 반납한 것으로 입력</button>
         <label>반납 시각 확인 사유 (필수)<input className="input" value={returnTimeNote} onChange={(event) => setReturnTimeNote(event.currentTarget.value)} /></label>
         <p>{actualReturnedAt && dueAt ? (late ? "실제 지각 · 해당 자동 경고 확정·유지" : "정시 반납 · 해당 자동 경고만 해제") : "실제 반납 시각을 확인하세요. 장비 상태와 반납 시간은 별도로 판단합니다."}</p>
       </fieldset>

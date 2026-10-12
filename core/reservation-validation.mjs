@@ -229,10 +229,12 @@ export function createReservationValidationHelpers({
       ) {
         throw Object.assign(new Error("기자재 대여/반납 시간을 올바르게 선택하세요."), { status: 400 });
       }
+      const requestedWindow = equipmentScheduledWindow(fields);
       const requestedRange = equipmentReservationRange(fields);
       if (requestedRange?.start === requestedRange?.end && rentalMinutes !== null && returnMinutes !== null && returnMinutes <= rentalMinutes) {
         throw Object.assign(new Error("당일 대여는 반납 시간이 대여 시작 시간보다 늦어야 합니다."), { status: 400 });
       }
+      if (!requestedWindow) throw Object.assign(new Error("기자재 대여 기간을 올바르게 선택하세요."), { status: 400 });
       if (!Array.isArray(fields.equipmentItemIds) || (!fields.equipmentItemIds.length && !fields.requestedEquipment?.length)) throw Object.assign(new Error("기자재를 선택하거나 목록에 없는 기자재를 요청하세요."), { status: 400 });
       const blockedDate = dateKeysInRange(requestedRange).find((key) => blockingSchedulesFor(db, "equipment", key).length);
       if (blockedDate) throw Object.assign(new Error(`${blockedDate}은 기자재 예약 차단 일정이 있어 예약할 수 없습니다.`), { status: 409 });
@@ -246,7 +248,6 @@ export function createReservationValidationHelpers({
           if (!isBlockingReservation(reservation)) return false;
           if (!Array.isArray(reservation.fields.equipmentItemIds) || !reservation.fields.equipmentItemIds.includes(itemId)) return false;
           const existingWindow = equipmentScheduledWindow(reservation.fields);
-          const requestedWindow = equipmentScheduledWindow(fields);
           if (!ignoreOverdue && reservation.status === "checked_out" && (!existingWindow || Date.parse(existingWindow.endAt) < new Date(now).getTime())) return true;
           return existingWindow && requestedWindow
             ? equipmentWindowsOverlap(existingWindow, requestedWindow)
