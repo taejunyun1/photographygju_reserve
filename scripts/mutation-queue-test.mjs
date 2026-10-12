@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+const module = await import('../core/mutation-queue.mjs').catch(() => ({}));
+assert.equal(typeof module.createMutationQueue, 'function', 'shared mutation queue must exist');
+const queue = module.createMutationQueue();
+const events = [];
+let release;
+const gate = new Promise(resolve => { release = resolve; });
+const first = queue.run(async () => { events.push('first-start'); await gate; events.push('first-end'); return 1; });
+const second = queue.run(async () => { events.push('second'); return 2; });
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(events, ['first-start'], 'second request must not see an unfinished transaction');
+release();
+assert.deepEqual(await Promise.all([first, second]), [1, 2]);
+assert.deepEqual(events, ['first-start', 'first-end', 'second']);
+await assert.rejects(queue.run(() => { throw new Error('storage failure'); }), /storage failure/);
+assert.equal(await queue.run(() => 3), 3, 'failure must not poison following requests');
+console.log('Mutation queue ordering and failure recovery checks passed.');
