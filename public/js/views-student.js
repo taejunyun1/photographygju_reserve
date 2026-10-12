@@ -1240,7 +1240,7 @@ export function reservationCard(reservation) {
     : `${f.startTime}-${f.endTime} · ${f.printType}`;
   return `
     <article class="card ui-card reservation-summary-card">
-      <div class="chips">${reservationStatusTag(reservation)}<span class="tag">${title}</span></div>
+      <div class="chips">${reservationStatusTag(reservation)}<span class="tag">${title}</span>${reservation.type === "equipment" && reservation.handoffNeedsReview ? tag("인계 확인 필요", "yellow") : ""}</div>
       <h3 class="card-title card-title-spaced">${escapeHtml(date)}</h3>
       <p class="muted">${escapeHtml(meta)}</p>
       ${actionRow(`

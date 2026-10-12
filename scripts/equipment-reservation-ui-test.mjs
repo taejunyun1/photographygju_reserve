@@ -477,3 +477,6 @@ assert(Boolean(equipmentItemReservationConflict("turnover-lens", { ...futureFiel
 assert(Boolean(equipmentItemReservationConflict("turnover-lens", futureFields, undefined, new Date("2099-07-21T08:11:00Z"))), "legacy blocks overdue custody");
 assert.equal(relatedLensItemsForSelection([{ id: "body", brand: "Sony", category: "Body" }], futureFields).length, 1, "lens recommendation uses complete schedule");
 state.bootstrap = savedBootstrap;
+
+const { reservationCard } = await import("../public/js/views-student.js?v=20260930-equipment-period-hotfix-r1");
+assert(reservationCard({ id: "preserved-b", type: "equipment", status: "approved", handoffNeedsReview: true, fields: { reservedDate: "2026-10-13", rentalTime: "17:30" } }).includes("인계 확인 필요"), "legacy preserves booking and displays handoff review");

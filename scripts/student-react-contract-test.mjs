@@ -15,6 +15,7 @@ const testBundle = await build({
     contents: `
       export * from "../src/react/student/types.ts";
       export * from "../src/react/student/availability.ts";
+      export { ReservationCard } from "../src/react/student/components/StudentPrimitives.tsx";
       export * from "../src/react/student/reservationDraft.ts";
       export { StudentApp } from "../src/react/student/StudentApp.tsx";
       export { ReservationControls } from "../src/react/student/components/ReservationControls.tsx";
@@ -305,6 +306,9 @@ for (const title of ["지난 예약 제외", "취소 예약 제외", "네 번째
 assert(markup.includes("무선 마이크"), "home must show unlisted equipment requests in booking summaries");
 assert(markup.includes("전체 예약 보기"), "home must link to the full booking history");
 assert(markup.indexOf("student-react-home-bookings") < markup.indexOf("student-react-course-demand-card"), "home bookings must appear before secondary dashboard cards");
+
+const handoffCard = renderToStaticMarkup(React.createElement(student.ReservationCard, { reservation: { id: "preserved-b", type: "equipment", status: "approved", handoffNeedsReview: true, fields: { reservedDate: "2026-10-13", rentalTime: "17:30" } } }));
+assert.match(handoffCard, /인계 확인 필요/, "preserved next booking shows handoff review without cancellation");
 
 const turnoverFields = { reservedDate: "2026-10-13", period: "1박2일", rentalTime: "17:30", returnTime: "17:10" };
 const turnoverBootstrap = { settings, reservations: [{ type: "equipment", status: "checked_out", fields: { reservedDate: "2026-10-12", period: "1박2일", rentalTime: "10:15", returnTime: "17:10", equipmentItemIds: [equipment[0].id] } }] };

@@ -181,6 +181,7 @@ export function ReservationCard({
         <div className="chips">
           <GjuStatusBadge tone="blue">{label}</GjuStatusBadge>
           <GjuStatusBadge tone={statusTone(reservation.status)}>{reservationStatusLabel(reservation.status)}</GjuStatusBadge>
+          {reservation.type === "equipment" && reservation.handoffNeedsReview ? <GjuStatusBadge tone="amber">인계 확인 필요</GjuStatusBadge> : null}
         </div>
         {reservation.type !== "lecture" && onCancel && canCancel ? (
           <GjuIconButton label="예약 취소" icon="x" tone="danger" disabled={cancelling} onClick={() => void runCancellation(onCancel, reservation.id)} />
