@@ -270,6 +270,7 @@ export async function submitReservation(form) {
       throw new Error(`출력실 ${labels} 시간대는 예약 가능 인원이 가득 찼습니다.`);
     }
   }
+  if (type === "equipment") state.equipmentDraftFields = { phone: fields.phone, purpose: fields.purpose, standRequest: fields.standRequest };
   toast("예약을 처리 중입니다.");
   let reservation;
   try {
@@ -283,6 +284,7 @@ export async function submitReservation(form) {
   notifyNativeReservationCreated(reservation).catch(() => null);
   state.reservationType = "";
   if (type === "equipment") {
+    state.equipmentDraftFields = null;
     state.selectedEquipmentItemIds = [];
     state.equipmentSelectionSheetOpen = false;
     state.equipmentRecommendationOpen = false;

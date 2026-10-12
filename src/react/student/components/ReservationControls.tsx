@@ -281,14 +281,6 @@ function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControls
   useEffect(() => {
     setVisibleLimit(EQUIPMENT_RESULT_PAGE_SIZE);
   }, [category, query]);
-  useEffect(() => {
-    const fields = { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" };
-    const retained = selected.filter((id) => {
-      const item = onlineEquipment.find((candidate) => candidate.id === id);
-      return item && equipmentItemAvailability(state.bootstrap, item, fields).available;
-    });
-    if (retained.length !== selected.length) update(actions, "equipment", { equipmentItemIds: retained });
-  }, [state.bootstrap, state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime, selected, actions]);
   const selectedBodyBrands = [...new Set(selectedItems
     .filter((item) => String(item.category || "").toLowerCase() === "body")
     .map((item) => String(item.brand || "").trim().toLowerCase())
@@ -918,6 +910,20 @@ function StepBody({ type, state, actions, overlayRoot }: ReservationControlsProp
 }
 
 export function ReservationControls({ type, state, actions, overlayRoot }: ReservationControlsProps) {
+  const scheduleKey = JSON.stringify([state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime]);
+  const previousSchedule = useRef(scheduleKey);
+  useEffect(() => {
+    if (previousSchedule.current === scheduleKey) return;
+    previousSchedule.current = scheduleKey;
+    if (type !== "equipment") return;
+    const selected = state.selectedEquipmentItemIds;
+    const fields = { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" };
+    const retained = selected.filter((id) => {
+      const item = (state.bootstrap.equipment || []).find((candidate) => candidate.id === id);
+      return item && equipmentItemAvailability(state.bootstrap, item, fields).available;
+    });
+    if (retained.length !== selected.length) update(actions, "equipment", { equipmentItemIds: retained });
+  }, [scheduleKey, type, state.bootstrap, state.selectedEquipmentItemIds, actions]);
   const step = state.reservationFlowStep[type] || "date";
   const flowRef = useRef<HTMLElement>(null);
   useEffect(() => {

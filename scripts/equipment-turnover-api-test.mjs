@@ -76,3 +76,28 @@ assert.equal(a.returnProcessedBy,admin.id);
 assert.equal(a.returnTimeNote,'정시 확인');
 assert.ok(a.history.some(entry => entry.action === 'return_time_corrected' && entry.actorId === admin.id));
 console.log('Custody edits, semester guard, invalid period, canonical evidence and encoded warning review regressions passed.');
+
+// Own-session output must carry the actual warning records while public summaries stay private.
+const ownApi = (method, pathname, body = {}, authorization = 'Bearer custody-student') => handleApiRequest({ method, pathname, authorization, readText: async () => JSON.stringify(body), db, now, saveDb: async () => {}, slackWebhook: '' });
+db.warnings ||= [];
+for (const status of ['pending', 'confirmed', 'cleared']) db.warnings.push({ id: `own-${status}`, userId: student.id, status, source: 'equipment_overdue', reason: status, createdAt: now });
+db.warnings.push({ id: 'private-other', userId: admin.id, status: 'confirmed', reason: 'private', createdAt: now });
+const ownProfile = await ownApi('GET', '/api/me');
+assert.deepEqual(ownProfile.body.data.user.warningRecords.map(w => w.id).sort(), ['own-cleared', 'own-confirmed', 'own-pending']);
+assert.deepEqual((await ownApi('PATCH', '/api/me', { phone: '01098765432' })).body.data.user.warningRecords.map(w => w.id).sort(), ['own-cleared', 'own-confirmed', 'own-pending']);
+assert.equal((await ownApi('GET', '/api/me', {}, '')).body.data.user, null);
+assert.equal((await ownApi('GET', '/api/reservations/my', {}, '')).status, 401);
+const ownFollowup = { ...structuredClone(b), id: 'own-followup', userId: student.id };
+db.reservations.push(ownFollowup);
+const ownReservations = await ownApi('GET', '/api/reservations/my');
+assert.equal(ownReservations.body.data.find(r => r.id === 'own-followup').handoffNeedsReview, true);
+assert.ok(ownReservations.body.data.every(r => !r.user?.warningRecords?.length));
+console.log('Own session warning history, privacy and real reservation handoff contract passed.');
+
+student.email = 'own-contract@example.com';
+const loginResult = await ownApi('POST', '/api/auth/login', { loginId: student.email, password: 'equipment-turnover-api-password' }, '');
+assert.equal(loginResult.status, 200);
+assert.deepEqual(loginResult.body.data.user.warningRecords.map(w => w.id).sort(), ['own-cleared', 'own-confirmed', 'own-pending']);
+const passwordResult = await ownApi('PATCH', '/api/me/password', { currentPassword: 'equipment-turnover-api-password', newPassword: 'contract-new-password-2026' });
+assert.equal(passwordResult.status, 200);
+assert.deepEqual(passwordResult.body.data.user.warningRecords.map(w => w.id).sort(), ['own-cleared', 'own-confirmed', 'own-pending']);

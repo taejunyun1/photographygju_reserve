@@ -1139,7 +1139,7 @@ export async function handleApiRequest(ctx) {
 
       if (routeKey(method, pathname) === "GET /api/me") {
         const user = getAuthUser(authorization, db);
-        return ok({ user: publicUser(user) });
+        return ok({ user: publicUser(user, db) });
       }
 
       if (routeKey(method, pathname) === "PATCH /api/me/password") {
@@ -1158,7 +1158,7 @@ export async function handleApiRequest(ctx) {
         db.sessions = db.sessions.filter((session) => session.userId !== user.id);
         audit(db, user, "user.password_changed", user.id, { ...meta, revokedSessions });
         await saveDb();
-        return ok({ user: publicUser(user) });
+        return ok({ user: publicUser(user, db) });
       }
 
       if (routeKey(method, pathname) === "PATCH /api/me") {
@@ -1179,7 +1179,7 @@ export async function handleApiRequest(ctx) {
         Object.assign(user, next, { updatedAt: nowIso() });
         audit(db, user, "user.profile_updated", user.id, { fields: Object.keys(next) });
         await saveDb();
-        return ok({ user: publicUser(user) });
+        return ok({ user: publicUser(user, db) });
       }
 
       if (routeKey(method, pathname) === "DELETE /api/me") {
@@ -1221,7 +1221,7 @@ export async function handleApiRequest(ctx) {
         db.users.push(user);
         await postSlack(slackWebhook, db, "student_signup", user);
         await saveDb();
-        return ok({ user: publicUser(user) });
+        return ok({ user: publicUser(user, db) });
       }
 
       if (routeKey(method, pathname) === "POST /api/auth/login") {
@@ -1260,7 +1260,7 @@ export async function handleApiRequest(ctx) {
         db.sessions.push(session);
         audit(db, user, "auth.login_success", session.id, { ...meta, device: session.device });
         await saveDb();
-        return ok({ token, user: publicUser(user) });
+        return ok({ token, user: publicUser(user, db) });
       }
 
       if (routeKey(method, pathname) === "POST /api/auth/logout") {

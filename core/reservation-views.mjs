@@ -24,7 +24,7 @@ export function createReservationViewHelpers({ publicUser, reservationTiming }) 
     const timing = reservationTiming(reservation, db.settings);
     return {
       ...reservation,
-      ...(reservation.type === "equipment" ? { handoffBlockers: getEquipmentHandoffBlockers(db, reservation) } : {}),
+      ...(reservation.type === "equipment" ? { handoffBlockers: getEquipmentHandoffBlockers(db, reservation), handoffNeedsReview: getEquipmentHandoffBlockers(db, reservation).some(b => b.reason !== "not_started") } : {}),
       user: user ? publicUser(user) : null,
       equipmentItems,
       ...(timing ? { timing } : {})

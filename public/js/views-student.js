@@ -604,7 +604,7 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
         const unavailable = equipmentItemReservedInRange(item.id, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime });
         return `
           <label class="choice-card equipment-choice ${unavailable ? "is-unavailable" : ""}">
-            <input type="checkbox" name="equipmentItemIds" value="${item.id}" ${state.selectedEquipmentItemIds.includes(item.id) ? "checked" : ""} ${unavailable ? "disabled" : ""} />
+            <input type="checkbox" name="equipmentItemIds" value="${item.id}" ${state.selectedEquipmentItemIds.includes(item.id) ? "checked" : ""} ${unavailable && !state.selectedEquipmentItemIds.includes(item.id) ? "disabled" : ""} />
             <span>
               <strong>${escapeHtml(item.name)}</strong>
               <small>${escapeHtml(item.code)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}${` · ${escapeHtml(equipmentItemScheduleNote(item.id, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime }))}`}</small>
@@ -615,7 +615,7 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
     </div>
     ${equipmentSelectionDock(selectedItems, "inline")}
     <div class="reserve-bottom-cta">
-      <button class="button primary full" type="button" data-reserve-next="equipment:details" ${selectedItems.length ? "" : "disabled"}>${icon("check")}선택 완료</button>
+      <button class="button primary full" type="button" data-reserve-next="equipment:details" ${selectedItems.length && selectedItems.every(item => !equipmentItemReservedInRange(item.id, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime })) ? "" : "disabled"}>${icon("check")}선택 완료</button>
     </div>
   `, flowStepOptions("equipment", "select", activeStep, { note: "카테고리로 좁혀보고 필요한 장비는 여러 개 담을 수 있습니다." }));
 }
@@ -660,9 +660,9 @@ function equipmentDetailStep(selectedItems, closedDate, dateUnavailable, rangeBl
   }
   return reservationStep(4, "나머지 정보 입력", `
     ${cameraBagConsent(selectedItems)}
-    <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.user.phone)}" required /></div>
-    <div class="field"><label>스탠드/소프트박스 요청</label><input class="input" name="standRequest" placeholder="예약 후 조교와 직접 확인" /></div>
-    <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose" placeholder="촬영 목적을 간단히 입력"></textarea></div>
+    <div class="field"><label>연락처</label><input class="input" name="phone" value="${escapeHtml(state.equipmentDraftFields?.phone ?? state.user.phone)}" required /></div>
+    <div class="field"><label>스탠드/소프트박스 요청</label><input class="input" name="standRequest" value="${escapeHtml(state.equipmentDraftFields?.standRequest || "")}" placeholder="예약 후 조교와 직접 확인" /></div>
+    <div class="field"><label>사용 목적</label><textarea class="textarea" name="purpose" placeholder="촬영 목적을 간단히 입력">${escapeHtml(state.equipmentDraftFields?.purpose || "")}</textarea></div>
     <label class="field consent"><span><input type="checkbox" required /> 파손/분실 자가부담 및 대리 대여/반납 불가에 동의합니다.</span></label>
     <button class="button primary full" type="submit">${icon("send")}승인 요청</button>
   `, flowStepOptions("equipment", "details", activeStep));
@@ -722,6 +722,8 @@ function fantasyLabEquipmentSection() {
   `;
 }
 
+let lastEquipmentSchedule;
+
 export function equipmentForm() {
   const reservable = state.bootstrap.equipment.filter((item) => item.active !== false && item.reservable && item.status === "가능");
   const categories = equipmentCategories().filter((cat) => reservable.some((item) => item.category === cat));
@@ -733,11 +735,14 @@ export function equipmentForm() {
   const rentalTime = selectedEquipmentTime("selectedEquipmentRentalTime", "equipmentRentalTimes");
   const returnTime = selectedEquipmentReturnTime(rentalTime, period);
   const rangeBlocked = Boolean(selectedDate && !closedDate && !dateUnavailable && equipmentRangeBlocked(selectedDate, period).length);
-  if (closedDate || dateUnavailable) {
+  const scheduleKey = JSON.stringify([selectedDate, period, rentalTime, returnTime]);
+  const scheduleChanged = lastEquipmentSchedule !== undefined && lastEquipmentSchedule !== scheduleKey;
+  lastEquipmentSchedule = scheduleKey;
+  if (scheduleChanged && (closedDate || dateUnavailable)) {
     state.selectedEquipmentItemIds = [];
-  } else if (rangeBlocked) {
+  } else if (scheduleChanged && rangeBlocked) {
     state.selectedEquipmentItemIds = [];
-  } else if (selectedDate) {
+  } else if (scheduleChanged && selectedDate) {
     state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => !equipmentItemReservedInRange(itemId, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime }));
   }
   const equipmentQuery = normalizeSearchText(state.equipmentSearch).trim();
