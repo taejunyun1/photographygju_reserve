@@ -1,3 +1,4 @@
+import { equipmentScheduledWindow, equipmentWindowsOverlap } from "../public/js/equipment-schedule.mjs";
 import { normalizeRequestedEquipment } from "./equipment-requests.mjs";
 
 const WEEKDAY_INDEX = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
@@ -26,13 +27,13 @@ export function createReservationValidationHelpers({
     return !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status);
   }
 
-  function todayKeySeoul() {
+  function todayKeySeoul(now = new Date()) {
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Seoul",
       year: "numeric",
       month: "2-digit",
       day: "2-digit"
-    }).formatToParts(new Date()).reduce((acc, part) => {
+    }).formatToParts(new Date(now)).reduce((acc, part) => {
       if (part.type !== "literal") acc[part.type] = part.value;
       return acc;
     }, {});
@@ -43,9 +44,9 @@ export function createReservationValidationHelpers({
     return type === "equipment" || type === "studio";
   }
 
-  function reservationDateClosed(type, reservedDate) {
+  function reservationDateClosed(type, reservedDate, now = new Date()) {
     if (!reservedDate) return false;
-    const today = todayKeySeoul();
+    const today = todayKeySeoul(now);
     return requiresPreviousDayReservation(type) ? reservedDate <= today : reservedDate < today;
   }
 
@@ -204,10 +205,10 @@ export function createReservationValidationHelpers({
     return buckets;
   }
 
-  function validateReservation(db, type, fields, editingId = null) {
+  function validateReservation(db, type, fields, editingId = null, { skipDeadline = false, now = new Date(), ignoreOverdue = false } = {}) {
     if (!["equipment", "studio", "darkroom", "print"].includes(type)) throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
     assertOptionalDateKey(fields.reservedDate, "예약일");
-    if (reservationDateClosed(type, fields.reservedDate)) throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });
+    if (!skipDeadline && reservationDateClosed(type, fields.reservedDate, now)) throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });
     if (fields.requestedEquipment !== undefined) {
       if (type !== "equipment" && type !== "studio") throw Object.assign(new Error("이 예약 종류에는 기자재 요청을 추가할 수 없습니다."), { status: 400 });
       fields.requestedEquipment = normalizeRequestedEquipment(fields.requestedEquipment);
@@ -244,7 +245,12 @@ export function createReservationValidationHelpers({
           if (reservation.id === editingId || reservation.type !== "equipment") return false;
           if (!isBlockingReservation(reservation)) return false;
           if (!Array.isArray(reservation.fields.equipmentItemIds) || !reservation.fields.equipmentItemIds.includes(itemId)) return false;
-          return dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
+          const existingWindow = equipmentScheduledWindow(reservation.fields);
+          const requestedWindow = equipmentScheduledWindow(fields);
+          if (!ignoreOverdue && reservation.status === "checked_out" && (!existingWindow || Date.parse(existingWindow.endAt) < new Date(now).getTime())) return true;
+          return existingWindow && requestedWindow
+            ? equipmentWindowsOverlap(existingWindow, requestedWindow)
+            : dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
         });
         if (conflict) throw Object.assign(new Error(`${item.code} 기자재가 해당 기간에 이미 예약되어 있습니다.`), { status: 409 });
       }

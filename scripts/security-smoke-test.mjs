@@ -129,6 +129,7 @@ async function api(method, pathname, body = {}, token = "", meta = {}) {
   return handleApiRequest({
     method,
     pathname,
+    now: meta.now,
     authorization: token ? `Bearer ${token}` : "",
     readText: async () => JSON.stringify(body),
     db,
@@ -843,12 +844,13 @@ assert.equal(approveEquipmentReservation.status, 200);
 assert.equal(approveEquipmentReservation.body.data.status, "approved");
 const checkOutEquipmentReservation = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
   status: "checked_out"
-}, adminToken);
+}, adminToken, { now: `${nextFriday}T01:15:00.000Z` });
 assert.equal(checkOutEquipmentReservation.status, 200);
 assert.equal(checkOutEquipmentReservation.body.data.status, "checked_out");
-const markEquipmentReturned = await api("PATCH", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/status`, {
-  status: "returned"
-}, adminToken);
+const markEquipmentReturned = await api("POST", `/api/admin/reservations/${returnedEquipmentReservation.body.data.id}/return-inspection`, {
+  actualReturnedAt: `${nextFriday}T08:10:00.000Z`,
+  inspections: [{ equipmentId: weekendEquipmentItem.id, outcome: "normal", note: "" }]
+}, adminToken, { now: `${nextFriday}T08:10:00.000Z` });
 assert.equal(markEquipmentReturned.status, 200);
 const cancelReturnedEquipment = await api("POST", `/api/reservations/${returnedEquipmentReservation.body.data.id}/cancel`, {
   reason: "반납 완료 예약 취소 방지 테스트"

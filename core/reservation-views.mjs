@@ -1,3 +1,16 @@
+import { equipmentScheduledWindow } from "../public/js/equipment-schedule.mjs";
+export function getEquipmentHandoffBlockers(db, reservation, now = new Date()) {
+  if (reservation.type !== "equipment") return [];
+  const window = equipmentScheduledWindow(reservation.fields);
+  return (reservation.fields?.equipmentItemIds || []).flatMap(equipmentId => {
+    const item = db.equipment.find(eq => eq.id === equipmentId);
+    const blockers = [];
+    if (!window || Date.parse(window.startAt) > new Date(now).getTime()) blockers.push({ equipmentId, reason: "not_started" });
+    if (!item || item.active === false || item.status !== "가능" || item.reservable === false) blockers.push({ equipmentId, reason: "unavailable" });
+    if (db.reservations.some(r => r.id !== reservation.id && r.type === "equipment" && r.status === "checked_out" && r.fields?.equipmentItemIds?.includes(equipmentId))) blockers.push({ equipmentId, reason: "not_returned" });
+    return blockers;
+  });
+}
 export function createReservationViewHelpers({ publicUser, reservationTiming }) {
   function equipmentItemsFor(db, reservation) {
     return reservation.type === "equipment"
@@ -11,6 +24,7 @@ export function createReservationViewHelpers({ publicUser, reservationTiming }) 
     const timing = reservationTiming(reservation, db.settings);
     return {
       ...reservation,
+      ...(reservation.type === "equipment" ? { handoffBlockers: getEquipmentHandoffBlockers(db, reservation) } : {}),
       user: user ? publicUser(user) : null,
       equipmentItems,
       ...(timing ? { timing } : {})
@@ -23,6 +37,7 @@ export function createReservationViewHelpers({ publicUser, reservationTiming }) 
     const fields = reservation.fields || {};
     const timing = reservationTiming(reservation, db.settings);
     return {
+      ...(reservation.type === "equipment" ? { handoffNeedsReview: getEquipmentHandoffBlockers(db, reservation).some(b => b.reason !== "not_started") } : {}),
       id: reservation.id,
       type: reservation.type,
       status: reservation.status,

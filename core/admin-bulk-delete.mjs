@@ -45,6 +45,7 @@ export function deleteAdminReservations(db, { scope, filters = {}, confirmText, 
   const filteredItems = filterAdminReservations(db, safeFilters);
   assertFilteredDeleteSafe({ scope, filters: safeFilters, allItems: allItems.items, filteredItems: filteredItems.items, confirmText });
   const selected = selectionFromScope(scope, safeFilters, allItems.items, filteredItems.items);
+  if (selected.items.some(item => item.type === "equipment" && item.status === "checked_out")) throw Object.assign(new Error("대여 중인 기자재 예약은 반납 점검 후 삭제하세요."), { status: 409 });
   const reservationIds = new Set(selected.items.map((item) => item.id));
   const reportIds = new Set((db.reports || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));
   const draftIds = new Set((db.reportDrafts || []).filter((item) => reservationIds.has(item.reservationId)).map((item) => item.id));

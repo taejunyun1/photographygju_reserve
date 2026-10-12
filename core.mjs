@@ -60,6 +60,8 @@ import {
 } from "./core/router.mjs";
 import { createReportsLecturesNoticesHelpers } from "./core/reports-lectures-notices.mjs";
 import { createReservationValidationHelpers } from "./core/reservation-validation.mjs";
+import { syncEquipmentReturnWarning, validateEquipmentActualReturnedAt, reviewEquipmentOverdueWarning, effectiveWarningCount, activeWarningRecordCount } from "./core/equipment-overdue.mjs";
+import { getEquipmentHandoffBlockers } from "./core/reservation-views.mjs";
 import { createReservationViewHelpers } from "./core/reservation-views.mjs";
 import {
   DEFAULT_EQUIPMENT_REPORT_DEADLINE_HOURS,
@@ -888,6 +890,7 @@ function deleteUserAccount(db, user, actor, action = "user.deleted", detail = {}
   if (user.role === "admin") {
     throw Object.assign(new Error("관리자 계정은 삭제할 수 없습니다."), { status: 400 });
   }
+  if ((db.reservations || []).some(item => item.userId === user.id && item.type === "equipment" && item.status === "checked_out")) throw Object.assign(new Error("대여 중인 기자재를 반납 점검한 후 계정을 삭제하세요."), { status: 409 });
   const reservationIds = new Set((db.reservations || []).filter((item) => item.userId === user.id).map((item) => item.id));
   const reportIds = new Set((db.reports || []).filter((item) => item.userId === user.id || reservationIds.has(item.reservationId)).map((item) => item.id));
   const summary = {
@@ -1041,6 +1044,24 @@ export function adminExportData(db) {
   };
 }
 
+// Restore every field while preserving object identities held by adapter/test callers.
+function restoreDatabaseSnapshot(target, snapshot) {
+  if (Array.isArray(snapshot)) {
+    const existing = new Map(target.filter(item => item && typeof item === "object" && item.id).map(item => [item.id, item]));
+    target.splice(0, target.length, ...snapshot.map((item, index) => {
+      const prior = item && typeof item === "object" ? (item.id ? existing.get(item.id) : target[index]) : null;
+      if (prior && typeof prior === "object" && Array.isArray(prior) === Array.isArray(item)) { restoreDatabaseSnapshot(prior, item); return prior; }
+      return structuredClone(item);
+    }));
+    return;
+  }
+  for (const key of Object.keys(target)) if (!(key in snapshot)) delete target[key];
+  for (const [key, value] of Object.entries(snapshot)) {
+    if (value && typeof value === "object" && target[key] && typeof target[key] === "object" && Array.isArray(value) === Array.isArray(target[key])) restoreDatabaseSnapshot(target[key], value);
+    else target[key] = structuredClone(value);
+  }
+}
+
 // Adapter contract:
 //   ctx = { method, pathname, searchParams, authorization, readText, db, saveDb, slackWebhook }
 //   - readText(): Promise<string> resolving to the raw request body
@@ -1050,7 +1071,9 @@ export function adminExportData(db) {
 export async function handleApiRequest(ctx) {
   const { method, authorization = "", readText, db, slackWebhook } = ctx;
   const { pathname, searchParams } = requestPath(ctx);
-  const saveDb = ctx.saveDb;
+  const requestNow = new Date(ctx.now || Date.now());
+  let rollbackSnapshot = structuredClone(db);
+  const saveDb = async () => { await ctx.saveDb(); rollbackSnapshot = structuredClone(db); };
   const meta = requestMeta(ctx);
 
   try {
@@ -1406,7 +1429,7 @@ export async function handleApiRequest(ctx) {
         const user = requireApprovedStudent(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["type", "fields"]);
-        validateReservation(db, body.type, body.fields);
+        validateReservation(db, body.type, body.fields, null, { now: requestNow });
         const status = reservationStatusForType(body.type);
         const reservation = {
           id: id("res"),
@@ -1425,8 +1448,8 @@ export async function handleApiRequest(ctx) {
         };
         db.reservations.push(reservation);
         audit(db, user, "reservation.created", reservation.id, { type: reservation.type });
-        await postSlack(slackWebhook, db, "reservation_created", reservation);
         await saveDb();
+        await postSlack(slackWebhook, db, "reservation_created", reservation);
         return ok(withReservationDetails(db, reservation));
       }
 
@@ -1436,6 +1459,7 @@ export async function handleApiRequest(ctx) {
         const reservation = db.reservations.find((item) => item.id === reservationCancelMatch[1]);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
         if (user.role !== "admin" && reservation.userId !== user.id) throw Object.assign(new Error("본인의 예약만 취소할 수 있습니다."), { status: 403 });
+        if (reservation.type === "equipment" && reservation.status === "checked_out") throw Object.assign(new Error("대여 중인 기자재 예약은 취소할 수 없습니다."), { status: 409 });
         if (RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(reservation.status)) {
           throw Object.assign(new Error("이미 종료되었거나 취소된 예약은 다시 취소할 수 없습니다."), { status: 409 });
         }
@@ -1445,8 +1469,8 @@ export async function handleApiRequest(ctx) {
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: user.id, action: "cancelled", reason: body.reason || "" });
         audit(db, user, "reservation.cancelled", reservation.id, { reason: body.reason || "" });
-        await postSlack(slackWebhook, db, "reservation_cancelled", reservation);
         await saveDb();
+        await postSlack(slackWebhook, db, "reservation_cancelled", reservation);
         return ok(withReservationDetails(db, reservation));
       }
 
@@ -1461,13 +1485,13 @@ export async function handleApiRequest(ctx) {
         }
         const body = await parseBody(readText);
         const nextFields = { ...reservation.fields, ...(body.fields || {}) };
-        validateReservation(db, reservation.type, nextFields, reservation.id);
+        validateReservation(db, reservation.type, nextFields, reservation.id, { skipDeadline: reservation.status === "checked_out", now: requestNow });
         reservation.fields = nextFields;
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: user.id, action: "updated" });
         audit(db, user, "reservation.updated", reservation.id);
-        await postSlack(slackWebhook, db, "reservation_updated", reservation);
         await saveDb();
+        await postSlack(slackWebhook, db, "reservation_updated", reservation);
         return ok(withReservationDetails(db, reservation));
       }
 
@@ -1964,6 +1988,9 @@ export async function handleApiRequest(ctx) {
           .filter((notice) => notice.active)
           .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))[0] || null;
         return ok({
+          equipmentOverdueStatus: { ...(db.meta?.equipmentOverdueSweep || {}), enabled: Boolean(db.settings.equipmentOverdueWarningsEnabled), enabledAt: db.settings.equipmentOverdueWarningsEnabledAt || "" },
+          pendingWarningCount: (db.warnings || []).filter(w => w.source === "equipment_overdue" && w.status === "pending_review").length,
+          handoffBlockers: db.reservations.filter(r => r.type === "equipment" && r.status === "approved").flatMap(r => getEquipmentHandoffBlockers(db, r, requestNow).filter(b => b.reason !== "not_started").map(b => ({ reservationId: r.id, ...b }))),
           pendingUsers,
           pendingEquipment: equipmentPendingApproval,
           equipmentPendingApproval,
@@ -2102,6 +2129,36 @@ export async function handleApiRequest(ctx) {
         return ok(publicUser(user));
       }
 
+      if (routeKey(method, pathname) === "GET /api/admin/warnings") {
+        requireAdmin(authorization, db);
+        let items = (db.warnings || []).filter(w => ["status", "source", "userId", "reservationId"].every(key => !searchParams.get(key) || w[key] === searchParams.get(key)));
+        const total = items.length, page = Math.max(1, Number(searchParams.get("page")) || 1), pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize")) || 20));
+        return ok({ items: items.slice((page - 1) * pageSize, page * pageSize), total, page, pageSize });
+      }
+      const warningReviewMatch = pathname.match(/^\/api\/admin\/warnings\/([^/]+)\/review$/);
+      if (method === "PATCH" && warningReviewMatch) {
+        const admin = requireAdmin(authorization, db), body = await parseBody(readText);
+        const warning = reviewEquipmentOverdueWarning(db, { warningId: warningReviewMatch[1], actualReturnedAt: body.actualReturnedAt, reason: body.reason, adminId: admin.id, now: requestNow });
+        audit(db, admin, "warning.reviewed", warning.id, { status: warning.status, reason: body.reason });
+        await saveDb(); return ok(warning);
+      }
+      const returnTimeMatch = pathname.match(/^\/api\/admin\/reservations\/([^/]+)\/return-time$/);
+      if (method === "PATCH" && returnTimeMatch) {
+        const admin = requireAdmin(authorization, db), body = await parseBody(readText);
+        const reservation = db.reservations.find(r => r.id === returnTimeMatch[1]);
+        if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
+        if (reservation.type !== "equipment" || reservation.status !== "returned") throw Object.assign(new Error("반납 완료 기자재 예약만 정정할 수 있습니다."), { status: 409 });
+        if (!String(body.reason || "").trim()) throw Object.assign(new Error("정정 사유를 입력하세요."), { status: 400 });
+        const before = reservation.actualReturnedAt;
+        const actualReturnedAt = validateEquipmentActualReturnedAt(reservation, body.actualReturnedAt, requestNow);
+        reservation.actualReturnedAt = actualReturnedAt;
+        syncEquipmentReturnWarning(db, reservation, { actualReturnedAt, reason: body.reason, adminId: admin.id, now: requestNow });
+        reservation.updatedAt = requestNow.toISOString();
+        reservation.history.push({ at: reservation.updatedAt, actorId: admin.id, action: "return_time_corrected", before, actualReturnedAt, reason: body.reason });
+        audit(db, admin, "reservation.return_time_corrected", reservation.id, { before, actualReturnedAt, reason: body.reason });
+        await saveDb(); return ok(withReservationDetails(db, reservation));
+      }
+
       const userWarningMatch = pathname.match(/^\/api\/admin\/users\/([^/]+)\/warning$/);
       if (method === "POST" && userWarningMatch) {
         const admin = requireAdmin(authorization, db);
@@ -2109,16 +2166,18 @@ export async function handleApiRequest(ctx) {
         const user = db.users.find((item) => item.id === userWarningMatch[1]);
         if (!user) throw Object.assign(new Error("사용자를 찾을 수 없습니다."), { status: 404 });
         if (body.reset) {
-          user.warningCount = 0;
-          db.warnings = (db.warnings || []).filter((item) => item.userId !== user.id);
+          db.warnings = (db.warnings || []).filter(item => item.userId !== user.id || item.source === "equipment_overdue");
+          user.warningCount = activeWarningRecordCount(db, user.id);
           user.updatedAt = nowIso();
           audit(db, admin, "user.warning_reset", user.id);
           await saveDb();
           return ok({ user: publicUser(user, db) });
         }
-        user.warningCount = Math.max(0, Number(user.warningCount || 0)) + 1;
+        user.warningCount = effectiveWarningCount(db, user.id) + 1;
         const warning = {
           id: id("warning"),
+          source: "manual",
+          status: "confirmed",
           userId: user.id,
           reason: cleanMeta(body.reason || ""),
           count: user.warningCount,
@@ -2180,6 +2239,7 @@ export async function handleApiRequest(ctx) {
         const reservationId = adminReservationDeleteMatch[1];
         const reservation = db.reservations.find((item) => item.id === reservationId);
         if (!reservation) throw Object.assign(new Error("예약을 찾을 수 없습니다."), { status: 404 });
+        if (reservation.type === "equipment" && reservation.status === "checked_out") throw Object.assign(new Error("대여 중인 기자재 예약은 반납 점검 후 삭제하세요."), { status: 409 });
         const deletedReports = db.reports.filter((item) => item.reservationId === reservationId).length;
         const reportIds = new Set(db.reports.filter((item) => item.reservationId === reservationId).map((item) => item.id));
         const draftIds = new Set((db.reportDrafts || []).filter((item) => item.reservationId === reservationId).map((item) => item.id));
@@ -2217,6 +2277,8 @@ export async function handleApiRequest(ctx) {
             { status: 400 }
           );
         }
+        const returnSignature = JSON.stringify({ actualReturnedAt: body.actualReturnedAt, reason: String(body.returnTimeNote || body.reason || body.note || "").trim(), inspections: [...(Array.isArray(body.inspections) ? body.inspections : [])].map(i => ({ equipmentId: String(i.equipmentId), outcome: i.outcome, note: String(i.note || "").trim() })).sort((a,b) => a.equipmentId.localeCompare(b.equipmentId)) });
+        if (reservation.status === "returned" && reservation.returnInspectionSignature === returnSignature) return ok({ reservation: withReservationDetails(db, reservation), inspections: db.equipmentInspections.filter(i => i.reservationId === reservation.id) });
         if (reservation.status !== "checked_out") {
           throw Object.assign(
             new Error("대여 중인 예약만 반납 점검을 처리할 수 있습니다."),
@@ -2253,7 +2315,10 @@ export async function handleApiRequest(ctx) {
           "needs_inspection",
           "needs_repair"
         ]);
-        const checkedAt = nowIso();
+        const checkedAt = requestNow.toISOString();
+        const actualReturnedAt = validateEquipmentActualReturnedAt(reservation, body.actualReturnedAt, requestNow);
+        const returnReason = String(body.returnTimeNote || body.reason || body.note || "").trim();
+        if (actualReturnedAt !== checkedAt && !returnReason) throw Object.assign(new Error("실제 반납 시각과 처리 시각이 다르면 사유를 입력하세요."), { status: 400 });
         const changes = requested.map((inspection) => {
           const equipment = db.equipment.find(
             (item) => item.id === String(inspection.equipmentId)
@@ -2315,6 +2380,10 @@ export async function handleApiRequest(ctx) {
           }
         }
         reservation.status = "returned";
+        reservation.actualReturnedAt = actualReturnedAt;
+        reservation.returnInspectionSignature = returnSignature;
+        reservation.returnTimeReason = returnReason;
+        syncEquipmentReturnWarning(db, reservation, { actualReturnedAt, reason: returnReason, adminId: admin.id, now: requestNow });
         reservation.updatedAt = checkedAt;
         reservation.history = [
           ...(Array.isArray(reservation.history) ? reservation.history : []),
@@ -2376,13 +2445,22 @@ export async function handleApiRequest(ctx) {
         ) {
           throw Object.assign(new Error("현재 기자재 예약 상태에서는 요청한 상태로 변경할 수 없습니다."), { status: 409 });
         }
+        if (reservation.type === "equipment") {
+          if (body.status === "returned") throw Object.assign(new Error("관리자 화면을 업데이트하고 반납 점검에서 실제 반납 시각을 입력하세요."), { status: 409 });
+          if (reservation.status === "checked_out") throw Object.assign(new Error("대여 중인 예약은 반납 점검으로 처리하세요."), { status: 409 });
+          if (body.status === "approved") validateReservation(db, reservation.type, { ...reservation.fields }, reservation.id, { skipDeadline: true, ignoreOverdue: true, now: requestNow });
+          if (body.status === "checked_out") {
+            if (getEquipmentHandoffBlockers(db, reservation, requestNow).length) throw Object.assign(new Error("대여 시작 시각, 미반납 예약 또는 기자재 상태를 확인하세요."), { status: 409 });
+            reservation.actualCheckedOutAt = requestNow.toISOString();
+          }
+        }
         reservation.status = body.status;
         reservation.adminNote = body.adminNote || reservation.adminNote || "";
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: admin.id, action: "status_changed", status: reservation.status });
         audit(db, admin, "reservation.status_changed", reservation.id, { status: reservation.status });
-        await postSlack(slackWebhook, db, "reservation_status", reservation);
         await saveDb();
+        await postSlack(slackWebhook, db, "reservation_status", reservation);
         return ok(withReservationDetails(db, reservation));
       }
 
@@ -3064,7 +3142,12 @@ export async function handleApiRequest(ctx) {
       if (routeKey(method, pathname) === "PATCH /api/admin/settings") {
         const admin = requireAdmin(authorization, db);
         const body = await parseBody(readText);
+        const enabledAt = db.settings.equipmentOverdueWarningsEnabledAt;
+        if (body.equipmentOverdueWarningsEnabled !== undefined && typeof body.equipmentOverdueWarningsEnabled !== "boolean") throw Object.assign(new Error("자동 경고 사용 여부는 참/거짓이어야 합니다."), { status: 400 });
+        delete body.equipmentOverdueWarningsEnabledAt;
         db.settings = sanitizeSettingsPatch(db.settings, body);
+        if (body.equipmentOverdueWarningsEnabled !== undefined) db.settings.equipmentOverdueWarningsEnabled = body.equipmentOverdueWarningsEnabled;
+        db.settings.equipmentOverdueWarningsEnabledAt = enabledAt || (db.settings.equipmentOverdueWarningsEnabled ? requestNow.toISOString() : "");
         audit(db, admin, "settings.updated", "settings", body);
         await saveDb();
         return ok(db.settings);
@@ -3072,6 +3155,7 @@ export async function handleApiRequest(ctx) {
 
       throw Object.assign(new Error("API 경로를 찾을 수 없습니다."), { status: 404 });
     } catch (error) {
+      restoreDatabaseSnapshot(db, rollbackSnapshot);
       return fail(error);
     }
 }
