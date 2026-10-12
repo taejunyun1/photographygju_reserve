@@ -306,6 +306,13 @@ assert(markup.includes("무선 마이크"), "home must show unlisted equipment r
 assert(markup.includes("전체 예약 보기"), "home must link to the full booking history");
 assert(markup.indexOf("student-react-home-bookings") < markup.indexOf("student-react-course-demand-card"), "home bookings must appear before secondary dashboard cards");
 
+const turnoverFields = { reservedDate: "2026-10-13", period: "1박2일", rentalTime: "17:30", returnTime: "17:10" };
+const turnoverBootstrap = { settings, reservations: [{ type: "equipment", status: "checked_out", fields: { reservedDate: "2026-10-12", period: "1박2일", rentalTime: "10:15", returnTime: "17:10", equipmentItemIds: [equipment[0].id] } }] };
+assert.equal(student.equipmentItemAvailability(turnoverBootstrap, equipment[0], turnoverFields, new Date("2026-10-12T03:00:00Z")).available, true);
+assert.equal(student.equipmentItemAvailability(turnoverBootstrap, equipment[0], { ...turnoverFields, rentalTime: "17:00" }, new Date("2026-10-12T03:00:00Z")).available, false);
+assert.match(student.equipmentItemAvailability(turnoverBootstrap, equipment[0], turnoverFields, new Date("2026-10-13T08:11:00Z")).reason, /반납 지연/);
+assert.equal(student.equipmentItemAvailability(turnoverBootstrap, equipment[0], { ...turnoverFields, rentalTime: "" }).available, false);
+
 // Exact legacy availability behavior is derived from the bootstrap snapshot.
 const availabilityBootstrap = { settings, notices: [], equipment, darkroomChemicals: chemicals, reservations };
 for (const date of ["2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17"]) {
@@ -527,6 +534,13 @@ for (const type of ["equipment", "studio", "darkroom", "print"]) {
     `${type} submit must preserve bridge rejection errors`
   );
 }
+
+let refreshedAfterConflict = 0;
+const conflictStateBefore = JSON.stringify(validStates.equipment);
+const conflictActions = actionRecorder({ submitReservation: async () => { throw Object.assign(new Error("availability changed"), { status: 409 }); }, refresh: async () => { refreshedAfterConflict += 1; } });
+await assert.rejects(student.submitReservationDraft("equipment", validStates.equipment, validDetails.equipment, conflictActions.actions), /availability changed/);
+assert.equal(refreshedAfterConflict, 1, "409 refreshes availability");
+assert.equal(JSON.stringify(validStates.equipment), conflictStateBefore, "409 preserves reservation inputs");
 
 const midnightDarkroomState = makeState({
   bootstrap: {

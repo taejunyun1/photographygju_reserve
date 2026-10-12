@@ -467,3 +467,13 @@ assert(
 );
 
 console.log("Equipment reservation UI checks passed.");
+
+const { equipmentItemReservationConflict, relatedLensItemsForSelection } = await import("../public/js/utils.js?v=20260930-equipment-period-hotfix-r1");
+const savedBootstrap = state.bootstrap;
+state.bootstrap = { equipment: [{ id: "turnover-lens", name: "Sony lens", brand: "Sony", category: "Lens", active: true, reservable: true, status: "가능" }], reservations: [{ type: "equipment", status: "checked_out", fields: { reservedDate: "2099-07-20", period: "1박2일", rentalTime: "10:15", returnTime: "17:10", equipmentItemIds: ["turnover-lens"] } }] };
+const futureFields = { reservedDate: "2099-07-21", period: "1박2일", rentalTime: "17:30", returnTime: "17:10" };
+assert.equal(equipmentItemReservationConflict("turnover-lens", futureFields, undefined, new Date("2099-07-20T00:00:00Z")), null, "legacy permits post-return booking while checked out");
+assert(Boolean(equipmentItemReservationConflict("turnover-lens", { ...futureFields, rentalTime: "17:00" }, undefined, new Date("2099-07-20T00:00:00Z"))), "legacy prevents overlapping pickup");
+assert(Boolean(equipmentItemReservationConflict("turnover-lens", futureFields, undefined, new Date("2099-07-21T08:11:00Z"))), "legacy blocks overdue custody");
+assert.equal(relatedLensItemsForSelection([{ id: "body", brand: "Sony", category: "Body" }], futureFields).length, 1, "lens recommendation uses complete schedule");
+state.bootstrap = savedBootstrap;

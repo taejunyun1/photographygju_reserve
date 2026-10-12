@@ -711,3 +711,41 @@ test("Student React reservation cancellation keeps the card and announces reques
   await expect(page.getByText("기자재 예약")).toBeVisible();
   await expect(cancel).toBeEnabled();
 });
+
+test("Student React selects equipment after its scheduled return before actual return", async ({ page }) => {
+  await loginReactStudent(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    state.bootstrap.equipment = [{ id: "turnover-ui", name: "선예약 확인 장비", code: "TURN-1", category: "Other", active: true, reservable: true, status: "가능" }];
+    state.bootstrap.reservations = [{ id: "custody-a", type: "equipment", status: "checked_out", fields: { reservedDate: "2099-07-20", period: "1박2일", rentalTime: "10:15", returnTime: "17:10", equipmentItemIds: ["turnover-ui"] } }];
+    state.view = "reserve";
+    state.reservationType = "equipment";
+    state.reservationFlowStep.equipment = "select";
+    state.selectedDates.equipment = "2099-07-21";
+    state.selectedEquipmentPeriod = "1박2일";
+    state.selectedEquipmentRentalTime = "17:30";
+    state.selectedEquipmentReturnTime = "17:10";
+    state.selectedEquipmentItemIds = [];
+    render();
+  });
+  const checkbox = page.getByRole("checkbox", { name: /선예약 확인 장비/ });
+  await expect(checkbox).toBeEnabled();
+  await expect(page.getByText(/17:10 반납 예정 · 17:30 대여 예약 가능/)).toBeVisible();
+  await checkbox.check();
+  await page.locator(".student-react-flow-actions").getByRole("button", { name: "다음" }).click();
+  await expect(page.getByRole("button", { name: "승인 요청" })).toBeEnabled();
+  let submitted;
+  await page.route("**/api/reservations", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    submitted = route.request().postDataJSON();
+    await route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ error: "최신 가용성 확인" }) });
+  });
+  await page.getByLabel("연락처", { exact: true }).fill("010-1234-5678");
+  await page.getByLabel(/파손\/분실 자가부담/).check();
+  await page.getByRole("button", { name: "승인 요청" }).click();
+  await expect(page.getByRole("alert")).toContainText("최신 가용성 확인");
+  expect(submitted.fields.equipmentItemIds).toEqual(["turnover-ui"]);
+  expect(submitted.fields.rentalTime).toBe("17:30");
+  await expect(page.getByLabel("연락처", { exact: true })).toHaveValue("010-1234-5678");
+});

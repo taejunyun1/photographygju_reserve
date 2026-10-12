@@ -1,3 +1,5 @@
+import { equipmentScheduledWindow, equipmentWindowsOverlap } from "../../../public/js/equipment-schedule.mjs";
+import type { EquipmentScheduleFields } from "./types";
 import type {
   ReservationType,
   StudentBlockedSchedule,
@@ -24,6 +26,7 @@ export type AvailabilityResult = {
   available: boolean;
   reason?: string;
   remaining?: number;
+  scheduleNote?: string;
 };
 
 export type PrintCapacityBucket = {
@@ -223,6 +226,7 @@ export function equipmentScheduleAvailability(
       return unavailable("당일 반납 시간은 대여 시간보다 늦어야 합니다.");
     }
   }
+  if (!equipmentScheduledWindow({ reservedDate: date, period, rentalTime, returnTime })) return unavailable("대여·반납 날짜와 시간을 확인하세요.");
   const range = equipmentRange(date, period);
   if (range) {
     let cursor = range.start;
@@ -243,23 +247,32 @@ function statusReservable(status: string | undefined): boolean {
 export function equipmentItemAvailability(
   bootstrap: StudentBootstrap,
   item: StudentEquipment,
-  date: string,
-  period: string
+  fieldsOrDate: EquipmentScheduleFields | string,
+  nowOrPeriod: Date | string = new Date()
 ): AvailabilityResult {
   if (item.active === false) return unavailable("비활성 기자재입니다.");
   if (!item.reservable || !statusReservable(item.status)) return unavailable("현재 예약할 수 없는 기자재입니다.");
-  if (!date || !period) return unavailable("날짜와 대여 기간을 먼저 선택하세요.");
-  const requestedRange = equipmentRange(date, period);
-  const conflict = reservations(bootstrap, "equipment").find((reservation) => {
-    const ids = [
-      ...(reservation.fields.equipmentItemIds || []),
-      ...(reservation.equipmentItems || []).map((equipmentItem) => equipmentItem.id)
-    ];
-    return ids.includes(item.id)
-      && dateRangesOverlap(equipmentRange(String(reservation.fields.reservedDate || ""), String(reservation.fields.period || "")), requestedRange);
-  });
-  if (conflict) return unavailable("선택한 기간에 이미 예약된 기자재입니다.");
-  return available();
+  const legacy = typeof fieldsOrDate === "string";
+  const fields = legacy ? { reservedDate: fieldsOrDate, period: String(nowOrPeriod), rentalTime: "", returnTime: "" } : fieldsOrDate;
+  const now = nowOrPeriod instanceof Date ? nowOrPeriod : new Date();
+  if (!fields.reservedDate || !fields.period) return unavailable("날짜와 대여 기간을 먼저 선택하세요.");
+  const requestedWindow = equipmentScheduledWindow(fields);
+  if (!legacy && !requestedWindow) return unavailable("날짜와 대여·반납 시간을 먼저 선택하세요.");
+  const requestedRange = equipmentRange(fields.reservedDate, fields.period);
+  let scheduleNote = "";
+  for (const reservation of reservations(bootstrap, "equipment")) {
+    const ids = [...(reservation.fields.equipmentItemIds || []), ...(reservation.equipmentItems || []).map((equipmentItem) => equipmentItem.id)];
+    if (!ids.includes(item.id)) continue;
+    const scheduled = equipmentScheduledWindow(reservation.fields);
+    if (scheduled && reservation.status === "checked_out" && now.getTime() > Date.parse(scheduled.endAt)) return unavailable("반납 지연 · 관리자 확인 중");
+    const overlaps = requestedWindow && scheduled ? equipmentWindowsOverlap(requestedWindow, scheduled) : dateRangesOverlap(equipmentRange(String(reservation.fields.reservedDate || ""), String(reservation.fields.period || "")), requestedRange);
+    if (overlaps) return unavailable("선택한 기간에 이미 예약된 기자재입니다.");
+    if (scheduled && reservation.status === "checked_out") {
+      const end = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(scheduled.endAt));
+      scheduleNote = `${end} 반납 예정 · ${fields.rentalTime} 대여 예약 가능`;
+    }
+  }
+  return available({ scheduleNote });
 }
 
 function normalizedText(value: unknown): string {

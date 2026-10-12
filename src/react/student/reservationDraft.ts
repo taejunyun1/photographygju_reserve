@@ -92,7 +92,7 @@ function equipmentDraft(state: StudentState, details: EquipmentReservationDetail
   const selectedItems = equipmentItemIds.map((itemId) => {
     const item = (state.bootstrap.equipment || []).find((candidate) => candidate.id === itemId);
     if (!item) throw new Error("선택한 기자재 정보를 다시 확인하세요.");
-    const itemAvailability = equipmentItemAvailability(state.bootstrap, item, reservedDate, period);
+    const itemAvailability = equipmentItemAvailability(state.bootstrap, item, { reservedDate, period, rentalTime, returnTime });
     if (!itemAvailability.available) throw new Error(itemAvailability.reason || "예약할 수 없는 기자재가 포함되어 있습니다.");
     return item;
   });
@@ -250,5 +250,11 @@ export async function submitReservationDraft(
   actions: StudentActions
 ): Promise<void> {
   const draft = buildReservationDraft(type, state, details);
-  await actions.submitReservation(draft);
+  try {
+    await actions.submitReservation(draft);
+  } catch (error) {
+    const status = (error as { status?: number; statusCode?: number }).status || (error as { statusCode?: number }).statusCode;
+    if (type === "equipment" && status === 409) await actions.refresh();
+    throw error;
+  }
 }

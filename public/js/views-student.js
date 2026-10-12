@@ -13,6 +13,7 @@ import {
   equipmentIsHighValue,
   equipmentCategories,
   equipmentItemReservedInRange,
+  equipmentItemScheduleNote,
   equipmentPeriodDays,
   equipmentRangeBlocked,
   equipmentRangeLabel,
@@ -507,7 +508,7 @@ function equipmentRecommendationPanel(selectedItems, selectedDate, period) {
     state.equipmentRecommendationOpen = false;
     return "";
   }
-  const recommendations = relatedLensItemsForSelection(selectedItems, { reservedDate: selectedDate, period })
+  const recommendations = relatedLensItemsForSelection(selectedItems, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime })
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "ko"));
   if (!recommendations.length) {
     state.equipmentRecommendationOpen = false;
@@ -600,13 +601,13 @@ function equipmentPickerStep(selectedDate, period, categories, visibleItems, sel
     </div>
     <div class="choice-grid equipment-choice-grid">
       ${visibleItems.length ? visibleItems.map((item) => {
-        const unavailable = equipmentItemReservedInRange(item.id, selectedDate, period);
+        const unavailable = equipmentItemReservedInRange(item.id, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime });
         return `
           <label class="choice-card equipment-choice ${unavailable ? "is-unavailable" : ""}">
             <input type="checkbox" name="equipmentItemIds" value="${item.id}" ${state.selectedEquipmentItemIds.includes(item.id) ? "checked" : ""} ${unavailable ? "disabled" : ""} />
             <span>
               <strong>${escapeHtml(item.name)}</strong>
-              <small>${escapeHtml(item.code)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}${unavailable ? ` · ${escapeHtml(equipmentRangeLabel(selectedDate, period))} 예약됨` : ""}</small>
+              <small>${escapeHtml(item.code)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}${` · ${escapeHtml(equipmentItemScheduleNote(item.id, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime }))}`}</small>
             </span>
           </label>
         `;
@@ -737,7 +738,7 @@ export function equipmentForm() {
   } else if (rangeBlocked) {
     state.selectedEquipmentItemIds = [];
   } else if (selectedDate) {
-    state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => !equipmentItemReservedInRange(itemId, selectedDate, period));
+    state.selectedEquipmentItemIds = state.selectedEquipmentItemIds.filter((itemId) => !equipmentItemReservedInRange(itemId, { reservedDate: selectedDate, period, rentalTime: state.selectedEquipmentRentalTime, returnTime: state.selectedEquipmentReturnTime }));
   }
   const equipmentQuery = normalizeSearchText(state.equipmentSearch).trim();
   const visibleItems = reservable

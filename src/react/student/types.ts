@@ -124,6 +124,7 @@ export type StudentReservation = {
   status?: string;
   userId?: string;
   userName?: string;
+  handoffNeedsReview?: boolean;
   fields: StudentReservationFields;
   equipmentItems?: readonly StudentEquipment[];
   lecture?: StudentLecture | null;
@@ -503,3 +504,5 @@ export type StudentActions = {
   syncNotifications(): Promise<void> | void;
   disableNotifications(): Promise<void> | void;
 };
+
+export type EquipmentScheduleFields = { reservedDate: string; period: string; rentalTime: string; returnTime: string };

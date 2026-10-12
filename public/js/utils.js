@@ -1,3 +1,4 @@
+import { equipmentScheduledWindow, equipmentWindowsOverlap } from "./equipment-schedule.mjs";
 import { state } from "./state.js?v=20260930-equipment-period-hotfix-r1";
 import {
   equipmentReservationStatusColor,
@@ -307,24 +308,40 @@ export function dateRangesOverlap(a, b) {
   return a.start <= b.end && b.start <= a.end;
 }
 
-export function equipmentItemReservationConflict(itemId, reservedDate, period) {
-  if (!itemId || !reservedDate) return null;
-  const requestedRange = equipmentReservationRange({ reservedDate, period });
+export function equipmentItemReservationConflict(itemId, fieldsOrDate, period, now = new Date()) {
+  const legacy = typeof fieldsOrDate === "string";
+  const fields = legacy ? { reservedDate: fieldsOrDate, period } : fieldsOrDate || {};
+  const requested = equipmentScheduledWindow(fields);
+  if (!legacy && !requested) return { unavailableReason: "날짜와 대여·반납 시간을 먼저 선택하세요." };
+  const requestedRange = equipmentReservationRange(fields);
   return (state.bootstrap?.reservations || []).find((reservation) => {
-    if (reservation.type !== "equipment") return false;
-    const itemIds = [
-      ...(reservation.fields?.equipmentItemIds || []),
-      ...(reservation.equipmentItems || []).map((item) => item.id)
-    ];
-    return itemIds.includes(itemId) && dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
+    if (reservation.type !== "equipment" || ["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status)) return false;
+    const itemIds = [...(reservation.fields?.equipmentItemIds || []), ...(reservation.equipmentItems || []).map((item) => item.id)];
+    if (!itemIds.includes(itemId)) return false;
+    const scheduled = equipmentScheduledWindow(reservation.fields);
+    if (scheduled && reservation.status === "checked_out" && now.getTime() > Date.parse(scheduled.endAt)) return true;
+    return requested && scheduled ? equipmentWindowsOverlap(requested, scheduled) : dateRangesOverlap(equipmentReservationRange(reservation.fields), requestedRange);
   }) || null;
 }
 
-export function equipmentItemReservedInRange(itemId, reservedDate, period) {
-  return Boolean(equipmentItemReservationConflict(itemId, reservedDate, period));
+export function equipmentItemReservedInRange(itemId, fieldsOrDate, period) {
+  return Boolean(equipmentItemReservationConflict(itemId, fieldsOrDate, period));
 }
 
-export function relatedLensItemsForSelection(selectedItems = [], { reservedDate = "", period = "" } = {}) {
+export function equipmentItemScheduleNote(itemId, fields, now = new Date()) {
+  const conflict = equipmentItemReservationConflict(itemId, fields, undefined, now);
+  if (conflict) {
+    const scheduled = equipmentScheduledWindow(conflict.fields);
+    return conflict.unavailableReason || (scheduled && conflict.status === "checked_out" && now.getTime() > Date.parse(scheduled.endAt) ? "반납 지연 · 관리자 확인 중" : "선택한 기간에 이미 예약된 기자재입니다.");
+  }
+  const custody = (state.bootstrap?.reservations || []).find((r) => r.type === "equipment" && r.status === "checked_out" && [...(r.fields?.equipmentItemIds || []), ...(r.equipmentItems || []).map((i) => i.id)].includes(itemId));
+  const scheduled = equipmentScheduledWindow(custody?.fields);
+  if (!scheduled) return "";
+  const due = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(scheduled.endAt));
+  return `${due} 반납 예정 · ${fields.rentalTime} 대여 예약 가능`;
+}
+
+export function relatedLensItemsForSelection(selectedItems = [], fields = {}) {
   const bodyBrands = [...new Set(selectedItems
     .filter((item) => String(item?.category || "").trim().toLowerCase() === "body")
     .map(equipmentBrand)
@@ -336,7 +353,7 @@ export function relatedLensItemsForSelection(selectedItems = [], { reservedDate 
     .filter((item) => String(item.category || "").trim().toLowerCase() === "lens")
     .filter((item) => bodyBrands.includes(equipmentBrand(item)))
     .filter((item) => !selectedIds.has(item.id))
-    .filter((item) => !reservedDate || !equipmentItemReservedInRange(item.id, reservedDate, period));
+    .filter((item) => !fields.reservedDate || !equipmentItemReservedInRange(item.id, fields));
 }
 
 export function equipmentItemReservedOnDate(itemId, key) {

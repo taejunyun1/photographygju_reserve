@@ -263,15 +263,14 @@ function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControls
       ? equipmentItemAvailability(
           state.bootstrap,
           item,
-          state.selectedDates.equipment,
-          state.selectedEquipmentPeriod || ""
+          { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" }
         )
       : scheduleResult;
     return {
       value: item.id,
       label: item.name || item.code || "기자재",
       description: result.available
-        ? [item.code, item.category, item.brand].filter(Boolean).join(" · ")
+        ? [item.code, item.category, item.brand, result.scheduleNote].filter(Boolean).join(" · ")
         : result.reason,
       disabled: !result.available && !selected.includes(item.id)
     };
@@ -282,6 +281,14 @@ function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControls
   useEffect(() => {
     setVisibleLimit(EQUIPMENT_RESULT_PAGE_SIZE);
   }, [category, query]);
+  useEffect(() => {
+    const fields = { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" };
+    const retained = selected.filter((id) => {
+      const item = onlineEquipment.find((candidate) => candidate.id === id);
+      return item && equipmentItemAvailability(state.bootstrap, item, fields).available;
+    });
+    if (retained.length !== selected.length) update(actions, "equipment", { equipmentItemIds: retained });
+  }, [state.bootstrap, state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime, selected, actions]);
   const selectedBodyBrands = [...new Set(selectedItems
     .filter((item) => String(item.category || "").toLowerCase() === "body")
     .map((item) => String(item.brand || "").trim().toLowerCase())
@@ -290,7 +297,7 @@ function EquipmentStep({ state, actions, overlayRoot }: Omit<ReservationControls
     String(item.category || "").toLowerCase() === "lens"
     && selectedBodyBrands.includes(String(item.brand || "").trim().toLowerCase())
     && !selected.includes(item.id)
-    && equipmentItemAvailability(state.bootstrap, item, state.selectedDates.equipment, state.selectedEquipmentPeriod || "").available
+    && equipmentItemAvailability(state.bootstrap, item, { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" }).available
   ));
   const recommendationBrands = [...new Set(recommendedLenses.map((item) => item.brand).filter(Boolean))].join(" · ");
   return (
@@ -636,7 +643,7 @@ function currentStepAvailability(type: ReservationType, step: ReservationStep, s
     for (const itemId of state.selectedEquipmentItemIds) {
       const item = (state.bootstrap.equipment || []).find((candidate) => candidate.id === itemId);
       if (!item) return { available: false, reason: "선택한 기자재 정보를 다시 확인하세요." };
-      const result = equipmentItemAvailability(state.bootstrap, item, state.selectedDates.equipment, state.selectedEquipmentPeriod || "");
+      const result = equipmentItemAvailability(state.bootstrap, item, { reservedDate: state.selectedDates.equipment, period: state.selectedEquipmentPeriod || "", rentalTime: state.selectedEquipmentRentalTime || "", returnTime: state.selectedEquipmentReturnTime || "" });
       if (!result.available) return result;
     }
     return { available: true };
