@@ -1,7 +1,7 @@
-import { state } from "./state.js?v=20260930-equipment-period-hotfix-r1";
-import { api } from "./api.js?v=20260930-equipment-period-hotfix-r1";
-import { equipmentAdminStatusOptions } from "./constants.js?v=20260930-equipment-period-hotfix-r1";
-import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20260930-equipment-period-hotfix-r1";
+import { state } from "./state.js?v=20261012-equipment-turnover-r1";
+import { api } from "./api.js?v=20261012-equipment-turnover-r1";
+import { equipmentAdminStatusOptions } from "./constants.js?v=20261012-equipment-turnover-r1";
+import { normalizeSearchText, searchableText, tag } from "./utils.js?v=20261012-equipment-turnover-r1";
 
 export function activeAdminEquipmentItems() {
   return state.adminEquipment.filter((item) => item.active !== false);

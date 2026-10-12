@@ -120,7 +120,7 @@ globalThis.fetch = async (input) => {
   };
 };
 
-const { state } = await import("../public/js/state.js?v=20260930-equipment-period-hotfix-r1");
+const { state } = await import("../public/js/state.js?v=20261012-equipment-turnover-r1");
 const { loadAdminData, loadAdminView } = await import("../public/js/data.js?react-admin-data-test");
 
 state.user = { id: "admin-1", role: "admin" };

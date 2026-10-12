@@ -22,7 +22,7 @@ test("React Admin mounts current source without legacy panel or horizontal overf
 test("React Admin congestion insight uses a compact card hierarchy", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.summary = {
       ...(state.summary || {}),
       metrics: {
@@ -43,7 +43,7 @@ test("React Admin congestion insight uses a compact card hierarchy", async ({ pa
         }
       }
     };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
 
@@ -69,7 +69,7 @@ test("React Admin insight navigation keeps the period and selected time", async 
   });
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.summary = {
       ...(state.summary || {}),
       metrics: {
@@ -85,7 +85,7 @@ test("React Admin insight navigation keeps the period and selected time", async 
         }
       }
     };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
 
@@ -99,7 +99,7 @@ test("React Admin insight navigation keeps the period and selected time", async 
   expect(requestUrl.searchParams.get("status")).toBe("operational");
   expect(requestUrl.searchParams.get("semester")).toBeNull();
   await expect.poll(() => page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     return { from: state.adminReservationDateFrom, to: state.adminReservationDateTo, time: state.adminReservationTimeFilter };
   })).toEqual({ from: "2026-08-07", to: "2026-09-03", time: "10:15" });
   expect(consoleErrors.filter((message) => message.includes("same key"))).toEqual([]);
@@ -108,7 +108,7 @@ test("React Admin insight navigation keeps the period and selected time", async 
 test("React Admin hides cancellation insight until five requests are available", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.summary = {
       ...(state.summary || {}),
       metrics: {
@@ -121,7 +121,7 @@ test("React Admin hides cancellation insight until five requests are available",
         }
       }
     };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
   await expect(page.locator(".admin-dashboard-insight-card").filter({ hasText: "취소율" })).toHaveCount(0);
@@ -131,7 +131,7 @@ test("React Admin hides cancellation insight until five requests are available",
 test("React Admin cancellation insight keeps the cancelled status filter", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.summary = {
       ...(state.summary || {}),
       metrics: {
@@ -145,7 +145,7 @@ test("React Admin cancellation insight keeps the cancelled status filter", async
         }
       }
     };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
 
@@ -162,11 +162,11 @@ test("React Admin cancellation insight keeps the cancelled status filter", async
 test("React Admin paginated badge uses server total, not visible rows", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.adminView = "reservations";
     state.adminReservations = ["one", "two"].map((id) => ({ id, type: "equipment", status: "approved", fields: {} }));
     state.adminReservationsPage = { total: 105, page: 1, pageSize: 2, hasMore: true };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
   await expect(page.getByText("105건 · 현재 표시 2건", { exact: true })).toBeVisible();
@@ -190,7 +190,7 @@ test("React Admin action toast is announced once across a follow-up render", asy
     window.__gjuToastObserver = observer;
   });
   await page.evaluate(async () => {
-    const module = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const module = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     module.toast("중복 알림 확인", { duration: 5_000 });
     module.render();
   });
@@ -247,7 +247,7 @@ test("React Admin completes equipment return through per-item inspection", async
   });
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.adminView = "reservations";
     state.adminReservationTab = "equipment";
     state.adminEquipmentReservationStatusFilter = "checked_out";
@@ -263,7 +263,7 @@ test("React Admin completes equipment return through per-item inspection", async
       ],
       user: { name: "반납 학생", studentId: "20260001", phone: "010-1234-5678" }
     }];
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1");
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1");
     render();
   });
 
@@ -368,12 +368,12 @@ test("React Admin opens older automatic warning records without whole reset", as
   });
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
     state.adminView = "users";
     state.adminUserStatusFilter = "all";
     state.adminUsers = [{ id: "warning-ui", name: "경고 확인 학생", role: "student", approvalStatus: "approved", warningCount: 1, warningRecords: [{ id: "equipment_overdue:older-1", status: "pending_review", source: "equipment_overdue", reason: "미반납 확인 대기" }] }];
     state.adminUsersPage = { total: 1, page: 1, pageSize: 20 };
-    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1"); render();
+    const { render } = await import("/js/renderer.js?v=20261012-equipment-turnover-r1"); render();
   });
   await page.getByRole("button", { name: "전체 경고 기록·개별 심사" }).first().click();
   const dialog = page.getByRole("dialog");

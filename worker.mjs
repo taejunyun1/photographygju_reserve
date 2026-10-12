@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { createMutationQueue } from "./core/mutation-queue.mjs";
-import { runEquipmentOverdueSweep, equipmentOverdueCronPath } from "./core/equipment-overdue-scheduler.mjs";
+import { runEquipmentOverdueSweep, equipmentOverdueCronPath, applyEquipmentOverdueActivation } from "./core/equipment-overdue-scheduler.mjs";
 import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
 import { createSqlAppStore } from "./storage-sql.mjs";
 import { ensureSqlStoreInitialized } from "./worker-storage.mjs";
@@ -152,6 +152,9 @@ export class GjuReserveDb extends DurableObject {
       }
       const snapshot = structuredClone(db);
       try {
+        if (url.pathname.endsWith("equipment-overdue")) {
+          applyEquipmentOverdueActivation(db, this.env.EQUIPMENT_OVERDUE_ACTIVATION_AT, new Date());
+        }
         const summary = url.pathname.endsWith("equipment-overdue")
           ? runEquipmentOverdueSweep(db, new Date())
           : cleanupExpiredData(db, new Date(), "cron");

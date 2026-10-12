@@ -561,3 +561,14 @@ content-type, authorization
 - 낙관적 동시성 또는 `updatedAt` 조건부 수정
 - 일괄 교체 API에 idempotency key 적용
 - 관리자 세부 권한 정책 추가
+
+
+## 2026-10-12 반납 시각 및 자동 경고 API
+
+- `POST /api/admin/reservations/:id/return-inspection`: 기존 inspections에 `actualReturnedAt`(시간대를 포함한 ISO 시각), `returnTimeNote`를 전달한다. 실제 반납이 처리 시각보다 이르면 사유가 필요하다. 같은 요청 재전송은 점검·경고를 중복 생성하지 않는다.
+- `PATCH /api/admin/reservations/:id/status`: 대여 중 기자재의 returned 직접 전이는 거절한다. 반납 점검 API로 처리한다.
+- `GET /api/admin/warnings`: status/source/userId/reservationId/page/pageSize 필터로 `{items,total,page,pageSize}`를 조회한다.
+- `PATCH /api/admin/warnings/:id/review`: `{actualReturnedAt,reason}`. 반납 완료 건의 기록된 시각으로 서버가 확정 또는 해제한다.
+- `PATCH /api/admin/reservations/:id/return-time`: 반납 완료 건의 `{actualReturnedAt,reason}` 정정, 경고 재판정 및 감사 로그 기록.
+- 자동 경고 ID는 `equipment_overdue:예약ID`. 해제된 기록을 보존하여 다시 부과하지 않는다. 사용자별 전체 초기화는 수동 경고에만 적용한다.
+- 구형 관리자 앱에서 실제 반납 시각을 보내지 않는 반납 요청은 업데이트 후 점검 화면 사용을 안내한다.
