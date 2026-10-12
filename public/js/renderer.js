@@ -366,7 +366,7 @@ const reactAdminActions = {
     );
   },
   async resetUserWarnings(userId) {
-    if (!confirm("이 학생의 경고 메모 기록을 초기화할까요? 대여금지 상태는 변경되지 않습니다.")) return;
+    if (!confirm("이 학생의 수동 경고 메모만 초기화할까요? 자동 미반납 경고는 개별 심사로 처리합니다.")) return;
     await runAdminMutation(
       "users",
       () => api(`/api/admin/users/${encodeURIComponent(userId)}/warning`, { method: "POST", body: { reset: true } }),
@@ -500,19 +500,29 @@ const reactAdminActions = {
       { invalidateViews: ["equipment", "reservations"] }
     );
   },
-  async returnEquipmentReservation(reservationId, inspections) {
+  async returnEquipmentReservation(reservationId, inspections, returnDetails = {}) {
     await runAdminMutation(
       "reservations",
       () => api(
         `/api/admin/reservations/${encodeURIComponent(reservationId)}/return-inspection`,
         {
           method: "POST",
-          body: { inspections }
+          body: { inspections, ...returnDetails }
         }
       ),
       "반납 점검을 완료했습니다.",
       { invalidateViews: ["reservations", "equipment", "dashboard"] }
     );
+  },
+  async loadAdminWarnings(filters = {}) {
+    const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value != null).map(([key, value]) => [key, String(value)]));
+    return api(`/api/admin/warnings?${query}`);
+  },
+  async reviewEquipmentWarning(warningId, input) {
+    await runAdminMutation("users", () => api(`/api/admin/warnings/${encodeURIComponent(warningId)}/review`, { method: "PATCH", body: input }), "반납 시각에 따라 경고를 심사했습니다.", { invalidateViews: ["users", "reservations", "dashboard", "logs"] });
+  },
+  async correctEquipmentReturnTime(reservationId, input) {
+    await runAdminMutation("reservations", () => api(`/api/admin/reservations/${encodeURIComponent(reservationId)}/return-time`, { method: "PATCH", body: input }), "실제 반납 시각을 정정했습니다.", { invalidateViews: ["users", "reservations", "dashboard", "logs"] });
   },
   async createEquipment(input) {
     const inquiryOnly = input.status === "문의" || input.inquiryOnly === true || input.reservable === false;
@@ -782,6 +792,10 @@ const reactAdminActions = {
       "전체 공지를 삭제했습니다.",
       ["notices", "dashboard"]
     );
+  },
+  async setEquipmentOverdueWarningsEnabled(enabled) {
+    if (!confirm(enabled ? "자동 미반납 경고를 활성화할까요? 활성화 이후 도래하는 반납 기한부터 적용합니다." : "자동 미반납 경고를 중지할까요? 기존 경고와 예약 기록은 보존됩니다.")) return;
+    await runAdminMutation("dashboard", () => api("/api/admin/settings", { method: "PATCH", body: { equipmentOverdueWarningsEnabled: enabled } }), enabled ? "자동 경고를 활성화했습니다." : "자동 경고를 중지했습니다.", { invalidateViews: ["settings"] });
   },
   async saveSettings(settings) {
     await runAdminMutation(

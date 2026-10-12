@@ -34,7 +34,18 @@ export type AdminUserRecord = {
   }>;
 };
 
+export type AdminWarningRecord = {
+  id: string; userId?: string; reservationId?: string; source?: string;
+  status?: "pending_review" | "confirmed" | "cleared"; reason?: string;
+  dueAt?: string; actualReturnedAt?: string; createdAt?: string;
+  equipmentIds?: string[]; reviewedAt?: string; reviewedBy?: string; reviewReason?: string;
+};
+
 export type AdminReservationRecord = {
+  actualCheckedOutAt?: string;
+  actualReturnedAt?: string;
+  returnProcessedAt?: string;
+  returnTimeNote?: string;
   id: string;
   type?: string;
   status?: string;
@@ -347,6 +358,7 @@ export type AdminDashboardMetrics = {
 };
 
 export type AdminDashboardSummary = Record<string, unknown> & {
+  equipmentOverdueStatus?: { lastRunAt?: string; lastSuccessAt?: string; status?: "ok" | "failed"; createdCount?: number; error?: string; enabled?: boolean; enabledAt?: string };
   pendingUsers?: number;
   pendingEquipment?: number;
   equipmentPendingApproval?: number;
@@ -755,8 +767,12 @@ export type ReactAdminActions = {
   regenerateEquipmentCode(equipmentId: string): Promise<void>;
   returnEquipmentReservation(
     reservationId: string,
-    inspections: AdminEquipmentInspectionInput[]
+    inspections: AdminEquipmentInspectionInput[],
+    returnDetails?: { actualReturnedAt: string; returnTimeNote?: string }
   ): Promise<void>;
+  loadAdminWarnings(filters: { userId?: string; page?: number; status?: string; source?: string; reservationId?: string }): Promise<{ items: AdminWarningRecord[]; total: number; page: number; pageSize: number }>;
+  reviewEquipmentWarning(warningId: string, input: { actualReturnedAt: string; reason: string }): Promise<void>;
+  correctEquipmentReturnTime(reservationId: string, input: { actualReturnedAt: string; reason: string }): Promise<void>;
   createEquipment(input: AdminEquipmentInput): Promise<void>;
   importEquipment(rows: Array<Record<string, unknown>>): Promise<void>;
   deleteEquipment(ids: string[]): Promise<void>;
@@ -780,6 +796,7 @@ export type ReactAdminActions = {
   deleteNotice(noticeId: string, title?: string): Promise<void>;
   bulkDeleteNotices(filters: Partial<AdminViewFilterMap["notices"]>): Promise<void>;
   deleteAllNotices(collectionTotal: number): Promise<void>;
+  setEquipmentOverdueWarningsEnabled(enabled: boolean): Promise<void>;
   saveSettings(settings: AdminSettingsInput): Promise<void>;
   loadReportDrive(): Promise<AdminReportDriveState>;
   connectReportDrive(): Promise<string>;

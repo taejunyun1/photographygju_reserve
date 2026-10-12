@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 
 import {
   GjuCard,
+  GjuDialog,
   GjuEmptyState,
   GjuIconButton,
   GjuStatusBadge,
@@ -9,7 +10,7 @@ import {
   GjuTabs,
   gjuTabId
 } from "../../design-system";
-import type { LegacyState, ReactAdminActions } from "../../platform/types";
+import type { AdminWarningRecord, LegacyState, ReactAdminActions } from "../../platform/types";
 import { runAdminAction } from "./adminScreenUtils";
 
 type AdminUsersProps = {
@@ -17,12 +18,7 @@ type AdminUsersProps = {
   actions: ReactAdminActions;
 };
 
-type AdminUserWarningRecord = {
-  id: string;
-  reason?: string;
-  count?: number;
-  createdAt?: string;
-};
+type AdminUserWarningRecord = AdminWarningRecord & { count?: number };
 
 type AdminUser = {
   id: string;
@@ -258,56 +254,58 @@ function formatDateTime(value: unknown) {
   }).format(date);
 }
 
-function renderWarningMemo(user: AdminUser, actions: ReactAdminActions) {
+function WarningMemo({ user, actions }: { user: AdminUser; actions: ReactAdminActions }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<AdminWarningRecord[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [loading, setLoading] = useState(false);
+  const labels = { pending_review: "미반납 · 확인 대기", confirmed: "확정 · 유지", cleared: "해제" };
+  const load = async (nextPage: number) => {
+    setLoading(true);
+    try {
+      const result = await actions.loadAdminWarnings({ userId: user.id, page: nextPage });
+      setItems(result.items); setPage(result.page); setTotal(result.total); setPageSize(result.pageSize); setOpen(true);
+    } catch { actions.notify("경고 기록을 불러오지 못했습니다.", "error"); }
+    finally { setLoading(false); }
+  };
+  const review = async (record: AdminWarningRecord) => {
+    if (!record.actualReturnedAt) { actions.setAdminView("reservations", { q: record.reservationId || "" }); setOpen(false); return; }
+    const value = prompt("확인한 실제 반납 시각 (Asia/Seoul, YYYY-MM-DDTHH:mm)", new Date(Date.parse(record.actualReturnedAt) + 9 * 3600000).toISOString().slice(0, 16));
+    if (!value) return;
+    const actual = new Date(`${value}:00+09:00`);
+    if (!Number.isFinite(actual.getTime())) { actions.notify("반납 시각 형식을 확인하세요.", "error"); return; }
+    const reason = prompt("반납 시각 확인 사유 (필수). 실제 지각은 경고가 유지됩니다.", "");
+    if (!reason?.trim()) return;
+    try { await actions.reviewEquipmentWarning(record.id, { actualReturnedAt: actual.toISOString(), reason: reason.trim() }); await load(page); } catch { /* bridge reports mutation errors */ }
+  };
   const records = asWarningRecords(user.warningRecords);
+  return <div className="admin-user-warning-memo">
+    <strong>유효 경고 {user.warningCount ?? records.filter((item) => item.status !== "cleared").length}건</strong>
+    {records.map((record) => <div key={record.id}>{record.status ? labels[record.status] : "수동 경고"} · {record.reason || "사유 없음"}</div>)}
+    <button type="button" className="btn" disabled={loading} onClick={() => void load(1)}>전체 경고 기록·개별 심사</button>
+    <GjuIconButton label="메모 추가" icon="plus" onClick={() => runAdminAction(() => actions.warnUser(user.id))} />
+    <GjuIconButton label="수동 메모 초기화" icon="refresh" onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))} />
+    {open ? <GjuDialog open title={`${user.name || "학생"} · 전체 경고 ${total}건`} onClose={() => setOpen(false)} showActions={false}>
+      {items.map((record) => <article key={record.id}>
+        <strong>{record.status ? labels[record.status] : "수동 경고"}</strong><p>{record.reason}</p>
+        {record.source === "equipment_overdue" ? <>
+          <p>예약 {record.reservationId} · 장비 {(record.equipmentIds || []).join(", ")}</p>
+          <p>예정 반납 {formatDateTime(record.dueAt)} · 실제 반납 {record.actualReturnedAt ? formatDateTime(record.actualReturnedAt) : "아직 확인되지 않음"}</p>
+          <p>확인 관리자 {record.reviewedBy || "-"} · 확인 사유 {record.reviewReason || "-"}</p>
+          <button className="btn" type="button" onClick={() => void review(record)}>{record.actualReturnedAt ? "반납 시간 확인·경고 판정" : "예약 반납 점검으로 이동"}</button>
+        </> : null}
+      </article>)}
+      <button className="btn" disabled={loading || page <= 1} onClick={() => void load(page - 1)}>이전</button>
+      <span>{page}페이지</span>
+      <button className="btn" disabled={loading || page * pageSize >= total} onClick={() => void load(page + 1)}>다음</button>
+    </GjuDialog> : null}
+  </div>;
+}
 
-  if (!records.length) {
-    return (
-      <div className="admin-user-warning-memo is-empty">
-        <div className="admin-user-warning-memo-head">
-          <strong>경고 메모 기록 없음</strong>
-          <GjuIconButton
-            className="admin-user-memo-add"
-            label="메모 추가"
-            icon="plus"
-            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
-          />
-        </div>
-        <span>저장된 메모가 없습니다.</span>
-      </div>
-    );
-  }
-
-  const latest = records[0];
-  const date = formatDateTime(latest.createdAt);
-  const count = Math.max(0, Number(user.warningCount || records.length || 0));
-
-  return (
-    <div className="admin-user-warning-memo">
-      <div className="admin-user-warning-memo-head">
-        <strong>최근 경고 메모 {count}건</strong>
-        <div className="admin-user-warning-actions">
-          <GjuIconButton
-            className="admin-user-memo-add"
-            label="메모 추가"
-            icon="plus"
-            onClick={() => runAdminAction(() => actions.warnUser(user.id))}
-          />
-          <GjuIconButton
-            className="admin-user-memo-reset"
-            label="메모 초기화"
-            icon="refresh"
-            onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))}
-          />
-        </div>
-      </div>
-      <span>
-        {date}
-        {date ? " · " : ""}
-        {latest.reason || "사유 없음"}
-      </span>
-    </div>
-  );
+function renderWarningMemo(user: AdminUser, actions: ReactAdminActions) {
+  return <WarningMemo user={user} actions={actions} />;
 }
 
 function renderUserLimitSelect(user: AdminUser, actions: ReactAdminActions, keyPrefix = "user-limit") {

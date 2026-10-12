@@ -23,7 +23,7 @@ type AdminDashboardProps = {
 type WarningNavigation = {
   title: string;
   detail: string;
-  target: "reservations" | "equipment";
+  target: "reservations" | "equipment" | "users";
   filters: Record<string, string | number>;
 };
 
@@ -224,12 +224,18 @@ function insightCard({
 }
 
 function warningCopy(warning: AdminOperationsWarning): WarningNavigation {
-  if (warning.kind === "overdue_return") {
+  if (warning.kind === "handoff_blocked" || warning.kind === "handoff_delay") {
+    return { title: "후속 대여 지연", detail: `${warning.equipmentName || warning.code || "기자재"} 실제 인계 확인이 필요합니다.`, target: "reservations", filters: { type: "equipment", q: warning.reservationId || "", page: 1 } };
+  }
+  if (warning.kind === "equipment_overdue_confirmed") {
+    return { title: "확정 경고", detail: "실제 지각 반납 경고가 유지됩니다. 학생의 전체 경고 기록에서 확인하세요.", target: "users", filters: {} };
+  }
+  if (warning.kind === "overdue_return" || warning.kind === "equipment_overdue_pending") {
     return {
-      title: "반납 확인 필요",
+      title: "미반납 확인 대기",
       detail: `${warning.equipmentName || "기자재"} 반납 예정 시간이 지났습니다.`,
       target: "reservations" as const,
-      filters: { type: "equipment", status: "checked_out", q: "", page: 1 }
+      filters: { type: "equipment", status: "checked_out", q: warning.reservationId || "", page: 1 }
     };
   }
   if (warning.kind === "shortage") {
@@ -331,6 +337,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const typeCounts = metrics.typeCounts || {};
   const popularEquipment = Array.isArray(metrics.popularEquipment) ? metrics.popularEquipment : [];
   const typeTotal = Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0);
+  const sweep = summary.equipmentOverdueStatus;
   const operationsInsights = metrics.insights;
   const congestion = Array.isArray(operationsInsights?.congestion?.items) ? operationsInsights.congestion.items.filter((item) => Number(item.count || 0) >= 3) : [];
   const utilization = Array.isArray(operationsInsights?.equipmentUtilization) ? operationsInsights.equipmentUtilization : [];
@@ -346,6 +353,12 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   return React.createElement(
     "section",
     { className: motionClass.screen, style: styles.screen },
+    sweep ? React.createElement(GjuCard, { title: "미반납 자동 점검" },
+      React.createElement("p", { role: sweep.status === "failed" ? "alert" : "status" },
+        !sweep.enabled ? "자동 경고 비활성 · 기존 미반납은 관리자 확인이 필요합니다." : sweep.status === "failed" ? `자동 점검 실패 · ${sweep.error || "관리자 확인 필요"}` : sweep.lastSuccessAt ? `최근 성공 ${new Date(sweep.lastSuccessAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · 생성 ${sweep.createdCount || 0}건` : "자동 경고 활성 · 첫 정기 점검 대기"),
+      React.createElement("button", { type: "button", className: "btn", onClick: () => actions.setAdminView("reservations", { type: "equipment", status: "checked_out", page: 1 }) }, "미반납 예약 확인"),
+      React.createElement("button", { type: "button", className: "btn", onClick: () => { void actions.setEquipmentOverdueWarningsEnabled(!sweep.enabled).catch(() => undefined); } }, sweep.enabled ? "자동 경고 중지" : "자동 경고 활성화")
+    ) : null,
     React.createElement(
       GjuCard,
       {

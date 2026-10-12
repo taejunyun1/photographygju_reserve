@@ -285,6 +285,29 @@ const fullDeleteBody = JSON.parse(fullDeleteRequest.body);
 assert.equal(fullDeleteBody.scope, "all", "full deletion must send scope=all separately from filtered deletion");
 assert.equal(fullDeleteBody.confirmText, "전체 삭제", "full deletion must send the exact server confirmation phrase");
 
+apiResponses.push({ payload: { ok: true, data: { items: [{ id: "equipment_overdue:r1", status: "cleared" }], total: 24, page: 2, pageSize: 20 } } });
+const warningPage = await adminActions.loadAdminWarnings({ userId: "student/1", page: 2 });
+assert.equal(warningPage.total, 24, "warning archive preserves pagination totals beyond latest three");
+assert.equal(warningPage.items[0].status, "cleared", "cleared warnings remain in archive");
+assert(apiRequests.at(-1).path.includes("userId=student%2F1&page=2"), "warning lookup encodes user and page");
+
+const returnDetails = { actualReturnedAt: "2026-10-13T08:05:00.000Z", returnTimeNote: "학생이 17:05에 반납한 것을 확인" };
+apiResponses.push({ payload: { ok: true, data: {} } }, { payload: { ok: true, data: { items: [], total: 0, page: 1, pageSize: 100 } } });
+const returnStart = apiRequests.length;
+await adminActions.returnEquipmentReservation("reservation/1", [{ equipmentId: "camera1", outcome: "normal", note: "" }], returnDetails);
+const returnRequest = apiRequests.slice(returnStart).find((request) => request.path.includes("return-inspection"));
+assert.equal(returnRequest.method, "POST");
+assert.equal(returnRequest.path, "/api/admin/reservations/reservation%2F1/return-inspection");
+assert.equal(JSON.parse(returnRequest.body).actualReturnedAt, returnDetails.actualReturnedAt, "bridge must preserve actual time independently from processing time");
+assert.equal(JSON.parse(returnRequest.body).returnTimeNote, returnDetails.returnTimeNote, "bridge must preserve time confirmation reason");
+apiResponses.push({ payload: { ok: true, data: {} } }, { payload: { ok: true, data: { items: [], total: 0, page: 1, pageSize: 100 } } });
+const reviewStart = apiRequests.length;
+await adminActions.reviewEquipmentWarning("equipment_overdue:r1", { actualReturnedAt: returnDetails.actualReturnedAt, reason: "정시 반납 확인" });
+const reviewRequest = apiRequests.slice(reviewStart).find((request) => request.path.includes("/review"));
+assert.equal(reviewRequest.method, "PATCH");
+assert.equal(reviewRequest.path, "/api/admin/warnings/equipment_overdue%3Ar1/review");
+assert(!("status" in JSON.parse(reviewRequest.body)), "warning verdict must be decided by server from actual return time");
+
 state.reactAdminEnabled = false;
 render();
 

@@ -242,7 +242,7 @@ test("React Admin completes equipment return through per-item inspection", async
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ reservation: { id: "return-ui", status: "returned" } })
+      body: JSON.stringify({ ok: true, data: { reservation: { id: "return-ui", status: "returned" } } })
     });
   });
   await loginReactAdmin(page);
@@ -281,10 +281,17 @@ test("React Admin completes equipment return through per-item inspection", async
   const completeButton = dialog.getByRole("button", { name: "반납 점검 완료" });
   await expect(completeButton).toBeDisabled();
   await dialog.getByLabel("Sony 24-70GM 점검 메모").fill("줌 링 걸림 확인");
+  await expect(completeButton).toBeDisabled();
+  await expect(dialog).toContainText("예정 반납");
+  await expect(dialog).toContainText("관리자 처리 시각");
+  await dialog.getByLabel("실제 반납 시각 (필수)").fill("2026-09-11T17:05");
+  await dialog.getByLabel("반납 시각 확인 사유 (필수)").fill("정시 반납 확인 후 점검 처리");
   await expect(completeButton).toBeEnabled();
   await completeButton.click();
 
   await expect.poll(() => submittedBody).toEqual({
+    actualReturnedAt: "2026-09-11T08:05:00.000Z",
+    returnTimeNote: "정시 반납 확인 후 점검 처리",
     inspections: [
       { equipmentId: "equipment-fx3", outcome: "normal", note: "" },
       { equipmentId: "equipment-lens", outcome: "needs_repair", note: "줌 링 걸림 확인" }
@@ -351,4 +358,30 @@ test("React Admin review parity surfaces render from typed views", async ({ page
   await page.getByText("보안 / 데이터 관리", { exact: true }).click();
   await expect(page.getByRole("button", { name: "백업 JSON" })).toBeVisible();
   await expect(page.getByText("운영 알림", { exact: true })).toBeVisible();
+});
+
+
+test("React Admin opens older automatic warning records without whole reset", async ({ page }) => {
+  await page.route("**/api/admin/warnings?**", async (route) => {
+    const pageNumber = Number(new URL(route.request().url()).searchParams.get("page"));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: { items: [{ id: `equipment_overdue:older-${pageNumber}`, reservationId: `older-${pageNumber}`, userId: "warning-ui", source: "equipment_overdue", status: pageNumber === 1 ? "pending_review" : "cleared", reason: pageNumber === 1 ? "미반납 확인 대기" : "오래된 정시 반납 확인", dueAt: "2026-09-11T08:10:00.000Z", equipmentIds: ["CAM-001"], reviewReason: pageNumber === 2 ? "실제 정시 반납 증빙" : "" }], total: 2, page: pageNumber, pageSize: 1 } }) });
+  });
+  await loginReactAdmin(page);
+  await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20260930-equipment-period-hotfix-r1");
+    state.adminView = "users";
+    state.adminUserStatusFilter = "all";
+    state.adminUsers = [{ id: "warning-ui", name: "경고 확인 학생", role: "student", approvalStatus: "approved", warningCount: 1, warningRecords: [{ id: "equipment_overdue:older-1", status: "pending_review", source: "equipment_overdue", reason: "미반납 확인 대기" }] }];
+    state.adminUsersPage = { total: 1, page: 1, pageSize: 20 };
+    const { render } = await import("/js/renderer.js?v=20260930-equipment-period-hotfix-r1"); render();
+  });
+  await page.getByRole("button", { name: "전체 경고 기록·개별 심사" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("미반납 · 확인 대기");
+  await expect(dialog).toContainText("CAM-001");
+  await dialog.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(dialog).toContainText("오래된 정시 반납 확인");
+  await expect(dialog).toContainText("해제");
+  await expect(dialog).toContainText("실제 정시 반납 증빙");
+  await expect(dialog.getByRole("button", { name: /초기화/ })).toHaveCount(0);
 });

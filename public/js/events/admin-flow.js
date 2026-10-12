@@ -441,7 +441,7 @@ export function setupAdminFlowClickHandlers() {
         return;
       }
       if (target.dataset.userWarnReset) {
-        if (!confirm("이 학생의 경고 메모 기록을 초기화할까요? 대여금지 상태는 변경되지 않습니다.")) return;
+        if (!confirm("이 학생의 수동 경고 메모만 초기화할까요? 대여금지 상태는 변경되지 않습니다.")) return;
         await api(`/api/admin/users/${target.dataset.userWarnReset}/warning`, { method: "POST", body: { reset: true } });
         await refreshAdminDataPreservingScroll();
         toast("경고 메모를 초기화했습니다.", { preserveScroll: true });
@@ -469,6 +469,10 @@ export function setupAdminFlowClickHandlers() {
         return;
       }
       if (target.dataset.resStatus) {
+        if (target.dataset.status === "returned") {
+          toast("반납은 최신 관리자 화면의 반납 점검에서 실제 반납 시각과 장비 상태를 확인해 주세요.", { preserveScroll: true });
+          return;
+        }
         if (target.dataset.status === "cancelled" && !confirm("예약을 대여취소로 변경할까요?")) return;
         toast("예약 상태를 처리 중입니다.", { preserveScroll: true });
         const updated = await api(`/api/admin/reservations/${target.dataset.resStatus}/status`, { method: "PATCH", body: { status: target.dataset.status } });

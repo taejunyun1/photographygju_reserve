@@ -690,13 +690,13 @@ function userWarningMemo(user) {
   return `
     <div class="admin-user-warning-memo">
       <div class="admin-user-warning-memo-head">
-        <strong>최근 경고 메모 ${escapeHtml(user.warningCount || records.length)}건</strong>
+        <strong>유효 경고 ${escapeHtml(user.warningCount ?? records.filter((record) => record.status !== "cleared").length)}건</strong>
         <div class="admin-user-warning-actions">
           <button class="button warn compact admin-user-memo-add" data-user-warn="${user.id}">${icon("plus")}메모 추가</button>
-          <button class="button ghost compact admin-user-memo-reset" data-user-warn-reset="${user.id}">초기화</button>
+          <button class="button ghost compact admin-user-memo-reset" data-user-warn-reset="${user.id}">수동 메모 초기화</button>
         </div>
       </div>
-      <span>${escapeHtml(date)}${date ? " · " : ""}${escapeHtml(latest.reason || "사유 없음")}</span>
+      <span>${escapeHtml(date)}${date ? " · " : ""}${escapeHtml(latest.status === "pending_review" ? "미반납 · 확인 대기" : latest.status === "confirmed" ? "확정 · 유지" : latest.status === "cleared" ? "해제" : "수동 경고")} · ${escapeHtml(latest.reason || "사유 없음")}</span>
     </div>
   `;
 }

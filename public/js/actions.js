@@ -190,7 +190,7 @@ export async function submitReservation(form) {
     });
     if (invalidStatusItems.length) throw new Error("수리중 또는 파손 상태의 기자재가 포함되어 있습니다.");
     if (equipmentRangeBlocked(fields.reservedDate, fields.period).length) throw new Error("선택한 대여 기간에 기자재 차단 일정이 포함되어 있습니다.");
-    const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields.reservedDate, fields.period));
+    const unavailableItems = fields.equipmentItemIds.filter((itemId) => equipmentItemReservedInRange(itemId, fields));
     if (unavailableItems.length) throw new Error("선택한 대여 기간에 이미 예약된 기자재가 포함되어 있습니다.");
     const hasHighValue = selectedItems.some(equipmentIsHighValue);
     const hasCameraBag = selectedItems.some(equipmentIsCameraBag);
@@ -271,7 +271,15 @@ export async function submitReservation(form) {
     }
   }
   toast("예약을 처리 중입니다.");
-  const reservation = await api("/api/reservations", { method: "POST", body: { type, fields } });
+  let reservation;
+  try {
+    reservation = await api("/api/reservations", { method: "POST", body: { type, fields } });
+  } catch (error) {
+    if (type === "equipment" && error.status === 409) {
+      try { await loadBootstrap(); } catch { /* preserve original conflict and draft */ }
+    }
+    throw error;
+  }
   notifyNativeReservationCreated(reservation).catch(() => null);
   state.reservationType = "";
   if (type === "equipment") {

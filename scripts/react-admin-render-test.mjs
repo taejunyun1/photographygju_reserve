@@ -576,10 +576,10 @@ const usersWarningMemoMarkup = renderToStaticMarkup(
 assert(!usersWarningMemoMarkup.includes("data-user-warn"), "React warning actions must use React handlers");
 assert(usersWarningMemoMarkup.includes("메모 추가"), "React users screen must render warning memo add control");
 assert(usersWarningMemoMarkup.includes("초기화"), "React users screen must render warning memo reset control");
-assert(usersWarningMemoMarkup.includes("최근 경고 메모 2건"), "React users screen must render warning memo summary");
+assert(usersWarningMemoMarkup.includes("유효 경고 2건"), "React users screen must render warning memo summary");
 assert(usersWarningMemoMarkup.includes("장비 연체 2회"), "React users screen must render the latest warning memo reason");
 assert(!usersWarningMemoMarkup.includes("검색 결과가 없습니다."), "React users search must match warning memo text");
-for (const label of ["메모 추가", "메모 초기화"]) {
+for (const label of ["메모 추가", "수동 메모 초기화"]) {
   assert(usersWarningMemoMarkup.includes(`aria-label="${label}"`), `React users ${label} action must be icon-only accessible`);
   assert(usersWarningMemoMarkup.includes(`title="${label}"`), `React users ${label} action must expose a native tooltip`);
 }
