@@ -986,3 +986,6 @@ for (const { file, source } of readTree("src/react/student")) {
 }
 
 console.log("Student React behavioral contract checks passed.");
+
+const warningProfileMarkup = renderToStaticMarkup(React.createElement(student.StudentApp, { state: makeState({ view: "my", user: { name: "학생", approvalStatus: "approved", warningCount: 1, warningRecords: [{ id: "w1", status: "pending_review", reason: "반납 확인 대기" }, { id: "w2", status: "confirmed", reason: "지연 반납", reviewReason: "실제 반납 확인" }, { id: "w3", status: "cleared", reason: "정정됨", reviewReason: "시간 정정" }] } }), actions: actionRecorder().actions }));
+assert(warningProfileMarkup.includes("유효 경고 1건") && warningProfileMarkup.includes("검토 대기") && warningProfileMarkup.includes("확정") && warningProfileMarkup.includes("해제") && warningProfileMarkup.includes("실제 반납 확인"), "React account must show own warning history while approved");

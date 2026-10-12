@@ -337,6 +337,8 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const typeCounts = metrics.typeCounts || {};
   const popularEquipment = Array.isArray(metrics.popularEquipment) ? metrics.popularEquipment : [];
   const typeTotal = Object.values(typeCounts).reduce((sum, count) => sum + Number(count || 0), 0);
+  const handoffBlockers = summary.handoffBlockers || [];
+  const pendingWarningCount = Number(summary.pendingWarningCount || 0);
   const sweep = summary.equipmentOverdueStatus;
   const operationsInsights = metrics.insights;
   const congestion = Array.isArray(operationsInsights?.congestion?.items) ? operationsInsights.congestion.items.filter((item) => Number(item.count || 0) >= 3) : [];
@@ -353,6 +355,16 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   return React.createElement(
     "section",
     { className: motionClass.screen, style: styles.screen },
+    React.createElement(GjuCard, { title: "반납·인계 확인" },
+      React.createElement("p", null, `검토 대기 경고 ${pendingWarningCount}건`),
+      React.createElement("p", { style: styles.caption }, "자동 경고는 관리자 검토 대기 상태로 기록됩니다. 후속 예약은 유지되며 실제 인계 확인이 필요합니다."),
+      pendingWarningCount > 0 ? React.createElement("button", { type: "button", className: "btn", onClick: () => actions.setAdminView("users") }, "경고 검토하기") : null,
+      ...handoffBlockers.map((blocker, index) => React.createElement("div", { key: `${blocker.reservationId}-${blocker.equipmentId}-${index}` },
+        React.createElement("p", null, `예약 ${blocker.reservationId} · 기자재 ${blocker.equipmentId} · ${blocker.reason === "not_returned" ? "선행 대여 미반납" : "인계 불가"}`),
+        React.createElement("button", { type: "button", className: "btn", onClick: () => actions.setAdminView("reservations", { q: blocker.reservationId }) }, "인계 지연 예약 확인")
+      )),
+      handoffBlockers.length === 0 ? React.createElement("p", { style: styles.caption }, "현재 인계 지연 예약이 없습니다.") : null
+    ),
     sweep ? React.createElement(GjuCard, { title: "미반납 자동 점검" },
       React.createElement("p", { role: sweep.status === "failed" ? "alert" : "status" },
         !sweep.enabled ? "자동 경고 비활성 · 기존 미반납은 관리자 확인이 필요합니다." : sweep.status === "failed" ? `자동 점검 실패 · ${sweep.error || "관리자 확인 필요"}` : sweep.lastSuccessAt ? `최근 성공 ${new Date(sweep.lastSuccessAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · 생성 ${sweep.createdCount || 0}건` : "자동 경고 활성 · 첫 정기 점검 대기"),

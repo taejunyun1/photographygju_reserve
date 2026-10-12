@@ -44,6 +44,7 @@ export type AdminWarningRecord = {
 export type AdminReservationRecord = {
   actualCheckedOutAt?: string;
   actualReturnedAt?: string;
+  returnProcessedBy?: string;
   returnProcessedAt?: string;
   returnTimeNote?: string;
   id: string;
@@ -359,6 +360,8 @@ export type AdminDashboardMetrics = {
 
 export type AdminDashboardSummary = Record<string, unknown> & {
   equipmentOverdueStatus?: { lastRunAt?: string; lastSuccessAt?: string; status?: "ok" | "failed"; createdCount?: number; error?: string; enabled?: boolean; enabledAt?: string };
+  pendingWarningCount?: number;
+  handoffBlockers?: Array<{ reservationId: string; equipmentId: string; reason: "not_returned" | "unavailable" }>;
   pendingUsers?: number;
   pendingEquipment?: number;
   equipmentPendingApproval?: number;

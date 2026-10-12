@@ -13,6 +13,8 @@ export type StudentUser = {
   phone?: string;
   studentStatus?: string;
   approvalStatus?: string;
+  warningCount?: number;
+  warningRecords?: Array<{ id: string; status?: "pending_review" | "confirmed" | "cleared"; reason?: string; reviewReason?: string; createdAt?: string }>;
 };
 
 export type StudentNotice = {

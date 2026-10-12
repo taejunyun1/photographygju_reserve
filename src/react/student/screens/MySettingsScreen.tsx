@@ -223,6 +223,10 @@ function NotificationSettings({ state, actions }: { state: StudentState; actions
 }
 
 export function MySettingsScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {
+  const warningStatus = { pending_review: "검토 대기", confirmed: "확정", cleared: "해제" };
+  const warningRecords = [...(state.user.warningRecords || [])]
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .slice(0, 5);
   const approvalTone = state.user.approvalStatus === "approved" ? "green" : state.user.approvalStatus === "rejected" ? "red" : "amber";
   const userKey = state.user.id || state.user.email || state.user.studentId || state.user.name;
   return (
@@ -237,6 +241,16 @@ export function MySettingsScreen({ state, actions }: { state: StudentState; acti
           <div><span>이메일</span><strong>{state.user.email || "-"}</strong></div>
           <div><span>연락처</span><strong>{state.user.phone || "-"}</strong></div>
         </div>
+      </GjuCard>
+      <GjuCard title={`유효 경고 ${Number(state.user.warningCount || 0)}건`}>
+        <p className="muted">검토 대기 경고는 관리자가 실제 반납 내역을 확인한 뒤 처리합니다.</p>
+        {warningRecords.length ? warningRecords.map((record) => (
+          <div key={record.id} className="warning-history-record">
+            <p><strong>{warningStatus[record.status || "confirmed"]}</strong>{record.createdAt ? ` · ${String(record.createdAt).slice(0, 10)}` : ""}</p>
+            <p>{record.reason || "사유 없음"}</p>
+            {record.reviewReason ? <p className="muted">검토 사유: {record.reviewReason}</p> : null}
+          </div>
+        )) : <p className="muted">등록된 경고 내역이 없습니다.</p>}
       </GjuCard>
       <NotificationSettings state={state} actions={actions} />
       <ProfileForm key={`profile:${userKey}`} user={state.user} actions={actions} />

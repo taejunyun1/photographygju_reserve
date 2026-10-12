@@ -1,6 +1,6 @@
-import { state } from "./state.js?v=20260930-equipment-period-hotfix-r1";
-import { statusLabel, typeLabel } from "./constants.js?v=20260930-equipment-period-hotfix-r1";
-import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20260930-equipment-period-hotfix-r1";
+import { state } from "./state.js?v=20261012-equipment-turnover-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20261012-equipment-turnover-r1";
+import { nativeNotificationPreferenceEnabled, plannedReservationNotifications } from "./native-notifications.js?v=20261012-equipment-turnover-r1";
 import {
   addDaysToDateKey,
   areSlotsConsecutive,
@@ -41,7 +41,7 @@ import {
   todayKey,
   reservationClosedMessage,
   relatedLensItemsForSelection
-} from "./utils.js?v=20260930-equipment-period-hotfix-r1";
+} from "./utils.js?v=20261012-equipment-turnover-r1";
 import {
   actionRow,
   card,
@@ -53,7 +53,7 @@ import {
   tabIds,
   tabPanel,
   tabs
-} from "./ui.js?v=20260930-equipment-period-hotfix-r1";
+} from "./ui.js?v=20261012-equipment-turnover-r1";
 
 export function authView() {
   const isLogin = state.authMode === "login";
@@ -1706,6 +1706,20 @@ export function noticesView() {
 }
 
 export function myPageView() {
+  const warningStatus = { pending_review: "검토 대기", confirmed: "확정", cleared: "해제" };
+  const warningRecords = [...(state.user.warningRecords || [])]
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .slice(0, 5);
+  const warningHistory = card({
+    title: `유효 경고 ${Number(state.user.warningCount || 0)}건`,
+    subtitle: "검토 대기 경고는 관리자가 실제 반납 내역을 확인한 뒤 처리합니다.",
+    body: warningRecords.length ? warningRecords.map((record) => `
+      <div class="warning-history-record">
+        <p><strong>${escapeHtml(warningStatus[record.status] || "확정")}</strong>${record.createdAt ? ` · ${escapeHtml(String(record.createdAt).slice(0, 10))}` : ""}</p>
+        <p>${escapeHtml(record.reason || "사유 없음")}</p>
+        ${record.reviewReason ? `<p class="muted">검토 사유: ${escapeHtml(record.reviewReason)}</p>` : ""}
+      </div>`).join("") : `<p class="muted">등록된 경고 내역이 없습니다.</p>`
+  });
   return `
     <section class="grid">
       ${card({
@@ -1717,6 +1731,7 @@ export function myPageView() {
           ["신분", escapeHtml(state.user.studentStatus)]
         ])
       })}
+      ${warningHistory}
       ${nativeNotificationSettingsCard()}
       ${card({
         title: "개인정보 수정",

@@ -1243,3 +1243,16 @@ for (const [view, requiredText] of [
 }
 
 console.log("React Admin render checks passed.");
+
+// VISIBILITY_TEST_START
+const visibilityMarkup = renderToStaticMarkup(React.createElement(renderModule.AdminApp, { state: { adminView: "dashboard", user: { role: "admin" }, summary: { pendingWarningCount: 3, handoffBlockers: [{ reservationId: "reservation-b", equipmentId: "equipment-7", reason: "not_returned" }] } }, actions: noopActions }));
+assert(visibilityMarkup.includes("검토 대기 경고 3건"), "dashboard must show pending warning count");
+assert(visibilityMarkup.includes("reservation-b") && visibilityMarkup.includes("equipment-7"), "dashboard must identify handoff blocker");
+// VISIBILITY_TEST_END
+
+const visibilityNavigation = [];
+const visibilityTree = renderModule.AdminDashboard({ state: { summary: { pendingWarningCount: 3, handoffBlockers: [{ reservationId: "reservation-b", equipmentId: "equipment-7", reason: "not_returned" }] } }, actions: { ...noopActions, setAdminView: (view, filters) => visibilityNavigation.push({ view, filters }) } });
+const handoffButton = reactElements(visibilityTree, (node) => node.type === "button" && node.props.children === "인계 지연 예약 확인")[0];
+assert(handoffButton, "handoff warning must provide an actionable reservation link");
+handoffButton.props.onClick();
+assert.deepEqual(visibilityNavigation[0], { view: "reservations", filters: { q: "reservation-b" } }, "handoff link must search its exact reservation");
