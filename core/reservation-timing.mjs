@@ -1,3 +1,4 @@
+import { equipmentScheduledWindow } from "../public/js/equipment-schedule.mjs";
 import {
   DEFAULT_STUDIO_REPORT_DEADLINE_HOURS,
   parseStudioReportDeadlineHours
@@ -30,13 +31,6 @@ function kstDateAtMinutes(dateKey, minutes) {
   if (!parts || !Number.isFinite(minutes) || minutes < 0) return null;
   const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 0, 0, 0) + minutes * 60 * 1000 - KST_OFFSET_MS);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function addDays(dateKey, days) {
-  const parts = validDateParts(dateKey);
-  if (!parts || !Number.isInteger(days)) return "";
-  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + days));
-  return date.toISOString().slice(0, 10);
 }
 
 function slotEndMinutes(slot) {
@@ -122,12 +116,6 @@ function canonicalSlotRange(selectedSlots, orderedSlots, { allowCircular = true 
   return crossesDayBoundary ? circularRangeBounds(parsedSelection) : rangeBounds(parsedSelection);
 }
 
-function equipmentPeriodDays(period = "") {
-  if (String(period).includes("2박3일") || String(period).includes("주말")) return 2;
-  if (String(period).includes("1박2일")) return 1;
-  return 0;
-}
-
 function studioReportDeadlineHours(value) {
   return parseStudioReportDeadlineHours(value) ?? DEFAULT_STUDIO_REPORT_DEADLINE_HOURS;
 }
@@ -136,14 +124,7 @@ function timingForFields(type, fields = {}, settings = {}) {
   const date = fields.reservedDate || "";
   if (!validDateParts(date)) return null;
 
-  if (type === "equipment") {
-    const start = timeMinutes(fields.rentalTime);
-    const end = timeMinutes(fields.returnTime);
-    const endDate = addDays(date, equipmentPeriodDays(fields.period));
-    const startAt = kstDateAtMinutes(date, start);
-    const endAt = kstDateAtMinutes(endDate, end);
-    return startAt && endAt ? { startAt: startAt.toISOString(), endAt: endAt.toISOString() } : null;
-  }
+  if (type === "equipment") return equipmentScheduledWindow(fields);
 
   if (type === "studio" || type === "darkroom") {
     const slots = Array.isArray(fields.timeSlots) ? fields.timeSlots : [];
