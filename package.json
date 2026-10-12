@@ -57,7 +57,7 @@
     "preview": "wrangler dev --config wrangler.worker.jsonc",
     "upload:dothome": "bash scripts/upload-dothome.sh",
     "test:equipment-turnover": "node scripts/equipment-turnover-domain-test.mjs && node scripts/equipment-turnover-api-test.mjs && node scripts/mutation-queue-test.mjs && node scripts/equipment-return-time-browser-test.mjs",
-    "test:equipment-overdue": "node scripts/equipment-overdue-test.mjs && node scripts/equipment-overdue-scheduler-test.mjs"
+    "test:equipment-overdue": "node scripts/equipment-overdue-test.mjs && node scripts/equipment-overdue-scheduler-test.mjs && node --no-warnings scripts/equipment-overdue-worker-test.mjs"
   },
   "engines": {
     "node": ">=18"

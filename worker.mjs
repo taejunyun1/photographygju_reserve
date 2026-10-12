@@ -122,10 +122,62 @@ export class GjuReserveDb extends DurableObject {
         const response = await this.fetchSerialized(request);
         // API errors must not leak an uncommitted cached mutation into a later read.
         if (response.status >= 400) this.db = null;
+        else if (this.db) {
+          // Reservation/settings writes have already committed. Scheduler recovery
+          // must never turn that successful operation into an API error.
+          try { await this.reconcileEquipmentOverdueAlarm(this.db); }
+          catch (error) {
+            console.error(JSON.stringify({ event: "equipment_overdue_alarm_arm_failed", message: error.message }));
+          }
+        }
         return response;
       } catch (error) {
         this.db = null;
         throw error;
+      }
+    });
+  }
+
+  equipmentOverdueAlarmNeeded(db, now = Date.now()) {
+    const activation = Date.parse(this.env.EQUIPMENT_OVERDUE_ACTIVATION_AT || "");
+    return Boolean(db.settings?.equipmentOverdueWarningsEnabled) || (
+      Number.isFinite(activation) && activation <= now &&
+      !Object.hasOwn(db.meta || {}, "equipmentOverdueActivationApplied") &&
+      !db.settings?.equipmentOverdueWarningsEnabledAt
+    );
+  }
+
+  async reconcileEquipmentOverdueAlarm(db) {
+    if (this.equipmentOverdueAlarmNeeded(db)) {
+      if (await this.ctx.storage.getAlarm() === null) {
+        await this.ctx.storage.setAlarm(Date.now() + 60_000);
+      }
+    } else {
+      await this.ctx.storage.deleteAlarm();
+    }
+  }
+
+  async alarm() {
+    return this.mutationQueue.run(async () => {
+      let shouldReschedule = true; // A load outage must not exhaust all future work.
+      try {
+        const db = await this.loadDb();
+        shouldReschedule = this.equipmentOverdueAlarmNeeded(db);
+        if (!shouldReschedule) return;
+        const now = new Date();
+        applyEquipmentOverdueActivation(db, this.env.EQUIPMENT_OVERDUE_ACTIVATION_AT, now);
+        runEquipmentOverdueSweep(db, now);
+        await this.saveDb();
+        console.log(JSON.stringify({ event: "equipment_overdue_alarm_completed", ...db.meta.equipmentOverdueSweep }));
+      } catch (error) {
+        this.db = null;
+        console.error(JSON.stringify({ event: "equipment_overdue_alarm_failed", message: error.message }));
+        throw error;
+      } finally {
+        // Persist a new wakeup even when SQL fails, beyond the platform's six
+        // retries. The thrown error still exposes failure to platform telemetry.
+        if (shouldReschedule) await this.ctx.storage.setAlarm(Date.now() + 60_000);
+        else await this.ctx.storage.deleteAlarm();
       }
     });
   }
