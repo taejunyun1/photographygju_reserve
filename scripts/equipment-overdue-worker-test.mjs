@@ -58,6 +58,28 @@ try {
   alarmAt=null;
   await Promise.all([owner.alarm(),owner.fetch(new Request('https://test/api/internal/equipment-overdue',{method:'POST',headers:{'x-internal-cron-secret':'secret'}}))]);
   db=await owner.store.loadDb();assert.deepEqual(db.users.filter(u=>u.id!=='overdue-student'),usersBefore.filter(u=>u.id!=='overdue-student'));assert.deepEqual(db.reservations,reservationsBefore);assert.equal(db.warnings.filter(w=>w.id==='equipment_overdue:overdue-reservation').length,1);assert.equal(db.users.find(u=>u.id==='overdue-student').warningCount,1);
+  // Explicit stop before first ENV activation must be durable too.
+  const pending=await owner.loadDb();
+  pending.settings.equipmentOverdueWarningsEnabled=false;
+  pending.settings.equipmentOverdueWarningsEnabledAt='';
+  delete pending.meta.equipmentOverdueActivationApplied;
+  await owner.saveDb();
+  failSave=true;
+  assert.ok((await api('/api/admin/settings','PATCH',{equipmentOverdueWarningsEnabled:false},token)).status>=400);
+  failSave=false;
+  assert.equal(Object.hasOwn((await owner.store.loadDb()).meta,'equipmentOverdueActivationApplied'),false,'failed stop does not persist its marker');
+  assert.equal((await api('/api/admin/settings','PATCH',{equipmentOverdueWarningsEnabled:false},token)).status,200);
+  assert.equal(alarmAt,null,'preactivation administrator stop cancels pending activation');
+  owner=new GjuReserveDb({storage},env);
+  await api('/api/bootstrap');await owner.alarm();
+  const stopped=await owner.store.loadDb();
+  assert.equal(stopped.settings.equipmentOverdueWarningsEnabled,false);
+  assert.equal(stopped.settings.equipmentOverdueWarningsEnabledAt,'');
+  assert.equal(Object.hasOwn(stopped.meta,'equipmentOverdueActivationApplied'),true);
+  const stoppedMarker=stopped.meta.equipmentOverdueActivationApplied;
+  await api('/api/admin/settings','PATCH',{equipmentOverdueWarningsEnabled:false},token);
+  assert.equal((await owner.store.loadDb()).meta.equipmentOverdueActivationApplied,stoppedMarker,'repeat stop preserves original marker');
+  await api('/api/admin/settings','PATCH',{equipmentOverdueWarningsEnabled:true},token);
   failAlarm=true;alarmAt=null;assert.equal((await api('/api/bootstrap')).status,200,'committed successful API survives alarm write failure');failAlarm=false;
   sqlite.close();console.log('PASS: actual Worker API/alarm, SQLite rollback, restart, stop, queue, arming failure');
 } finally {await rm(directory,{recursive:true,force:true});}

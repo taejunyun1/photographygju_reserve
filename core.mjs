@@ -3163,6 +3163,14 @@ export async function handleApiRequest(ctx) {
         delete body.equipmentOverdueWarningsEnabledAt;
         db.settings = sanitizeSettingsPatch(db.settings, body);
         if (body.equipmentOverdueWarningsEnabled !== undefined) db.settings.equipmentOverdueWarningsEnabled = body.equipmentOverdueWarningsEnabled;
+        if (body.equipmentOverdueWarningsEnabled === false) {
+          // An explicit administrator stop also vetoes an unapplied deployment
+          // activation. Persist this with the settings in the same transaction.
+          db.meta ||= {};
+          if (!Object.hasOwn(db.meta, "equipmentOverdueActivationApplied")) {
+            db.meta.equipmentOverdueActivationApplied = requestNow.toISOString();
+          }
+        }
         db.settings.equipmentOverdueWarningsEnabledAt = enabledAt || (db.settings.equipmentOverdueWarningsEnabled ? requestNow.toISOString() : "");
         audit(db, admin, "settings.updated", "settings", body);
         await saveDb();
