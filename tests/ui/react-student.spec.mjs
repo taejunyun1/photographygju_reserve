@@ -735,6 +735,14 @@ test("Student React selects equipment after its scheduled return before actual r
   await checkbox.check();
   await page.locator(".student-react-flow-actions").getByRole("button", { name: "다음" }).click();
   await expect(page.getByRole("button", { name: "승인 요청" })).toBeEnabled();
+  const refreshedBootstrap = await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20261012-equipment-turnover-r1");
+    return { ...state.bootstrap, reservations: [...state.bootstrap.reservations, {
+      id: "new-conflict-b", type: "equipment", status: "pending_approval",
+      fields: { reservedDate: "2099-07-21", period: "1박2일", rentalTime: "17:30", returnTime: "17:10", equipmentItemIds: ["turnover-ui"] }
+    }] };
+  });
+  await page.route("**/api/bootstrap", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, data: refreshedBootstrap }) }));
   let submitted;
   await page.route("**/api/reservations", async (route) => {
     if (route.request().method() !== "POST") return route.continue();
@@ -748,4 +756,11 @@ test("Student React selects equipment after its scheduled return before actual r
   expect(submitted.fields.equipmentItemIds).toEqual(["turnover-ui"]);
   expect(submitted.fields.rentalTime).toBe("17:30");
   await expect(page.getByLabel("연락처", { exact: true })).toHaveValue("010-1234-5678");
+  expect(await page.evaluate(async () => (await import("/js/state.js?v=20261012-equipment-turnover-r1")).state.selectedEquipmentItemIds)).toEqual(["turnover-ui"]);
+  await page.locator(".student-react-flow-actions").getByRole("button", { name: "이전" }).click();
+  await expect(checkbox).toBeChecked();
+  await expect(checkbox).toBeEnabled();
+  await expect(page.locator(".student-react-flow-actions").getByRole("button", { name: "다음" })).toBeDisabled();
+  await checkbox.uncheck();
+  expect(await page.evaluate(async () => (await import("/js/state.js?v=20261012-equipment-turnover-r1")).state.selectedEquipmentItemIds)).toEqual([]);
 });
