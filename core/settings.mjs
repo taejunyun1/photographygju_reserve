@@ -40,6 +40,8 @@ export const defaultSettings = {
   studioMaxSlots: 3,
   studioReportDeadlineHours: DEFAULT_STUDIO_REPORT_DEADLINE_HOURS,
   equipmentReportDeadlineHours: 48,
+  equipmentOverdueWarningsEnabled: false,
+  equipmentOverdueWarningsEnabledAt: "",
   darkroomCapacity: 6,
   darkroomSlots: [
     "00:00-02:00",

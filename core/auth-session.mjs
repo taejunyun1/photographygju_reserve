@@ -1,3 +1,4 @@
+import { effectiveWarningCount } from "./equipment-overdue.mjs";
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 export const PASSWORD_MIN_LENGTH = 8;
 
@@ -73,7 +74,7 @@ export function createAuthSessionHelpers({ id, nowIso }) {
       .filter((item) => item.userId === userId)
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
       .slice(0, limit)
-      .map((item) => ({ id: item.id, reason: item.reason || "", count: Math.max(0, Number(item.count || 0)), createdAt: item.createdAt || "" }));
+      .map((item) => ({ id: item.id, reason: item.reason || "", count: Math.max(0, Number(item.count || 0)), createdAt: item.createdAt || "", status: item.status || "", source: item.source || "", reservationId: item.reservationId || "", dueAt: item.dueAt || "", actualReturnedAt: item.actualReturnedAt || "", detectedAt: item.detectedAt || "", equipmentIds: item.equipmentIds || [], reviewedAt: item.reviewedAt || "", reviewedBy: item.reviewedBy || "", reviewReason: item.reviewReason || "" }));
   }
 
   function effectiveApprovalStatus(user) {
@@ -87,7 +88,7 @@ export function createAuthSessionHelpers({ id, nowIso }) {
     const { passwordHash, ...rest } = user;
     return {
       ...rest,
-      warningCount: Math.max(0, Number(user.warningCount || 0)),
+      warningCount: db ? effectiveWarningCount(db, user.id) : Math.max(0, Number(user.warningCount || 0)),
       warningRecords: db ? userWarningRecords(db, user.id) : [],
       approvalStatus: effectiveApprovalStatus(user)
     };

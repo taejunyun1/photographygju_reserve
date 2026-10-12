@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {syncEquipmentOverdueWarnings,syncEquipmentReturnWarning,reviewEquipmentOverdueWarning,validateEquipmentActualReturnedAt,effectiveWarningCount} from '../core/equipment-overdue.mjs';
+const due='2026-10-13T08:10:00.000Z',now='2026-10-13T08:25:00.000Z';
+const fixture=()=>({settings:{equipmentOverdueWarningsEnabled:true,equipmentOverdueWarningsEnabledAt:'2026-10-12T00:00:00Z'},users:[{id:'u',warningCount:4}],warnings:[{id:'manual',userId:'u',count:4}],reservations:[{id:'r',userId:'u',type:'equipment',status:'checked_out',actualCheckedOutAt:'2026-10-13T01:15:00Z',fields:{reservedDate:'2026-10-13',period:'당일',rentalTime:'10:15',returnTime:'17:10',equipmentItemIds:['a','b','c']}}]});
+let db=fixture(); assert.equal(syncEquipmentOverdueWarnings(db,due).changed,false);
+assert.deepEqual(syncEquipmentOverdueWarnings(db,now).createdWarningIds,['equipment_overdue:r']);
+for(let i=0;i<3;i++) syncEquipmentOverdueWarnings(db,now);
+db=JSON.parse(JSON.stringify(db)); syncEquipmentOverdueWarnings(db,now); assert.equal(db.warnings.length,2); assert.equal(effectiveWarningCount(db,'u'),5);
+const r=db.reservations[0];
+assert.throws(()=>reviewEquipmentOverdueWarning(db,{warningId:'equipment_overdue:r',actualReturnedAt:due,reason:'확인',now}),e=>e.status===400);
+r.status='returned'; reviewEquipmentOverdueWarning(db,{warningId:'equipment_overdue:r',actualReturnedAt:due,reason:'관리자 처리 지연',adminId:'admin',now});
+assert.equal(db.warnings[1].status,'cleared'); assert.equal(db.users[0].warningCount,4);
+for(let i=0;i<2;i++) syncEquipmentReturnWarning(db,r,{actualReturnedAt:due,reason:'시각 정정',adminId:'admin',now}); assert.equal(db.users[0].warningCount,4);
+syncEquipmentReturnWarning(db,r,{actualReturnedAt:'2026-10-13T08:20:00Z',reason:'시각 정정',adminId:'admin',now}); assert.equal(db.warnings[1].status,'confirmed'); assert.equal(db.users[0].warningCount,5);
+syncEquipmentReturnWarning(db,r,{actualReturnedAt:due,reason:'시각 정정',adminId:'admin',now}); assert.equal(db.users[0].warningCount,4);
+for(const actual of ['2026-10-13T08:05:00','2026-10-13T09:00:00Z','2026-10-13T00:00:00Z','2026-02-30T00:00:00Z']) assert.throws(()=>validateEquipmentActualReturnedAt(r,actual,now),e=>e.status===400);
+const legacy={...r,actualCheckedOutAt:undefined,history:[{action:'status_changed',status:'checked_out',at:'2026-10-13T01:15:00Z'}]}; assert.throws(()=>validateEquipmentActualReturnedAt(legacy,'2026-10-13T01:00:00Z',now)); assert.equal(validateEquipmentActualReturnedAt({...legacy,history:[]},due,now),due);
+for(const change of [{equipmentOverdueWarningsEnabled:false},{equipmentOverdueWarningsEnabledAt:now},{equipmentOverdueWarningsEnabledAt:''}]) {const f=fixture();Object.assign(f.settings,change);assert.equal(syncEquipmentOverdueWarnings(f,now).changed,false); f.reservations[0].status='returned';assert.equal(syncEquipmentReturnWarning(f,f.reservations[0],{actualReturnedAt:now,reason:'확인',adminId:'a',now}),null);}
+const f=fixture();f.reservations[0].status='returned';syncEquipmentReturnWarning(f,f.reservations[0],{actualReturnedAt:now,reason:'확인',adminId:'a',now});assert.equal(f.warnings[1].status,'confirmed');
+const g=fixture();g.reservations.push({...g.reservations[0],id:'s',type:'studio'},{...g.reservations[0],id:'a',status:'approved'});syncEquipmentOverdueWarnings(g,now);assert.equal(g.warnings.length,2);
+console.log('PASS equipment overdue domain');
+const {createAuthSessionHelpers}=await import('../core/auth-session.mjs');
+const auth=createAuthSessionHelpers({id:()=>'',nowIso:()=>now});
+assert.equal(auth.publicUser(db.users[0],db).warningRecords.find(w=>w.source==='equipment_overdue').status,'cleared');
+const h=fixture(); h.reservations[0].status='returned';
+assert.throws(()=>syncEquipmentReturnWarning(h,h.reservations[0],{actualReturnedAt:'2026-10-13T08:20:00Z',now}),e=>e.status===400); assert.equal(h.warnings.length,1);
+const k=fixture(); k.settings.equipmentOverdueWarningsEnabledAt=due; assert.equal(syncEquipmentOverdueWarnings(k,now).changed,true);
