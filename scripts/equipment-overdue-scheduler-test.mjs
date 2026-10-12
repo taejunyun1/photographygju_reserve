@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+const scheduler = await import('../core/equipment-overdue-scheduler.mjs').catch(() => ({}));
+assert.equal(typeof scheduler.runEquipmentOverdueSweep, 'function', 'overdue scheduler must record execution');
+const { runEquipmentOverdueSweep, equipmentOverdueCronPath } = scheduler;
+assert.equal(equipmentOverdueCronPath('* * * * *'), '/api/internal/equipment-overdue');
+assert.equal(equipmentOverdueCronPath('0 18 */3 * *'), '/api/internal/cleanup');
+assert.equal(equipmentOverdueCronPath('unknown'), null);
+const now = '2026-10-13T08:25:00.000Z';
+const db = { meta: {}, settings: {equipmentOverdueWarningsEnabled:true,equipmentOverdueWarningsEnabledAt:'2026-10-12T00:00:00Z'}, users:[{id:'u',warningCount:0}],warnings:[],reservations:[{id:'r',userId:'u',type:'equipment',status:'checked_out',fields:{reservedDate:'2026-10-13',period:'당일',rentalTime:'10:15',returnTime:'17:10',equipmentItemIds:['e']}}] };
+assert.equal(runEquipmentOverdueSweep(db, now).createdCount, 1);
+assert.equal(db.meta.equipmentOverdueSweep.lastSuccessAt, now);
+assert.equal(db.meta.equipmentOverdueSweep.status, 'ok');
+const restarted = JSON.parse(JSON.stringify(db));
+assert.equal(runEquipmentOverdueSweep(restarted, now).createdCount, 0);
+assert.equal(restarted.warnings.length, 1);
+assert.equal(restarted.users[0].warningCount, 1);
+console.log('Equipment overdue Cron routing, execution and restart checks passed.');

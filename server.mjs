@@ -1,4 +1,6 @@
 import http from "node:http";
+import { createMutationQueue } from "./core/mutation-queue.mjs";
+import { runEquipmentOverdueSweep } from "./core/equipment-overdue-scheduler.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -144,11 +146,9 @@ async function handleApi(req, res, url) {
 
 // The dev server reads/writes a single JSON file per request. Serialize API
 // handling so concurrent reservations cannot race on read-modify-write.
-let apiChain = Promise.resolve();
+const apiQueue = createMutationQueue();
 function handleApiSerialized(req, res, url) {
-  const run = apiChain.then(() => handleApi(req, res, url));
-  apiChain = run.catch(() => {});
-  return run;
+  return apiQueue.run(() => handleApi(req, res, url));
 }
 
 function serveStatic(req, res, pathname) {
@@ -184,5 +184,16 @@ ensureDbInitialized().then(() => {
   server.listen(PORT, HOST, () => {
     console.log(`GJU-reserve dev server running at http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
     console.log("Admin login: admin / admin (development default; change before production)");
+    if (process.env.GJU_DISABLE_OVERDUE_TIMER !== "1") {
+      const timer = setInterval(() => {
+        void apiQueue.run(() => {
+          const db = readDb();
+          if (db.settings?.equipmentOverdueWarningsEnabled !== true) return;
+          runEquipmentOverdueSweep(db, new Date());
+          writeDb(db);
+        }).catch((error) => console.error("Equipment overdue sweep failed:", error.message));
+      }, 60000);
+      timer.unref();
+    }
   });
 });

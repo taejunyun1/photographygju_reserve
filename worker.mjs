@@ -1,4 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
+import { createMutationQueue } from "./core/mutation-queue.mjs";
+import { runEquipmentOverdueSweep, equipmentOverdueCronPath } from "./core/equipment-overdue-scheduler.mjs";
 import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
 import { createSqlAppStore } from "./storage-sql.mjs";
 import { ensureSqlStoreInitialized } from "./worker-storage.mjs";
@@ -77,6 +79,7 @@ export class GjuReserveDb extends DurableObject {
     this.ctx = ctx;
     this.env = env;
     this.db = null;
+    this.mutationQueue = createMutationQueue();
     this.store = createSqlAppStore(this.ctx.storage.sql, {
       transactionSync: (callback) => this.ctx.storage.transactionSync(callback),
       initialDb: async () => {
@@ -114,6 +117,20 @@ export class GjuReserveDb extends DurableObject {
   }
 
   async fetch(request) {
+    return this.mutationQueue.run(async () => {
+      try {
+        const response = await this.fetchSerialized(request);
+        // API errors must not leak an uncommitted cached mutation into a later read.
+        if (response.status >= 400) this.db = null;
+        return response;
+      } catch (error) {
+        this.db = null;
+        throw error;
+      }
+    });
+  }
+
+  async fetchSerialized(request) {
     const cors = corsHeadersFor(request.headers.get("origin"));
     if (request.method === "OPTIONS") {
       return withSecurityHeaders(new Response(null, { status: 204, headers: cors }));
@@ -121,7 +138,8 @@ export class GjuReserveDb extends DurableObject {
     const url = new URL(request.url);
     // NOTE: a production DB reset endpoint was intentionally removed.
     // Guardrail: the production database is never reset/initialized in place.
-    if (url.pathname === "/api/internal/cleanup") {
+    if (["/api/internal/cleanup", "/api/internal/equipment-overdue"].includes(url.pathname)) {
+      if (request.method !== "POST") return jsonResponse({ ok: false, error: "Method not allowed" }, 405, cors);
       const secret = this.env.INTERNAL_CRON_SECRET || "";
       if (!secret || request.headers.get("x-internal-cron-secret") !== secret) {
         return jsonResponse({ ok: false, error: "Forbidden" }, 403, cors);
@@ -132,9 +150,27 @@ export class GjuReserveDb extends DurableObject {
       } catch (error) {
         return jsonResponse({ ok: false, error: error.message || "Server configuration error" }, error.status || 500, cors);
       }
-      const summary = cleanupExpiredData(db, new Date(), "cron");
-      if (summary.changed) await this.saveDb();
-      return jsonResponse({ ok: true, data: summary }, 200, cors);
+      const snapshot = structuredClone(db);
+      try {
+        const summary = url.pathname.endsWith("equipment-overdue")
+          ? runEquipmentOverdueSweep(db, new Date())
+          : cleanupExpiredData(db, new Date(), "cron");
+        if (summary.changed) await this.saveDb();
+        return jsonResponse({ ok: true, data: summary }, 200, cors);
+      } catch (error) {
+        this.db = snapshot;
+        if (url.pathname.endsWith("equipment-overdue")) {
+          snapshot.meta ||= {};
+          snapshot.meta.equipmentOverdueSweep = {
+            ...(snapshot.meta.equipmentOverdueSweep || {}),
+            lastRunAt: new Date().toISOString(), status: "failed",
+            error: "자동 경고 점검에 실패했습니다. 서버 로그를 확인하세요."
+          };
+          try { await this.saveDb(); } catch { this.db = null; }
+          console.error(JSON.stringify({ event: "equipment_overdue_sweep_failed", message: error.message }));
+        }
+        return jsonResponse({ ok: false, error: "정기 작업 저장에 실패했습니다." }, 503, cors);
+      }
     }
     let db;
     try {
@@ -189,15 +225,20 @@ export default {
     return withSecurityHeaders(await env.ASSETS.fetch(request));
   },
 
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
+    const pathname = equipmentOverdueCronPath(event.cron);
+    if (!pathname) return;
     if (!env.INTERNAL_CRON_SECRET) {
-      console.warn("INTERNAL_CRON_SECRET is not configured; cleanup skipped.");
+      console.error(JSON.stringify({ event: "scheduled_job_skipped", cron: event.cron, reason: "internal_secret_missing" }));
       return;
     }
     const stub = env.GJU_RESERVE_DB.getByName("global");
-    ctx.waitUntil(stub.fetch("https://gju-reserve.internal/api/internal/cleanup", {
-      method: "POST",
-      headers: { "x-internal-cron-secret": env.INTERNAL_CRON_SECRET }
-    }));
+    ctx.waitUntil((async () => {
+      const response = await stub.fetch(`https://gju-reserve.internal${pathname}`, {
+        method: "POST",
+        headers: { "x-internal-cron-secret": env.INTERNAL_CRON_SECRET }
+      });
+      if (!response.ok) throw new Error(`Scheduled job ${event.cron} failed: ${response.status}`);
+    })());
   }
 };
