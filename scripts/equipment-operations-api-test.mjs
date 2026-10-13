@@ -16,7 +16,6 @@ db.sessions.push({
 let saveCount = 0;
 
 async function api(method, pathname, body = {}, token = adminToken) {
-  if (pathname.endsWith("/return-inspection")) body = { actualReturnedAt: new Date().toISOString(), reason: "테스트 반납 처리", ...body };
   return handleApiRequest({
     method,
     pathname,

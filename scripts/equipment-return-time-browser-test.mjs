@@ -35,23 +35,16 @@ try {
   await page.route('http://fixture.local/', route => route.fulfill({body:'<div id="root"></div>',contentType:'text/html'}));
   await page.goto('http://fixture.local/');
   await page.addScriptTag({content:fixture.outputFiles[0].text});
-  const actualTime = page.getByLabel('실제 반납 시각 (필수)');
-  assert.equal(await actualTime.getAttribute('step'),'1');
-  await page.getByRole('button',{name:'지금 반납한 것으로 입력'}).click();
-  assert.equal(await actualTime.inputValue(),'2026-10-13T17:10:50');
-  await page.getByText('실제 지각 · 해당 자동 경고 확정·유지',{exact:true}).waitFor();
-  await page.getByLabel('반납 시각 확인 사유 (필수)').fill('직접 확인');
+  const completeButton = page.getByRole('button',{name:'반납 점검 완료',exact:true});
+  assert.equal(await completeButton.isEnabled(),true, 'return must not require a manually entered timestamp or reason');
+  assert.equal(await page.locator('input[type="datetime-local"]').count(),0);
   await Promise.all([
     page.waitForResponse('http://fixture.local/return-inspection'),
-    page.getByRole('button',{name:'반납 점검 완료',exact:true}).click()
+    completeButton.click()
   ]);
-  assert.equal(requestBody.actualReturnedAt,'2026-10-13T08:10:50.000Z');
-  await actualTime.fill('2026-10-13T17:10');
-  await page.getByText('정시 반납 · 해당 자동 경고만 해제',{exact:true}).waitFor();
-  assert.equal(await page.getByRole('button',{name:'반납 점검 완료',exact:true}).isEnabled(),true);
-  await actualTime.fill('');
-  assert.equal(await page.getByRole('button',{name:'반납 점검 완료',exact:true}).isEnabled(),false);
-  console.log('Equipment return browser: now preserves late seconds, POST body preserves seconds, minute/empty inputs render safely.');
+  assert.deepEqual(requestBody, {id:'seconds',inspections:[{equipmentId:'camera',outcome:'normal',note:''}]});
+  console.log('Equipment return browser: immediate completion without time input; server timestamps the return.');
+
 } finally {
   await browser.close();
 }

@@ -27,8 +27,8 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261012-equipment-turnover-r1");
-const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20261012-equipment-turnover-r1");
+const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261013-return-anytime-r1");
+const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20261013-return-anytime-r1");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
 function readEventSource() {
@@ -535,7 +535,7 @@ assert(
 
 console.log("Equipment reservation UI checks passed.");
 
-const { equipmentItemReservationConflict, relatedLensItemsForSelection } = await import("../public/js/utils.js?v=20261012-equipment-turnover-r1");
+const { equipmentItemReservationConflict, relatedLensItemsForSelection } = await import("../public/js/utils.js?v=20261013-return-anytime-r1");
 const savedBootstrap = state.bootstrap;
 state.bootstrap = { equipment: [{ id: "turnover-lens", name: "Sony lens", brand: "Sony", category: "Lens", active: true, reservable: true, status: "가능" }], reservations: [{ type: "equipment", status: "checked_out", fields: { reservedDate: "2099-07-20", period: "1박2일", rentalTime: "10:15", returnTime: "17:10", equipmentItemIds: ["turnover-lens"] } }] };
 const futureFields = { reservedDate: "2099-07-21", period: "1박2일", rentalTime: "17:30", returnTime: "17:10" };
@@ -545,11 +545,11 @@ assert(Boolean(equipmentItemReservationConflict("turnover-lens", futureFields, u
 assert.equal(relatedLensItemsForSelection([{ id: "body", brand: "Sony", category: "Body" }], futureFields).length, 1, "lens recommendation uses complete schedule");
 state.bootstrap = savedBootstrap;
 
-const { reservationCard } = await import("../public/js/views-student.js?v=20261012-equipment-turnover-r1");
+const { reservationCard } = await import("../public/js/views-student.js?v=20261013-return-anytime-r1");
 assert(reservationCard({ id: "preserved-b", type: "equipment", status: "approved", handoffNeedsReview: true, fields: { reservedDate: "2026-10-13", rentalTime: "17:30" } }).includes("인계 확인 필요"), "legacy preserves booking and displays handoff review");
 
 // VISIBILITY_TEST_START
-const { myPageView: visibilityMyPage } = await import("../public/js/views-student.js?v=20261012-equipment-turnover-r1");
+const { myPageView: visibilityMyPage } = await import("../public/js/views-student.js?v=20261013-return-anytime-r1");
 state.user = { name: "학생", role: "student", approvalStatus: "approved", warningCount: 1, warningRecords: [{ id: "w1", status: "pending_review", reason: "반납 확인 대기" }, { id: "w2", status: "confirmed", reason: "지연 반납", reviewReason: "실제 반납 확인" }, { id: "w3", status: "cleared", reason: "정정됨", reviewReason: "시간 정정" }] };
 const visibilityProfile = visibilityMyPage();
 assert(visibilityProfile.includes("유효 경고 1건") && visibilityProfile.includes("검토 대기") && visibilityProfile.includes("확정") && visibilityProfile.includes("해제") && visibilityProfile.includes("실제 반납 확인"), "approved student account must show warning review history");

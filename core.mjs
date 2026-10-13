@@ -2329,7 +2329,9 @@ export async function handleApiRequest(ctx) {
           "needs_repair"
         ]);
         const checkedAt = requestNow.toISOString();
-        const actualReturnedAt = validateEquipmentActualReturnedAt(reservation, body.actualReturnedAt, requestNow);
+        // Timestamp normal returns on the server, including older app requests.
+        // Explicit historical times still require valid evidence and a reason.
+        const actualReturnedAt = validateEquipmentActualReturnedAt(reservation, body.actualReturnedAt ?? checkedAt, requestNow);
         const returnReason = String(body.returnTimeNote || body.reason || body.note || "").trim();
         if (actualReturnedAt !== checkedAt && !returnReason) throw Object.assign(new Error("실제 반납 시각과 처리 시각이 다르면 사유를 입력하세요."), { status: 400 });
         const changes = requested.map((inspection) => {

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20261012-equipment-turnover-r1";
+import { state } from "./state.js?v=20261013-return-anytime-r1";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

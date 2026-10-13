@@ -1,6 +1,6 @@
-import { state, setAuthenticatedUser } from "./state.js?v=20261012-equipment-turnover-r1";
-import { api } from "./api.js?v=20261012-equipment-turnover-r1";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261012-equipment-turnover-r1";
+import { state, setAuthenticatedUser } from "./state.js?v=20261013-return-anytime-r1";
+import { api } from "./api.js?v=20261013-return-anytime-r1";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261013-return-anytime-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();
