@@ -72,7 +72,7 @@ export function ReportPhotoPicker({ category, photos, maxPhotos = MAX_PHOTOS, on
             <button type="button" aria-label="사진 삭제" onClick={() => onChange(photos.filter((item) => item.id !== photo.id))}>삭제</button>
           </figure>
         ))}
-        {remaining > 0 ? <label className="report-photo-add"><input type="file" accept="image/jpeg,image/png" capture="environment" multiple onChange={handleFiles} />사진 추가</label> : null}
+        {remaining > 0 ? <label className="report-photo-add"><input type="file" accept="image/jpeg,image/png" multiple onChange={handleFiles} />사진 추가</label> : null}
       </div>
       {error ? <p className="student-react-submit-error" role="alert">{error}</p> : null}
     </div>

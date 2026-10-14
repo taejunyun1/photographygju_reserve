@@ -18,7 +18,7 @@
     "test:student-react": "node scripts/student-react-contract-test.mjs",
     "test:student-bridge": "node --no-warnings scripts/react-student-bridge-test.mjs",
     "test:studio-report": "node --no-warnings scripts/studio-report-submission-test.mjs",
-    "test:reporting": "node --no-warnings scripts/reporting-domain-test.mjs",
+    "test:reporting": "node --no-warnings scripts/reporting-domain-test.mjs && node scripts/report-photo-picker-browser-test.mjs",
     "test:reporting-real": "node --no-warnings scripts/reporting-real-api-test.mjs",
     "test:equipment-ui": "node --no-warnings scripts/equipment-reservation-ui-test.mjs",
     "test:admin-ui": "node --no-warnings scripts/admin-dashboard-ux-test.mjs",

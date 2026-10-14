@@ -34,6 +34,7 @@ const targetSdk = Number((variables.match(/targetSdkVersion\s*=\s*(\d+)/) || [])
 const androidVersionCode = Number((androidBuildGradle.match(/versionCode\s+(\d+)/) || [])[1] || 0);
 const androidVersionName = (androidBuildGradle.match(/versionName\s+"([^"]+)"/) || [])[1] || "";
 const infoPlist = read("ios/App/App/Info.plist");
+const purposeString = (key) => infoPlist.match(new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`))?.[1]?.trim();
 const xcodeProject = read("ios/App/App.xcodeproj/project.pbxproj");
 const sceneDelegate = fileExists("ios/App/App/SceneDelegate.swift") ? read("ios/App/App/SceneDelegate.swift") : "";
 const iosBuildNumber = Number((xcodeProject.match(/CURRENT_PROJECT_VERSION = (\d+);/) || [])[1] || 0);
@@ -59,6 +60,8 @@ const checks = [
   ["native notification bridge", fileExists("public/js/native-notifications.js")],
   ["student UI imports native notifications", contains("public/js/views-student.js", "nativeNotificationSettingsCard")],
   ["iOS privacy manifest file", fileExists("ios/App/App/PrivacyInfo.xcprivacy")],
+  ["iOS report camera usage description", Boolean(purposeString("NSCameraUsageDescription"))],
+  ["iOS report photo library usage description", Boolean(purposeString("NSPhotoLibraryUsageDescription"))],
   ["iOS privacy manifest in xcode project", contains("ios/App/App.xcodeproj/project.pbxproj", "PrivacyInfo.xcprivacy in Resources")],
   ["iOS scene manifest", infoPlist.includes("UIApplicationSceneManifest") && infoPlist.includes("UISceneDelegateClassName") && infoPlist.includes("UISceneStoryboardFile")],
   ["iOS scene delegate source", fileExists("ios/App/App/SceneDelegate.swift") && sceneDelegate.includes("UIWindowSceneDelegate") && sceneDelegate.includes("ApplicationDelegateProxy")],
