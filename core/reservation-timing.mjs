@@ -158,3 +158,28 @@ export function reservationTiming(reservation, settings = {}) {
   if (!reservation?.type) return null;
   return timingForFields(reservation.type, reservation.fields, settings);
 }
+
+// Preserve each selected slot rather than filling gaps between the first and last.
+// Uses the same configured ordering / midnight normalization as reservationTiming.
+export function reservationIntervals(reservation, settings = {}) {
+  if (!["studio", "darkroom"].includes(reservation?.type)) {
+    const timing = reservationTiming(reservation, settings);
+    return timing ? [timing] : [];
+  }
+  const fields = reservation.fields || {};
+  if (!validDateParts(fields.reservedDate)) return [];
+  const selected = [...new Set(Array.isArray(fields.timeSlots) ? fields.timeSlots : [])];
+  const ordered = reservation.type === "studio" ? settings.studioSlots : settings.darkroomSlots;
+  const bounds = canonicalSlotRange(selected, ordered, { allowCircular: reservation.type === "studio" });
+  if (!bounds) return [];
+  const configured = new Map(configuredSlotRanges(ordered).map(range => [range.slot, range]));
+  return selected.map(slot => {
+    const range = configured.get(slot) || slotEndMinutes(slot);
+    if (!range) return null;
+    let { start, end } = range;
+    while (start < bounds.start) { start += 1440; end += 1440; }
+    const startAt = kstDateAtMinutes(fields.reservedDate, start);
+    const endAt = kstDateAtMinutes(fields.reservedDate, end);
+    return startAt && endAt ? { startAt: startAt.toISOString(), endAt: endAt.toISOString() } : null;
+  }).filter(Boolean).sort((a, b) => a.startAt.localeCompare(b.startAt));
+}

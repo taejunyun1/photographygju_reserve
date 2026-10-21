@@ -20,6 +20,7 @@ async function refreshAfterNativeResume() {
   if (state.user?.role === "admin") await requestAdminRefresh();
   else await reloadActiveAccount();
   await handleNativeNotificationResume();
+  document.dispatchEvent(new CustomEvent("gju-facility-resume"));
   render();
 }
 

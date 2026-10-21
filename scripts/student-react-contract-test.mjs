@@ -297,15 +297,42 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   actions: actionRecorder().actions
 }));
 assert(markup.includes("내 예약"), "home must identify the user's booking list");
-for (const title of ["스튜디오 첫 번째 예약", "기자재 두 번째 예약", "암실 세 번째 예약"]) {
+for (const title of ["스튜디오 첫 번째 예약", "기자재 두 번째 예약"]) {
   assert(markup.includes(title), `home must show ${title}`);
 }
-for (const title of ["지난 예약 제외", "취소 예약 제외", "네 번째 예약 제외"]) {
+for (const title of ["지난 예약 제외", "취소 예약 제외", "암실 세 번째 예약", "네 번째 예약 제외"]) {
   assert(!markup.includes(title), `home must not show ${title}`);
 }
 assert(markup.includes("무선 마이크"), "home must show unlisted equipment requests in booking summaries");
 assert(markup.includes("전체 예약 보기"), "home must link to the full booking history");
-assert(markup.indexOf("student-react-home-bookings") < markup.indexOf("student-react-course-demand-card"), "home bookings must appear before secondary dashboard cards");
+assert(markup.includes("새 예약"), "home must keep one clear entry to the reservation screen");
+assert(!markup.includes("student-react-report-summary-card"), "home must not show an empty report card");
+assert(!markup.includes("student-react-quick-reservation"), "favorites and rebooking belong on the reservation screen");
+assert(!markup.includes("facility-grid"), "home must not repeat the facility picker");
+assert(!markup.includes("모집중인 특강"), "home must not repeat the lecture list");
+assert(!markup.includes("안녕하세요"), "home must not spend vertical space on a repeated greeting");
+
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({ myReservations: [...homeBookings, { id: "still-out", type: "equipment", status: "checked_out", fields: { title: "아직 반납하지 않은 장비", reservedDate: "2026-06-01" } }] }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("아직 반납하지 않은 장비") && markup.includes("스튜디오 첫 번째 예약"), "the two-row home must prioritize active custody before the next booking");
+assert(!markup.includes("기자재 두 번째 예약"), "additional upcoming bookings must stay behind the full history entry");
+
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({ myReservations: [{ id: "report-due", type: "equipment", status: "returned", fields: { reservedDate: "2026-07-10" }, reportRequirement: { required: true, canDraft: true } }] }),
+  actions: actionRecorder().actions
+}));
+assert(markup.includes("student-react-home-report-alert"), "an actionable report must remain visible on the compact home");
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({ myReservations: [{ id: "report-future", type: "equipment", status: "approved", fields: { reservedDate: "2026-07-20" }, reportRequirement: { required: true, canDraft: false, canSubmit: false } }] }),
+  actions: actionRecorder().actions
+}));
+assert(!markup.includes("student-react-home-report-alert"), "a future non-actionable report must not add home noise");
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
+  state: makeState({ view: "reserve" }), actions: actionRecorder().actions
+}));
+assert(markup.includes("즐겨찾기 관리") && markup.includes("다시 예약"), "moved shortcuts must remain reachable from the reservation picker");
 
 const handoffCard = renderToStaticMarkup(React.createElement(student.ReservationCard, { reservation: { id: "preserved-b", type: "equipment", status: "approved", handoffNeedsReview: true, fields: { reservedDate: "2026-10-13", rentalTime: "17:30" } } }));
 assert.match(handoffCard, /인계 확인 필요/, "preserved next booking shows handoff review without cancellation");
@@ -805,7 +832,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentReactRoot, {
   state: makeState(),
   actions: actionRecorder().actions
 }));
-assert(markup.includes("안녕하세요, 학생님"), "StudentReactRoot must mount the ready StudentApp tree");
+assert(markup.includes("student-react-home-bookings") && markup.includes("새 예약"), "StudentReactRoot must mount the compact home tree");
 const shellSource = fs.readFileSync("src/react/student/StudentShell.tsx", "utf8");
 assert(shellSource.includes("!mobile ? <span>{label}</span> : null"), "student mobile navigation must remain icon-only");
 assert(shellSource.includes('className="student-react-mobile-header__title"'), "student mobile header must expose a non-shrinking title column contract");
@@ -824,6 +851,7 @@ assert(primitiveSource.includes("<h1>{title}</h1>"), "the screen header must pro
 const studentCssSource = fs.readFileSync("src/react/student/student.css", "utf8");
 const studentBridgeSource = fs.readFileSync("public/js/react-student-adapter.js", "utf8");
 const homeScreenSource = fs.readFileSync("src/react/student/screens/HomeScreen.tsx", "utf8");
+const reservationShortcutSource = fs.existsSync("src/react/student/components/ReservationShortcuts.tsx") ? fs.readFileSync("src/react/student/components/ReservationShortcuts.tsx", "utf8") : "";
 const reservationControlsSource = fs.readFileSync("src/react/student/components/ReservationControls.tsx", "utf8");
 const favoriteSheetSource = fs.readFileSync("src/react/student/components/FavoriteEquipmentSheet.tsx", "utf8");
 const courseDemandSheetSource = fs.existsSync("src/react/student/components/CourseDemandSurveySheet.tsx")
@@ -832,9 +860,9 @@ const courseDemandSheetSource = fs.existsSync("src/react/student/components/Cour
 assert(studentBridgeSource.includes("favorite-equipment-groups"), "student bridge must persist favorite equipment groups");
 assert(studentBridgeSource.includes("startRebooking"), "student bridge must expose a safe rebooking action");
 assert(studentBridgeSource.includes("favoriteGroups"), "student bridge must include favorite groups in its snapshot");
-assert(homeScreenSource.includes("FavoriteEquipmentSheet"), "student home must own the favorite manager sheet");
-assert(homeScreenSource.includes("즐겨찾기 관리"), "student home must expose favorite management");
-assert(homeScreenSource.includes("다시 예약"), "student home must expose recent reservation rebooking");
+assert(!homeScreenSource.includes("FavoriteEquipmentSheet"), "student home must no longer host the favorite manager");
+assert(reservationShortcutSource.includes("FavoriteEquipmentSheet"), "the reservation picker must own the favorite manager sheet");
+assert(reservationShortcutSource.includes("즐겨찾기 관리") && reservationShortcutSource.includes("다시 예약"), "moved reservation shortcuts must preserve both actions");
 assert(reservationControlsSource.includes("현재 조건에서 가능한 대안이 없습니다."), "reservation controls must explain when no recommendation is available");
 assert(studentCssSource.includes(".student-react-favorite-sheet"), "favorite manager must receive mobile bottom-sheet styling");
 assert(
@@ -849,8 +877,7 @@ assert(
 );
 assert(studentBridgeSource.includes("/api/me/course-demand-surveys"), "student bridge must load the current student's course-demand surveys");
 assert(studentBridgeSource.includes("saveCourseDemandResponse"), "student bridge must expose ranked response saving");
-assert(homeScreenSource.includes("다음 학기 희망 과목 조사"), "student dashboard must expose the course-demand card");
-assert(homeScreenSource.includes("CourseDemandSurveySheet"), "student dashboard must own the course-demand bottom sheet");
+assert(!homeScreenSource.includes("CourseDemandSurveySheet"), "student dashboard must not mount the removed course-demand entry");
 assert(courseDemandSheetSource.includes("1~5순위"), "course-demand sheet must explain ranking limits");
 assert(courseDemandSheetSource.includes("순위 올리기"), "course-demand sheet must provide an accessible ranking control");
 for (const categoryLabel of ["예술", "다큐멘터리", "광고", "영상"]) {
@@ -914,8 +941,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState(),
   actions: actionRecorder().actions
 }));
-assert(markup.includes("진행 중인 수요조사가 없습니다."), "student dashboard must retain a visible course-demand area before a survey opens");
-assert(markup.includes("설문이 공개되면 이곳에서 바로 응답할 수 있습니다."), "student dashboard must explain where a future survey will appear");
+assert(!/class="[^"]*\bstudent-react-course-demand-card(?:\s|")/.test(markup), "student home must omit the removed survey card when no survey exists");
 
 student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
@@ -936,10 +962,8 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   }),
   actions: actionRecorder().actions
 }));
-assert(markup.includes("다음 학기 희망 과목 조사"), "open course-demand surveys must render on the student home dashboard");
-assert(markup.includes("2027학년도 2학년 2학기 전공 수요조사"), "student dashboard must render the active survey title");
-assert(markup.includes("2학년 · 2학기"), "student dashboard must render the survey target");
-assert(markup.includes("응답하기"), "open course-demand surveys must offer a response action");
+assert(!/class="[^"]*\bstudent-react-course-demand-card(?:\s|")/.test(markup), "student home must omit the removed card even when a survey is open");
+assert(!markup.includes("2027학년도 2학년 2학기 전공 수요조사"), "removed survey content must not consume dashboard space");
 
 student.resetCaptures();
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
@@ -955,7 +979,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   }),
   actions: actionRecorder().actions
 }));
-assert(markup.includes("응답 완료"), "an expired open-status survey with a response must render as completed");
+assert(!/class="[^"]*\bstudent-react-course-demand-card(?:\s|")/.test(markup), "expired surveys must not restore the removed dashboard card");
 assert(!markup.includes("관리자가 설문을 공개하면"), "an expired survey must not fall back to the preparing state");
 assert(studentCssSource.includes(".student-react-account-properties > div"), "My account metadata must keep labels separate from values");
 assert(

@@ -141,6 +141,8 @@ const button = renderToStaticMarkup(
 assert(button.includes("gju-button"), "button must use shared class");
 assert(button.includes("astryx-button"), "button wrapper must adapt Astryx Button");
 assert(button.includes('data-tone="danger"'), "button must preserve tone data attribute");
+const compactButton = renderToStaticMarkup(React.createElement(renderModule.GjuButton, { "aria-label": "이 조건으로 예약", icon: "plus" }, "예약"));
+assert(compactButton.includes('aria-label="이 조건으로 예약"'), "short visible button copy must retain its explicit accessible name");
 
 const iconButton = renderToStaticMarkup(
   React.createElement(renderModule.GjuIconButton, { label: "삭제", icon: "trash", tone: "danger" })

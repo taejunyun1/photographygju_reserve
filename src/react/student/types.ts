@@ -1,3 +1,5 @@
+import type { FacilityReservationIntent, FacilityTimelineResource } from "../shared/facility-board/types";
+
 export type StudentNavKey = "home" | "reserve" | "mine" | "reports" | "lectures" | "notices" | "my";
 
 export type ReservationType = "equipment" | "studio" | "darkroom" | "print";
@@ -440,6 +442,7 @@ export type StudentNativeNotifications = {
 };
 
 export type StudentState = {
+  readonly facilityTimeline?: FacilityTimelineResource;
   readonly view: StudentNavKey;
   readonly today?: string;
   readonly user: StudentUser;
@@ -476,6 +479,8 @@ export type StudentState = {
 };
 
 export type StudentActions = {
+  loadFacilityTimeline?(date: string, options?: { force?: boolean }): Promise<unknown> | void;
+  startFacilityReservation?(intent: FacilityReservationIntent): Promise<void> | void;
   setView(view: StudentNavKey): Promise<void> | void;
   startReservation(type: ReservationType): Promise<void> | void;
   setReservationStep(type: ReservationType, step: ReservationStep): Promise<void> | void;

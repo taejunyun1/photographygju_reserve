@@ -120,7 +120,8 @@ export function restoreFocusState(focusState, { fallbackSelector = "main [data-p
 }
 
 function visibleDialog() {
-  return visibleElement(document.querySelectorAll('[role="dialog"][aria-modal="true"]'));
+  // Native dialogs manage their own focus; the legacy observer must not override it.
+  return visibleElement(document.querySelectorAll('[role="dialog"][aria-modal="true"]:not(dialog)'));
 }
 
 function focusDialog(dialog) {

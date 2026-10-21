@@ -48,7 +48,7 @@ function textFromNode(node: React.ReactNode): string {
 
 function resolveButtonLabel(children: React.ReactNode, ariaLabel?: string) {
   const label = textFromNode(children).trim();
-  return label || ariaLabel || "Action";
+  return ariaLabel || label || "Action";
 }
 
 function mapButtonVariant(variant: GjuButtonVariant, tone: GjuButtonTone) {

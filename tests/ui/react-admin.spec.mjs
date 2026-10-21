@@ -19,7 +19,7 @@ test("React Admin mounts current source without legacy panel or horizontal overf
   await expectNoHorizontalOverflow(page);
 });
 
-test("React Admin congestion insight uses a compact card hierarchy", async ({ page }) => {
+test("React Admin insights show all trends in a compact summary", async ({ page }) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
     const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
@@ -28,17 +28,20 @@ test("React Admin congestion insight uses a compact card hierarchy", async ({ pa
       metrics: {
         ...(state.summary?.metrics || {}),
         insights: {
+          period: { from: "2026-09-21", to: "2026-10-18", days: 28 },
           congestion: {
-            items: [{
-              type: "equipment",
-              label: "기자재",
-              time: "14:00~15:00",
-              count: 4,
-              sharePercent: 25
-            }]
+            items: [
+              { type: "studio", label: "스튜디오 18:00-20:00 (야간)", time: "18:00-20:00 (야간)", count: 27 },
+              { type: "studio", label: "스튜디오 14:00-16:00", time: "14:00-16:00", count: 26 },
+              { type: "studio", label: "스튜디오 20:00-22:00 (야간)", time: "20:00-22:00 (야간)", count: 24 }
+            ]
           },
-          equipmentUtilization: [],
-          cancellationRate: { totalRequests: 0 },
+          equipmentUtilization: [
+            { equipmentId: "lens-1", name: "소니 24-70GM", reservedDays: 17, utilizationPercent: 61 },
+            { equipmentId: "camera-1", name: "Sony FX3", reservedDays: 16, utilizationPercent: 57 },
+            { equipmentId: "light-1", name: "Profoto B10", reservedDays: 14, utilizationPercent: 50 }
+          ],
+          cancellationRate: { totalRequests: 100, cancelledRequests: 10, percent: 10 },
           warnings: []
         }
       }
@@ -47,19 +50,46 @@ test("React Admin congestion insight uses a compact card hierarchy", async ({ pa
     render();
   });
 
-  const card = page.locator(".admin-dashboard-insight-card");
-  await expect(card).toHaveCount(1);
-  await expect(card).toContainText("예약 많은 시간");
-  await expect(card).not.toContainText("점유율");
-  const dimensions = await card.evaluate((element) => {
-    const value = element.querySelector(".gju-card__body > strong");
+  const summary = page.locator(".admin-insights-summary");
+  await expect(summary).toBeVisible();
+  await expect(summary.locator(".admin-dashboard-insight-card")).toHaveCount(0);
+  await expect(summary.getByRole("heading", { name: "예약 많은 시간", exact: true })).toHaveCount(1);
+  await expect(summary.getByRole("heading", { name: "장비 예약일 비율", exact: true })).toHaveCount(1);
+  await expect(summary.locator(".admin-insights-period")).toContainText("2026-09-21");
+  await expect(summary.locator(".admin-insights-period")).toContainText("2026-10-18");
+  await expect(summary).not.toContainText("점유율");
+
+  const timeRows = summary.locator(".admin-insights-group").filter({ has: page.getByRole("heading", { name: "예약 많은 시간", exact: true }) }).locator(".admin-insights-row");
+  await expect(timeRows).toHaveCount(3);
+  await expect(timeRows).toContainText(["27건", "26건", "24건"]);
+  await expect(timeRows).toContainText(["18:00-20:00 (야간)", "14:00-16:00", "20:00-22:00 (야간)"]);
+  const equipmentRows = summary.locator(".admin-insights-group").filter({ has: page.getByRole("heading", { name: "장비 예약일 비율", exact: true }) }).locator(".admin-insights-row");
+  await expect(equipmentRows).toHaveCount(3);
+  await expect(equipmentRows).toContainText(["소니 24-70GM", "Sony FX3", "Profoto B10"]);
+  await expect(equipmentRows).toContainText(["61%", "57%", "50%"]);
+  await expect(equipmentRows).toContainText(["17/28일 예약", "16/28일 예약", "14/28일 예약"]);
+  await expect(summary.locator(".admin-insights-basis")).toContainText("취소·반려 제외");
+  const cancellation = summary.locator(".admin-insights-cancellation");
+  await expect(cancellation).toHaveCount(1);
+  await expect(cancellation).toContainText("10%");
+  await expect(cancellation).toContainText("접수");
+  await expect(cancellation).toContainText("반려");
+  await expect(cancellation).toContainText("10/100건");
+
+  const dimensions = await summary.evaluate((element) => {
+    const rows = [...element.querySelectorAll("button")];
     return {
       height: element.getBoundingClientRect().height,
-      valueFontSize: value ? Number.parseFloat(getComputedStyle(value).fontSize) : 0
+      rows: rows.map((row) => ({ height: row.getBoundingClientRect().height, width: row.clientWidth, scrollWidth: row.scrollWidth }))
     };
   });
-  expect(dimensions.valueFontSize).toBeLessThanOrEqual(22);
-  expect(dimensions.height).toBeLessThanOrEqual(112);
+  expect(dimensions.rows).toHaveLength(7);
+  for (const row of dimensions.rows) {
+    expect(row.height).toBeGreaterThanOrEqual(44);
+    expect(row.scrollWidth).toBeLessThanOrEqual(row.width + 1);
+  }
+  if ((page.viewportSize()?.width || 0) <= 430) expect(dimensions.height).toBeLessThanOrEqual(620);
+  await expectNoHorizontalOverflow(page);
 });
 
 test("React Admin insight navigation keeps the period and selected time", async ({ page }) => {
@@ -90,7 +120,7 @@ test("React Admin insight navigation keeps the period and selected time", async 
   });
 
   const requestPromise = page.waitForRequest((request) => request.url().includes("/api/admin/reservations?"));
-  await page.locator(".admin-dashboard-insight-card").first().click();
+  await page.locator(".admin-insights-group .admin-insights-row").first().click();
   await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
   const requestUrl = new URL((await requestPromise).url());
   expect(requestUrl.searchParams.get("from")).toBe("2026-08-07");
@@ -124,7 +154,7 @@ test("React Admin hides cancellation insight until five requests are available",
     const { render } = await import("/js/renderer.js?v=20261014-photo-picker-r1");
     render();
   });
-  await expect(page.locator(".admin-dashboard-insight-card").filter({ hasText: "취소율" })).toHaveCount(0);
+  await expect(page.locator(".admin-insights-cancellation")).toHaveCount(0);
   await expect(page.getByText("최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다.", { exact: true })).toBeVisible();
 });
 
@@ -149,8 +179,9 @@ test("React Admin cancellation insight keeps the cancelled status filter", async
     render();
   });
 
+  await expect(page.locator(".admin-insights-cancellation")).toContainText("표본 적음");
   const requestPromise = page.waitForRequest((request) => request.url().includes("/api/admin/reservations?"));
-  await page.locator(".admin-dashboard-insight-card").filter({ hasText: "취소율" }).click();
+  await page.locator(".admin-insights-cancellation").click();
   await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
   const requestUrl = new URL((await requestPromise).url());
   expect(requestUrl.searchParams.get("status")).toBe("cancelled_or_rejected");
@@ -321,6 +352,10 @@ test("React Admin tabs expose a controlled panel and support arrow-key activatio
 
 test("React Admin review parity surfaces render from typed views", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-1440", "Desktop navigation coverage is sufficient for this cross-view contract.");
+  await page.route("**/api/admin/reservations?**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ ok: true, data: { items: [], total: 0, collectionTotal: 0, page: 1, pageSize: 100, hasMore: false } })
+  }));
   await loginReactAdmin(page);
   const navigation = page.locator(".gju-admin-nav--sidebar");
 

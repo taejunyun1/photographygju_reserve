@@ -1,11 +1,125 @@
-import { state, setAuthenticatedUser } from "./state.js?v=20261014-photo-picker-r1";
+import { state, setAuthenticatedUser, getAuthenticatedSessionGeneration } from "./state.js?v=20261014-photo-picker-r1";
 import { api } from "./api.js?v=20261014-photo-picker-r1";
 import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261014-photo-picker-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();
 const adminViewInflight = new Map();
+const adminViewTimelineVersion = new WeakMap();
 const adminViewGeneration = new Map();
+
+const FACILITY_TIMELINE_TTL_MS = 60_000;
+const facilityTimelineCache = new Map();
+const facilityTimelineInflight = new Map();
+let facilityTimelineIdentity = "";
+let facilityTimelineGeneration = 0;
+let facilityTimelineRequest = 0;
+
+function emptyFacilityTimeline() {
+  return { date: "", data: null, loading: false, error: "", lastSucceededAt: "" };
+}
+
+function currentFacilityTimelineIdentity() {
+  if (!state.user?.id || !["admin", "student"].includes(state.user.role)) return "";
+  return JSON.stringify([state.user.role, state.user.id, state.token, state.user.approvalStatus, getAuthenticatedSessionGeneration()]);
+}
+
+function syncFacilityTimelineIdentity() {
+  const identity = currentFacilityTimelineIdentity();
+  if (identity !== facilityTimelineIdentity) {
+    facilityTimelineIdentity = identity;
+    facilityTimelineGeneration += 1;
+    facilityTimelineRequest += 1;
+    facilityTimelineCache.clear();
+    facilityTimelineInflight.clear();
+    state.facilityTimeline = emptyFacilityTimeline();
+  }
+  return identity;
+}
+
+function facilityTimelineFresh(entry) {
+  return Boolean(entry && !entry.failed && Date.now() - entry.at < FACILITY_TIMELINE_TTL_MS
+    && Date.parse(entry.data.validUntil) > Date.now());
+}
+
+export function invalidateFacilityTimelineCache({ clear = false } = {}) {
+  syncFacilityTimelineIdentity();
+  facilityTimelineGeneration += 1;
+  facilityTimelineRequest += 1;
+  facilityTimelineCache.clear();
+  facilityTimelineInflight.clear();
+  state.facilityTimeline = clear ? emptyFacilityTimeline() : { ...state.facilityTimeline, loading: false, invalidated: true };
+}
+
+export function seedFacilityTimeline(data) {
+  const identity = syncFacilityTimelineIdentity();
+  if (!identity || !data?.date || data.viewer !== state.user.role) return;
+  const key = `${identity}:${data.date}`;
+  // A summary is an initial seed, not a replacement for a dedicated date refresh.
+  if (facilityTimelineInflight.has(key)) return;
+  const current = state.facilityTimeline;
+  const previous = [facilityTimelineCache.get(key)?.data, current.date === data.date ? current.data : null];
+  const generatedAt = Date.parse(data.generatedAt);
+  if (previous.some((value) => value && (Date.parse(value.generatedAt) > generatedAt
+    || (current.date === data.date && current.invalidated && Date.parse(value.generatedAt) === generatedAt)))) return;
+  const entry = { data, at: Date.now(), lastSucceededAt: data.generatedAt || new Date().toISOString() };
+  facilityTimelineCache.set(key, entry);
+  if (!state.facilityTimeline.date || state.facilityTimeline.date === data.date) {
+    state.facilityTimeline = { date: data.date, data, loading: false, error: "", lastSucceededAt: entry.lastSucceededAt, invalidated: false };
+  }
+}
+
+export async function loadFacilityTimeline(date, { force = false } = {}) {
+  const identity = syncFacilityTimelineIdentity();
+  if (!identity) return null;
+  const requestedDate = String(date || "");
+  const request = ++facilityTimelineRequest;
+  const generation = facilityTimelineGeneration;
+  const key = `${identity}:${requestedDate}`;
+  const cached = facilityTimelineCache.get(key);
+  if (!force && facilityTimelineFresh(cached)) {
+    state.facilityTimeline = { date: requestedDate, data: cached.data, loading: false, error: "", lastSucceededAt: cached.lastSucceededAt, invalidated: false };
+    return cached.data;
+  }
+  const current = state.facilityTimeline;
+  state.facilityTimeline = {
+    date: requestedDate,
+    data: current.date === requestedDate ? current.data : (cached?.data || null),
+    loading: true,
+    error: "",
+    invalidated: current.date === requestedDate && Boolean(current.invalidated),
+    lastSucceededAt: current.date === requestedDate ? current.lastSucceededAt : (cached?.lastSucceededAt || "")
+  };
+  let pending = facilityTimelineInflight.get(key);
+  if (!pending) {
+    pending = api(`/api/facility-timeline?date=${encodeURIComponent(requestedDate)}`, { loading: false });
+    facilityTimelineInflight.set(key, pending);
+  }
+  const canApply = () => syncFacilityTimelineIdentity() === identity
+    && facilityTimelineGeneration === generation && facilityTimelineRequest === request;
+  try {
+    const data = await pending;
+    if (data?.date !== requestedDate || data?.viewer !== state.user?.role) {
+      throw new Error("현황 응답의 날짜 또는 계정을 확인할 수 없습니다.");
+    }
+    if (canApply()) {
+      const lastSucceededAt = data.generatedAt || new Date().toISOString();
+      facilityTimelineCache.set(key, { data, at: Date.now(), lastSucceededAt });
+      state.facilityTimeline = { date: requestedDate, data, loading: false, error: "", lastSucceededAt, invalidated: false };
+      return data;
+    }
+    return null;
+  } catch (error) {
+    if (canApply()) {
+      const previous = facilityTimelineCache.get(key);
+      if (previous) facilityTimelineCache.set(key, { ...previous, failed: true });
+      state.facilityTimeline = { ...state.facilityTimeline, loading: false, error: error.message || "현황을 갱신하지 못했습니다." };
+    }
+    return null;
+  } finally {
+    if (facilityTimelineInflight.get(key) === pending) facilityTimelineInflight.delete(key);
+  }
+}
 
 export async function loadBootstrap() {
   state.bootstrap = await api("/api/bootstrap");
@@ -22,6 +136,7 @@ export async function loadMe() {
   }
   setAuthenticatedUser(data.user || null);
   if (!state.user) {
+    invalidateFacilityTimelineCache({ clear: true });
     clearAdminViewCache();
     state.token = "";
     state.myReservations = [];
@@ -299,7 +414,10 @@ function adminViewDescriptor(view, filters) {
     return {
       key: "/api/admin/summary",
       load: () => api("/api/admin/summary"),
-      apply: (summary) => { state.summary = summary; }
+      apply: (summary, timelineVersion) => {
+        state.summary = summary;
+        if (summary?.operationsBoard && timelineVersion === facilityTimelineRequest) seedFacilityTimeline(summary.operationsBoard);
+      }
     };
   }
   if (view === "users") {
@@ -397,6 +515,8 @@ function adminViewDescriptor(view, filters) {
 }
 
 export async function loadAdminView(view, filters = {}, options = {}) {
+  const identity = syncFacilityTimelineIdentity();
+  const timelineVersion = facilityTimelineRequest;
   const requestedView = String(view || "dashboard");
   const sourceFilters = filters && typeof filters === "object" ? filters : {};
   const force = Boolean(options.force ?? sourceFilters.force);
@@ -404,14 +524,14 @@ export async function loadAdminView(view, filters = {}, options = {}) {
   const descriptor = adminViewDescriptor(requestedView, viewFilters);
   if (!descriptor) return null;
 
-  const cacheKey = `${requestedView}:${descriptor.key}`;
+  const cacheKey = `${requestedView}:${identity}:${descriptor.key}`;
   const generation = nextAdminViewGeneration(requestedView);
   if (!force) {
     const cached = adminViewCache.get(cacheKey);
     if (cached && Date.now() - cached.at < ADMIN_VIEW_CACHE_TTL_MS) {
-      if (adminViewGeneration.get(requestedView) === generation) {
+      if (syncFacilityTimelineIdentity() === identity && adminViewGeneration.get(requestedView) === generation) {
         applyFilterState(requestedView, viewFilters);
-        descriptor.apply(cached.value);
+        descriptor.apply(cached.value, cached.timelineVersion);
       }
       return cached.value;
     }
@@ -433,9 +553,11 @@ export async function loadAdminView(view, filters = {}, options = {}) {
       }
     );
     adminViewInflight.set(cacheKey, pending);
+    adminViewTimelineVersion.set(pending, timelineVersion);
   }
 
   const value = await pending;
+  const sourceTimelineVersion = adminViewTimelineVersion.get(pending);
   const pageItems = Array.isArray(value?.items) ? value.items : null;
   const responsePage = Number(value?.page || viewFilters.page || 1);
   const responseTotal = Number(value?.total || 0);
@@ -447,10 +569,10 @@ export async function loadAdminView(view, filters = {}, options = {}) {
       page: Math.min(responsePage - 1, lastPage)
     }, { force: true });
   }
-  if (adminViewGeneration.get(requestedView) === generation) {
+  if (syncFacilityTimelineIdentity() === identity && adminViewGeneration.get(requestedView) === generation) {
     applyFilterState(requestedView, viewFilters);
-    descriptor.apply(value);
-    adminViewCache.set(cacheKey, { at: Date.now(), value });
+    descriptor.apply(value, sourceTimelineVersion);
+    adminViewCache.set(cacheKey, { at: Date.now(), value, timelineVersion: sourceTimelineVersion });
     if (requestedView === "dashboard") {
       state.adminRefresh = { ...(state.adminRefresh || {}), lastSucceededAt: new Date().toISOString(), error: "" };
       await syncNativeReservationNotifications({ silent: true });

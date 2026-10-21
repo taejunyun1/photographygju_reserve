@@ -3,6 +3,7 @@ import React from "react";
 import { GjuButton, GjuCard } from "../../design-system";
 import { FacilityCard, ScreenHeader } from "../components/StudentPrimitives";
 import { ReservationControls } from "../components/ReservationControls";
+import { ReservationShortcuts } from "../components/ReservationShortcuts";
 import type { ReservationType, StudentActions, StudentState } from "../types";
 
 export function ReservationScreen({
@@ -25,6 +26,7 @@ export function ReservationScreen({
         <div className="facility-grid">
           {(["equipment", "studio", "darkroom", "print"] as readonly ReservationType[]).map((type) => <FacilityCard key={type} type={type} onSelect={actions.startReservation} />)}
         </div>
+        <ReservationShortcuts state={state} actions={actions} />
       </section>
     );
   }

@@ -37,6 +37,7 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     view: STUDENT_VIEWS.has(state.view) ? state.view : "home",
     today,
     user: state.user || { name: "학생" },
+    facilityTimeline: state.facilityTimeline || { date: today, data: null, loading: false, error: "", lastSucceededAt: "" },
     bootstrap: {
       settings: bootstrap.settings || {},
       notices: asArray(bootstrap.notices),
@@ -205,6 +206,7 @@ function clearReservationRecommendations(state) {
 }
 
 function clearAuthenticatedState(state, clearStoredSession) {
+  state.facilityTimeline = { date: "", data: null, loading: false, error: "", lastSucceededAt: "" };
   state.equipmentDraftFields = null;
   state.token = "";
   state.user = null;
@@ -233,6 +235,8 @@ export function createStudentReactActions(dependencies) {
     loadBootstrap,
     loadMyReservations,
     loadLectures,
+    loadFacilityTimeline: loadFacilityData = async () => null,
+    invalidateFacilityTimelineCache: invalidateFacilityData = () => {},
     notifyNativeReservationCreated,
     clearNativeNotificationAccount,
     enableNativeReservationNotifications,
@@ -245,7 +249,10 @@ export function createStudentReactActions(dependencies) {
   } = dependencies;
 
   async function loadReservationShortcuts() {
+    const viewer = state.user;
+    const token = state.token;
     const result = await api("/api/me/reservation-shortcuts");
+    if (state.user !== viewer || state.token !== token) return;
     state.favoriteGroups = asArray(result?.favoriteGroups);
     state.recentReservations = asArray(result?.recentReservations);
   }
@@ -269,8 +276,10 @@ export function createStudentReactActions(dependencies) {
   }
 
   async function refreshAfterMutation(message, options) {
+    invalidateFacilityData();
     try {
       await refreshStudentData(options);
+      if (state.view === "home" && state.user?.approvalStatus === "approved") await loadFacilityData(state.facilityTimeline?.date || seoulToday(), { force: true });
       render();
     } catch (error) {
       toast(`${message} 최신 목록을 다시 불러오지 못했습니다: ${error.message || "새로고침 실패"}`, { tone: "error", preserveScroll: true });
@@ -323,6 +332,8 @@ export function createStudentReactActions(dependencies) {
       state.view = view;
       try {
         if (view === "home" || view === "mine" || view === "reports") await loadMyReservations();
+        if (view === "reserve" && state.user?.approvalStatus === "approved") await loadReservationShortcuts();
+        if (view === "home" && state.user?.approvalStatus === "approved") await loadFacilityData(state.facilityTimeline?.date || seoulToday());
         if (view === "lectures") await loadLectures();
       } catch (error) {
         toast(error.message || "데이터를 불러오지 못했습니다.", { tone: "error" });
@@ -335,6 +346,37 @@ export function createStudentReactActions(dependencies) {
       state.reservationType = type;
       state.reservationFlowStep[type] = "date";
       state.rebookingDetails = null;
+      clearReservationRecommendations(state);
+      render();
+    },
+    async loadFacilityTimeline(date, options) {
+      const pending = loadFacilityData(date, options);
+      render();
+      try {
+        return await pending;
+      } finally {
+        render();
+      }
+    },
+    startFacilityReservation(intent) {
+      if (state.user?.approvalStatus !== "approved") {
+        toast("학과 관리자 승인 후 예약할 수 있습니다.", { tone: "error" });
+        return;
+      }
+      const type = intent?.type;
+      if (!RESERVATION_TYPES.has(type) || !/^\d{4}-\d{2}-\d{2}$/.test(intent?.selectedDate || "")) return;
+      const hasDraft = Boolean(state.selectedDates?.[type]) || (
+        type === "equipment" ? Boolean(asArray(state.selectedEquipmentItemIds).length || asArray(state.selectedRequestedEquipment).length) :
+        type === "studio" ? Boolean(state.selectedStudioSpace || asArray(state.selectedStudioSlots).length) :
+        type === "darkroom" ? Boolean(asArray(state.selectedDarkroomSlots).length) : Boolean(state.selectedPrintStartTime)
+      );
+      if (hasDraft && !confirmAction("작성 중인 예약을 선택한 조건으로 새로 시작할까요?")) return;
+      resetReservationSelection(state, type);
+      state.view = "reserve";
+      state.reservationType = type;
+      state.reservationFlowStep[type] = "date";
+      state.rebookingDetails = null;
+      applySelectionPatch(state, intent);
       clearReservationRecommendations(state);
       render();
     },
@@ -493,6 +535,7 @@ export function createStudentReactActions(dependencies) {
           cleanupError = error;
         }
       }
+      invalidateFacilityData({ clear: true });
       clearAuthenticatedState(state, clearStoredSession);
       render();
       toast(cleanupError
@@ -519,6 +562,7 @@ export function createStudentReactActions(dependencies) {
     async refresh() {
       try {
         await refreshStudentData();
+        if (state.view === "home" && state.user?.approvalStatus === "approved") await loadFacilityData(state.facilityTimeline?.date || seoulToday(), { force: true });
         await handleNativeNotificationResume();
         render();
         toast("최신 데이터를 불러왔습니다.", { preserveScroll: true });

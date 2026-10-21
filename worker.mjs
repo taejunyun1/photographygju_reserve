@@ -66,8 +66,8 @@ function jsonResponse(body, status, headers = {}) {
   return withSecurityHeaders(new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...headers,
       "cache-control": "no-store",
+      ...headers,
       "content-type": "application/json; charset=utf-8"
     }
   }));
@@ -260,7 +260,7 @@ export class GjuReserveDb extends DurableObject {
         redirectUri: this.env.REPORT_DRIVE_REDIRECT_URI || "https://gjureserve.co.kr/api/oauth/report-drive/callback"
       }
     });
-    return jsonResponse(result.body, result.status, cors);
+    return jsonResponse(result.body, result.status, { ...cors, ...result.headers });
   }
 }
 

@@ -140,7 +140,7 @@ async function handleApi(req, res, url) {
   } catch (error) {
     result = { status: error.status || 500, body: { ok: false, error: error.message || "서버 오류가 발생했습니다." } };
   }
-  res.writeHead(result.status, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(result.status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...result.headers });
   res.end(JSON.stringify(result.body));
 }
 

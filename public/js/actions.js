@@ -1,6 +1,6 @@
 import { state, setAuthenticatedUser } from "./state.js?v=20261014-photo-picker-r1";
 import { api } from "./api.js?v=20261014-photo-picker-r1";
-import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations } from "./data.js?v=20261014-photo-picker-r1";
+import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations, invalidateFacilityTimelineCache } from "./data.js?v=20261014-photo-picker-r1";
 import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20261014-photo-picker-r1";
 import { render, toast } from "./renderer.js?v=20261014-photo-picker-r1";
 import {
@@ -41,6 +41,7 @@ export async function login(form) {
   const rememberLogin = data.rememberLogin === "true";
   state.token = result.token;
   setAuthenticatedUser(result.user);
+  invalidateFacilityTimelineCache({ clear: true });
   state.view = "home";
   state.reservationType = "";
   state.warningPopupDismissed = false;
@@ -79,10 +80,12 @@ async function clearNativeAccountSafely(userId) {
 }
 
 export async function logout() {
+  invalidateFacilityTimelineCache({ clear: true });
   const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   await api("/api/auth/logout", { method: "POST", body: { token: state.token } }).catch(() => null);
   state.token = "";
   setAuthenticatedUser(null);
+  invalidateFacilityTimelineCache({ clear: true });
   state.myReservations = [];
   state.lectures = [];
   state.view = "home";
@@ -345,6 +348,7 @@ export async function changePassword(form) {
   form.reset();
   state.token = "";
   setAuthenticatedUser(null);
+  invalidateFacilityTimelineCache({ clear: true });
   state.myReservations = [];
   state.lectures = [];
   state.adminSessions = [];
@@ -372,6 +376,7 @@ export async function deleteAccount(form) {
   const notificationWarning = await clearNativeAccountSafely(state.user?.id);
   state.token = "";
   setAuthenticatedUser(null);
+  invalidateFacilityTimelineCache({ clear: true });
   state.myReservations = [];
   state.lectures = [];
   state.adminSessions = [];

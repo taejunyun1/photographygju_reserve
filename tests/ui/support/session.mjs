@@ -1,6 +1,18 @@
 import { expect } from "@playwright/test";
 
+async function prepareLocalWebKit(page) {
+  if (page.context().browser()?.browserType().name() !== "webkit") return;
+  // Only the HTTP fixture omits TLS upgrade; live HTTPS keeps the production CSP.
+  await page.route("http://127.0.0.1:4179/", async (route) => {
+    const response = await route.fetch();
+    const headers = { ...response.headers() };
+    if (headers["content-security-policy"]) headers["content-security-policy"] = headers["content-security-policy"].replace(/upgrade-insecure-requests;?/g, "");
+    await route.fulfill({ response, headers, body: (await response.text()).replace(/upgrade-insecure-requests;?/g, "") });
+  });
+}
+
 export async function openAuth(page) {
+  await prepareLocalWebKit(page);
   await page.route("**/config.js", async (route) => {
     await route.fulfill({
       contentType: "text/javascript; charset=utf-8",
@@ -21,6 +33,7 @@ export async function loginAs(page, role) {
 }
 
 export async function openReactAdmin(page) {
+  await prepareLocalWebKit(page);
   await page.route("**/config.js", async (route) => {
     await route.fulfill({
       contentType: "text/javascript; charset=utf-8",
@@ -41,6 +54,7 @@ export async function loginReactAdmin(page) {
 }
 
 export async function openReactStudent(page) {
+  await prepareLocalWebKit(page);
   await page.route("**/config.js", async (route) => {
     await route.fulfill({
       contentType: "text/javascript; charset=utf-8",

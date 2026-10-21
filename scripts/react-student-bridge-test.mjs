@@ -214,6 +214,17 @@ reservationNavigation.state.reservationType = "studio";
 await reservationNavigation.actions.setView("reserve");
 assert.equal(reservationNavigation.state.view, "reserve");
 assert.equal(reservationNavigation.state.reservationType, "", "returning to reservation types must close the active form");
+assert(reservationNavigation.calls.some(([kind, path]) => kind === "api" && path === "/api/me/reservation-shortcuts"), "the reservation picker must load its moved favorites and rebooking data");
+
+let releaseOldShortcuts;
+const privateShortcuts = harness({ apiImplementation: () => new Promise((resolve) => { releaseOldShortcuts = resolve; }) });
+const pendingShortcuts = privateShortcuts.actions.loadReservationShortcuts();
+privateShortcuts.state.user = { id: "student-2", role: "student", approvalStatus: "approved" };
+privateShortcuts.state.token = "other-token";
+privateShortcuts.state.favoriteGroups = [];
+releaseOldShortcuts({ favoriteGroups: [{ id: "private-old", name: "이전 계정", equipmentItemIds: [] }], recentReservations: [] });
+await pendingShortcuts;
+assert.deepEqual(privateShortcuts.state.favoriteGroups, [], "late shortcut responses must not enter another account's picker");
 
 const reportRefreshFailure = harness({
   loadBootstrap: async () => { throw new Error("refresh failed"); },

@@ -12,11 +12,18 @@ async function expectNoHorizontalOverflow(page) {
   expect(widths.body, JSON.stringify(widths)).toBeLessThanOrEqual(widths.client + 1);
 }
 
-test("Student React mounts without legacy student content", async ({ page }) => {
+test("Student React mounts a compact home without duplicate sections", async ({ page }, testInfo) => {
   await loginReactStudent(page);
   await expect(page.locator("#react-student-root .student-react-shell")).toBeVisible();
   await expect(page.locator("#react-student-root .student-content")).toHaveCount(0);
-  await expect(page.getByText("안녕하세요, 접근성 학생님")).toBeVisible();
+  await expect(page.getByRole("region", { name: "내 예약", exact: true })).toBeVisible();
+  const home = page.locator(".student-react-home");
+  await expect(home.locator(".student-react-quick-reservation, .facility-grid, .student-react-report-summary-card")).toHaveCount(0);
+  await expect(home.getByText("모집중인 특강", { exact: true })).toHaveCount(0);
+  expect(await home.locator(".student-react-home-notice").count()).toBeLessThanOrEqual(1);
+  await expect(home.getByRole("button", { name: "새 예약", exact: true })).toBeVisible();
+  await expect(page.locator(".toast")).toBeHidden();
+  await home.screenshot({ path: `outputs/facility-board-implementation/r4-home-${testInfo.project.name}.png` });
   await expectNoHorizontalOverflow(page);
 });
 
@@ -68,6 +75,7 @@ test("Student React offers two-night equipment rentals on every weekday", async 
 
 test("Student React favorite manager opens as a reachable bottom sheet", async ({ page }) => {
   await loginReactStudent(page);
+  await page.getByRole("button", { name: "새 예약", exact: true }).click();
   const trigger = page.getByRole("button", { name: "즐겨찾기 관리" });
   await trigger.click();
 
@@ -94,6 +102,34 @@ test("Student React favorite manager opens as a reachable bottom sheet", async (
 
   await sheet.getByRole("button", { name: "닫기" }).click();
   await expect(trigger).toBeFocused();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("Student React moved reservation shortcuts preserve saved inventory and safe rebooking", async ({ page, request }, testInfo) => {
+  test.skip(!["mobile-390", "desktop-1440"].includes(testInfo.project.name), "representative phone and desktop");
+  const bootstrap = await (await request.get("/api/bootstrap")).json();
+  const item = bootstrap.data.equipment.find((entry) => entry.active !== false && entry.reservable !== false);
+  expect(item).toBeTruthy();
+  await page.route("**/api/me/reservation-shortcuts", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ ok: true, data: {
+      favoriteGroups: [{ id: "saved-kit", name: "저장한 구성", equipmentItemIds: [item.id] }],
+      recentReservations: [{ id: "previous-kit", type: "equipment", fields: { equipmentItemIds: [item.id], period: "당일", purpose: "이전 촬영 구성", reservedDate: "2000-01-01", rentalTime: "10:15", returnTime: "17:10", phone: "old-private-phone" } }]
+    } })
+  }));
+  await loginReactStudent(page);
+  await expect(page.locator(".student-react-home .student-react-quick-reservation")).toHaveCount(0);
+  await page.getByRole("button", { name: "새 예약", exact: true }).click();
+  await page.getByRole("region", { name: "저장한 구성 즐겨찾기" }).getByRole("button").click();
+  await expect(page.getByRole("heading", { name: "예약 신청", exact: true })).toBeVisible();
+  expect(await page.evaluate(async () => (await import("/js/state.js?v=20261014-photo-picker-r1")).state.selectedEquipmentItemIds)).toEqual([item.id]);
+  await page.getByRole("button", { name: "예약 종류", exact: true }).click();
+  await page.locator(".student-react-rebooking-list button").click();
+  const selected = await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
+    return { items: state.selectedEquipmentItemIds, date: state.selectedDates.equipment, rentalTime: state.selectedEquipmentRentalTime, phone: state.rebookingDetails.fields.phone, purpose: state.rebookingDetails.fields.purpose };
+  });
+  expect(selected).toEqual({ items: [item.id], date: "", rentalTime: "", phone: undefined, purpose: "이전 촬영 구성" });
   await expectNoHorizontalOverflow(page);
 });
 

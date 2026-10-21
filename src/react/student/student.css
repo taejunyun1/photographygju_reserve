@@ -933,7 +933,7 @@
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 18px;
+  padding: 12px;
   border: 1px solid var(--student-line);
   border-radius: 12px;
   background: var(--student-surface);
@@ -953,8 +953,13 @@
 }
 
 .student-react-home-bookings__heading h2 {
-  font-size: 19px;
+  font-size: 16px;
 }
+
+.student-react-home-bookings__heading h2 span { margin-left: 4px; color: var(--gju-color-primary); font-variant-numeric: tabular-nums; }
+.student-react-home-bookings__actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.student-react-home-bookings__actions .gju-button { min-height: 44px; }
+.student-react-home-bookings__actions .gju-icon-button { width: 44px; height: 44px; min-width: 44px; }
 
 .student-react-home-bookings__heading p {
   font-size: 12px;
@@ -973,7 +978,7 @@
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding: 12px 0;
+  padding: 10px 0;
   border-top: 1px solid var(--student-line);
 }
 
@@ -1012,9 +1017,21 @@
 }
 
 .student-react-home-bookings__empty {
+  margin: 0;
   padding-top: 8px;
   border-top: 1px solid var(--student-line);
+  font-size: 12px;
 }
+
+.student-react-home-report-alert,
+.student-react-home-notice { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--student-line); border-radius: 8px; background: var(--student-surface); color: var(--student-ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.student-react-home-report-alert { color: var(--gju-color-warning); border-color: color-mix(in srgb, var(--gju-color-warning) 25%, var(--student-line)); }
+.student-react-home-report-alert > span,
+.student-react-home-notice > span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.student-react-home-report-alert svg,
+.student-react-home-notice svg { flex-shrink: 0; width: 18px; height: 18px; }
+.student-react-home-report-alert:focus-visible,
+.student-react-home-notice:focus-visible { outline: 3px solid var(--gju-color-primary); outline-offset: 2px; }
 
 .student-react-reservation-card__head {
   display: flex;

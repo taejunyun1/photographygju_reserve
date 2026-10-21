@@ -27,7 +27,7 @@ globalThis.localStorage = {
 };
 globalThis.sessionStorage = globalThis.localStorage;
 
-const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261014-photo-picker-r1");
+const { state, setAuthenticatedUser, getAuthenticatedSessionGeneration } = await import("../public/js/state.js?v=20261014-photo-picker-r1");
 const { equipmentForm, homeView, myReservationsView } = await import("../public/js/views-student.js?v=20261014-photo-picker-r1");
 
 const viewSource = fs.readFileSync("public/js/views-student.js", "utf8");
@@ -393,7 +393,14 @@ assert(conflictHtml.includes('value="eq1" checked  />'), "conflicting selected c
 assert(conflictHtml.includes('data-reserve-next="equipment:details" disabled'), "conflicting draft cannot advance");
 // Execute the production actions against a two-user API fixture.
 const actionSource = fs.readFileSync("public/js/actions.js", "utf8").replace(/^import[\s\S]*?from [^;]+;\n/gm, "").replace(/export /g, "");
+const dataSource = fs.readFileSync("public/js/data.js", "utf8").replace(/^import[\s\S]*?from [^;]+;\n/gm, "").replace(/export /g, "");
+// Keep the imported cache dependency real: logout must clear cached private board data,
+// rather than succeeding against a no-op dependency stub.
+const facilityCacheFixture = { state, setAuthenticatedUser, getAuthenticatedSessionGeneration };
+vm.createContext(facilityCacheFixture);
+vm.runInContext(dataSource, facilityCacheFixture);
 const fixture = { state, setAuthenticatedUser, localStorage, sessionStorage, render() {}, toast() {},
+  invalidateFacilityTimelineCache: facilityCacheFixture.invalidateFacilityTimelineCache,
   clearNativeNotificationAccount: async () => {}, handleNativeNotificationResume: async () => {},
   notifyNativeReservationCreated: async () => {}, loadBootstrap: async () => {}, loadMyReservations: async () => {}, loadLectures: async () => {},
   formData: (form) => form.fields, getChecked: () => [], isPastDate: () => false, isReservationDateClosed: () => false,
@@ -401,6 +408,7 @@ const fixture = { state, setAuthenticatedUser, localStorage, sessionStorage, ren
   equipmentIsHighValue: () => false, equipmentIsCameraBag: () => false,
   api: async (path) => {
     if (path === "/api/reservations") throw Object.assign(new Error("conflict"), { status: 409 });
+    if (path === "/api/auth/logout") assert.equal(state.facilityTimeline.data, null, "logout clears private board data before the server request");
     if (path === "/api/auth/login") return { token: "B-token", user: { id: "studentB", role: "student", phone: "01022223333" } };
     return {};
   }
@@ -413,9 +421,16 @@ assert.equal(state.equipmentDraftFields.userId, "student1", "failed draft belong
 assert.equal(state.selectedEquipmentItemIds.join(","), "eq1", "failed submit preserves A selection");
 assert.equal([state.selectedDates.equipment, state.selectedEquipmentPeriod, state.selectedEquipmentRentalTime, state.selectedEquipmentReturnTime].join("|"), failedSchedule, "failed submit preserves A schedule");
 assert(equipmentForm().includes('name="standRequest" value="A 스탠드"'), "same-account failed submit retains request");
+facilityCacheFixture.seedFacilityTimeline({ viewer: "student", date: state.selectedDates.equipment, generatedAt: new Date().toISOString(), validUntil: new Date(Date.now() + 60_000).toISOString(), spaces: [{ label: "A private board" }] });
+assert.equal(state.facilityTimeline.data.spaces[0].label, "A private board", "logout fixture must start with private board data");
 await fixture.logout();
 assert.equal(state.equipmentDraftFields, null, "logout clears private draft");
+assert.equal(state.facilityTimeline.data, null, "logout clears private facility data");
+assert.equal(state.facilityTimeline.date, "", "logout resets the facility query date");
+assert.equal(state.facilityTimeline.loading, false, "logout resets facility loading");
+assert.equal(state.facilityTimeline.lastSucceededAt, "", "logout clears facility freshness metadata");
 await fixture.login({ fields: {} });
+assert.equal(state.facilityTimeline.data, null, "next account must not inherit previous facility data");
 state.selectedEquipmentItemIds = ["eq1"];
 state.selectedDates.equipment = futureDateKey();
 state.bootstrap.reservations = [];
@@ -426,11 +441,11 @@ assert(!bHtml.includes("01098765432") && !bHtml.includes("A 스탠드") && !bHtm
 // Defense in depth: even a stale foreign draft never renders.
 state.equipmentDraftFields = { userId: "student1", phone: "01098765432", purpose: "실습", standRequest: "A 스탠드" };
 assert(!equipmentForm().includes("01098765432"), "foreign owner draft is ignored");
-const expiredFixture = { state, setAuthenticatedUser, localStorage, sessionStorage,
+const expiredFixture = { state, setAuthenticatedUser, getAuthenticatedSessionGeneration, localStorage, sessionStorage,
   api: async () => { throw Object.assign(new Error("expired"), { status: 401 }); }
 };
 vm.createContext(expiredFixture);
-vm.runInContext(fs.readFileSync("public/js/data.js", "utf8").replace(/^import[\s\S]*?from [^;]+;\n/gm, "").replace(/export /g, ""), expiredFixture);
+vm.runInContext(dataSource, expiredFixture);
 state.token = "expired-token";
 await expiredFixture.loadMe();
 assert.equal(state.equipmentDraftFields, null, "expired session clears private draft");

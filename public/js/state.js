@@ -6,6 +6,7 @@ export const state = {
   token: storedToken,
   user: null,
   bootstrap: null,
+  facilityTimeline: { date: "", data: null, loading: false, error: "", lastSucceededAt: "" },
   view: "home",
   authMode: "login",
   reservationType: "",
@@ -137,7 +138,17 @@ export const state = {
   toast: ""
 };
 
+let authenticatedSessionGeneration = 0;
+
+export function getAuthenticatedSessionGeneration() {
+  return authenticatedSessionGeneration;
+}
+
 export function setAuthenticatedUser(user) {
+  if (state.user?.id !== user?.id || state.user?.role !== user?.role || state.user?.approvalStatus !== user?.approvalStatus) {
+    authenticatedSessionGeneration += 1;
+    state.facilityTimeline = { date: "", data: null, loading: false, error: "", lastSucceededAt: "" };
+  }
   if (!user?.id || state.equipmentDraftFields?.userId !== user.id) state.equipmentDraftFields = null;
   state.user = user;
 }

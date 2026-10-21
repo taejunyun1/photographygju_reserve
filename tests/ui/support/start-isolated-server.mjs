@@ -9,6 +9,7 @@ process.env.GJU_DATA_DIR = dataDir;
 process.env.PORT = process.env.GJU_E2E_PORT || "4179";
 process.env.GJU_HOST = "127.0.0.1";
 process.env.ADMIN_PASSWORD = "admin";
+process.env.SLACK_WEBHOOK_URL = "";
 
 await import("../../../scripts/build-react-admin.mjs");
 await import("../../../server.mjs");

@@ -1,3 +1,5 @@
+import type { FacilityTimelineData, FacilityTimelineResource } from "../shared/facility-board/types";
+
 export type AdminPageMeta = {
   total?: number;
   collectionTotal?: number;
@@ -359,6 +361,7 @@ export type AdminDashboardMetrics = {
 };
 
 export type AdminDashboardSummary = Record<string, unknown> & {
+  operationsBoard?: FacilityTimelineData;
   equipmentOverdueStatus?: { lastRunAt?: string; lastSuccessAt?: string; status?: "ok" | "failed"; createdCount?: number; error?: string; enabled?: boolean; enabledAt?: string };
   pendingWarningCount?: number;
   handoffBlockers?: Array<{ reservationId: string; equipmentId: string; reason: "not_returned" | "unavailable" }>;
@@ -675,6 +678,7 @@ export type AdminToastState = {
 };
 
 export type LegacyState = Record<string, unknown> & {
+  facilityTimeline?: FacilityTimelineResource;
   token?: string;
   adminView?: string;
   adminRefresh?: { refreshing?: boolean; lastSucceededAt?: string; error?: string };
@@ -746,6 +750,7 @@ export type LegacyState = Record<string, unknown> & {
 };
 
 export type ReactAdminActions = {
+  loadFacilityTimeline?(date: string, options?: { force?: boolean }): Promise<unknown> | void;
   setAdminView<View extends AdminView>(view: View, filters?: Partial<AdminViewFilterMap[View]>): Promise<void> | void;
   refreshAdminData(): Promise<void>;
   setAdminFilters<View extends AdminView>(

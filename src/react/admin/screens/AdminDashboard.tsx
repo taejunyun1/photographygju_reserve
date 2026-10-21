@@ -1,6 +1,7 @@
 import React from "react";
 
 import { GjuCard, motionClass } from "../../design-system";
+import { AdminFacilityBoard } from "../components/AdminFacilityBoard";
 import type { AdminOperationsWarning, AdminReservationRecord, AdminView, AdminViewFilterMap, ReactAdminActions, LegacyState } from "../../platform/types";
 
 type DashboardCardTone = "blue" | "amber" | "green" | "neutral" | "red";
@@ -223,6 +224,46 @@ function insightCard({
   );
 }
 
+function insightRow({
+  rowKey,
+  rank,
+  label,
+  context,
+  value,
+  detail,
+  className = "",
+  onClick
+}: {
+  rowKey: string;
+  rank?: number;
+  label: string;
+  context: string;
+  value: string;
+  detail?: string;
+  className?: string;
+  onClick: () => void;
+}) {
+  return React.createElement(
+    "button",
+    {
+      key: rowKey,
+      type: "button",
+      className: `admin-insights-row${rank ? "" : " admin-insights-row--unranked"} ${className}`.trim(),
+      "aria-label": `${rank ? `${rank}위 · ` : ""}${label} · ${context} · ${value}${detail ? ` · ${detail}` : ""}`,
+      onClick
+    },
+    rank ? React.createElement("span", { className: "admin-insights-rank", "aria-hidden": true }, rank) : null,
+    React.createElement("span", { className: "admin-insights-copy" },
+      React.createElement("strong", null, label),
+      React.createElement("small", null, context)
+    ),
+    React.createElement("span", { className: "admin-insights-value" },
+      React.createElement("strong", null, value),
+      detail ? React.createElement("small", null, detail) : null
+    )
+  );
+}
+
 function warningCopy(warning: AdminOperationsWarning): WarningNavigation {
   if (warning.kind === "handoff_blocked" || warning.kind === "handoff_delay") {
     return { title: "후속 대여 지연", detail: `${warning.equipmentName || warning.code || "기자재"} 실제 인계 확인이 필요합니다.`, target: "reservations", filters: { type: "equipment", q: warning.reservationId || "", page: 1 } };
@@ -346,6 +387,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   const cancellationRate = operationsInsights?.cancellationRate;
   const warnings = Array.isArray(operationsInsights?.warnings) ? operationsInsights.warnings : [];
   const insightPeriod = operationsInsights?.period || {};
+  const insightDays = Number(insightPeriod.days || 28);
   const insightDateFilters = {
     from: String(insightPeriod.from || ""),
     to: String(insightPeriod.to || "")
@@ -355,6 +397,7 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
   return React.createElement(
     "section",
     { className: motionClass.screen, style: styles.screen },
+    React.createElement(AdminFacilityBoard, { state, actions }),
     React.createElement(GjuCard, { title: "반납·인계 확인" },
       React.createElement("p", null, `검토 대기 경고 ${pendingWarningCount}건`),
       React.createElement("p", { style: styles.caption }, "자동 경고는 관리자 검토 대기 상태로 기록됩니다. 후속 예약은 유지되며 실제 인계 확인이 필요합니다."),
@@ -412,38 +455,62 @@ export function AdminDashboard({ state, actions }: AdminDashboardProps) {
     ),
     React.createElement(
       GjuCard,
-      { title: "운영 인사이트" },
-      React.createElement("p", { style: styles.caption }, `집계 기간: ${insightPeriod.from || "-"} ~ ${insightPeriod.to || "-"} · 예약 기준 통계`),
-      congestion.length === 0 ? React.createElement("p", { style: styles.caption }, "시간대별 예약이 3건 이상 쌓이면 예약 많은 시간을 표시합니다.") : null,
+      {
+        title: "운영 인사이트",
+        className: "admin-insights-summary",
+        actions: React.createElement("span", { className: "admin-insights-period-length" }, `최근 ${insightDays}일`)
+      },
+      React.createElement("p", { className: "admin-insights-period" }, `${insightPeriod.from || "-"} ~ ${insightPeriod.to || "-"}`),
       hasOperationsInsights
         ? React.createElement(
-          "div",
-          { className: "admin-dashboard-insights__grid" },
-          ...congestion.map((item) => insightCard({
-            cardKey: `congestion:${item.type || "all"}:${item.time || "unknown"}`,
-            label: "예약 많은 시간",
-            value: `${item.time || "시간 미정"} · ${Number(item.count || 0)}건`,
-            detail: `${item.label || "예약"} · 최근 ${Number(insightPeriod.days || 28)}일 예약 건수 (취소·반려 제외)`,
-            onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "operational", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
-          })),
-          ...utilization.slice(0, 3).map((item) => insightCard({
-            cardKey: `utilization:${item.equipmentId || item.code || item.name || "unknown"}`,
-            label: "장비 예약일 비율",
-            value: `${Number(item.utilizationPercent || 0)}%`,
-            detail: `${item.name || item.code || "기자재"} · 최근 ${Number(insightPeriod.days || 28)}일 중 ${Number(item.reservedDays || 0)}일 예약`,
-            onClick: () => { void actions.setAdminView("equipment", { q: String(item.name || item.code || "") }); }
-          })),
+          React.Fragment,
+          null,
+          React.createElement("div", { className: "admin-insights-groups" },
+            React.createElement("section", { className: "admin-insights-group", "aria-label": "예약 많은 시간" },
+              React.createElement("h3", null, "예약 많은 시간"),
+              congestion.length
+                ? React.createElement("ol", { className: "admin-insights-list" }, ...congestion.slice(0, 3).map((item, index) =>
+                  React.createElement("li", { key: `congestion:${item.type || "all"}:${item.time || "unknown"}` }, insightRow({
+                    rowKey: `congestion:${item.type || "all"}:${item.time || "unknown"}`,
+                    rank: index + 1,
+                    label: item.time || "시간 미정",
+                    context: reservationTypeLabel(String(item.type || "")),
+                    value: `${Number(item.count || 0)}건`,
+                    onClick: () => { void actions.setAdminView("reservations", { q: "", type: String(item.type || "all"), status: "operational", ...insightDateFilters, time: String(item.time || ""), page: 1 }); }
+                  }))
+                ))
+                : React.createElement("p", { className: "admin-insights-empty" }, "3건 이상인 시간대 없음")
+            ),
+            React.createElement("section", { className: "admin-insights-group", "aria-label": "장비 예약일 비율" },
+              React.createElement("h3", null, "장비 예약일 비율"),
+              utilization.length
+                ? React.createElement("ol", { className: "admin-insights-list" }, ...utilization.slice(0, 3).map((item, index) =>
+                  React.createElement("li", { key: `utilization:${item.equipmentId || item.code || item.name || "unknown"}` }, insightRow({
+                    rowKey: `utilization:${item.equipmentId || item.code || item.name || "unknown"}`,
+                    rank: index + 1,
+                    label: item.name || item.code || "기자재",
+                    context: `${Number(item.reservedDays || 0)}/${insightDays}일 예약`,
+                    value: `${Number(item.utilizationPercent || 0)}%`,
+                    onClick: () => { void actions.setAdminView("equipment", { q: String(item.name || item.code || "") }); }
+                  }))
+                ))
+                : React.createElement("p", { className: "admin-insights-empty" }, "장비 예약 데이터 없음")
+            )
+          ),
+          React.createElement("p", { className: "admin-insights-basis" }, "예약 건수·예약일 기준 · 취소·반려 제외"),
           Number(cancellationRate?.totalRequests || 0) >= 5
-            ? insightCard({
-              cardKey: "cancellation-rate",
+            ? insightRow({
+              rowKey: "cancellation-rate",
+              className: "admin-insights-cancellation",
               label: "취소율 (반려 포함)",
+              context: `접수 기준 · ${Number(cancellationRate?.cancelledRequests || 0)}/${Number(cancellationRate?.totalRequests || 0)}건`,
               value: `${Number(cancellationRate?.percent || 0)}%`,
-              detail: `기간 내 접수 ${Number(cancellationRate?.totalRequests || 0)}건 중 취소·반려 ${Number(cancellationRate?.cancelledRequests || 0)}건${Number(cancellationRate?.totalRequests || 0) < 20 ? " · 표본이 적어 참고용입니다" : ""}`,
+              detail: Number(cancellationRate?.totalRequests || 0) < 20 ? "표본 적음" : undefined,
               onClick: () => { void actions.setAdminView("reservations", { q: "", type: "all", status: "cancelled_or_rejected", ...insightDateFilters, dateBasis: "created", time: "", page: 1 }); }
             })
-            : null
+            : React.createElement("p", { className: "admin-insights-empty" }, "취소율은 접수 5건부터 표시")
         )
-        : React.createElement("p", { style: styles.caption }, "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다.")
+        : React.createElement("p", { className: "admin-insights-empty" }, "최근 4주 데이터가 충분하지 않아 추세를 표시하지 않습니다.")
     ),
     React.createElement(
       GjuCard,

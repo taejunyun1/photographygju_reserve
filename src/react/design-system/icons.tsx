@@ -19,6 +19,13 @@ export type GjuIconName =
   | "edit"
   | "plus"
   | "calendar"
+  | "clock"
+  | "map"
+  | "grid"
+  | "locate"
+  | "zoomIn"
+  | "zoomOut"
+  | "minus"
   | AstryxGjuIconName;
 
 type GjuIconProps = {
@@ -133,6 +140,19 @@ function iconPaths(name: GjuIconName): React.ReactNode[] {
         path("M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2", "calendar-1"),
         path("M8 2v4M16 2v4M3 10h18", "calendar-2")
       ];
+    case "clock":
+      return [circle(12, 12, 8, "clock-1"), path("M12 7v5l3 2", "clock-2")];
+    case "map":
+      return [path("M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16", "map-1")];
+    case "grid":
+      return [path("M3 4h18v16H3zM3 9h18M3 14h18M9 4v16M15 4v16", "grid-1")];
+    case "locate":
+      return [circle(12, 12, 6, "locate-1"), circle(12, 12, 2, "locate-2"), path("M12 2v4M12 18v4M2 12h4M18 12h4", "locate-3")];
+    case "zoomIn":
+    case "zoomOut":
+      return [circle(10.5, 10.5, 6.5, "zoom-1"), path("M16 16l5 5M7 10.5h7", "zoom-2"), ...(name === "zoomIn" ? [path("M10.5 7v7", "zoom-3")] : [])];
+    case "minus":
+      return [path("M6 12h12", "minus-1")];
     case "chevronLeft":
     case "chevronRight":
     case "info":

@@ -13,6 +13,7 @@ import { createAdminListHelpers } from "./core/admin-lists.mjs";
 import { createMaintenanceHelpers } from "./core/maintenance.mjs";
 import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
+import { buildFacilityTimeline } from "./core/facility-timeline.mjs";
 import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
 import { findReservationRecommendations } from "./core/reservation-recommendations.mjs";
 import {
@@ -1350,6 +1351,16 @@ export async function handleApiRequest(ctx) {
         return ok(publicSurveyForStudent({ survey, student: user, response, now: new Date() }));
       }
 
+      if (routeKey(method, pathname) === "GET /api/facility-timeline") {
+        const user = requireApprovedStudent(authorization, db);
+        const result = ok(buildFacilityTimeline(db, {
+          date: searchParams.has("date") ? searchParams.get("date") : todayKeySeoul(requestNow),
+          now: requestNow,
+          viewer: user
+        }));
+        return { ...result, headers: { "cache-control": "private, no-store" } };
+      }
+
       if (routeKey(method, pathname) === "GET /api/lectures") {
         const user = requireUser(authorization, db);
         const lectures = db.lectures
@@ -1912,13 +1923,13 @@ export async function handleApiRequest(ctx) {
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/summary") {
-        requireAdmin(authorization, db);
+        const admin = requireAdmin(authorization, db);
         const detailedReservations = db.reservations.map((item) => withReservationDetails(db, item));
         const pendingUsers = db.users.filter((user) => user.role === "student" && user.approvalStatus === "approval_pending").length;
         const equipmentPendingApproval = db.reservations.filter((item) => item.type === "equipment" && item.status === "pending_approval").length;
         const equipmentApproved = db.reservations.filter((item) => item.type === "equipment" && item.status === "approved").length;
         const equipmentCheckedOut = db.reservations.filter((item) => item.type === "equipment" && item.status === "checked_out").length;
-        const today = todayKeySeoul();
+        const today = todayKeySeoul(requestNow);
         const equipmentReturned = db.reservations.filter((item) => item.type === "equipment" && item.status === "returned" && item.fields?.reservedDate === today).length;
         const equipmentCancelled = db.reservations.filter((item) => item.type === "equipment" && ["cancelled", "admin_cancelled", "rejected"].includes(item.status) && item.fields?.reservedDate === today).length;
         const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
@@ -1947,7 +1958,7 @@ export async function handleApiRequest(ctx) {
           .sort((left, right) => String(left.queueAt || "").localeCompare(String(right.queueAt || "")));
         const todayReservations = todaySchedule.length;
         const activeEquipment = db.equipment.filter((item) => item.active !== false);
-        const metricNow = new Date();
+        const metricNow = requestNow;
         const missingReports = db.reservations.filter((item) => isStudioReportDue(db, item, today)).length;
         const equipmentMissingReports = reportQueueCount(db, metricNow) - missingReports;
         const metricFrom = addDaysToDateKey(today, -27);
@@ -1990,7 +2001,8 @@ export async function handleApiRequest(ctx) {
           .map(noticeWithActive)
           .filter((notice) => notice.active)
           .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))[0] || null;
-        return ok({
+        const summaryResult = ok({
+          operationsBoard: buildFacilityTimeline(db, { date: today, now: requestNow, viewer: admin }),
           equipmentOverdueStatus: { ...(db.meta?.equipmentOverdueSweep || {}), enabled: Boolean(db.settings.equipmentOverdueWarningsEnabled), enabledAt: db.settings.equipmentOverdueWarningsEnabledAt || "" },
           pendingWarningCount: (db.warnings || []).filter(w => w.source === "equipment_overdue" && w.status === "pending_review").length,
           handoffBlockers: db.reservations.filter(r => r.type === "equipment" && r.status === "approved").flatMap(r => getEquipmentHandoffBlockers(db, r, requestNow).filter(b => b.reason !== "not_started").map(b => ({ reservationId: r.id, ...b }))),
@@ -2026,9 +2038,10 @@ export async function handleApiRequest(ctx) {
             typeCounts,
             popularEquipment,
             latestNotice,
-            insights: buildOperationsInsights({ reservations: detailedReservations, equipment: db.equipment, settings: db.settings, now: new Date() })
+            insights: buildOperationsInsights({ reservations: detailedReservations, equipment: db.equipment, settings: db.settings, now: requestNow })
           }
         });
+        return { ...summaryResult, headers: { "cache-control": "private, no-store" } };
       }
 
       if (routeKey(method, pathname) === "GET /api/admin/export") {

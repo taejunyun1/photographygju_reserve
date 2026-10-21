@@ -2,6 +2,8 @@ import { $app, state } from "./state.js?v=20261014-photo-picker-r1";
 import { api, apiBinary } from "./api.js?v=20261014-photo-picker-r1";
 import {
   invalidateAdminViewCache,
+  invalidateFacilityTimelineCache,
+  loadFacilityTimeline,
   loadAdminView,
   loadBootstrap,
   loadLectures,
@@ -163,6 +165,10 @@ async function runAdminMutation(view, mutation, successMessage, options = {}) {
   }
 
   const message = typeof successMessage === "function" ? successMessage(result) : successMessage;
+  invalidateFacilityTimelineCache();
+  if (state.adminView === "dashboard" && state.facilityTimeline?.date) {
+    await loadFacilityTimeline(state.facilityTimeline.date, { force: true });
+  }
   invalidateAdminViewCache(...new Set([view, "dashboard", ...(options.invalidateViews || [])].filter(Boolean)));
   toast(message, { scrollState });
   if (options.refresh !== false && view) {
@@ -274,6 +280,8 @@ const reactStudentActions = createStudentReactActions({
   loadBootstrap,
   loadMyReservations,
   loadLectures,
+  loadFacilityTimeline,
+  invalidateFacilityTimelineCache,
   notifyNativeReservationCreated,
   clearNativeNotificationAccount,
   enableNativeReservationNotifications,
@@ -289,6 +297,16 @@ const reactStudentActions = createStudentReactActions({
 });
 
 const reactAdminActions = {
+  async loadFacilityTimeline(date, options) {
+    const scrollState = captureScrollState();
+    const pending = loadFacilityTimeline(date, options);
+    renderWithScrollState(scrollState);
+    try {
+      return await pending;
+    } finally {
+      renderWithScrollState(scrollState);
+    }
+  },
   async setAdminView(view, filters = {}) {
     const scrollState = captureScrollState();
     state.adminView = view;

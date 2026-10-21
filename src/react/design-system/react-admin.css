@@ -901,6 +901,131 @@
   line-height: 1.45;
 }
 
+.gju-app-shell__content .admin-insights-summary .gju-card__header {
+  padding: 14px 16px 0;
+}
+
+.gju-app-shell__content .admin-insights-summary .gju-card__body {
+  display: grid;
+  gap: 10px;
+  padding: 8px 16px 14px;
+}
+
+.admin-insights-period-length,
+.admin-insights-summary .admin-insights-period,
+.admin-insights-summary .admin-insights-basis,
+.admin-insights-summary .admin-insights-empty {
+  margin: 0;
+  color: var(--gju-color-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-insights-period-length {
+  white-space: nowrap;
+}
+
+.admin-insights-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px 24px;
+}
+
+.admin-insights-group {
+  min-width: 0;
+}
+
+.admin-insights-group h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.admin-insights-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-insights-list li + li {
+  border-top: 1px solid var(--gju-color-border);
+}
+
+.admin-insights-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gju-color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-insights-row:hover {
+  background: var(--gju-color-surface-muted);
+}
+
+.admin-insights-row:focus-visible {
+  outline: 2px solid var(--gju-color-primary);
+  outline-offset: 2px;
+}
+
+.admin-insights-rank {
+  color: var(--gju-color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-insights-copy,
+.admin-insights-value {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.admin-insights-copy strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.admin-insights-row small {
+  color: var(--gju-color-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-insights-value {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-insights-value strong {
+  color: var(--gju-color-primary);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.admin-insights-row--unranked {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.admin-insights-cancellation {
+  border-top: 1px solid var(--gju-color-border);
+  border-radius: 0;
+  padding-top: 10px;
+}
+
 .admin-dashboard-action-card {
   min-height: 104px;
 }
@@ -2381,4 +2506,218 @@
     animation: none;
     transition: none;
   }
+}
+
+/* Shared corridor-v1 facility board. Inherits the active admin/student product tokens. */
+.gju-facility-board {
+  min-width: 0;
+  --facility-wall: var(--gju-color-primary);
+  --facility-active: color-mix(in srgb, var(--gju-color-primary) 10%, var(--gju-color-surface));
+}
+.gju-facility-board .gju-card__body { padding: 16px; }
+.gju-facility-board .gju-card__header { flex-wrap: wrap; align-items: center; gap: 8px; }
+.gju-facility-board .gju-card__actions { min-width: 0; }
+.gju-facility-board .gju-button,
+.gju-facility-board .gju-tabs__tab { min-height: 44px; }
+.gju-facility-board .gju-icon-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.gju-facility-board .gju-icon-button[aria-pressed="true"] { background: var(--gju-color-primary); color: var(--gju-color-primary-contrast, white); border-color: var(--gju-color-primary); }
+.gju-facility-board__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.gju-facility-board button,
+.gju-facility-board input { font: inherit; touch-action: manipulation; }
+.gju-facility-board button:focus-visible,
+.gju-facility-board input:focus-visible,
+.gju-facility-board [tabindex]:focus-visible { outline: 3px solid var(--gju-color-primary); outline-offset: 2px; }
+.gju-facility-board h3 { margin: 0; font-size: 14px; line-height: 1.4; }
+.gju-facility-board__body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px 20px; min-width: 0; }
+.gju-facility-board__body > * { min-width: 0; }
+.gju-facility-board__status-line,
+.gju-facility-board__notice,
+.gju-facility-board__empty,
+.gju-facility-board__detail,
+.gju-facility-board__footnote { grid-column: 1 / -1; }
+.gju-facility-board__controls { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); align-items: center; gap: 8px; max-width: 340px; }
+.gju-facility-board__controls label { display: grid; gap: 4px; font-size: 11px; color: var(--gju-color-text-muted); }
+.gju-facility-board__controls input { width: 100%; box-sizing: border-box; min-width: 0; max-width: 100%; min-height: 44px; border: 1px solid var(--gju-color-border); border-radius: 6px; padding: 6px 10px; background: var(--gju-color-surface); color: var(--gju-color-text); font-size: 13px; }
+.gju-facility-board__toolbar { grid-column: 2; grid-row: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.gju-facility-board__toolbar-actions { display: flex; gap: 6px; }
+.gju-facility-board__view-tabs { display: none; }
+.gju-facility-board__status-line { grid-row: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--gju-color-text-muted); font-size: 12px; }
+.gju-facility-board__status-line > span { display: inline-flex; align-items: center; gap: 6px; }
+.gju-facility-board__status-line svg { width: 14px; height: 14px; }
+.gju-facility-board__updated { color: var(--gju-color-text-muted); font-size: 11px; }
+.gju-facility-board__notice { border: 1px solid var(--gju-color-border); padding: 12px; border-radius: 6px; background: var(--gju-color-surface-muted); font-size: 13px; margin: 0; }
+.gju-facility-board__notice.is-error { border-color: var(--gju-color-danger); color: var(--gju-color-danger); }
+.gju-facility-board__notice p { margin: 6px 0; }
+.gju-facility-board__empty { color: var(--gju-color-text-muted); text-align: center; padding: 20px 8px; margin: 0; font-size: 13px; }
+.gju-facility-board__views { display: contents; }
+.gju-facility-board__room-index,
+.gju-facility-board__space-index { display: none; }
+.gju-facility-board__plan-section { grid-column: 1 / -1; order: 10; min-width: 0; }
+.gju-facility-board__section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.gju-facility-board__map-tools { display: flex; align-items: center; gap: 8px; }
+.gju-facility-board__muted { margin: 4px 0; color: var(--gju-color-text-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.gju-facility-board__floor-viewport { overflow-x: auto; scrollbar-width: thin; isolation: isolate; border-radius: 4px; }
+.gju-facility-board__floor { position: relative; height: 206px; width: 100%; min-width: 0; }
+.gju-facility-board__hall { position: absolute; inset: 82px 0 auto; height: 40px; background: var(--gju-color-surface-muted); border-block: 2px solid var(--gju-color-border); display: flex; justify-content: space-between; align-items: center; padding-inline: 16px; color: var(--gju-color-text-muted); font-size: 11px; }
+.gju-facility-board__gate { position: absolute; left: 39.5%; top: 82px; height: 40px; width: 3px; border-block: 9px solid var(--gju-color-border); }
+.gju-facility-board__room,
+.gju-facility-board__context,
+.gju-facility-board__stairs { position: absolute; left: calc(var(--room-x) / 1600 * 100%); width: calc(var(--room-w) / 1600 * 100%); top: 0; height: 82px; box-sizing: border-box; }
+.gju-facility-board__room.is-lower,
+.gju-facility-board__context.is-lower,
+.gju-facility-board__stairs.is-lower { top: 122px; }
+.gju-facility-board__context { border: 1px solid var(--gju-color-border); background: var(--gju-color-surface-muted); }
+.gju-facility-board__stairs { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--gju-color-border); color: var(--gju-color-text-muted); background: var(--gju-color-surface-muted); font-size: 11px; }
+.gju-facility-board__stairs i { width: 24px; height: 50px; border-inline: 2px solid var(--gju-color-border); background: repeating-linear-gradient(0deg, transparent 0 7px, var(--gju-color-border) 7px 9px); }
+.gju-facility-board__room { border: 2px solid var(--facility-wall); background: var(--gju-color-surface); padding: 8px; color: var(--gju-color-primary); }
+.gju-facility-board__room.has-reservation { background: var(--facility-active); }
+.gju-facility-board__room.is-blocked { border-style: dashed; }
+.gju-facility-board__room.is-selected { box-shadow: inset 0 0 0 2px var(--gju-color-primary); }
+.gju-facility-board__room-copy { position: relative; z-index: 1; pointer-events: none; display: grid; gap: 4px; overflow: hidden; }
+.gju-facility-board__room-copy strong { font-size: 12px; white-space: nowrap; line-height: 1.3; }
+.gju-facility-board__room-copy > span { font-size: 11px; color: var(--gju-color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gju-facility-board__room-copy small { font-size: 11px; white-space: nowrap; }
+.gju-facility-board__room-hit { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; z-index: 2; }
+.gju-facility-board__room-hit:hover { background: color-mix(in srgb, var(--gju-color-primary) 7%, transparent); }
+.gju-facility-board__furniture { position: absolute; width: 42px; height: 26px; bottom: 5px; right: 7px; opacity: .35; shape-rendering: crispEdges; image-rendering: pixelated; pointer-events: none; }
+.gju-facility-board__door { position: absolute; bottom: -3px; right: 9px; width: 15px; height: 5px; background: var(--gju-color-surface-muted); }
+.gju-facility-board__room.is-lower .gju-facility-board__door { top: -3px; bottom: auto; right: auto; left: 9px; }
+.gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__floor { min-width: 1050px; }
+.gju-facility-board__summary { grid-column: 1 / -1; order: 12; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; }
+.gju-facility-board__summary button { min-height: 52px; min-width: 0; border: 1px solid var(--gju-color-border); border-radius: 6px; background: var(--gju-color-surface); color: var(--gju-color-text); padding: 8px; display: grid; align-content: center; gap: 4px; text-align: left; cursor: pointer; }
+.gju-facility-board__summary button[aria-pressed="true"] { border-color: var(--gju-color-primary); background: var(--facility-active); box-shadow: inset 0 -2px var(--gju-color-primary); }
+.gju-facility-board__summary strong { font-size: 12px; }
+.gju-facility-board__summary span,
+.gju-facility-board__summary small { color: var(--gju-color-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gju-facility-board__summary .gju-facility-board__compact-status { display: inline-flex; align-items: center; gap: 5px; min-height: 18px; }
+.gju-facility-board__compact-status svg { width: 16px; height: 16px; flex-shrink: 0; }
+.gju-facility-board__schedule-section { grid-column: 1; order: 15; min-width: 0; border-top: 1px solid var(--gju-color-border); padding-top: 12px; }
+.gju-facility-board__timeline-scroll { overflow: auto; max-height: 405px; scrollbar-width: thin; }
+.gju-facility-board__timeline { display: table; width: 100%; max-width: none; border-collapse: separate; border-spacing: 3px; table-layout: fixed; min-width: 720px; }
+.gju-facility-board__timeline caption { display: table-caption; text-align: left; color: var(--gju-color-text-muted); font-size: 12px; padding: 8px 0; }
+/* Keep the timetable intact when the legacy mobile shell turns ordinary tables into cards. */
+.gju-facility-board__timeline thead { display: table-header-group; width: auto; }
+.gju-facility-board__timeline tbody { display: table-row-group; width: auto; }
+.gju-facility-board__timeline tr { display: table-row; width: auto; margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.gju-facility-board__timeline th,
+.gju-facility-board__timeline td { display: table-cell; width: auto; border: 0; vertical-align: middle; }
+.gju-facility-board__timeline th { padding: 6px 4px; font-size: 12px; color: var(--gju-color-text-muted); font-weight: 500; text-align: center; text-transform: none; overflow-wrap: anywhere; background: var(--gju-color-surface); }
+.gju-facility-board__timeline th:first-child { width: 80px; text-align: left; position: sticky; left: 0; z-index: 1; background: var(--gju-color-surface); }
+.gju-facility-board__timeline td { padding: 0; }
+.gju-facility-board__timeline button { width: 100%; min-height: 44px; border: 1px solid transparent; color: var(--gju-color-text-muted); background: var(--gju-color-surface-muted); font-size: 12px; cursor: pointer; border-radius: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 3px; }
+.gju-facility-board__timeline button[data-event="reserved"],
+.gju-facility-board__timeline button[data-event="equipment"] { background: var(--facility-active); color: var(--gju-color-primary); }
+.gju-facility-board__timeline button[data-event="blocked"] { border-color: var(--gju-color-danger); border-style: dashed; }
+.gju-facility-board__timeline button[data-selected] { box-shadow: inset 0 -3px var(--gju-color-primary); }
+.gju-facility-board__equipment-area { grid-column: 2; order: 20; border-top: 1px solid var(--gju-color-border); padding-top: 12px; }
+.gju-facility-board__equipment-top { display: flex; align-items: start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.gju-facility-board__equipment-top strong { font-size: 13px; overflow-wrap: anywhere; }
+.gju-facility-board__equipment-top small { font-size: 11px; font-weight: 400; }
+.gju-facility-board__equipment-list,
+.gju-facility-board__reservation-list { list-style: none; padding: 0; margin: 8px 0; }
+.gju-facility-board__equipment-list.is-expanded,
+.gju-facility-board__reservation-list.is-expanded { max-height: 420px; overflow-y: auto; }
+.gju-facility-board__equipment-list li,
+.gju-facility-board__reservation-list li { padding: 10px 0; border-top: 1px solid var(--gju-color-border); font-size: 12px; }
+.gju-facility-board__actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.gju-facility-board__actions .gju-button { padding-inline: 8px; font-size: 12px; }
+.gju-facility-board__item-meta { display: flex; align-items: center; gap: 6px; color: var(--gju-color-text-muted); font-size: 12px; line-height: 1.5; margin: 4px 0; }
+.gju-facility-board__item-meta svg { width: 14px; height: 14px; flex-shrink: 0; }
+.gju-facility-board__equipment-info { width: 44px; }
+.gju-facility-board__equipment-info[open] { width: 100%; order: 10; }
+.gju-facility-board__equipment-info summary { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--gju-color-border); border-radius: 8px; cursor: pointer; list-style: none; }
+.gju-facility-board__equipment-info summary::-webkit-details-marker { display: none; }
+.gju-facility-board__equipment-info summary:focus-visible { outline: 3px solid var(--gju-color-primary); outline-offset: 2px; }
+.gju-facility-board__equipment-info > div { padding: 8px 12px; color: var(--gju-color-text-muted); background: var(--gju-color-surface-muted); border-radius: 6px; }
+.gju-facility-board__equipment-info p { margin: 6px 0; }
+.gju-facility-board__detail { order: 30; padding: 12px; border: 1px solid var(--gju-color-border); border-radius: 6px; background: var(--gju-color-surface-muted); }
+.gju-facility-board__reservation-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.gju-facility-board__reservation-list li > span { color: var(--gju-color-text-muted); }
+.gju-facility-board__restriction { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--gju-color-danger); }
+.gju-facility-board__restriction svg { flex-shrink: 0; }
+.gju-facility-board__footnote { order: 40; margin: 0; font-size: 11px; line-height: 1.5; color: var(--gju-color-text-muted); }
+@media (max-width: 1000px) {
+  .gju-facility-board__room-copy > span,
+  .gju-facility-board__room-copy small { display: none; }
+  .gju-facility-board__room-copy strong { font-size: 11px; }
+}
+@media (max-width: 620px) {
+  .gju-facility-board .gju-card__header { padding: 12px 12px 0; }
+  .gju-facility-board .gju-card__body { padding: 12px; }
+  .gju-facility-board__body { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .gju-facility-board__controls { max-width: none; gap: 6px; }
+  .gju-facility-board__controls label { min-width: 0; font-size: 12px; }
+  .gju-facility-board__controls input { width: 100%; box-sizing: border-box; padding-inline: 6px; font-size: 16px; }
+  .gju-facility-board__status-line { margin: 0; gap: 4px 12px; font-size: 12px; }
+  .gju-facility-board__toolbar { grid-column: 1; grid-row: 3; justify-content: space-between; gap: 6px; }
+  .gju-facility-board__view-tabs { display: flex; flex: 0 0 auto; gap: 4px; margin: 0; padding: 0; border: 0; }
+  .gju-facility-board__view-tabs .gju-tabs__tab { display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 44px; min-width: 44px; }
+  .gju-facility-board__toolbar-actions { gap: 4px; }
+  .gju-facility-board__views { display: flex; flex-direction: column; gap: 8px; }
+  .gju-facility-board__views.is-plan .gju-facility-board__schedule-section,
+  .gju-facility-board__views.is-timeline .gju-facility-board__plan-section { display: none; }
+  .gju-facility-board__views.is-timeline .gju-facility-board__summary { order: 20; }
+  .gju-facility-board__section-heading { margin-bottom: 4px; }
+  .gju-facility-board__section-heading h3 { font-size: 13px; }
+  .gju-facility-board__map-tools .gju-facility-board__muted { font-size: 11px; }
+  .gju-facility-board__map-tools .gju-button { padding-inline: 8px; font-size: 12px; }
+  .gju-facility-board__plan-section > .gju-facility-board__section-heading { display: none; }
+  .gju-facility-board__floor { height: 112px; }
+  .gju-facility-board__room,
+  .gju-facility-board__context,
+  .gju-facility-board__stairs { height: 42px; }
+  .gju-facility-board__room.is-lower,
+  .gju-facility-board__context.is-lower,
+  .gju-facility-board__stairs.is-lower { top: 70px; }
+  .gju-facility-board__hall { top: 42px; height: 28px; padding-inline: 6px; font-size: 9px; }
+  .gju-facility-board__gate { top: 42px; height: 28px; border-block-width: 6px; }
+  .gju-facility-board__room { border-width: 1px; padding: 4px 2px; }
+  .gju-facility-board__room-copy strong { font-size: 12px; }
+  .gju-facility-board__room-name { display: none; }
+  .gju-facility-board__room-index { display: inline; }
+  .gju-facility-board__room-copy > span,
+  .gju-facility-board__room-copy small { display: none; }
+  .gju-facility-board__room-hit { display: none; }
+  .gju-facility-board__furniture { width: 24px; height: 17px; bottom: 4px; right: 2px; opacity: .5; }
+  .gju-facility-board__stairs { font-size: 7px; gap: 3px; }
+  .gju-facility-board__stairs i { height: 24px; width: 12px; border-width: 1px; background-size: auto 7px; }
+  .gju-facility-board__door { height: 3px; width: 9px; bottom: -2px; right: 4px; }
+  .gju-facility-board__room.is-lower .gju-facility-board__door { top: -2px; left: 4px; }
+  .gju-facility-board__summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding: 2px; }
+  .gju-facility-board__summary button { min-height: 52px; min-width: 0; padding: 7px; }
+  .gju-facility-board__summary button:last-child { grid-column: 1 / -1; grid-template-columns: minmax(0,1fr) auto; align-items: center; min-height: 44px; }
+  .gju-facility-board__summary strong { display: flex; align-items: center; gap: 6px; }
+  .gju-facility-board__space-index { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: 0 0 18px; background: var(--facility-active); color: var(--gju-color-primary); font-size: 11px; font-style: normal; }
+  .gju-facility-board__summary strong,
+  .gju-facility-board__summary span { font-size: 12px; }
+  .gju-facility-board__summary span { white-space: normal; overflow-wrap: anywhere; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__floor { min-width: 1050px; height: 206px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room,
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__context,
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__stairs { height: 82px; }
+  .gju-facility-board__floor-viewport.is-zoomed .is-lower { top: 122px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__hall { top: 82px; height: 40px; font-size: 11px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__gate { top: 82px; height: 40px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room { padding: 8px; border-width: 2px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room-copy strong { font-size: 12px; letter-spacing: 0; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room-copy > span { display: block; font-size: 11px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room-name { display: inline; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room-index { display: none; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__room-hit { display: block; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__furniture { width: 42px; height: 26px; }
+  .gju-facility-board__floor-viewport.is-zoomed .gju-facility-board__stairs { font-size: 11px; }
+  .gju-facility-board__schedule-section { padding-top: 0; border: 0; }
+  .gju-facility-board__timeline caption { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .gju-facility-board__timeline-scroll { max-height: 310px; }
+  .gju-facility-board__equipment-area { display: none; }
+  .gju-facility-board__equipment-area.is-open { display: block; margin-top: 8px; }
+  .gju-facility-board__detail { margin-top: 8px; }
+  .gju-facility-board__footnote { margin-top: 8px; }
+  .gju-facility-board__notice { margin: 8px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gju-facility-board,
+  .gju-facility-board *,
+  .gju-facility-board *::before,
+  .gju-facility-board *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

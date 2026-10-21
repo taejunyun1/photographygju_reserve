@@ -377,7 +377,7 @@ assert(buttonRule.includes("box-shadow: var(--component-button-shadow)"), "butto
 assert(!primaryButtonRule.includes("linear-gradient"), "primary button must use a clear single-color surface");
 assert(!primaryButtonRule.includes("inset"), "primary button must not use an inset highlight that reads as a double button");
 
-assert(coreSource.includes("const today = todayKeySeoul();"), "admin summary must use the Seoul calendar day, not UTC");
+assert(coreSource.includes("const today = todayKeySeoul(requestNow);"), "admin summary must use the request clock's Seoul calendar day, not UTC");
 assert(!coreSource.includes('const today = new Date().toISOString().slice(0, 10);'), "admin summary must not use UTC ISO date for today's one-day dashboard");
 assert(rendererSource.includes("export function toast(message, options = {})"), "toast must accept options");
 assert(rendererSource.includes('document.addEventListener("gju-loading-change", () => {\n  const scrollState = captureScrollState();\n  render();\n  restoreScrollState(scrollState);\n});'), "loading overlay renders must preserve scroll state during admin actions");
