@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const localHtml = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+const expectedReleases = [...localHtml.matchAll(/release=([a-zA-Z0-9-]+)/g)].map(match => match[1]);
+assert.equal(expectedReleases.length, 4, "local entry bundles and styles must all have a release identifier");
 
 const origins = process.argv.slice(2);
 if (!origins.length) throw new Error("Pass the deployed Worker and Pages origins.");
@@ -9,7 +14,7 @@ for (const raw of origins) {
   const htmlResponse = await fetch(origin, { cache: "no-store" });
   assert.equal(htmlResponse.status, 200);
   const html = await htmlResponse.text();
-  assert.equal((html.match(/release=20261019-facility-r4/g) || []).length, 4, `${origin}: both entry bundles and styles must use the facility release`);
+  assert.deepEqual([...html.matchAll(/release=([a-zA-Z0-9-]+)/g)].map(match => match[1]), expectedReleases, `${origin}: entry bundles and styles must match the local release`);
 
   const timeline = await fetch(`${origin}/api/facility-timeline?date=${today}&viewer=admin`, { cache: "no-store" });
   assert.equal(timeline.status, 401, `${origin}: anonymous requests must not choose admin access`);

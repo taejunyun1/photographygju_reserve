@@ -78,6 +78,12 @@ function reservationDate(item) {
   return item.fields?.reservedDate || "";
 }
 
+function reservationDateTime(item) {
+  const date = reservationDate(item);
+  const slots = reservationTimes(item).map((value) => value.match(/\b\d{1,2}:\d{2}\b/)?.[0]).filter(Boolean).sort();
+  return `${date} ${slots[0] || ""}`;
+}
+
 function reservationTimes(item) {
   const fields = item.fields || {};
   return [
@@ -122,7 +128,7 @@ function sortList(items, params, { fields, defaultCompare, defaultDirections = {
 
 const RESERVATION_SORT_FIELDS = {
   createdAt: (item) => item.createdAt,
-  reservedDate: reservationDate,
+  reservedDate: reservationDateTime,
   status: (item) => item.status,
   type: (item) => item.type,
   name: (item) => item.user?.name,

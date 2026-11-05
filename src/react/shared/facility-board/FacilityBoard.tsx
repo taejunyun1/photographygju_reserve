@@ -125,6 +125,7 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
             {!!selectedIntervals.length&&<ul className={`gju-facility-board__reservation-list${showAll?' is-expanded':''}`}>{(showAll?selectedIntervals:selectedIntervals.slice(0,5)).map(record=><li key={record.entryKey}>
               <div><strong>{record.label}</strong> <GjuStatusBadge tone={record.status==='pending'||record.status==='pending_approval'?'amber':'blue'}>{statusLabel(record.status)}</GjuStatusBadge></div>
               <span>{intervalLabel(record)}{record.subspaceKeys?.length?` · ${record.subspaceKeys.map(key=>selectedSpace.subspaces.find(space=>space.key===key)?.label||key).join(' · ')}`:''}</span>
+              {selectedSpace.key==='a'&&Date.parse(record.startAt)<=clock&&clock<Date.parse(record.endAt)&&record.contactName&&<div>예약자 {record.contactName} · 연락처 {record.phone||'미등록'}</div>}
               {canOpenReservation(record,viewer)&&onOpenReservation&&<GjuIconButton label={viewer==='admin'?'예약 상세':'내 예약 상세'} icon="fileText" onClick={()=>onOpenReservation(record.reservationId!)}/>}
             </li>)}</ul>}
             {selectedIntervals.length>5&&<GjuButton variant="ghost" icon={showAll?'chevronLeft':'chevronRight'} aria-label={showAll?'5행으로 접기':`전체 ${selectedIntervals.length}건 보기`} aria-expanded={showAll} onClick={()=>setShowAll(!showAll)}>{showAll?'5':selectedIntervals.length}</GjuButton>}

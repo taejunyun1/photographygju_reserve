@@ -328,6 +328,12 @@ assert.deepEqual(
   ["reservation-c", "reservation-a", "reservation-b"],
   "reservations must sort by reserved date with a stable tie-breaker"
 );
+const studioDates = { ...db, reservations: [
+  { id: "a-late", type: "studio", fields: { reservedDate: "2026-11-05", timeSlots: ["18:00-20:00"] } },
+  { id: "future", type: "studio", fields: { reservedDate: "2026-11-07", timeSlots: ["10:00-12:00"] } },
+  { id: "z-early", type: "studio", fields: { reservedDate: "2026-11-05", timeSlots: ["16:00-18:00"] } }
+] };
+assert.deepEqual([1, 2, 3].flatMap((page) => lists.adminReservationList(studioDates, new URLSearchParams({ type: "studio", sort: "reservedDate", direction: "asc", page: String(page), pageSize: "1" })).items.map((item) => item.id)), ["z-early", "a-late", "future"], "studio reservations must be ordered by date and starting time before pagination");
 assert.deepEqual(
   lists.adminReportList(db, params({ sort: "title", direction: "desc" })).items.map((item) => item.id),
   ["report-c", "report-a", "report-b"],

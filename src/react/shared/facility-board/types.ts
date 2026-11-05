@@ -10,6 +10,8 @@ export type FacilityReservationInterval = {
   label: string;
   isMine: boolean;
   reservationId?: string;
+  contactName?: string;
+  phone?: string;
   subspaceKeys?: string[];
   handoffNeedsReview?: boolean;
   historyUnavailable?: boolean;

@@ -553,6 +553,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
     void actions.setAdminFilters("reservations", {
       type: nextTab,
       status: nextTab === "equipment" ? statusFilter : "all",
+      ...(nextTab === "studio" ? { sort: "reservedDate", direction: "asc" } : tab === "studio" ? { sort: "createdAt", direction: "desc" } : {}),
       page: 1
     });
   };
@@ -607,6 +608,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
           activeKey={semesterFilter}
           onChange={(semester) => void actions.setAdminFilters("reservations", { semester, page: 1 })}
         />
+        {tab === "studio" ? <label className="admin-studio-sort">예약 순서 <select className="input" aria-label="스튜디오 예약 정렬" value={sort.field === "reservedDate" ? sort.direction : "createdAt"} onChange={(event) => void actions.setAdminFilters("reservations", event.target.value === "createdAt" ? { sort: "createdAt", direction: "desc", page: 1 } : { sort: "reservedDate", direction: event.target.value === "desc" ? "desc" : "asc", page: 1 })}><option value="asc">예약일 빠른 순</option><option value="desc">예약일 늦은 순</option><option value="createdAt">신청일 최신 순</option></select></label> : null}
         {tab === "equipment" ? (
           <GjuTabs
             id="admin-reservation-status-tabs"

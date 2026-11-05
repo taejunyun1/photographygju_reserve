@@ -185,6 +185,15 @@ try {
     await page.getByLabel('현황 조회 날짜',{exact:true}).fill(next);
     await page.waitForFunction(next=>window.boardCalls.some(call=>call.date===next),next,{timeout:1000});
 
+    const contactPage=await browser.newPage();
+    await contactPage.setContent('<main id="root"></main>');
+    await contactPage.clock.install({time:new Date(`${date}T11:00:00+09:00`)});
+    await contactPage.addScriptTag({content:browserEntry.outputFiles[0].text});
+    await contactPage.getByLabel('현황 조회 날짜',{exact:true}).waitFor();
+    await contactPage.evaluate(()=>{const d=window.boardProps.resource.data;const spaces=d.spaces.map(s=>s.key==='a'?{...s,intervals:s.intervals.map((r,i)=>i===0?{...r,contactName:'예약자 테스트',phone:'010-1234-5678'}:r)}:s);window.updateBoard({resource:{...window.boardProps.resource,data:{...d,spaces}}});});
+    await contactPage.locator('[data-facility-room="a"]').click();
+    await contactPage.getByText('예약자 예약자 테스트 · 연락처 010-1234-5678').waitFor();
+    await contactPage.close();
     // The real admin host already refreshes today's summary on these lifecycle events.
     const adminPage=await browser.newPage();
     await adminPage.setContent('<main id="root"></main>');

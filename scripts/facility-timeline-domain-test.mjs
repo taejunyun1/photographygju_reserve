@@ -65,6 +65,14 @@ for (const secret of ["secret-user-id", "타인비밀이름", "SECRET-CODE", "se
 const admin = buildFacilityTimeline(db, { date: "2026-10-19", now, viewer: { id: "admin", role: "admin" } });
 assert.equal(admin.viewer, "admin");
 assert(admin.spaces.find(row => row.key === "a").intervals.some(row => row.label.includes("타인비밀이름") && row.reservationId === "front-secret"));
+const activeAdmin = buildFacilityTimeline(db, { date: "2026-10-19", now: "2026-10-19T11:00:00+09:00", viewer: { id: "admin", role: "admin" } });
+assert.equal(activeAdmin.spaces.find(row => row.key === "a").intervals.find(row => row.reservationId === "front-secret").phone, "secret-phone", "admin sees the current Studio A reservation phone");
+assert.equal(admin.spaces.find(row => row.key === "a").intervals.find(row => row.reservationId === "front-secret").phone, undefined, "ended reservations do not expose phone on the board");
+const activeStudent = buildFacilityTimeline(db, { date: "2026-10-19", now: "2026-10-19T11:00:00+09:00", viewer });
+const activeStudentFront = activeStudent.spaces.find(row => row.key === "a").intervals.find(row => !row.isMine);
+assert.equal(activeStudentFront.contactName, "타인비밀이름");
+assert.equal(activeStudentFront.phone, "secret-phone");
+assert(!JSON.stringify(activeStudent).includes("secret-student-id"), "student number remains private");
 assert.equal(admin.equipment[0].code, "SECRET-CODE-one");
 const future = buildFacilityTimeline(db, { date: "2026-11-18", now, viewer });
 assert.equal(future.equipment.find(row => row.equipmentId === "one").custody.overdue, true, "unreturned custody has no invented end even in future projections");

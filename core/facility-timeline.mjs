@@ -100,7 +100,9 @@ export function buildFacilityTimeline(db, { date, now, viewer }) {
         if (space.type !== reservation.type) continue;
         const subspaceKeys = targets.filter(key => roomForSubspace(key) === space.key);
         if (space.type === "studio" && !subspaceKeys.length) continue;
-        space.intervals.push(interval(reservation, timing, space.type === "studio" ? { subspaceKeys } : {}));
+        const currentStudioA = space.key === "a" && date === today && Date.parse(timing.startAt) <= clock.getTime() && clock.getTime() < Date.parse(timing.endAt);
+        const contact = currentStudioA ? (db.users || []).find(user => user.id === reservation.userId) : null;
+        space.intervals.push(interval(reservation, timing, space.type === "studio" ? { subspaceKeys, ...(contact ? { contactName: contact.name || "", phone: contact.phone || "" } : {}) } : {}));
       }
     }
   }
