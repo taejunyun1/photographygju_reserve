@@ -1443,6 +1443,115 @@
     overflow-wrap: anywhere;
   }
 
+  .gju-app-shell .gju-button,
+  .gju-app-shell .button,
+  .gju-dialog .gju-button,
+  .gju-dialog .button {
+    min-height: 44px;
+    max-width: 100%;
+    height: auto;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .gju-button__icon {
+    display: inline-flex;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .gju-button__label {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .gju-dialog {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 32px);
+    border: 1px solid var(--gju-color-border);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .gju-dialog__header,
+  .gju-dialog__actions {
+    gap: 8px;
+  }
+
+  .gju-dialog__title,
+  .gju-dialog__body {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .gju-dialog__actions {
+    flex-wrap: wrap;
+  }
+
+  .gju-app-shell__content .gju-tabs.admin-reservation-type-tabs {
+    gap: 4px;
+  }
+
+  .gju-app-shell__content .gju-tabs.admin-reservation-type-tabs .gju-tabs__tab {
+    flex: 1 0 auto;
+    min-width: 44px;
+    padding-inline: 6px;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .gju-app-shell :is(.input, .select, .textarea),
+  .gju-dialog :is(.input, .select, .textarea) {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .gju-app-shell__content .prop {
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+  }
+
+  .gju-app-shell__content .prop > dt,
+  .gju-app-shell__content .prop > dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .gju-app-shell__content .prop > dt {
+    color: var(--gju-color-text-muted);
+  }
+
+  .gju-app-shell__content .admin-reservation-card .reservation-card-head,
+  .gju-app-shell__content .admin-reservation-card .reservation-card-head > div {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .gju-app-shell__content .admin-reservation-card .reservation-card-head > div > span {
+    color: var(--gju-color-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .gju-app-shell__content .admin-reservation-card .gju-status-badge {
+    justify-self: start;
+  }
+
+  .gju-app-shell__content .admin-reservation-card .property-list {
+    margin: 0;
+    gap: 8px;
+  }
+
   .gju-app-shell__content .gju-card {
     border-radius: 8px;
     box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
@@ -2062,8 +2171,16 @@
   }
 
   .gju-app-shell__content .calendar-day {
-    min-height: 58px;
-    padding: 6px;
+    min-height: 48px;
+    padding: 6px 2px;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  .gju-app-shell__content .calendar-day > span {
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 
   .gju-app-shell__content .calendar-day small {
@@ -2468,6 +2585,7 @@
   }
 
   .admin-course-demand__candidate-list,
+  .admin-course-demand__builder-fields,
   .admin-course-demand__master-grid,
   .admin-course-demand__category-summary,
   .admin-course-demand__result-list > article {

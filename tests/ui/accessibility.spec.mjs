@@ -165,6 +165,8 @@ test("production student tabs control a labelled panel", async ({ page }) => {
 
 test("view replacement restores focus to a stable navigation target", async ({ page }) => {
   await loginAs(page, "student");
+  // Login toast dismissal renders the shell again; measure navigation after it settles.
+  await expect(page.locator(".toast")).toBeHidden();
   const scrollBefore = await page.evaluate(() => {
     const shell = document.querySelector(".student-shell");
     const target = shell && shell.scrollHeight > shell.clientHeight ? shell : document.scrollingElement;

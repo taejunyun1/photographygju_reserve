@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import {
+  GjuButton,
   GjuCard,
   GjuDialog,
   GjuEmptyState,
@@ -284,9 +285,11 @@ function WarningMemo({ user, actions }: { user: AdminUser; actions: ReactAdminAc
   return <div className="admin-user-warning-memo">
     <strong>유효 경고 {user.warningCount ?? records.filter((item) => item.status !== "cleared").length}건</strong>
     {records.map((record) => <div key={record.id}>{record.status ? labels[record.status] : "수동 경고"} · {record.reason || "사유 없음"}</div>)}
-    <button type="button" className="btn" disabled={loading} onClick={() => void load(1)}>전체 경고 기록·개별 심사</button>
-    <GjuIconButton label="메모 추가" icon="plus" onClick={() => runAdminAction(() => actions.warnUser(user.id))} />
-    <GjuIconButton label="수동 메모 초기화" icon="refresh" onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))} />
+    <GjuButton variant="outline" disabled={loading} onClick={() => void load(1)}>전체 경고 기록·개별 심사</GjuButton>
+    <div className="admin-react-action-row">
+      <GjuIconButton label="메모 추가" icon="plus" onClick={() => runAdminAction(() => actions.warnUser(user.id))} />
+      <GjuIconButton label="수동 메모 초기화" icon="refresh" onClick={() => runAdminAction(() => actions.resetUserWarnings(user.id))} />
+    </div>
     {open ? <GjuDialog open title={`${user.name || "학생"} · 전체 경고 ${total}건`} onClose={() => setOpen(false)} showActions={false}>
       {items.map((record) => <article key={record.id}>
         <strong>{record.status ? labels[record.status] : "수동 경고"}</strong><p>{record.reason}</p>
@@ -294,12 +297,14 @@ function WarningMemo({ user, actions }: { user: AdminUser; actions: ReactAdminAc
           <p>예약 {record.reservationId} · 장비 {(record.equipmentIds || []).join(", ")}</p>
           <p>예정 반납 {formatDateTime(record.dueAt)} · 실제 반납 {record.actualReturnedAt ? formatDateTime(record.actualReturnedAt) : "아직 확인되지 않음"}</p>
           <p>확인 관리자 {record.reviewedBy || "-"} · 확인 사유 {record.reviewReason || "-"}</p>
-          <button className="btn" type="button" onClick={() => void review(record)}>{record.actualReturnedAt ? "반납 시간 확인·경고 판정" : "예약 반납 점검으로 이동"}</button>
+          <GjuButton variant="outline" onClick={() => void review(record)}>{record.actualReturnedAt ? "반납 시간 확인·경고 판정" : "예약 반납 점검으로 이동"}</GjuButton>
         </> : null}
       </article>)}
-      <button className="btn" disabled={loading || page <= 1} onClick={() => void load(page - 1)}>이전</button>
-      <span>{page}페이지</span>
-      <button className="btn" disabled={loading || page * pageSize >= total} onClick={() => void load(page + 1)}>다음</button>
+      <div className="admin-react-action-row">
+        <GjuButton variant="outline" disabled={loading || page <= 1} onClick={() => void load(page - 1)}>이전</GjuButton>
+        <span>{page}페이지</span>
+        <GjuButton variant="outline" disabled={loading || page * pageSize >= total} onClick={() => void load(page + 1)}>다음</GjuButton>
+      </div>
     </GjuDialog> : null}
   </div>;
 }

@@ -1206,6 +1206,32 @@
 }
 
 @media (max-width: 700px) {
+  .student-react-facility-card .facility-visual {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .student-react-facility-card .facility-code,
+  .student-react-facility-card .availability {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .student-react-facility-card .facility-symbol {
+    flex: 0 0 16px;
+  }
+
+  .student-react-facility-card .facility-code b {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .student-react-facility-card .reserve-label {
+    min-height: 44px;
+  }
+
   .student-react-filter-tabs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

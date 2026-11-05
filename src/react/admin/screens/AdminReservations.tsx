@@ -593,7 +593,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
         <GjuTabs
           id="admin-reservation-type-tabs"
           ariaLabel="예약 유형"
-          className="admin-inner-tabs"
+          className="admin-inner-tabs admin-reservation-type-tabs"
           tabClassName="tab-button"
           items={RESERVATION_TABS.map(([key, label]) => ({ key, label }))}
           activeKey={tab}
