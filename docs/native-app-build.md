@@ -23,6 +23,17 @@ npm run native:ios
 
 iOS App Store용 아카이브를 CLI로 검증하려면:
 
+iOS와 Android의 버전 번호는 각 플랫폼의 출시 일정에 따라 독립적으로 검증한다. iOS만 업데이트할 때는 iOS 에셋만 동기화한다.
+
+```bash
+npm run native:release:check
+npm run build:native
+npx cap sync ios
+node scripts/ios-appstore-export.mjs --archive-only
+```
+
+두 플랫폼을 함께 동기화하는 기본 명령:
+
 ```bash
 npm run native:ios:archive
 ```

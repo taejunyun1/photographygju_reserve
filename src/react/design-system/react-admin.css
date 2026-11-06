@@ -2728,8 +2728,9 @@
 .gju-facility-board__timeline button[data-event="blocked"] { border-color: var(--gju-color-danger); border-style: dashed; }
 .gju-facility-board__timeline button[data-selected] { box-shadow: inset 0 -3px var(--gju-color-primary); }
 .gju-facility-board__equipment-area { grid-column: 2; order: 20; border-top: 1px solid var(--gju-color-border); padding-top: 12px; }
-.gju-facility-board__equipment-top { display: flex; align-items: start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.gju-facility-board__equipment-top strong { font-size: 13px; overflow-wrap: anywhere; }
+.gju-facility-board__equipment-top { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,max-content); align-items: start; gap: 8px; }
+.gju-facility-board__equipment-top strong { min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+.gju-facility-board__equipment-top .gju-status-badge { max-width: 132px; white-space: normal; overflow-wrap: anywhere; }
 .gju-facility-board__equipment-top small { font-size: 11px; font-weight: 400; }
 .gju-facility-board__equipment-list,
 .gju-facility-board__reservation-list { list-style: none; padding: 0; margin: 8px 0; }
@@ -2742,7 +2743,7 @@
 .gju-facility-board__item-meta { display: flex; align-items: center; gap: 6px; color: var(--gju-color-text-muted); font-size: 12px; line-height: 1.5; margin: 4px 0; }
 .gju-facility-board__item-meta svg { width: 14px; height: 14px; flex-shrink: 0; }
 .gju-facility-board__equipment-info { width: 44px; }
-.gju-facility-board__equipment-info[open] { width: 100%; order: 10; }
+.gju-facility-board__equipment-info[open] { width: 100%; }
 .gju-facility-board__equipment-info summary { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--gju-color-border); border-radius: 8px; cursor: pointer; list-style: none; }
 .gju-facility-board__equipment-info summary::-webkit-details-marker { display: none; }
 .gju-facility-board__equipment-info summary:focus-visible { outline: 3px solid var(--gju-color-primary); outline-offset: 2px; }
@@ -2751,6 +2752,7 @@
 .gju-facility-board__detail { order: 30; padding: 12px; border: 1px solid var(--gju-color-border); border-radius: 6px; background: var(--gju-color-surface-muted); }
 .gju-facility-board__reservation-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .gju-facility-board__reservation-list li > span { color: var(--gju-color-text-muted); }
+.gju-facility-board__contact { flex: 1 1 100%; min-width: 0; max-width: 100%; overflow-wrap: anywhere; line-height: 1.5; }
 .gju-facility-board__restriction { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--gju-color-danger); }
 .gju-facility-board__restriction svg { flex-shrink: 0; }
 .gju-facility-board__footnote { order: 40; margin: 0; font-size: 11px; line-height: 1.5; color: var(--gju-color-text-muted); }
@@ -2762,12 +2764,16 @@
 @media (max-width: 620px) {
   .gju-facility-board .gju-card__header { padding: 12px 12px 0; }
   .gju-facility-board .gju-card__body { padding: 12px; }
-  .gju-facility-board__body { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; }
-  .gju-facility-board__controls { max-width: none; gap: 6px; }
+  /* A single document flow prevents desktop grid coordinates from creating
+     implicit columns when the equipment list or reservation detail opens. */
+  .gju-facility-board__body { display: flex; flex-direction: column; gap: 12px; }
+  .gju-facility-board__body > * { min-width: 0; max-width: 100%; grid-column: auto; grid-row: auto; order: initial; }
+  .gju-facility-board__controls { width: 100%; max-width: none; gap: 8px; }
   .gju-facility-board__controls label { min-width: 0; font-size: 12px; }
-  .gju-facility-board__controls input { width: 100%; box-sizing: border-box; padding-inline: 6px; font-size: 16px; }
+  .gju-facility-board__controls input { appearance: none; -webkit-appearance: none; width: 100%; min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; padding-inline: 8px; font-size: 16px; }
+  .gju-facility-board__controls input::-webkit-date-and-time-value { min-width: 0; text-align: left; }
   .gju-facility-board__status-line { margin: 0; gap: 4px 12px; font-size: 12px; }
-  .gju-facility-board__toolbar { grid-column: 1; grid-row: 3; justify-content: space-between; gap: 6px; }
+  .gju-facility-board__toolbar { justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   .gju-facility-board__view-tabs { display: flex; flex: 0 0 auto; gap: 4px; margin: 0; padding: 0; border: 0; }
   .gju-facility-board__view-tabs .gju-tabs__tab { display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 44px; min-width: 44px; }
   .gju-facility-board__toolbar-actions { gap: 4px; }
@@ -2828,7 +2834,8 @@
   .gju-facility-board__timeline caption { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .gju-facility-board__timeline-scroll { max-height: 310px; }
   .gju-facility-board__equipment-area { display: none; }
-  .gju-facility-board__equipment-area.is-open { display: block; margin-top: 8px; }
+  .gju-facility-board__equipment-area.is-open { display: block; margin-top: 0; }
+  .gju-facility-board__item-meta { overflow-wrap: anywhere; }
   .gju-facility-board__detail { margin-top: 8px; }
   .gju-facility-board__footnote { margin-top: 8px; }
   .gju-facility-board__notice { margin: 8px 0; }

@@ -193,6 +193,16 @@ try {
     await contactPage.evaluate(()=>{const d=window.boardProps.resource.data;const spaces=d.spaces.map(s=>s.key==='a'?{...s,intervals:s.intervals.map((r,i)=>i===0?{...r,contactName:'예약자 테스트',phone:'010-1234-5678'}:r)}:s);window.updateBoard({resource:{...window.boardProps.resource,data:{...d,spaces}}});});
     await contactPage.locator('[data-facility-room="a"]').click();
     await contactPage.getByText('예약자 예약자 테스트 · 연락처 010-1234-5678').waitFor();
+    await contactPage.addStyleTag({content:fs.readFileSync('src/react/design-system/react-admin.css','utf8')});
+    await contactPage.setViewportSize({width:320,height:844});
+    await contactPage.evaluate(()=>window.updateBoard({onReserve:async()=>{throw new Error('fixture reservation error');}}));
+    for(const [room,action,section] of [['스튜디오 A','이 조건으로 예약','.gju-facility-board__detail'],['기자재실','이 장비 예약','.gju-facility-board__equipment-area']]) {
+      const choice=contactPage.getByRole('group',{name:'공간 요약',exact:true}).getByRole('button',{name:new RegExp(room)});
+      if(await choice.getAttribute('aria-pressed')!=='true') await choice.click();
+      await contactPage.getByRole('button',{name:action,exact:true}).first().click();
+      await contactPage.getByText('예약 화면을 열지 못했습니다. 다시 시도해 주세요.',{exact:true}).waitFor();
+      assert(await contactPage.evaluate(selector=>document.querySelector('[role="alert"]').getBoundingClientRect().top>=document.querySelector(selector).getBoundingClientRect().bottom,section),'reservation failure must remain below the section whose action failed');
+    }
     await contactPage.close();
     // The real admin host already refreshes today's summary on these lifecycle events.
     const adminPage=await browser.newPage();

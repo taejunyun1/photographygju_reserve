@@ -30,6 +30,7 @@ export default defineConfig({
     timeout: 15_000
   },
   projects: [
+    { name: "ios-webkit", testMatch: "**/facility-board-mobile-layout.spec.mjs", use: { ...devices["iPhone 13"], viewport: { width: 390, height: 844 } } },
     { name: "mobile-390", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } } },
     { name: "mobile-430", use: { ...devices["Desktop Chrome"], viewport: { width: 430, height: 932 } } },
     { name: "tablet-768", use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } } },

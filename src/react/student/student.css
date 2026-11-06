@@ -1152,7 +1152,7 @@
 }
 
 .student-react-shell .gju-app-shell__bottom-nav {
-  padding: 0 max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  padding: 0 max(12px, var(--gju-safe-area-right)) calc(10px + var(--gju-safe-area-bottom)) max(12px, var(--gju-safe-area-left));
   border-top: 0;
   background: transparent;
   -webkit-backdrop-filter: none;
