@@ -957,16 +957,17 @@
 }
 
 .student-react-home-bookings__heading h2 span { margin-left: 4px; color: var(--gju-color-primary); font-variant-numeric: tabular-nums; }
-.student-react-home-bookings__actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
-.student-react-home-bookings__actions .gju-button { min-height: 44px; }
-.student-react-home-bookings__actions .gju-icon-button { width: 44px; height: 44px; min-width: 44px; }
+.student-react-home-bookings__heading .gju-icon-button { width: 44px; height: 44px; min-width: 44px; }
 
 .student-react-home-bookings__heading p {
   font-size: 12px;
 }
 
-.student-react-home-bookings__heading .gju-button {
-  flex: 0 0 auto;
+.student-react-home-bookings__reserve.gju-button {
+  width: 100%;
+  min-height: 56px;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .student-react-home-bookings__list {

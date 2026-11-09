@@ -58,11 +58,9 @@ export function HomeScreen({ state, actions }: { state: StudentState; actions: S
       <section className="student-react-home-bookings" aria-label="내 예약">
         <div className="student-react-home-bookings__heading">
           <h2>내 예약 <span>{activeReservations.length}</span></h2>
-          <div className="student-react-home-bookings__actions">
-            <GjuButton icon="plus" disabled={!approved} onClick={() => actions.setView("reserve")}>새 예약</GjuButton>
-            <GjuIconButton label="전체 예약 보기" icon="chevronRight" onClick={() => actions.setView("mine")} />
-          </div>
+          <GjuIconButton label="전체 예약 보기" icon="chevronRight" onClick={() => actions.setView("mine")} />
         </div>
+        <GjuButton className="student-react-home-bookings__reserve" icon="plus" disabled={!approved} onClick={() => actions.setView("reserve")}>새 예약</GjuButton>
         {activeReservations.length ? (
           <div className="student-react-home-bookings__list">
             {activeReservations.slice(0, 2).map((reservation) => {
