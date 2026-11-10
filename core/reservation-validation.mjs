@@ -1,7 +1,9 @@
 import { equipmentScheduledWindow, equipmentWindowsOverlap } from "../public/js/equipment-schedule.mjs";
+import { evaluateDigitalLabSelection } from "./digital-lab.mjs";
 import { normalizeRequestedEquipment } from "./equipment-requests.mjs";
 
 const WEEKDAY_INDEX = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+const DIGITAL_LAB_CONFLICTS = new Set(["class_blocked", "seat_reserved", "user_overlap"]);
 
 export function createReservationValidationHelpers({
   addDaysToDateKey,
@@ -205,7 +207,17 @@ export function createReservationValidationHelpers({
     return buckets;
   }
 
-  function validateReservation(db, type, fields, editingId = null, { skipDeadline = false, now = new Date(), ignoreOverdue = false } = {}) {
+  function validateReservation(db, type, fields, editingId = null, { skipDeadline = false, now = new Date(), ignoreOverdue = false, userId } = {}) {
+    if (type === "digital_lab") {
+      const { reservedDate, seatId, startTime, endTime, purpose, phone } = fields || {};
+      if (typeof purpose !== "string" || !purpose.trim() || typeof phone !== "string" || !phone.trim()) {
+        throw Object.assign(new Error("이용 목적과 연락처를 입력하세요."), { status: 400 });
+      }
+      const selection = { reservedDate, seatId, startTime, endTime, purpose: purpose.trim(), phone: phone.trim() };
+      const { available, reasonCode, reason } = evaluateDigitalLabSelection(db, selection, { userId, now, editingId });
+      if (!available) throw Object.assign(new Error(reason), { status: DIGITAL_LAB_CONFLICTS.has(reasonCode) ? 409 : 400 });
+      return selection;
+    }
     if (!["equipment", "studio", "darkroom", "print"].includes(type)) throw Object.assign(new Error("지원하지 않는 예약 종류입니다."), { status: 400 });
     assertOptionalDateKey(fields.reservedDate, "예약일");
     if (!skipDeadline && reservationDateClosed(type, fields.reservedDate, now)) throw Object.assign(new Error(reservationDateClosedMessage(type)), { status: 400 });

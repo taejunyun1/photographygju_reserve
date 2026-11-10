@@ -1,4 +1,24 @@
 import { equipmentScheduledWindow } from "../public/js/equipment-schedule.mjs";
+import { DIGITAL_LAB_SEATS, evaluateDigitalLabSelection, overlappingDigitalLabReservations } from "./digital-lab.mjs";
+
+export function digitalLabAvailability(db, fields, { viewerId, editing, now }) {
+  const mySeatIds = new Set(overlappingDigitalLabReservations(db, fields)
+    .filter((reservation) => reservation.userId === viewerId)
+    .map((reservation) => reservation.fields.seatId));
+  const options = { userId: editing?.userId ?? viewerId, editingId: editing?.id, now };
+  return {
+    date: fields.reservedDate,
+    startTime: fields.startTime,
+    endTime: fields.endTime,
+    generatedAt: now.toISOString(),
+    seats: DIGITAL_LAB_SEATS.map((seat) => ({
+      ...seat,
+      ...evaluateDigitalLabSelection(db, { ...fields, seatId: seat.id }, options),
+      isMine: mySeatIds.has(seat.id)
+    }))
+  };
+}
+
 export function getEquipmentHandoffBlockers(db, reservation, now = new Date()) {
   if (reservation.type !== "equipment") return [];
   const window = equipmentScheduledWindow(reservation.fields);
@@ -46,6 +66,7 @@ export function createReservationViewHelpers({ publicUser, reservationTiming }) 
       userStatus: user?.studentStatus || "",
       fields: {
         reservedDate: fields.reservedDate || "",
+        ...(reservation.type === "digital_lab" ? { seatId: fields.seatId || "" } : {}),
         period: fields.period || "",
         rentalTime: fields.rentalTime || "",
         returnTime: fields.returnTime || "",

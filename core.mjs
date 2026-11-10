@@ -62,8 +62,7 @@ import {
 import { createReportsLecturesNoticesHelpers } from "./core/reports-lectures-notices.mjs";
 import { createReservationValidationHelpers } from "./core/reservation-validation.mjs";
 import { syncEquipmentReturnWarning, validateEquipmentActualReturnedAt, reviewEquipmentOverdueWarning, effectiveWarningCount, activeWarningRecordCount } from "./core/equipment-overdue.mjs";
-import { getEquipmentHandoffBlockers } from "./core/reservation-views.mjs";
-import { createReservationViewHelpers } from "./core/reservation-views.mjs";
+import { createReservationViewHelpers, digitalLabAvailability, getEquipmentHandoffBlockers } from "./core/reservation-views.mjs";
 import {
   DEFAULT_EQUIPMENT_REPORT_DEADLINE_HOURS,
   REPORT_PHOTO_LIMIT,
@@ -1072,7 +1071,7 @@ function restoreDatabaseSnapshot(target, snapshot) {
 export async function handleApiRequest(ctx) {
   const { method, authorization = "", readText, db, slackWebhook } = ctx;
   const { pathname, searchParams } = requestPath(ctx);
-  const requestNow = new Date(ctx.now || Date.now());
+  const requestNow = new Date(ctx.now ?? Date.now());
   let rollbackSnapshot = structuredClone(db);
   const saveDb = async () => { await ctx.saveDb(); rollbackSnapshot = structuredClone(db); };
   const meta = requestMeta(ctx);
@@ -1127,15 +1126,32 @@ export async function handleApiRequest(ctx) {
           reservations: user
             ? db.reservations
               .filter(isOperationalReservation)
-            .map((reservation) => {
-              const summary = publicReservationSummary(db, reservation);
-              const requirement = getReportRequirement(db, reservation, new Date());
-              return (reservation.type === "studio" || reservation.type === "equipment")
-                ? { ...summary, reportRequirement: requirement }
-                : summary;
-            })
+              .filter((reservation) => reservation.type !== "digital_lab" || user.role === "admin" || reservation.userId === user.id)
+              .map((reservation) => {
+                const summary = publicReservationSummary(db, reservation);
+                const requirement = getReportRequirement(db, reservation, new Date());
+                return (reservation.type === "studio" || reservation.type === "equipment")
+                  ? { ...summary, reportRequirement: requirement }
+                  : summary;
+              })
             : []
         });
+      }
+
+      if (routeKey(method, pathname) === "GET /api/digital-lab/availability") {
+        const user = requireUser(authorization, db);
+        const editingId = searchParams.get("editingId");
+        const editing = editingId === null ? null : db.reservations.find((reservation) =>
+          reservation.id === editingId && reservation.type === "digital_lab"
+          && isOperationalReservation(reservation)
+          && (user.role === "admin" || reservation.userId === user.id)
+        );
+        if (editingId !== null && !editing) throw Object.assign(new Error("수정할 디지털사진영상실 예약을 찾을 수 없습니다."), { status: 404 });
+        return ok(digitalLabAvailability(db, {
+          reservedDate: searchParams.get("date") ?? "",
+          startTime: searchParams.get("start") ?? "",
+          endTime: searchParams.get("end") ?? ""
+        }, { viewerId: user.id, editing, now: requestNow }));
       }
 
       if (routeKey(method, pathname) === "GET /api/me") {
@@ -1416,12 +1432,13 @@ export async function handleApiRequest(ctx) {
       }
 
       if (routeKey(method, pathname) === "POST /api/reservations/recommendations") {
-        requireApprovedStudent(authorization, db);
+        const user = requireApprovedStudent(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["type", "fields"]);
         const sourceFields = { ...(body.fields || {}) };
+        const now = new Date(ctx.now ?? Date.now());
         try {
-          validateReservation(db, body.type, { ...sourceFields });
+          validateReservation(db, body.type, { ...sourceFields }, null, { userId: user.id, now });
           return ok({ alternatives: [] });
         } catch {
           return ok({
@@ -1429,8 +1446,8 @@ export async function handleApiRequest(ctx) {
               db,
               type: body.type,
               fields: sourceFields,
-              validateCandidate: (candidate) => validateReservation(db, body.type, candidate),
-              now: new Date()
+              validateCandidate: (candidate) => validateReservation(db, body.type, candidate, null, { userId: user.id, now }),
+              now
             })
           });
         }
@@ -1440,14 +1457,15 @@ export async function handleApiRequest(ctx) {
         const user = requireApprovedStudent(authorization, db);
         const body = await parseBody(readText);
         assertRequired(body, ["type", "fields"]);
-        validateReservation(db, body.type, body.fields, null, { now: requestNow });
+        const now = body.type === "digital_lab" ? new Date(ctx.now ?? Date.now()) : requestNow;
+        const digitalLabFields = validateReservation(db, body.type, body.fields, null, { userId: user.id, now });
         const status = reservationStatusForType(body.type);
         const reservation = {
           id: id("res"),
           type: body.type,
           userId: user.id,
           status,
-          fields: {
+          fields: digitalLabFields ?? {
             ...body.fields,
             studentStatus: user.studentStatus,
             phone: body.fields.phone || user.phone,
@@ -1498,9 +1516,16 @@ export async function handleApiRequest(ctx) {
         if (reservation.type === "equipment" && reservation.status === "checked_out") {
           throw Object.assign(new Error("대여 중 기자재 예약은 수정할 수 없습니다."), { status: 409 });
         }
+        if (reservation.type === "digital_lab") {
+          if (!isOperationalReservation(reservation)) throw Object.assign(new Error("종료되었거나 취소된 예약은 수정할 수 없습니다."), { status: 409 });
+          if (body.fields !== undefined) assertPlainObject(body.fields, "예약");
+        }
         const nextFields = { ...reservation.fields, ...(body.fields || {}) };
-        validateReservation(db, reservation.type, nextFields, reservation.id, { skipDeadline: reservation.status === "checked_out", now: requestNow });
-        reservation.fields = nextFields;
+        const now = reservation.type === "digital_lab" ? new Date(ctx.now ?? Date.now()) : requestNow;
+        const digitalLabFields = validateReservation(db, reservation.type, nextFields, reservation.id, {
+          skipDeadline: reservation.status === "checked_out", userId: reservation.userId, now
+        });
+        reservation.fields = digitalLabFields ?? nextFields;
         reservation.updatedAt = nowIso();
         reservation.history.push({ at: nowIso(), actorId: user.id, action: "updated" });
         audit(db, user, "reservation.updated", reservation.id);

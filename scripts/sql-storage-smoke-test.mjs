@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { initialDb } from "../core.mjs";
+import { reservationTiming } from "../core/reservation-timing.mjs";
 import { createSqlAppStore } from "../storage-sql.mjs";
 
 class FakeCursor {
@@ -190,6 +191,53 @@ assert.equal(
   reservationInsertCountBeforeSettingsChange,
   "settings-only saves should not upsert reservation rows"
 );
+
+const legacyFields = {
+  equipment: { reservedDate: "2026-07-01", period: "당일", rentalTime: "09:00", returnTime: "17:00", equipmentItemIds: [db.equipment[0].id] },
+  studio: { reservedDate: "2026-07-01", studioSpaces: ["Studio A"], timeSlots: ["10:30-12:00"] },
+  darkroom: { reservedDate: "2026-07-01", timeSlots: ["10:00-12:00"], participantCount: "1" }
+};
+for (const [type, fields] of Object.entries(legacyFields)) {
+  loaded.reservations.push({
+    ...loaded.reservations[0], id: `res_sql_${type}`, type, fields,
+    status: type === "equipment" ? "approved" : "auto_confirmed"
+  });
+}
+await store.saveDb(loaded);
+const legacyReservations = structuredClone(loaded.reservations);
+const legacySqlRows = new Map(sql.records.reservations);
+const digitalLabReservation = {
+  id: "res_sql_digital_lab",
+  type: "digital_lab",
+  status: "auto_confirmed",
+  userId: "user_admin",
+  fields: {
+    reservedDate: "2026-07-01", seatId: "pc-04", startTime: "22:00", endTime: "24:00",
+    purpose: "사진 보정", phone: "01012345678"
+  },
+  history: [],
+  createdAt: "2026-06-24T01:00:00.000Z",
+  updatedAt: "2026-06-24T01:00:00.000Z"
+};
+const statementCount = sql.statements.length;
+loaded.reservations.push(digitalLabReservation);
+await store.saveDb(loaded);
+const newReservationWrites = sql.statements.slice(statementCount)
+  .filter(({ sql: statement }) => /^(?:INSERT OR REPLACE INTO|DELETE FROM) reservations\b/.test(statement));
+assert.equal(newReservationWrites.length, 1);
+assert.deepEqual(newReservationWrites[0].params.slice(0, 5), [
+  digitalLabReservation.id, "digital_lab", "auto_confirmed", "user_admin", "2026-07-01"
+]);
+assert.deepEqual(new Map([...sql.records.reservations].filter(([id]) => id !== digitalLabReservation.id)), legacySqlRows);
+
+const reloadedStore = createSqlAppStore(sql, { initialDb: () => initialDb("admin-pass") });
+const reloadedReservations = (await reloadedStore.loadDb()).reservations;
+const reloadedDigitalLab = reloadedReservations.find(({ id }) => id === digitalLabReservation.id);
+assert.deepEqual(reloadedDigitalLab, digitalLabReservation);
+assert.deepEqual(reservationTiming(reloadedDigitalLab), {
+  startAt: "2026-07-01T13:00:00.000Z", endAt: "2026-07-01T15:00:00.000Z"
+});
+assert.deepEqual(reloadedReservations.filter(({ id }) => id !== digitalLabReservation.id), legacyReservations);
 
 const migrationSql = new FakeSql();
 const migrationStore = createSqlAppStore(migrationSql, { initialDb: () => initialDb("admin-pass") });
