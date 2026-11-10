@@ -14,6 +14,8 @@ const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 const dateAfter = (days) => new Date(Date.parse(today) + days * 86400000).toISOString().slice(0, 10);
 const bookingDate = dateAfter(1);
 const classDate = dateAfter(2);
+const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const weekdayFor = (date) => weekdays[new Date(date).getUTCDay()];
 const fields = {
   reservedDate: bookingDate,
   seatId: "mac-01",
@@ -80,11 +82,10 @@ before(async () => {
   first = await register("first", "디지털실 테스트 가", fields.phone, true);
   second = await register("second", "디지털실 테스트 나", "01033334444", true);
   pending = await register("pending", "디지털실 테스트 다", "01055556666", false);
-  const weekday = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date(classDate).getUTCDay()];
   await expectData(api("/api/admin/settings", admin, "PATCH", {
     ...enabledSettings,
     blockedSchedules: [{
-      type: "digital_lab", day: weekday, from: classDate, to: classDate,
+      type: "digital_lab", day: weekdayFor(classDate), from: classDate, to: classDate,
       start: "10:30", end: "12:10", target: "디지털 사진 수업"
     }]
   }));
@@ -288,6 +289,105 @@ test("a disabled lab reports unavailable and rejects writes", async () => {
   const disabled = await expectData(availability(first, selection));
   assert.ok(disabled.seats.every((item) => !item.available && item.reasonCode === "disabled"));
   await expectStatus(create(first, selection), 400);
+});
+
+test("class availability follows inclusive term dates, weekday and minute boundaries", async () => {
+  const from = dateAfter(16);
+  const to = dateAfter(23);
+  const allDay = dateAfter(24);
+  await expectData(api("/api/admin/settings", admin, "PATCH", {
+    ...enabledSettings,
+    blockedSchedules: [
+      { type: "digital_lab", day: weekdayFor(from), from, to, start: "10:30", end: "12:00", target: "학기 수업" },
+      { type: "digital_lab", day: weekdayFor(allDay), from: allDay, to: allDay, start: "00:00", end: "24:00", target: "종일 수업" }
+    ]
+  }));
+  for (const [reservedDate, startTime, endTime, reasonCode] of [
+    [from, "10:00", "12:00", "class_blocked"],
+    [to, "10:00", "12:00", "class_blocked"],
+    [from, "12:00", "14:00", null],
+    [dateAfter(9), "10:00", "12:00", null],
+    [dateAfter(17), "10:00", "12:00", null],
+    [dateAfter(30), "10:00", "12:00", null],
+    [allDay, "00:00", "02:00", "class_blocked"],
+    [allDay, "22:00", "24:00", "class_blocked"]
+  ]) {
+    const { seats } = await expectData(availability(first, { reservedDate, startTime, endTime }));
+    assert.ok(seats.every((item) => item.reasonCode === reasonCode), JSON.stringify({ reservedDate, startTime, reasonCode, seats }));
+  }
+});
+
+test("new or changed lab classes reject conflicts atomically until an admin explicitly cancels", async () => {
+  const reservedDate = dateAfter(12);
+  const booking = await expectData(create(first, { reservedDate }));
+  const secondBooking = await expectData(create(second, { reservedDate, seatId: "pc-04" }));
+  const adjacent = { id: "class-adjacent", type: "digital_lab", day: weekdayFor(reservedDate),
+    from: reservedDate, to: reservedDate, start: "12:00", end: "14:00", target: "디지털 실습" };
+  const legacy = { id: "class-legacy", type: "studio", day: adjacent.day, from: reservedDate, to: reservedDate,
+    start: "10:30", end: "12:00", target: "Studio A Front" };
+  const before = await expectData(api("/api/admin/settings", admin, "PATCH", { blockedSchedules: [adjacent, legacy] }));
+  assert.deepEqual(before.blockedSchedules, [adjacent, legacy]);
+  const rule = { ...adjacent, start: "11:59" };
+  const newRule = { ...rule, id: "class-second" };
+  const settings = { blockedSchedules: [rule, newRule, legacy], darkroomCapacity: 12 };
+  const denied = await expectStatus(api("/api/admin/settings", first, "PATCH", settings), 403);
+  assert.equal(denied.conflicts, undefined);
+  const expected = [
+    { reservationId: booking.id, reservedDate, seatId: "mac-01", startTime: "10:00", endTime: "12:00" },
+    { reservationId: secondBooking.id, reservedDate, seatId: "pc-04", startTime: "10:00", endTime: "12:00" }
+  ];
+  for (const blockedSchedules of [[rule, legacy], [adjacent, newRule, legacy], settings.blockedSchedules]) {
+    const { conflicts } = await expectStatus(api("/api/admin/settings", admin, "PATCH", { ...settings, blockedSchedules }), 409);
+    assert.deepEqual(conflicts?.sort((a, b) => a.seatId.localeCompare(b.seatId)), expected);
+  }
+  assert.deepEqual((await expectData(api("/api/bootstrap", admin))).settings, before);
+  const savedRows = await expectData(api("/api/admin/reservations", admin));
+  assert.deepEqual(savedRows.find(({ id }) => id === booking.id), booking);
+  assert.deepEqual(savedRows.find(({ id }) => id === secondBooking.id), secondBooking);
+
+  for (const { id } of [booking, secondBooking]) {
+    assert.equal((await expectData(api(`/api/reservations/${id}/cancel`, admin, "POST", {}))).status, "admin_cancelled");
+  }
+  assert.deepEqual((await expectData(api("/api/admin/settings", admin, "PATCH", settings))).blockedSchedules, settings.blockedSchedules);
+  await expectStatus(create(first, { reservedDate }), 409);
+  await expectData(api("/api/admin/settings", admin, "PATCH", { blockedSchedules: [legacy] }));
+  assert.equal((await expectData(create(first, { reservedDate }))).status, "auto_confirmed");
+});
+
+test("malformed lab class date and time values are rejected before coercion", async () => {
+  const rule = { type: "digital_lab", day: weekdayFor(classDate), from: classDate, to: classDate,
+    start: "10:30", end: "12:10", target: "디지털 사진 수업" };
+  for (const field of ["from", "to", "start", "end"]) {
+    await expectStatus(api("/api/admin/settings", admin, "PATCH", {
+      blockedSchedules: [{ ...rule, [field]: [rule[field]] }]
+    }), 400);
+  }
+});
+
+test("pre-existing overlapping rules do not block unrelated saves or a title edit", async () => {
+  const db = await initialDb(password);
+  const rule = { id: "old-class", type: "digital_lab", day: weekdayFor(bookingDate), from: bookingDate, to: bookingDate,
+    start: "10:30", end: "12:00", target: "기존 수업" };
+  Object.assign(db.settings, enabledSettings, { blockedSchedules: [rule] });
+  db.reservations.push({ id: "old-booking", type: "digital_lab", status: "auto_confirmed", userId: "user_admin", fields });
+  db.sessions.push({ token: "fixture-admin", userId: "user_admin", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+  let writes = 0;
+  for (const patch of [
+    { darkroomCapacity: 9 },
+    { darkroomCapacity: 10, blockedSchedules: [rule] },
+    { blockedSchedules: [{ ...rule, target: "수업명 수정" }, {
+      ...rule, id: "new-print", type: "print", target: "출력 수업"
+    }] }
+  ]) {
+    const result = await handleApiRequest({
+      method: "PATCH", pathname: "/api/admin/settings", authorization: "Bearer fixture-admin", db,
+      readText: async () => JSON.stringify(patch), saveDb: async () => { writes += 1; }
+    });
+    assert.equal(result.status, 200, JSON.stringify(result.body));
+  }
+  assert.equal(db.settings.darkroomCapacity, 10);
+  assert.equal(db.settings.blockedSchedules[0].target, "수업명 수정");
+  assert.equal(writes, 3);
 });
 
 test("final writes refresh the time after reading the body", async (t) => {

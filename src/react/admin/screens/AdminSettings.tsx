@@ -5,7 +5,8 @@ import {
   adminSettings,
   blockedSchedules
 } from "../../platform/adminActions";
-import type { AdminBlockedSchedule, LegacyState, ReactAdminActions } from "../../platform/types";
+import type { AdminBlockedSchedule, AdminBlockedScheduleConflict, LegacyState, ReactAdminActions } from "../../platform/types";
+import { digitalLabSeatLabel } from "../../student/availability";
 import {
   checkedValue,
   fieldValue,
@@ -46,8 +47,16 @@ const TYPE_LABEL: Record<string, string> = {
   studio: "스튜디오",
   darkroom: "암실",
   equipment: "기자재",
-  print: "출력실"
+  print: "출력실",
+  digital_lab: "디지털사진영상실"
 };
+
+const LAB_SLOT_BOUNDARIES = Array.from({ length: 13 }, (_, index) => `${String(index * 2).padStart(2, "0")}:00`);
+const LAB_CLASS_TIME_PATTERN = "(?:[01][0-9]|2[0-3]):[0-5][0-9]";
+
+function blockedScheduleLabel(item: AdminBlockedSchedule) {
+  return item.type === "digital_lab" ? `${item.target || "수업"} · 16석 전체 차단` : item.target || "운영 차단";
+}
 
 function dateKey(date: Date) {
   const year = date.getFullYear();
@@ -99,6 +108,9 @@ function settingsPayload(form: HTMLFormElement) {
     printBankAccount: fieldValue(form, "printBankAccount"),
     googleDriveUrl: fieldValue(form, "googleDriveUrl"),
     darkroomCapacity: Number(fieldValue(form, "darkroomCapacity") || 6),
+    digitalLabEnabled: checkedValue(form, "digitalLabEnabled"),
+    digitalLabOpenTime: fieldValue(form, "digitalLabOpenTime"),
+    digitalLabCloseTime: fieldValue(form, "digitalLabCloseTime"),
     studioReportDeadlineHours: Number(fieldValue(form, "studioReportDeadlineHours") || 48),
     equipmentReportDeadlineHours: Number(fieldValue(form, "equipmentReportDeadlineHours") || 48),
     printAvailableStart: fieldValue(form, "printAvailableStart"),
@@ -137,6 +149,7 @@ function removeBlockedSchedule(
 function renderCalendar(
   month: string,
   schedules: AdminBlockedSchedule[],
+  selectedDate: string,
   onMonth: (month: string) => void,
   onDate: (key: string) => void
 ) {
@@ -155,6 +168,7 @@ function renderCalendar(
       blocked: blockedItemsForDate(schedules, key)
     };
   });
+  const selectedLabClasses = days.find((day) => day.key === selectedDate)?.blocked.filter((item) => item.type === "digital_lab") || [];
 
   return (
     <section className="calendar-card admin-settings-calendar" aria-label="학기 차단 캘린더">
@@ -179,17 +193,28 @@ function renderCalendar(
             className={`calendar-day ${day.currentMonth ? "" : "outside"} ${day.blocked.length ? "blocked" : ""}`}
             type="button"
             aria-label={`${day.key} 차단 일정 입력`}
+            aria-pressed={day.key === selectedDate}
             onClick={() => onDate(day.key)}
           >
             <span>{day.date}</span>
             {day.blocked.slice(0, 2).map((item) => (
               <small key={`${item.id || item.target}:${item.start}:${item.end}`}>
-                {TYPE_LABEL[String(item.type || "")] || item.type} {item.start}-{item.end}
+                {item.type === "digital_lab" ? blockedScheduleLabel(item) : TYPE_LABEL[String(item.type || "")] || item.type} {item.start}-{item.end}
               </small>
             ))}
           </button>
         ))}
       </div>
+      {selectedLabClasses.length > 0 && (
+        <section className="admin-react-card-list" aria-label="선택 날짜 디지털사진영상실 수업">
+          <strong>{selectedDate} 디지털사진영상실 수업</strong>
+          {selectedLabClasses.map((item) => (
+            <p className="admin-react-body-text" key={item.id}>
+              {item.start}–{item.end} · {blockedScheduleLabel(item)}
+            </p>
+          ))}
+        </section>
+      )}
     </section>
   );
 }
@@ -246,7 +271,11 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
   const settings = adminSettings(state);
   const schedules = blockedSchedules(state);
   const [month, setMonth] = React.useState(dateKey(new Date()).slice(0, 7));
+  const [calendarDate, setCalendarDate] = React.useState("");
   const [draft, setDraft] = React.useState<BlockDraft>(defaultDraft);
+  const [conflicts, setConflicts] = React.useState<AdminBlockedScheduleConflict[]>([]);
+  const [savingBlock, setSavingBlock] = React.useState(false);
+  const labClass = draft.type === "digital_lab";
   const startDateRef = React.useRef<HTMLInputElement>(null);
   const query = normalizedQuery(state.adminBlockedScheduleSearch);
   const filteredSchedules = schedules.filter((item) => blockMatches(item, query));
@@ -257,6 +286,8 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
 
   const onCalendarDate = (key: string) => {
     const date = new Date(`${key}T00:00:00`);
+    setCalendarDate(key);
+    setConflicts([]);
     setDraft((current) => ({
       ...current,
       from: key,
@@ -284,8 +315,17 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
         target: fieldValue(form, "target")
       }
     ];
-    await actions.saveBlockedSchedules(next);
-    setDraft(defaultDraft());
+    setConflicts([]);
+    setSavingBlock(true);
+    try {
+      await actions.saveBlockedSchedules(next);
+      setDraft(defaultDraft());
+    } catch (error) {
+      const response = error as { status?: number; conflicts?: AdminBlockedScheduleConflict[] } | null;
+      if (response?.status === 409 && Array.isArray(response.conflicts)) setConflicts(response.conflicts);
+    } finally {
+      setSavingBlock(false);
+    }
   });
 
   const submitBlockedSearch = stopSubmit((form) => {
@@ -294,9 +334,9 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
 
   return (
     <section className="grid admin-react-screen admin-settings-react-screen">
-      {renderCalendar(month, schedules, setMonth, onCalendarDate)}
+      {renderCalendar(month, schedules, calendarDate, setMonth, onCalendarDate)}
       <GjuCard title="수업/학기 차단 일정">
-        <form className="admin-react-form-grid" onSubmit={submitBlockedSchedule}>
+        <form className="admin-react-form-grid" onSubmit={submitBlockedSchedule} onChange={() => setConflicts([])}>
           <label>
             시설
             <select className="select" name="type" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.currentTarget.value })}>
@@ -304,6 +344,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
               <option value="darkroom">암실</option>
               <option value="equipment">기자재</option>
               <option value="print">출력실</option>
+              <option value="digital_lab">{TYPE_LABEL.digital_lab}</option>
             </select>
           </label>
           <label>
@@ -337,26 +378,39 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
           </label>
           <label>
             시작 시간
-            <input className="input" name="start" value={draft.start} onChange={(event) => setDraft({ ...draft, start: event.currentTarget.value })} required />
+            <input className="input" name="start" value={draft.start} onChange={(event) => setDraft({ ...draft, start: event.currentTarget.value })} pattern={labClass ? LAB_CLASS_TIME_PATTERN : undefined} required />
           </label>
           <label>
             종료 시간
-            <input className="input" name="end" value={draft.end} onChange={(event) => setDraft({ ...draft, end: event.currentTarget.value })} required />
+            <input className="input" name="end" value={draft.end} onChange={(event) => setDraft({ ...draft, end: event.currentTarget.value })} pattern={labClass ? `${LAB_CLASS_TIME_PATTERN}|24:00` : undefined} required />
           </label>
           <label className="admin-react-form-wide">
-            공간/메모
+            {labClass ? "수업명" : "공간/메모"}
             <input
               className="input"
               name="target"
               value={draft.target}
               onChange={(event) => setDraft({ ...draft, target: event.currentTarget.value })}
-              placeholder="Studio A,B / 수업명"
+              placeholder={labClass ? "예: 디지털 사진 편집" : "Studio A,B / 수업명"}
             />
           </label>
-          <button className="button primary admin-react-form-wide" type="submit">
+          <button className="button primary admin-react-form-wide" type="submit" disabled={savingBlock}>
             차단 일정 추가
           </button>
         </form>
+        {conflicts.length > 0 && (
+          <section className="admin-react-card-list" aria-label="차단 일정과 겹치는 예약">
+            <p role="alert">차단 일정과 겹치는 예약이 있습니다. 기존 예약을 수정하거나 취소한 뒤 다시 저장하세요.</p>
+            {conflicts.map((item) => (
+              <article key={item.reservationId} className="admin-react-list-card">
+                <p>{item.reservedDate} · {digitalLabSeatLabel(item.seatId) || item.seatId} · {item.startTime}–{item.endTime}</p>
+                <button className="button compact" type="button" onClick={() => runAdminAction(() => actions.setAdminView("reservations", { q: item.reservationId, page: 1 }))}>
+                  예약 상세
+                </button>
+              </article>
+            ))}
+          </section>
+        )}
         <form className="list-control-panel compact admin-react-toolbar" onSubmit={submitBlockedSearch}>
           <label>
             <span className="sr-only">차단 일정 검색</span>
@@ -381,7 +435,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
                 </div>
                 <span className="tag blue">{TYPE_LABEL[String(item.type || "")] || item.type || "-"}</span>
               </div>
-              <p className="admin-react-body-text">{item.target || "운영 차단"}</p>
+              <p className="admin-react-body-text">{blockedScheduleLabel(item)}</p>
               <GjuIconButton
                 label="차단 일정 삭제"
                 icon="trash"
@@ -406,6 +460,24 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
           <label>
             암실 최대 인원
             <input className="input" name="darkroomCapacity" type="number" min="1" defaultValue={String(settings.darkroomCapacity || 6)} />
+          </label>
+          <label className="admin-react-check admin-react-form-wide">
+            <input name="digitalLabEnabled" type="checkbox" defaultChecked={settings.digitalLabEnabled === true} />
+            디지털사진영상실 예약 활성화
+          </label>
+          <label>
+            디지털사진영상실 운영 시작
+            <select className="select" name="digitalLabOpenTime" defaultValue={settings.digitalLabOpenTime || ""}>
+              <option value="">미설정</option>
+              {LAB_SLOT_BOUNDARIES.slice(0, -1).map((time) => <option key={time} value={time}>{time}</option>)}
+            </select>
+          </label>
+          <label>
+            디지털사진영상실 운영 종료
+            <select className="select" name="digitalLabCloseTime" defaultValue={settings.digitalLabCloseTime || ""}>
+              <option value="">미설정</option>
+              {LAB_SLOT_BOUNDARIES.slice(1).map((time) => <option key={time} value={time}>{time}</option>)}
+            </select>
           </label>
           <label>
             스튜디오 보고서 제출 기한

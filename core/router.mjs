@@ -14,7 +14,10 @@ export function ok(data = null) {
 }
 
 export function fail(error) {
-  return { status: error.status || 500, body: { ok: false, error: error.message || "서버 오류가 발생했습니다." } };
+  const status = error.status || 500;
+  const body = { ok: false, error: error.message || "서버 오류가 발생했습니다." };
+  if (status === 409 && Array.isArray(error.conflicts)) body.conflicts = error.conflicts;
+  return { status, body };
 }
 
 export function assertRequired(body, fields) {

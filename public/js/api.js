@@ -25,6 +25,7 @@ export async function api(path, options = {}) {
     if (!payload.ok) {
       const error = new Error(payload.error || "요청 실패");
       error.status = response.status;
+      if (response.status === 409 && Array.isArray(payload.conflicts)) error.conflicts = payload.conflicts;
       throw error;
     }
     return payload.data;

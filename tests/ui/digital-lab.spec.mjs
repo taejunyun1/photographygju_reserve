@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { openReactStudent } from "./support/session.mjs";
+import { loginReactAdmin, openReactStudent } from "./support/session.mjs";
 
 const password = "digital-lab-fixture";
 const phone = "010-0000-0101";
@@ -228,4 +228,84 @@ test("a real save-time 409 refreshes seats and does not choose a replacement", a
   await expect(next(page)).toBeDisabled();
   await confirmSeat(page, "Mac 01");
   await expect(page.getByLabel("사용 목적")).toHaveValue(purpose);
+});
+
+test("admin saves lab operation and classes, keeps a conflicted draft and opens its booking", async ({ page, request }, info) => {
+  test.skip(info.project.name !== "mobile-390", "The shared settings fixture runs once to avoid competing class-list saves.");
+  const { token: adminToken } = await api(request, "POST", "/api/auth/login", { loginId: "admin", password: "admin" });
+  await loginReactAdmin(page);
+  const more = page.getByRole("button", { name: "더보기", exact: true }).filter({ visible: true });
+  if (await more.count()) await more.click();
+  await page.getByRole("button", { name: "설정", exact: true }).filter({ visible: true }).click();
+  await page.getByText("운영 설정", { exact: true }).click();
+  await page.getByLabel("디지털사진영상실 예약 활성화").check();
+  await page.getByLabel("디지털사진영상실 운영 시작").selectOption("00:00");
+  await page.getByLabel("디지털사진영상실 운영 종료").selectOption("24:00");
+  const settingsSaved = page.waitForResponse((response) => response.url().endsWith("/api/admin/settings") && response.request().method() === "PATCH");
+  await page.getByRole("button", { name: "설정 저장", exact: true }).click();
+  const savedResponse = await settingsSaved;
+  expect(savedResponse.status()).toBe(200);
+  expect((await savedResponse.json()).data).toMatchObject({
+    digitalLabEnabled: true, digitalLabOpenTime: "00:00", digitalLabCloseTime: "24:00"
+  });
+  await expect(page.locator(".toast")).toContainText("설정을 저장했습니다.");
+  const student = await approvedStudent(request, adminToken);
+  const date = futureDate(info, 3);
+  const booking = await api(request, "POST", "/api/reservations", {
+    type: "digital_lab",
+    fields: { reservedDate: date, seatId: "pc-03", startTime: "10:00", endTime: "12:00", purpose, phone }
+  }, student.token);
+  const form = page.locator("form").filter({ has: page.getByRole("button", { name: "차단 일정 추가" }) });
+  const calendar = page.getByRole("region", { name: "학기 차단 캘린더" });
+  const calendarDay = calendar.getByRole("button", { name: `${date} 차단 일정 입력` });
+  if (!(await calendarDay.count())) await calendar.getByRole("button", { name: "다음 달" }).click();
+  const className = `디지털 편집 수업 ${info.project.name}`;
+  await calendarDay.click();
+  await form.getByRole("combobox", { name: "시설", exact: true }).selectOption("studio");
+  await form.getByLabel("공간/메모", { exact: true }).fill("Studio A Front");
+  await form.getByRole("button", { name: "차단 일정 추가" }).click();
+  const studioCard = page.locator(".blocked-item").filter({ hasText: "Studio A Front" });
+  await expect(studioCard).toBeVisible();
+  await studioCard.getByRole("button", { name: "차단 일정 삭제" }).click();
+  await expect(studioCard).toHaveCount(0);
+
+  async function enterClass(start, end) {
+    await calendarDay.click();
+    await form.getByRole("combobox", { name: "시설", exact: true }).selectOption({ label: facility });
+    await form.getByLabel("시작 시간", { exact: true }).fill(start);
+    await form.getByLabel("종료 시간", { exact: true }).fill(end);
+    await form.getByLabel("수업명", { exact: true }).fill(className);
+  }
+  await enterClass("12:10", "24:00");
+  await form.getByRole("button", { name: "차단 일정 추가" }).click();
+  const classCard = page.locator(".blocked-item").filter({ hasText: className });
+  await expect(classCard).toContainText("16석 전체 차단");
+  const calendarClasses = calendar.getByRole("region", { name: "선택 날짜 디지털사진영상실 수업" });
+  await expect(calendarClasses.getByText(new RegExp(className))).toBeVisible();
+  await expect(calendarClasses).toContainText("16석 전체 차단");
+  await classCard.getByRole("button", { name: "차단 일정 삭제" }).click();
+  await expect(classCard).toHaveCount(0);
+
+  await enterClass("11:59", "24:00");
+  const conflictResponse = page.waitForResponse((response) => response.url().endsWith("/api/admin/settings") && response.request().method() === "PATCH");
+  await form.getByRole("button", { name: "차단 일정 추가" }).click();
+  expect((await conflictResponse).status()).toBe(409);
+  await expect(form.getByLabel("시작일", { exact: true })).toHaveValue(date);
+  await expect(form.getByLabel("시작 시간", { exact: true })).toHaveValue("11:59");
+  await expect(form.getByLabel("수업명", { exact: true })).toHaveValue(className);
+  const conflicts = page.getByRole("region", { name: "차단 일정과 겹치는 예약" });
+  await expect(conflicts).toContainText(date);
+  await expect(conflicts).toContainText("PC 03");
+  await expect(conflicts).toContainText("10:00");
+  await expect(conflicts).toContainText("12:00");
+  const detail = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/reservations" && url.searchParams.get("q") === booking.id;
+  });
+  await conflicts.getByRole("button", { name: "예약 상세" }).click();
+  const reservationResponse = await detail;
+  expect(reservationResponse.status()).toBe(200);
+  expect((await reservationResponse.json()).data.items.map(({ id }) => id)).toEqual([booking.id]);
+  await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
+  await expect(page.locator(".admin-reservation-card").filter({ hasText: student.email })).toBeVisible();
 });

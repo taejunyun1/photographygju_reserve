@@ -250,6 +250,14 @@ export type AdminBlockedSchedule = {
   active?: boolean;
 };
 
+export type AdminBlockedScheduleConflict = {
+  reservationId: string;
+  reservedDate: string;
+  seatId: string;
+  startTime: string;
+  endTime: string;
+};
+
 export type AdminSettings = {
   [key: string]: unknown;
   semester?: string;
@@ -258,6 +266,9 @@ export type AdminSettings = {
   printBankAccount?: string;
   googleDriveUrl?: string;
   darkroomCapacity?: number;
+  digitalLabEnabled?: boolean;
+  digitalLabOpenTime?: string;
+  digitalLabCloseTime?: string;
   printAvailableStart?: string;
   printAvailableEnd?: string;
   printUploadStartDate?: string;
@@ -293,6 +304,9 @@ export type AdminSettingsInput = Pick<AdminSettings,
   | "printBankAccount"
   | "googleDriveUrl"
   | "darkroomCapacity"
+  | "digitalLabEnabled"
+  | "digitalLabOpenTime"
+  | "digitalLabCloseTime"
   | "studioReportDeadlineHours"
   | "equipmentReportDeadlineHours"
   | "printAvailableStart"

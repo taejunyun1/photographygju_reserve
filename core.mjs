@@ -31,6 +31,7 @@ import {
   readSurveySummary
 } from "./core/course-demand-snapshot.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
+import { digitalLabClassOverlaps } from "./core/digital-lab.mjs";
 import {
   darkroomChemicals,
   defaultSettings,
@@ -514,6 +515,26 @@ const {
   id,
   nowIso
 });
+
+function assertNoDigitalLabClassConflicts(db, schedules) {
+  const previous = new Map((db.settings.blockedSchedules || []).map((rule) => [rule.id, rule]));
+  const changed = schedules.filter((rule) => {
+    if (rule.type !== "digital_lab") return false;
+    const current = previous.get(rule.id);
+    return !current || ["type", "day", "from", "to", "start", "end"].some((field) => current[field] !== rule[field]);
+  });
+  if (!changed.length) return;
+
+  const conflicts = db.reservations.filter((row) => row.type === "digital_lab"
+    && !RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(row.status)
+    && changed.some((rule) => digitalLabClassOverlaps(rule, row.fields)))
+    .map(({ id, fields: { reservedDate, seatId, startTime, endTime } }) => ({
+      reservationId: id, reservedDate, seatId, startTime, endTime
+    }));
+  if (conflicts.length) {
+    throw Object.assign(new Error("기존 예약과 겹치는 디지털사진영상실 수업이 있습니다."), { status: 409, conflicts });
+  }
+}
 
 function reservationTitle(type) {
   return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실" }[type] || type;
@@ -3201,7 +3222,9 @@ export async function handleApiRequest(ctx) {
         const enabledAt = db.settings.equipmentOverdueWarningsEnabledAt;
         if (body.equipmentOverdueWarningsEnabled !== undefined && typeof body.equipmentOverdueWarningsEnabled !== "boolean") throw Object.assign(new Error("자동 경고 사용 여부는 참/거짓이어야 합니다."), { status: 400 });
         delete body.equipmentOverdueWarningsEnabledAt;
-        db.settings = sanitizeSettingsPatch(db.settings, body);
+        const settings = sanitizeSettingsPatch(db.settings, body);
+        if (body.blockedSchedules !== undefined) assertNoDigitalLabClassConflicts(db, settings.blockedSchedules);
+        db.settings = settings;
         if (body.equipmentOverdueWarningsEnabled !== undefined) db.settings.equipmentOverdueWarningsEnabled = body.equipmentOverdueWarningsEnabled;
         if (body.equipmentOverdueWarningsEnabled === false) {
           // An explicit administrator stop also vetoes an unapplied deployment
