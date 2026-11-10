@@ -23,7 +23,7 @@ type AdminSettingsProps = {
   actions: ReactAdminActions;
 };
 
-type BlockDraft = {
+export type BlockDraft = {
   type: string;
   day: string;
   from: string;
@@ -267,12 +267,20 @@ function ReportDrivePanel({ state, actions }: AdminSettingsProps) {
   </section>;
 }
 
-export function AdminSettings({ state, actions }: AdminSettingsProps) {
+export function AdminSettings({
+  state,
+  actions,
+  rejectedLabDraft,
+  retainLabDraft
+}: AdminSettingsProps & {
+  rejectedLabDraft?: BlockDraft;
+  retainLabDraft: (draft: BlockDraft | null) => void;
+}) {
   const settings = adminSettings(state);
   const schedules = blockedSchedules(state);
-  const [month, setMonth] = React.useState(dateKey(new Date()).slice(0, 7));
-  const [calendarDate, setCalendarDate] = React.useState("");
-  const [draft, setDraft] = React.useState<BlockDraft>(defaultDraft);
+  const [month, setMonth] = React.useState(() => (rejectedLabDraft?.from || dateKey(new Date())).slice(0, 7));
+  const [calendarDate, setCalendarDate] = React.useState(rejectedLabDraft?.from || "");
+  const [draft, setDraft] = React.useState<BlockDraft>(() => rejectedLabDraft || defaultDraft());
   const [conflicts, setConflicts] = React.useState<AdminBlockedScheduleConflict[]>([]);
   const [savingBlock, setSavingBlock] = React.useState(false);
   const labClass = draft.type === "digital_lab";
@@ -284,10 +292,15 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
     void actions.loadReportDrive().catch(() => null);
   }, [actions]);
 
+  const clearConflict = () => {
+    setConflicts([]);
+    retainLabDraft(null);
+  };
+
   const onCalendarDate = (key: string) => {
     const date = new Date(`${key}T00:00:00`);
     setCalendarDate(key);
-    setConflicts([]);
+    clearConflict();
     setDraft((current) => ({
       ...current,
       from: key,
@@ -320,6 +333,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
     try {
       await actions.saveBlockedSchedules(next);
       setDraft(defaultDraft());
+      retainLabDraft(null);
     } catch (error) {
       const response = error as { status?: number; conflicts?: AdminBlockedScheduleConflict[] } | null;
       if (response?.status === 409 && Array.isArray(response.conflicts)) setConflicts(response.conflicts);
@@ -336,7 +350,7 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
     <section className="grid admin-react-screen admin-settings-react-screen">
       {renderCalendar(month, schedules, calendarDate, setMonth, onCalendarDate)}
       <GjuCard title="수업/학기 차단 일정">
-        <form className="admin-react-form-grid" onSubmit={submitBlockedSchedule} onChange={() => setConflicts([])}>
+        <form className="admin-react-form-grid" onSubmit={submitBlockedSchedule} onChange={clearConflict}>
           <label>
             시설
             <select className="select" name="type" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.currentTarget.value })}>
@@ -404,7 +418,10 @@ export function AdminSettings({ state, actions }: AdminSettingsProps) {
             {conflicts.map((item) => (
               <article key={item.reservationId} className="admin-react-list-card">
                 <p>{item.reservedDate} · {digitalLabSeatLabel(item.seatId) || item.seatId} · {item.startTime}–{item.endTime}</p>
-                <button className="button compact" type="button" onClick={() => runAdminAction(() => actions.setAdminView("reservations", { q: item.reservationId, page: 1 }))}>
+                <button className="button compact" type="button" onClick={() => {
+                  retainLabDraft(draft);
+                  runAdminAction(() => actions.setAdminView("reservations", { q: item.reservationId, page: 1 }));
+                }}>
                   예약 상세
                 </button>
               </article>

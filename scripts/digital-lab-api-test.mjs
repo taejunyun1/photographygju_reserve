@@ -345,9 +345,13 @@ test("new or changed lab classes reject conflicts atomically until an admin expl
   assert.deepEqual(savedRows.find(({ id }) => id === booking.id), booking);
   assert.deepEqual(savedRows.find(({ id }) => id === secondBooking.id), secondBooking);
 
-  for (const { id } of [booking, secondBooking]) {
-    assert.equal((await expectData(api(`/api/reservations/${id}/cancel`, admin, "POST", {}))).status, "admin_cancelled");
-  }
+  const statusPath = `/api/admin/reservations/${booking.id}/status`;
+  const cancel = { status: "admin_cancelled" };
+  await expectStatus(api(statusPath, first, "PATCH", cancel), 403);
+  await expectStatus(api(statusPath, admin, "PATCH", { status: "completed" }), 400);
+  assert.equal((await expectData(api(statusPath, admin, "PATCH", cancel))).status, "admin_cancelled");
+  await expectStatus(api(statusPath, admin, "PATCH", cancel), 409);
+  assert.equal((await expectData(api(`/api/reservations/${secondBooking.id}/cancel`, admin, "POST", {}))).status, "admin_cancelled");
   assert.deepEqual((await expectData(api("/api/admin/settings", admin, "PATCH", settings))).blockedSchedules, settings.blockedSchedules);
   await expectStatus(create(first, { reservedDate }), 409);
   await expectData(api("/api/admin/settings", admin, "PATCH", { blockedSchedules: [legacy] }));
@@ -364,18 +368,19 @@ test("malformed lab class date and time values are rejected before coercion", as
   }
 });
 
-test("pre-existing overlapping rules do not block unrelated saves or a title edit", async () => {
+test("pre-existing overlapping rules with a shared ID do not block unrelated saves or a title edit", async () => {
   const db = await initialDb(password);
   const rule = { id: "old-class", type: "digital_lab", day: weekdayFor(bookingDate), from: bookingDate, to: bookingDate,
     start: "10:30", end: "12:00", target: "기존 수업" };
-  Object.assign(db.settings, enabledSettings, { blockedSchedules: [rule] });
+  const adjacent = { ...rule, start: "12:00", end: "14:00", target: "두 번째 수업" };
+  Object.assign(db.settings, enabledSettings, { blockedSchedules: [rule, adjacent] });
   db.reservations.push({ id: "old-booking", type: "digital_lab", status: "auto_confirmed", userId: "user_admin", fields });
   db.sessions.push({ token: "fixture-admin", userId: "user_admin", expiresAt: new Date(Date.now() + 86400000).toISOString() });
   let writes = 0;
   for (const patch of [
     { darkroomCapacity: 9 },
-    { darkroomCapacity: 10, blockedSchedules: [rule] },
-    { blockedSchedules: [{ ...rule, target: "수업명 수정" }, {
+    { darkroomCapacity: 10, blockedSchedules: [rule, adjacent] },
+    { blockedSchedules: [{ ...rule, target: "수업명 수정" }, adjacent, {
       ...rule, id: "new-print", type: "print", target: "출력 수업"
     }] }
   ]) {
@@ -387,6 +392,7 @@ test("pre-existing overlapping rules do not block unrelated saves or a title edi
   }
   assert.equal(db.settings.darkroomCapacity, 10);
   assert.equal(db.settings.blockedSchedules[0].target, "수업명 수정");
+  assert.deepEqual(db.settings.blockedSchedules[1], adjacent);
   assert.equal(writes, 3);
 });
 

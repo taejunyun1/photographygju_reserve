@@ -13,7 +13,7 @@ import { AdminLogs } from "./screens/AdminLogs";
 import { AdminNotices } from "./screens/AdminNotices";
 import { AdminReports } from "./screens/AdminReports";
 import { AdminReservations } from "./screens/AdminReservations";
-import { AdminSettings } from "./screens/AdminSettings";
+import { AdminSettings, type BlockDraft } from "./screens/AdminSettings";
 import { AdminUsers } from "./screens/AdminUsers";
 
 type AdminAppProps = Omit<ReactAdminMountOptions, "root">;
@@ -172,6 +172,8 @@ export function AdminApp({
   actions
 }: AdminAppProps) {
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [rejectedLabDraft, setRejectedLabDraft] = React.useState<{ token: string; draft: BlockDraft } | null>(null);
+  const token = state.token;
   const view = state.adminView || "dashboard";
   const headerActions = adminHeaderActions(actions, {
     refreshing: Boolean(state.adminRefresh?.refreshing)
@@ -201,7 +203,12 @@ export function AdminApp({
   } else if (view === "logs") {
     content = React.createElement(AdminLogs, { state, actions });
   } else if (view === "settings") {
-    content = React.createElement(AdminSettings, { state, actions });
+    content = React.createElement(AdminSettings, {
+      state,
+      actions,
+      rejectedLabDraft: rejectedLabDraft?.token === token ? rejectedLabDraft?.draft : undefined,
+      retainLabDraft: (draft) => setRejectedLabDraft(token && draft ? { token, draft } : null)
+    });
   } else if (view === "account") {
     content = React.createElement(AdminAccount, { state, actions });
   } else {

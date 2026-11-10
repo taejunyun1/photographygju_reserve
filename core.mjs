@@ -128,7 +128,8 @@ const ADMIN_RESERVATION_STATUS_BY_TYPE = {
   equipment: EQUIPMENT_RESERVATION_STATUSES,
   studio: new Set(["completed", "admin_cancelled"]),
   darkroom: new Set(["completed", "admin_cancelled"]),
-  print: new Set(["completed", "admin_cancelled"])
+  print: new Set(["completed", "admin_cancelled"]),
+  digital_lab: new Set(["admin_cancelled"])
 };
 const WEEKDAY_INDEX = {
   sunday: 0,
@@ -517,12 +518,9 @@ const {
 });
 
 function assertNoDigitalLabClassConflicts(db, schedules) {
-  const previous = new Map((db.settings.blockedSchedules || []).map((rule) => [rule.id, rule]));
-  const changed = schedules.filter((rule) => {
-    if (rule.type !== "digital_lab") return false;
-    const current = previous.get(rule.id);
-    return !current || ["type", "day", "from", "to", "start", "end"].some((field) => current[field] !== rule[field]);
-  });
+  const signature = ({ id, type, day, from, to, start, end }) => JSON.stringify([id, type, day, from, to, start, end]);
+  const previous = new Set((db.settings.blockedSchedules || []).map(signature));
+  const changed = schedules.filter((rule) => rule.type === "digital_lab" && !previous.has(signature(rule)));
   if (!changed.length) return;
 
   const conflicts = db.reservations.filter((row) => row.type === "digital_lab"
@@ -2515,6 +2513,9 @@ export async function handleApiRequest(ctx) {
         const allowedStatuses = ADMIN_RESERVATION_STATUS_BY_TYPE[reservation.type];
         if (!allowedStatuses?.has(body.status)) {
           throw Object.assign(new Error(`${reservationTitle(reservation.type)} 예약에서 지원하지 않는 상태입니다.`), { status: 400 });
+        }
+        if (reservation.type === "digital_lab" && RESERVATION_CANCELLATION_TERMINAL_STATUSES.has(reservation.status)) {
+          throw Object.assign(new Error("이미 종료되었거나 취소된 예약은 다시 취소할 수 없습니다."), { status: 409 });
         }
         if (
           reservation.type === "equipment"

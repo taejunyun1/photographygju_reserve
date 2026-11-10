@@ -230,13 +230,16 @@ test("a real save-time 409 refreshes seats and does not choose a replacement", a
   await expect(page.getByLabel("사용 목적")).toHaveValue(purpose);
 });
 
-test("admin saves lab operation and classes, keeps a conflicted draft and opens its booking", async ({ page, request }, info) => {
+test("admin resolves a lab class conflict and resubmits the retained draft", async ({ page, request }, info) => {
   test.skip(info.project.name !== "mobile-390", "The shared settings fixture runs once to avoid competing class-list saves.");
   const { token: adminToken } = await api(request, "POST", "/api/auth/login", { loginId: "admin", password: "admin" });
   await loginReactAdmin(page);
   const more = page.getByRole("button", { name: "더보기", exact: true }).filter({ visible: true });
-  if (await more.count()) await more.click();
-  await page.getByRole("button", { name: "설정", exact: true }).filter({ visible: true }).click();
+  async function openSettings() {
+    if (await more.count()) await more.click();
+    await page.getByRole("button", { name: "설정", exact: true }).filter({ visible: true }).click();
+  }
+  await openSettings();
   await page.getByText("운영 설정", { exact: true }).click();
   await page.getByLabel("디지털사진영상실 예약 활성화").check();
   await page.getByLabel("디지털사진영상실 운영 시작").selectOption("00:00");
@@ -307,5 +310,35 @@ test("admin saves lab operation and classes, keeps a conflicted draft and opens 
   expect(reservationResponse.status()).toBe(200);
   expect((await reservationResponse.json()).data.items.map(({ id }) => id)).toEqual([booking.id]);
   await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
-  await expect(page.locator(".admin-reservation-card").filter({ hasText: student.email })).toBeVisible();
+  const card = page.locator(".admin-reservation-card").filter({ hasText: student.email });
+  await expect(card).toBeVisible();
+  const cancelled = page.waitForResponse((response) => response.url().endsWith(`/api/admin/reservations/${booking.id}/status`));
+  await card.getByRole("button", { name: "관리자 취소", exact: true }).click();
+  const cancellationResponse = await cancelled;
+  expect(cancellationResponse.status()).toBe(200);
+  expect((await cancellationResponse.json()).data.status).toBe("admin_cancelled");
+  await expect(card.getByRole("button", { name: "관리자 취소", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+  await openSettings();
+  await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("digital_lab");
+  await expect(form.getByRole("combobox", { name: "요일", exact: true })).toHaveValue(
+    ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date(date).getUTCDay()]
+  );
+  await expect(form.getByLabel("시작일", { exact: true })).toHaveValue(date);
+  await expect(form.getByLabel("종료일", { exact: true })).toHaveValue(date);
+  await expect(form.getByLabel("시작 시간", { exact: true })).toHaveValue("11:59");
+  await expect(form.getByLabel("종료 시간", { exact: true })).toHaveValue("24:00");
+  await expect(form.getByLabel("수업명", { exact: true })).toHaveValue(className);
+  const retried = page.waitForResponse((response) => response.url().endsWith("/api/admin/settings") && response.request().method() === "PATCH");
+  await form.getByRole("button", { name: "차단 일정 추가" }).click();
+  expect((await retried).status()).toBe(200);
+  await expect(classCard).toContainText("16석 전체 차단");
+  await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("studio");
+  await expect(form.getByLabel("시작일", { exact: true })).toHaveValue("");
+  await classCard.getByRole("button", { name: "차단 일정 삭제" }).click();
+  await expect(classCard).toHaveCount(0);
+  await page.getByRole("navigation", { name: "관리자 모바일 메뉴" }).getByRole("button", { name: "예약", exact: true }).click();
+  await openSettings();
+  await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("studio");
+  await expect(form.getByLabel("시작일", { exact: true })).toHaveValue("");
 });
