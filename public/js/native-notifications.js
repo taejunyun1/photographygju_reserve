@@ -1,5 +1,5 @@
-import { statusLabel, typeLabel } from "./constants.js?v=20261014-photo-picker-r1";
-import { state } from "./state.js?v=20261014-photo-picker-r1";
+import { statusLabel, typeLabel } from "./constants.js?v=20261110-digital-lab-r1";
+import { state } from "./state.js?v=20261110-digital-lab-r1";
 import {
   planAdminNotifications,
   planReservationNotifications,
@@ -9,7 +9,7 @@ import {
   reservationStartDate,
   reservationMeta,
   stableNotificationId
-} from "./notification-planner.js";
+} from "./notification-planner.js?v=20261110-digital-lab-r1";
 
 const LEGACY_PREF_KEY = "gju_native_notifications_enabled";
 const LEGACY_IDS_KEY = "gju_native_notification_ids";

@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { applyDigitalLabActivation } from "./core/digital-lab-activation.mjs";
 import { createMutationQueue } from "./core/mutation-queue.mjs";
 import { runEquipmentOverdueSweep, equipmentOverdueCronPath, applyEquipmentOverdueActivation } from "./core/equipment-overdue-scheduler.mjs";
 import { cleanupExpiredData, initialDb, normalizeDb, capLogs, handleApiRequest } from "./core.mjs";
@@ -230,6 +231,7 @@ export class GjuReserveDb extends DurableObject {
     let db;
     try {
       db = await this.loadDb();
+      if (applyDigitalLabActivation(db, this.env.DIGITAL_LAB_ACTIVATION_AT)) await this.saveDb();
     } catch (error) {
       return jsonResponse({ ok: false, error: error.message || "Server configuration error" }, error.status || 500, cors);
     }

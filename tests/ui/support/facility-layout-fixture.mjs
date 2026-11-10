@@ -25,8 +25,8 @@ export async function seedFacilityLayout(page) {
   const data = facilityLayoutFixture();
   await page.route("**/api/facility-timeline?**", (route) => route.fulfill({ json: { ok: true, data } }));
   await page.evaluate(async (data) => {
-    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
-    const { render } = await import("/js/renderer.js?v=20261014-photo-picker-r1");
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
+    const { render } = await import("/js/renderer.js?v=20261110-digital-lab-r1");
     state.view = "main";
     state.facilityTimeline = { date: data.date, data, loading: false, error: "", lastSucceededAt: data.generatedAt, invalidated: false };
     render();

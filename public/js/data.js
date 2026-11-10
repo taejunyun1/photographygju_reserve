@@ -1,6 +1,6 @@
-import { state, setAuthenticatedUser, getAuthenticatedSessionGeneration } from "./state.js?v=20261014-photo-picker-r1";
-import { api } from "./api.js?v=20261014-photo-picker-r1";
-import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261014-photo-picker-r1";
+import { state, setAuthenticatedUser, getAuthenticatedSessionGeneration } from "./state.js?v=20261110-digital-lab-r1";
+import { api } from "./api.js?v=20261110-digital-lab-r1";
+import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261110-digital-lab-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
 const adminViewCache = new Map();

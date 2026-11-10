@@ -66,7 +66,7 @@ test("Facility selections keep controls, map and expanded content full width wit
     await expectStacked(page, ".gju-facility-board__equipment-area");
     const actions = await gear.locator("li").first().evaluate((el) => ({ info: el.querySelector("summary").getBoundingClientRect().bottom, reserve: el.querySelector('button[aria-label="이 장비 예약"]').getBoundingClientRect().top }));
     expect(actions.reserve).toBeGreaterThanOrEqual(actions.info);
-    if (width === 390) await board.screenshot({ path: `outputs/facility-overflow-20261106/after-gear-${testInfo.project.name}.png` });
+    if (width === 390) await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-overflow-20261106"}/after-gear-${testInfo.project.name}.png` });
     await rail.getByRole("button", { name: /스튜디오 A/ }).click();
     const detail = board.getByRole("region", { name: "스튜디오 A 예약 요약" });
     await expect(detail).toContainText("010-0000-0000");
@@ -74,7 +74,7 @@ test("Facility selections keep controls, map and expanded content full width wit
     const contact = await detail.locator(".gju-facility-board__contact").evaluate((el) => ({ client: el.clientWidth, scroll: el.scrollWidth, width: el.getBoundingClientRect().width, row: el.parentElement.getBoundingClientRect().width }));
     expect(contact.scroll).toBeLessThanOrEqual(contact.client + 1);
     expect(contact.width).toBeGreaterThanOrEqual(contact.row - 1);
-    if (width === 390) await board.screenshot({ path: `outputs/facility-overflow-20261106/after-studio-${testInfo.project.name}.png` });
+    if (width === 390) await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-overflow-20261106"}/after-studio-${testInfo.project.name}.png` });
     await detail.getByRole("button", { name: "닫기", exact: true }).click();
   }
 });

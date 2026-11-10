@@ -80,7 +80,7 @@ test("Facility board admin main uses real schedule, keeps names and opens the ma
   await expect(equipment.getByText("대여 중", { exact: true })).toHaveCount(0);
   await noPageOverflow(page);
   await expect(page.locator(".toast")).toBeHidden();
-  await board.screenshot({ path: `outputs/facility-board-implementation/admin-${testInfo.project.name}.png` });
+  await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-board-implementation"}/admin-${testInfo.project.name}.png` });
   await rail.getByRole("button", { name: /스튜디오 A/ }).click();
   await detail.getByRole("button", { name: "예약 상세", exact: true }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "예약 관리" })).toBeVisible();
@@ -118,12 +118,12 @@ test("Facility board student main redacts other users and starts the selected re
   const axe = await new AxeBuilder({ page }).include(".gju-facility-board").withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(axe.violations.filter((violation) => ["critical", "serious"].includes(violation.impact))).toEqual([]);
   await expect(page.locator(".toast")).toBeHidden();
-  await board.screenshot({ path: `outputs/facility-board-implementation/student-${testInfo.project.name}.png` });
+  await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-board-implementation"}/student-${testInfo.project.name}.png` });
   await rail.getByRole("button", { name: /스튜디오 A/ }).click();
   await detail.getByRole("button", { name: "이 조건으로 예약", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "예약 신청", exact: true })).toBeVisible();
   const selected = await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
     return { type: state.reservationType, date: state.selectedDates.studio, space: state.selectedStudioSpace, slots: state.selectedStudioSlots };
   });
   expect(selected).toEqual({ type: "studio", date: fixture.date, space: "", slots: [] });
@@ -156,7 +156,7 @@ test("Facility board equipment booking keeps the exact inventory ID and selected
   await equipment.getByRole("button", { name: "이 장비 예약", exact: true }).click();
   await expect(page.getByRole("heading", { name: "예약 신청", exact: true })).toBeVisible();
   const selected = await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
     return { type: state.reservationType, date: state.selectedDates.equipment, items: state.selectedEquipmentItemIds };
   });
   expect(selected).toEqual({ type: "equipment", date: fixture.date, items: [fixture.item.id] });

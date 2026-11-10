@@ -7,8 +7,8 @@ test.beforeEach(async ({}, testInfo) => {
 
 async function navigate(page, view, role = "admin") {
   await page.evaluate(async ({ view, role }) => {
-    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
-    const { render } = await import("/js/renderer.js?v=20261014-photo-picker-r1");
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
+    const { render } = await import("/js/renderer.js?v=20261110-digital-lab-r1");
     state[role === "admin" ? "adminView" : "view"] = view;
     render();
   }, { view, role });
@@ -33,11 +33,11 @@ test("Phone calendars keep two-digit dates on one line", async ({ page }) => {
   }
 });
 
-test("Phone reservation cards separate the title and wrap long detail values", async ({ page }) => {
+test("Phone reservation cards separate the title and wrap long detail values", async ({ page }, info) => {
   await loginReactAdmin(page);
   await page.evaluate(async () => {
-    const { state } = await import("/js/state.js?v=20261014-photo-picker-r1");
-    const { render } = await import("/js/renderer.js?v=20261014-photo-picker-r1");
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
+    const { render } = await import("/js/renderer.js?v=20261110-digital-lab-r1");
     state.adminView = "reservations";
     state.adminReservations = [{
       id: "mobile-layout-reservation", type: "studio", status: "auto_confirmed",
@@ -61,6 +61,10 @@ test("Phone reservation cards separate the title and wrap long detail values", a
     for (const detail of metrics.details) expect(detail.scroll, detail.text).toBeLessThanOrEqual(detail.width + 1);
     const tabs = await page.getByRole("tablist", { name: "예약 유형" }).evaluate((element) => ({ width: element.clientWidth, scroll: element.scrollWidth }));
     expect(tabs.scroll).toBeLessThanOrEqual(tabs.width + 1);
+    if (width === 320) {
+      await expect(page.locator(".toast")).toBeHidden();
+      await page.screenshot({ path: info.outputPath("admin-tabs-320.png"), fullPage: true });
+    }
   }
 });
 

@@ -1,4 +1,4 @@
-import { state } from "./state.js?v=20261014-photo-picker-r1";
+import { state } from "./state.js?v=20261110-digital-lab-r1";
 
 function setLoading(delta) {
   state.loadingCount = Math.max(0, Number(state.loadingCount || 0) + delta);

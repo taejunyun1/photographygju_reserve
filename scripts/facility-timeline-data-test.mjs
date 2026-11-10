@@ -10,8 +10,8 @@ const requests = [];
 globalThis.fetch = (input, options) => new Promise((resolve) => {
   requests.push({ path: String(input), options, success(data) { resolve({ status: 200, json: async () => ({ ok: true, data }) }); }, fail(message = "갱신 실패") { resolve({ status: 503, json: async () => ({ ok: false, error: message }) }); } });
 });
-const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261014-photo-picker-r1");
-const dataModule = await import("../public/js/data.js?v=20261014-photo-picker-r1");
+const { state, setAuthenticatedUser } = await import("../public/js/state.js?v=20261110-digital-lab-r1");
+const dataModule = await import("../public/js/data.js?v=20261110-digital-lab-r1");
 const { loadFacilityTimeline, seedFacilityTimeline, invalidateFacilityTimelineCache, loadAdminView } = dataModule;
 assert.equal(typeof loadFacilityTimeline, "function", "dedicated timeline loader must be exported");
 assert.equal(typeof seedFacilityTimeline, "function");

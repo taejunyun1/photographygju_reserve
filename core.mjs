@@ -3226,6 +3226,11 @@ export async function handleApiRequest(ctx) {
         const settings = sanitizeSettingsPatch(db.settings, body);
         if (body.blockedSchedules !== undefined) assertNoDigitalLabClassConflicts(db, settings.blockedSchedules);
         db.settings = settings;
+        if (["digitalLabEnabled", "digitalLabOpenTime", "digitalLabCloseTime"].some((key) => Object.hasOwn(body, key))) {
+          // Explicit administrator configuration vetoes unconsumed deployment defaults.
+          db.meta ||= {};
+          if (!Object.hasOwn(db.meta, "digitalLabActivationApplied")) db.meta.digitalLabActivationApplied = requestNow.toISOString();
+        }
         if (body.equipmentOverdueWarningsEnabled !== undefined) db.settings.equipmentOverdueWarningsEnabled = body.equipmentOverdueWarningsEnabled;
         if (body.equipmentOverdueWarningsEnabled === false) {
           // An explicit administrator stop also vetoes an unapplied deployment

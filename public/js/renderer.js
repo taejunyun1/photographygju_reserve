@@ -1,5 +1,5 @@
-import { $app, state } from "./state.js?v=20261014-photo-picker-r1";
-import { api, apiBinary } from "./api.js?v=20261014-photo-picker-r1";
+import { $app, state } from "./state.js?v=20261110-digital-lab-r1";
+import { api, apiBinary } from "./api.js?v=20261110-digital-lab-r1";
 import {
   invalidateAdminViewCache,
   invalidateFacilityTimelineCache,
@@ -8,8 +8,8 @@ import {
   loadBootstrap,
   loadLectures,
   loadMyReservations
-} from "./data.js?v=20261014-photo-picker-r1";
-import { requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20261014-photo-picker-r1";
+} from "./data.js?v=20261110-digital-lab-r1";
+import { requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20261110-digital-lab-r1";
 import {
   clearNativeNotificationAccount,
   disableNativeReservationNotifications,
@@ -17,12 +17,12 @@ import {
   handleNativeNotificationResume,
   notifyNativeReservationCreated,
   syncNativeReservationNotifications
-} from "./native-notifications.js?v=20261014-photo-picker-r1";
-import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20261014-photo-picker-r1";
-import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20261014-photo-picker-r1";
-import { adminShell } from "./views-admin.js?v=20261014-photo-picker-r1";
-import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20261014-photo-picker-r1";
-import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20261014-photo-picker-r1";
+} from "./native-notifications.js?v=20261110-digital-lab-r1";
+import { createStudentReactActions, studentReactSnapshot } from "./react-student-adapter.js?v=20261110-digital-lab-r1";
+import { csvEscape, escapeHtml, formatDateTime, todayKey } from "./utils.js?v=20261110-digital-lab-r1";
+import { adminShell } from "./views-admin.js?v=20261110-digital-lab-r1";
+import { authView, noticeBottomSheet, studentShell, warningPopup } from "./views-student.js?v=20261110-digital-lab-r1";
+import { captureScrollState, restoreScrollState } from "./events/scroll-state.js?v=20261110-digital-lab-r1";
 
 document.addEventListener("gju-loading-change", () => {
   const scrollState = captureScrollState();

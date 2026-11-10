@@ -1494,6 +1494,7 @@
   }
 
   .gju-app-shell__content .gju-tabs.admin-reservation-type-tabs {
+    flex-wrap: wrap;
     gap: 4px;
   }
 

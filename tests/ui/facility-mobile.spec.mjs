@@ -33,7 +33,7 @@ for (const role of ["admin", "student"]) {
       await expect(board.getByRole("button", { name: "새로고침", exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
       await expect(page.locator(".toast")).toBeHidden();
-      await board.screenshot({ path: `outputs/facility-board-implementation/r3-${browserName}-${role}-${width}.png` });
+      await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-board-implementation"}/r3-${browserName}-${role}-${width}.png` });
     }
     await board.getByLabel("조회 시작 시간", { exact: true }).fill("14:30");
     await board.getByRole("tab", { name: "시간표", exact: true }).click();
@@ -43,7 +43,7 @@ for (const role of ["admin", "student"]) {
       const selected = element.querySelector("button[data-selected]").getBoundingClientRect();
       return selected.left >= rect.left + element.querySelector("th").getBoundingClientRect().width - 1 && selected.right <= rect.right + 1;
     })).toBeTruthy();
-    await board.screenshot({ path: `outputs/facility-board-implementation/r3-${browserName}-${role}-timeline.png` });
+    await board.screenshot({ path: `${process.env.GJU_FACILITY_SCREENSHOT_DIR || "outputs/facility-board-implementation"}/r3-${browserName}-${role}-timeline.png` });
     await summary.getByRole("button", { name: /암실/ }).click();
     await expect(board.getByRole("region", { name: "암실 예약 요약" })).toBeVisible();
     await expect(board.getByLabel("조회 시작 시간", { exact: true })).toHaveValue("14:30");

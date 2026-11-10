@@ -11,6 +11,9 @@ const projectOffsets = { "mobile-390": 0, "mobile-430": 4, "tablet-768": 8, "des
 async function api(request, method, path, data, token) {
   const response = await request.fetch(path, {
     method, data,
+    // The local server can close an idle keep-alive socket during UI interaction.
+    // Retry only a read on ECONNRESET; never a mutation or an HTTP error.
+    maxRetries: method === "GET" ? 1 : 0,
     headers: token ? { authorization: `Bearer ${token}` } : {}
   });
   const body = await response.json();
@@ -93,7 +96,21 @@ test("student books one of 12 Mac and four PC seats, edits the same booking and 
   await expect(seat(page, "Mac [0-9]{2}")).toHaveCount(12);
   await expect(seat(page, "PC [0-9]{2}")).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
-  if (info.project.name === "mobile-390") {
+  {
+    await seat(page, "Mac 01").focus();
+    await page.keyboard.press("Enter");
+    await expect(seat(page, "Mac 01")).toHaveAttribute("aria-pressed", "true");
+    await expect(seat(page, "Mac 01")).toContainText("예약 가능");
+    const boxes = await page.getByRole("button", { name: /^(Mac|PC) [0-9]{2}/ }).evaluateAll(nodes => nodes.map(node => {
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, textFits: node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight };
+    }));
+    for (const [index, box] of boxes.entries()) {
+      expect(box.textFits).toBe(true);
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(page.viewportSize().width);
+      for (const other of boxes.slice(index + 1)) expect(box.right <= other.x || other.right <= box.x || box.bottom <= other.y || other.bottom <= box.y).toBe(true);
+    }
     await expect(page.locator(".toast")).toBeHidden();
     await page.evaluate(() => scrollTo(0, 0));
     await page.screenshot({ path: info.outputPath("digital-lab-seats.png"), fullPage: true });
@@ -335,10 +352,17 @@ test("admin resolves a lab class conflict and resubmits the retained draft", asy
   await form.getByRole("button", { name: "차단 일정 추가" }).click();
   expect((await retried).status()).toBe(200);
   await expect(classCard).toContainText("16석 전체 차단");
+  const blocked = await request.post("/api/reservations", { headers: { authorization: `Bearer ${student.token}` }, data: {
+    type: "digital_lab", fields: { reservedDate: date, seatId: "pc-03", startTime: "10:00", endTime: "12:00", purpose, phone }
+  } });
+  expect(blocked.status()).toBe(409);
+  expect((await blocked.json()).error).toContain("수업");
+  await page.screenshot({ path: info.outputPath("digital-lab-class.png"), fullPage: true });
   await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("studio");
   await expect(form.getByLabel("시작일", { exact: true })).toHaveValue("");
   await classCard.getByRole("button", { name: "차단 일정 삭제" }).click();
   await expect(classCard).toHaveCount(0);
+  await api(request, "POST", "/api/reservations", { type: "digital_lab", fields: { reservedDate: date, seatId: "pc-03", startTime: "10:00", endTime: "12:00", purpose, phone } }, student.token);
   await page.getByRole("navigation", { name: "관리자 모바일 메뉴" }).getByRole("button", { name: "예약", exact: true }).click();
   await openSettings();
   await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("studio");

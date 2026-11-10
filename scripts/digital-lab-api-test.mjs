@@ -458,3 +458,23 @@ test("lab Slack messages contain facility, seat and range without external deliv
     assert.match(message, /22:00–24:00/);
   }
 });
+
+test('all 16 distinct owners fill 12 Mac and four PC seats; seventeenth fails and cancellation releases only its seat', async () => {
+  const reservedDate = dateAfter(10);
+  const ids = [...Array.from({ length: 12 }, (_, i) => `mac-${String(i + 1).padStart(2, '0')}`), ...Array.from({ length: 4 }, (_, i) => `pc-${String(i + 1).padStart(2, '0')}`)];
+  const tokens = [], bookings = [];
+  for (const [index, seatId] of ids.entries()) {
+    const token = await register(`capacity-${index}`, `좌석 테스트 ${index}`, '01000000101', true);
+    tokens.push(token);
+    bookings.push(await expectData(create(token, { reservedDate, seatId })));
+  }
+  const seventeenth = await register('capacity-17', '마지막 테스트', '01000000101', true);
+  const full = await expectData(availability(seventeenth, { reservedDate }));
+  assert.equal(full.seats.filter(seat => seat.available).length, 0);
+  assert.equal(new Set(bookings.map(booking => booking.fields.seatId)).size, 16);
+  await expectStatus(create(seventeenth, { reservedDate, seatId: 'pc-04' }), 409);
+  await expectData(api(`/api/reservations/${bookings[15].id}/cancel`, tokens[15], 'POST'));
+  const released = await expectData(availability(seventeenth, { reservedDate }));
+  assert.deepEqual(released.seats.filter(seat => seat.available).map(seat => seat.id), ['pc-04']);
+  await expectData(create(seventeenth, { reservedDate, seatId: 'pc-04' }));
+});

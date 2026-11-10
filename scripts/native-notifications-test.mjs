@@ -42,7 +42,7 @@ const {
 } = await import("../public/js/notification-planner.js");
 const nativeModule = await import("../public/js/native-notifications.js");
 const { createNotificationManager, enableNativeReservationNotifications, initializeNativeNotifications } = nativeModule;
-const { state: bridgeState } = await import("../public/js/state.js?v=20261014-photo-picker-r1");
+const { state: bridgeState } = await import("../public/js/state.js?v=20261110-digital-lab-r1");
 
 const now = new Date("2026-07-01T00:00:00.000Z");
 
@@ -711,7 +711,7 @@ assert(new Date(diagnostic.scheduledAt).getTime() >= diagnosticStartedAt + 9_900
 assert.deepEqual(await globalThis.window.GJU_NOTIFICATION_DIAGNOSTICS.pending(), [], "diagnostics should expose the native pending list");
 await globalThis.window.GJU_NOTIFICATION_DIAGNOSTICS.cancel();
 
-const { loadMe } = await import("../public/js/data.js?v=20261014-photo-picker-r1");
+const { loadMe } = await import("../public/js/data.js?v=20261110-digital-lab-r1");
 bridgeState.user = { id: "expired-user", role: "student" };
 bridgeState.token = "expired-token";
 globalThis.localStorage.setItem("gju_token", "expired-token");

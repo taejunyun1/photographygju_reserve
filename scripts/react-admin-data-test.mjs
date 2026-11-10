@@ -120,7 +120,7 @@ globalThis.fetch = async (input) => {
   };
 };
 
-const { state } = await import("../public/js/state.js?v=20261014-photo-picker-r1");
+const { state } = await import("../public/js/state.js?v=20261110-digital-lab-r1");
 const { loadAdminData, loadAdminView } = await import("../public/js/data.js?react-admin-data-test");
 
 state.user = { id: "admin-1", role: "admin" };
