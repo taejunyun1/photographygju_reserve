@@ -1,11 +1,35 @@
 import { reservationTiming, timeMinutes } from "./reservation-timing.mjs";
 import { defaultSettings, hasDigitalLabOperatingHours } from "./settings.mjs";
 
+/**
+ * @typedef {object} DigitalLabSeat
+ * @property {string} id
+ * @property {string} label
+ * @property {"mac" | "pc"} computerType
+ */
+
+/**
+ * @typedef {object} DigitalLabFields
+ * @property {string} reservedDate
+ * @property {string} seatId
+ * @property {string} startTime
+ * @property {string} endTime
+ * @property {string} purpose
+ * @property {string} phone
+ */
+
+/** @typedef {Pick<DigitalLabFields, "reservedDate" | "startTime" | "endTime">} DigitalLabWindowFields */
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const INACTIVE_STATUSES = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
 
+/**
+ * @param {DigitalLabSeat["computerType"]} computerType
+ * @param {string} label
+ * @param {number} count
+ */
 function makeSeats(computerType, label, count) {
   return Array.from({ length: count }, (_, index) => {
     const number = String(index + 1).padStart(2, "0");
@@ -13,6 +37,7 @@ function makeSeats(computerType, label, count) {
   });
 }
 
+/** @type {ReadonlyArray<Readonly<DigitalLabSeat>>} */
 export const DIGITAL_LAB_SEATS = Object.freeze([...makeSeats("mac", "Mac", 12), ...makeSeats("pc", "PC", 4)]);
 const SEAT_IDS = new Set(DIGITAL_LAB_SEATS.map((seat) => seat.id));
 
@@ -20,10 +45,12 @@ function windowError(reasonCode, message) {
   return Object.assign(new Error(message), { status: 400, reasonCode });
 }
 
+/** @param {DigitalLabWindowFields} fields */
 function selectionTiming(fields) {
   return fields && reservationTiming({ type: "digital_lab", fields });
 }
 
+/** @param {DigitalLabWindowFields} fields */
 export function getDigitalLabWindow(settings, fields, { now = new Date() } = {}) {
   if (settings?.digitalLabEnabled !== true || !hasDigitalLabOperatingHours(settings)) {
     throw windowError("disabled", "디지털사진영상실 예약이 비활성 상태입니다.");
@@ -52,6 +79,7 @@ export function getDigitalLabWindow(settings, fields, { now = new Date() } = {})
   return window;
 }
 
+/** @param {DigitalLabWindowFields} fields */
 export function digitalLabClassOverlaps(rule, fields) {
   if (rule?.type !== "digital_lab" || !selectionTiming(fields)) return false;
   const date = fields.reservedDate;
@@ -66,7 +94,10 @@ export function digitalLabClassOverlaps(rule, fields) {
     && start < timeMinutes(fields.endTime) && timeMinutes(fields.startTime) < end;
 }
 
-/** Internal rows that intersect the selected time, across all seats. */
+/**
+ * Internal rows that intersect the selected time, across all seats.
+ * @param {DigitalLabWindowFields} fields
+ */
 export function overlappingDigitalLabReservations(db, fields, { editingId = null } = {}) {
   const window = selectionTiming(fields);
   if (!window) return [];
@@ -82,7 +113,10 @@ function unavailable(reasonCode, reason) {
   return { available: false, reasonCode, reason };
 }
 
-/** The caller authorizes editingId and projects the result for the viewer. */
+/**
+ * The caller authorizes editingId and projects the result for the viewer.
+ * @param {DigitalLabWindowFields & Pick<DigitalLabFields, "seatId">} fields
+ */
 export function evaluateDigitalLabSelection(db, fields, { userId, now, editingId } = {}) {
   if (!SEAT_IDS.has(fields?.seatId)) return unavailable("invalid_input", "디지털사진영상실 좌석을 올바르게 선택하세요.");
   try {

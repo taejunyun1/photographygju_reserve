@@ -108,7 +108,8 @@ export function createSettingsHelpers({ assertPlainObject, assertDateKey, assert
     const day = String(rule.day || "").trim();
     if (!SETTING_FACILITY_TYPES.has(type)) throw Object.assign(new Error("지원하지 않는 차단 시설입니다."), { status: 400 });
     const weekdays = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-    if (!Object.hasOwn(weekdays, day)) throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
+    const validWeekday = type === "digital_lab" ? Object.hasOwn(weekdays, day) : day in weekdays;
+    if (!validWeekday) throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
     assertDateKey(rule.from, "차단 시작일");
     assertDateKey(rule.to, "차단 종료일");
     if (String(rule.from) > String(rule.to)) throw Object.assign(new Error("차단 종료일은 시작일 이후여야 합니다."), { status: 400 });

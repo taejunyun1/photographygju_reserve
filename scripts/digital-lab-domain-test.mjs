@@ -223,3 +223,18 @@ test("accepts same-day minute-precision class rules through the existing setting
   }
   assert.equal((await patch({ ...rule, end: "24:00" })).status, 200);
 });
+
+test("preserves a legacy studio rule when the admin deletes another class rule", async () => {
+  const legacy = { id: "legacy-class", type: "studio", day: "constructor", from: "2026-11-09", to: "2026-11-16", start: "10:00", end: "12:00", target: "기존 수업" };
+  const db = normalizeDb({
+    settings: { blockedSchedules: [legacy, { ...legacy, id: "removed-class", day: "monday" }] },
+    users: [{ id: "admin", role: "admin", name: "관리자", status: "approved" }],
+    sessions: [{ token: "settings-test", userId: "admin", expiresAt: "2099-01-01T00:00:00Z" }]
+  });
+  const response = await handleApiRequest({
+    method: "PATCH", pathname: "/api/admin/settings", authorization: "Bearer settings-test",
+    readText: async () => JSON.stringify({ blockedSchedules: [legacy] }), db, saveDb: async () => {}
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(db.settings.blockedSchedules, [legacy]);
+});
