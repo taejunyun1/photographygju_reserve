@@ -1,3 +1,4 @@
+import { DIGITAL_LAB_NAME } from "./digital-lab.mjs";
 import { defaultSettings } from "./settings.mjs";
 
 const KST_DATE_FORMATTER = new Intl.DateTimeFormat("sv-SE", {
@@ -91,7 +92,7 @@ function historicalEquipmentIndex(reservations, equipment) {
 function slotLabels(reservation) {
   const fields = reservation?.fields || {};
   if (reservation?.type === "equipment") return fields.rentalTime ? [String(fields.rentalTime)] : [];
-  if (reservation?.type === "print") return fields.startTime ? [String(fields.startTime)] : [];
+  if (reservation?.type === "print" || reservation?.type === "digital_lab") return fields.startTime ? [String(fields.startTime)] : [];
   if (reservation?.type === "studio" || reservation?.type === "darkroom") {
     return Array.isArray(fields.timeSlots) ? fields.timeSlots.map((item) => String(item || "")).filter(Boolean) : [];
   }
@@ -99,7 +100,7 @@ function slotLabels(reservation) {
 }
 
 function reservationTypeLabel(type) {
-  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실" }[type] || "예약";
+  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실", digital_lab: DIGITAL_LAB_NAME }[type] || "예약";
 }
 
 function buildCongestion(reservations) {

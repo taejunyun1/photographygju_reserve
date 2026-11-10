@@ -30,7 +30,7 @@ assert.equal(student.generatedAt, now.toISOString());
 assert.equal(student.today, "2026-10-19");
 assert.equal(student.maxDate, "2026-11-18");
 assert.equal(student.viewer, "student");
-assert.equal(student.spaces.length, 4);
+assert.equal(student.spaces.filter(space => space.key !== "digital").length, 4);
 const room = key => student.spaces.find(space => space.key === key);
 assert.equal(room("dark").intervals.length, 2, "noncontinuous slots must leave the gap empty and exclude terminal states");
 assert.equal(room("dark").intervals[0].endAt, "2026-10-19T03:00:00.000Z");
@@ -91,4 +91,41 @@ equipmentBlockedDb.settings.blockedSchedules.push({ type: "equipment", day: "mon
 const blockedEquipmentBoard = buildFacilityTimeline(equipmentBlockedDb, { date: "2026-10-19", now, viewer });
 assert.deepEqual(blockedEquipmentBoard.equipmentBlockedIntervals, [{ startAt: "2026-10-18T15:00:00.000Z", endAt: "2026-10-19T15:00:00.000Z", label: "기자재 점검" }], "equipment reservation validation blocks the whole rental day, not only the configured clock range");
 assert.deepEqual(buildFacilityTimeline(equipmentBlockedDb, { date: "2026-10-20", now, viewer }).equipmentBlockedIntervals, [], "equipment restrictions must respect configured date and weekday");
+
+const labFields = { reservedDate: "2026-10-19", startTime: "10:00", endTime: "12:00", seatId: "mac-01", phone: "lab-secret-phone" };
+const labDb = {
+  ...db,
+  settings: { ...db.settings, digitalLabEnabled: true, digitalLabOpenTime: "08:00", digitalLabCloseTime: "22:00",
+    blockedSchedules: [...db.settings.blockedSchedules, { type: "digital_lab", day: "monday", from: labFields.reservedDate, to: labFields.reservedDate, start: "14:01", end: "14:02", target: "디지털 수업" }] },
+  reservations: [
+    ...db.reservations,
+    reservation("lab-secret-booking", "digital_lab", "auto_confirmed", labFields),
+    reservation("lab-mine", "digital_lab", "auto_confirmed", { ...labFields, startTime: "12:00", endTime: "14:00" }, { userId: viewer.id }),
+    reservation("lab-cancelled", "digital_lab", "admin_cancelled", { ...labFields, seatId: "pc-01" })
+  ]
+};
+const buildLabBoard = (db, viewer) => buildFacilityTimeline(db, { date: labFields.reservedDate, now, viewer });
+const labStudent = buildLabBoard(labDb, viewer);
+const digital = labStudent.spaces.find(space => space.key === "digital");
+assert.ok(digital, "board must expose digital lab as a separate space");
+assert.equal(digital.name, "디지털사진영상실");
+assert.equal(digital.subspaces.length, 16);
+assert.deepEqual(digital.intervals.map(row => row.subspaceKeys), [["mac-01"], ["mac-01"]]);
+assert.equal(digital.intervals[1].reservationId, "lab-mine");
+assert.deepEqual(Object.keys(digital.intervals[0]).sort(), ["endAt", "entryKey", "isMine", "label", "startAt", "status", "subspaceKeys"]);
+for (const secret of ["lab-secret-booking", "secret-user-id", "타인비밀이름", "lab-secret-phone"]) {
+  assert(!JSON.stringify(digital).includes(secret), `digital occupancy leaks ${secret}`);
+}
+assert.deepEqual(labStudent.spaces.filter(space => space.key !== "digital"), student.spaces.filter(space => space.key !== "digital"));
+assert.deepEqual(labStudent.equipment, student.equipment);
+assert.deepEqual(digital.blockedIntervals.map(row => row.label), ["운영시간 외", "디지털 수업", "운영시간 외"]);
+const labAdmin = buildLabBoard(labDb, { id: "admin", role: "admin" }).spaces.find(space => space.key === "digital");
+assert.equal(labAdmin.intervals[0].reservationId, "lab-secret-booking");
+assert.equal(labAdmin.intervals[0].label, "타인비밀이름");
+const disabledLab = buildLabBoard({ ...labDb, settings: { ...labDb.settings, digitalLabEnabled: false } }, viewer)
+  .spaces.find(space => space.key === "digital");
+assert.deepEqual(disabledLab.intervals, digital.intervals, "historical booking times survive disabled settings");
+assert.equal(disabledLab.blockedIntervals[0].label, "예약 비활성");
+assert.equal(disabledLab.blockedIntervals[0].endAt, "2026-10-19T15:00:00.000Z");
+
 console.log("Facility timeline domain fixtures passed.");

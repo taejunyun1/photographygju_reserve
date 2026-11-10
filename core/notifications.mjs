@@ -1,4 +1,5 @@
 import { formatRequestedEquipment } from "./equipment-requests.mjs";
+import { DIGITAL_LAB_SEATS } from "./digital-lab.mjs";
 
 export function createNotificationHelpers({
   id,
@@ -44,6 +45,10 @@ export function createNotificationHelpers({
       lines.splice(4, 0, `시간: ${(fields.timeSlots || []).join(", ")}`, `작업: ${(fields.processTypes || []).join(", ")}`, `사용 약품: ${chemicals || "-"}`);
     }
     if (reservation.type === "print") lines.splice(4, 0, `시간: ${fields.startTime}-${fields.endTime}`, `출력: ${fields.printType} / ${fields.paper} / ${fields.size}`, `매수: ${fields.count || "-"}`);
+    if (reservation.type === "digital_lab") {
+      const seat = DIGITAL_LAB_SEATS.find(({ id }) => id === fields.seatId);
+      lines.splice(4, 0, `좌석: ${seat?.label || fields.seatId || "-"}`, `시간: ${fields.startTime}–${fields.endTime}`);
+    }
 
     lines.push(`상세: ${detailUrl}`);
     return lines.join("\n");

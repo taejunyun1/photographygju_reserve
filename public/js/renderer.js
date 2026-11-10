@@ -408,6 +408,18 @@ const reactAdminActions = {
       "예약 상태를 변경했습니다."
     );
   },
+  async loadDigitalLabSeats(reservationId, { reservedDate, startTime, endTime }) {
+    const query = new URLSearchParams({ editingId: reservationId, date: reservedDate, start: startTime, end: endTime });
+    const { seats } = await api(`/api/digital-lab/availability?${query}`);
+    return seats;
+  },
+  async updateDigitalLabReservation(reservationId, fields) {
+    await runAdminMutation(
+      "reservations",
+      () => api(`/api/reservations/${encodeURIComponent(reservationId)}`, { method: "PATCH", body: { fields } }),
+      "디지털사진영상실 예약을 수정했습니다."
+    );
+  },
   async deleteReservation(reservationId, label = "이 예약") {
     if (!confirm(`${label}을 삭제할까요? 연결된 보고서도 함께 삭제되며 되돌릴 수 없습니다.`)) return;
     await runAdminMutation(

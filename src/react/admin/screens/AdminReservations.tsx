@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   GjuCard,
@@ -11,12 +11,15 @@ import {
   type GjuIconName
 } from "../../design-system";
 import type {
+  AdminDigitalLabEdit,
   AdminEquipmentInspectionInput,
   AdminEquipmentInspectionOutcome,
   AdminReservationRecord,
   LegacyState,
   ReactAdminActions
 } from "../../platform/types";
+import { DIGITAL_LAB_SLOT_BOUNDARIES, digitalLabSeatLabel } from "../../student/availability";
+import type { DigitalLabSeat } from "../../student/types";
 import {
   bulkDeleteAvailability,
   formatDate,
@@ -39,7 +42,8 @@ const RESERVATION_TABS = [
   ["equipment", "기자재"],
   ["darkroom", "암실"],
   ["studio", "스튜디오"],
-  ["print", "출력"]
+  ["print", "출력"],
+  ["digital_lab", "디지털사진영상실"]
 ] as const;
 
 const EQUIPMENT_STATUS_FILTERS = [
@@ -113,11 +117,16 @@ function reservationTypeLabel(type: string) {
     studio: "스튜디오",
     equipment: "기자재",
     darkroom: "암실",
-    print: "출력"
+    print: "출력",
+    digital_lab: "디지털사진영상실"
   }[type] || type || "-";
 }
 
 function reservationTitle(reservation: AdminReservationRecord) {
+  if (reservation.type === "digital_lab") {
+    const seatId = reservation.fields?.seatId;
+    return [reservationTypeLabel(reservation.type), digitalLabSeatLabel(seatId) || seatId].filter(Boolean).join(" · ");
+  }
   return reservation.title
     || String(reservation.fields?.title || reservation.fields?.studioSpace || "")
     || reservation.equipment?.name
@@ -193,6 +202,14 @@ function reservationDetailRows(reservation: AdminReservationRecord): Array<[stri
       ["약품", chemicals || "-"]
     ];
   }
+  if (reservation.type === "digital_lab") {
+    return [
+      ["좌석", digitalLabSeatLabel(fields.seatId) || fields.seatId || "-"],
+      ["시간", `${fields.startTime || "-"}–${fields.endTime || "-"}`],
+      ["연락처", String(fields.phone || reservation.user?.phone || "-")],
+      ["목적", String(fields.purpose || "-")]
+    ];
+  }
   return [
     ["시간", `${fields.startTime || "-"}-${fields.endTime || "-"}`],
     ["출력", `${fields.printType || "-"} / ${fields.paper || "-"} / ${fields.size || "-"}`],
@@ -210,6 +227,9 @@ function reservationDetails(reservation: AdminReservationRecord) {
 }
 
 function statusActionsFor(reservation: AdminReservationRecord) {
+  if (reservation.type === "digital_lab") {
+    return reservation.status === "auto_confirmed" ? [["admin_cancelled", "관리자 취소"]] as const : [];
+  }
   if (reservation.type !== "equipment") return FACILITY_STATUS_ACTIONS;
   const status = String(reservation.status || "") as keyof typeof EQUIPMENT_STATUS_ACTIONS;
   return EQUIPMENT_STATUS_ACTIONS[status] || [];
@@ -300,7 +320,8 @@ function bulkDeleteReservations(state: LegacyState, actions: ReactAdminActions) 
 function renderReservationCard(
   reservation: AdminReservationRecord,
   actions: ReactAdminActions,
-  onReturnInspection: (reservation: AdminReservationRecord) => void
+  onReturnInspection: (reservation: AdminReservationRecord) => void,
+  onDigitalLabEdit: (reservation: AdminReservationRecord) => void
 ) {
   const status = String(reservation.status || "");
   return (
@@ -321,10 +342,88 @@ function renderReservationCard(
       {reservationDetails(reservation)}
       <div className="admin-react-action-row" aria-label={`${reservationTitle(reservation)} 상태 변경`}>
         {renderReservationStatusActions(reservation, actions, false, onReturnInspection)}
+        {renderDigitalLabEditAction(reservation, onDigitalLabEdit)}
         {renderReservationDeleteAction(reservation, actions)}
       </div>
     </article>
   );
+}
+
+function renderDigitalLabEditAction(reservation: AdminReservationRecord, onEdit: (reservation: AdminReservationRecord) => void) {
+  if (reservation.type !== "digital_lab" || reservation.status !== "auto_confirmed") return null;
+  return <GjuIconButton label="좌석·시간 수정" icon="edit" onClick={() => onEdit(reservation)} />;
+}
+
+function DigitalLabEditDialog({ reservation, actions, onClose }: {
+  reservation: AdminReservationRecord;
+  actions: ReactAdminActions;
+  onClose: () => void;
+}) {
+  const [initial] = useState<AdminDigitalLabEdit>(() => ({
+    reservedDate: reservation.fields?.reservedDate || "",
+    seatId: reservation.fields?.seatId || "",
+    startTime: reservation.fields?.startTime || "",
+    endTime: reservation.fields?.endTime || ""
+  }));
+  const [draft, setDraft] = useState(initial);
+  const [seats, setSeats] = useState<readonly DigitalLabSeat[] | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const { id } = reservation;
+  const { loadDigitalLabSeats, updateDigitalLabReservation } = actions;
+
+  useEffect(() => {
+    let active = true;
+    void loadDigitalLabSeats(id, initial).then((catalog) => {
+      if (active) setSeats(catalog);
+    }).catch((error) => {
+      if (active) setError(error instanceof Error ? error.message : "좌석 목록을 불러오지 못했습니다.");
+    });
+    return () => { active = false; };
+  }, [id, initial, loadDigitalLabSeats]);
+
+  const submit = stopSubmit(async () => {
+    if (saving || !seats?.some(seat => seat.id === draft.seatId)) return;
+    setError("");
+    setSaving(true);
+    try {
+      await updateDigitalLabReservation(id, draft);
+      onClose();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "예약을 수정하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  return <GjuDialog open title="디지털사진영상실 예약 수정" onClose={() => { if (!saving) onClose(); }} showActions={false}>
+    <form className="grid" onSubmit={submit}>
+      <label>사용일
+        <input className="input" type="date" required value={draft.reservedDate} disabled={saving} onChange={event => setDraft({ ...draft, reservedDate: event.currentTarget.value })} />
+      </label>
+      <label>시작 시간
+        <select className="select" required value={draft.startTime} disabled={saving} onChange={event => setDraft({ ...draft, startTime: event.currentTarget.value })}>
+          {DIGITAL_LAB_SLOT_BOUNDARIES.slice(0, -1).map(time => <option key={time}>{time}</option>)}
+        </select>
+      </label>
+      <label>종료 시간
+        <select className="select" required value={draft.endTime} disabled={saving} onChange={event => setDraft({ ...draft, endTime: event.currentTarget.value })}>
+          {DIGITAL_LAB_SLOT_BOUNDARIES.slice(1).map(time => <option key={time}>{time}</option>)}
+        </select>
+      </label>
+      <label>좌석
+        <select className="select" required value={draft.seatId} disabled={saving || !seats} onChange={event => setDraft({ ...draft, seatId: event.currentTarget.value })}>
+          {seats?.map(seat => <option key={seat.id} value={seat.id}>{seat.label}</option>)}
+        </select>
+      </label>
+      {!seats && !error && <p role="status">좌석 목록을 불러오는 중입니다.</p>}
+      {error && <p className="equipment-return-dialog__error" role="alert">{error}</p>}
+      <div className="gju-dialog__actions">
+        <button className="button ghost" type="button" disabled={saving} onClick={onClose}>취소</button>
+        <button className="button primary" type="submit" disabled={saving || !seats?.length}>변경 저장</button>
+      </div>
+    </form>
+  </GjuDialog>;
 }
 
 type ReturnInspectionItem = {
@@ -531,6 +630,7 @@ function EquipmentReturnInspectionDialog({
 export function AdminReservations({ state, actions }: AdminReservationsProps) {
   const [returnInspectionReservation, setReturnInspectionReservation] =
     useState<AdminReservationRecord | null>(null);
+  const [digitalLabEditReservation, setDigitalLabEditReservation] = useState<AdminReservationRecord | null>(null);
   const tab = String(state.adminReservationTab || "all");
   const statusFilter = String(state.adminEquipmentReservationStatusFilter || "all");
   const semesterFilter = String(state.adminReservationSemesterFilter || "all");
@@ -664,6 +764,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
                             true,
                             setReturnInspectionReservation
                           )}
+                          {renderDigitalLabEditAction(reservation, setDigitalLabEditReservation)}
                           {renderReservationDeleteAction(reservation, actions)}
                         </div>
                       </td>
@@ -683,7 +784,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
         <div className="admin-react-card-list" aria-label="예약 목록">
           {reservations.length
             ? reservations.map((reservation) =>
-                renderReservationCard(reservation, actions, setReturnInspectionReservation)
+                renderReservationCard(reservation, actions, setReturnInspectionReservation, setDigitalLabEditReservation)
               )
             : <GjuEmptyState title="예약이 없습니다." message="검색어와 필터를 확인하세요." />}
         </div>
@@ -697,6 +798,7 @@ export function AdminReservations({ state, actions }: AdminReservationsProps) {
           onClose={() => setReturnInspectionReservation(null)}
         />
       ) : null}
+      {digitalLabEditReservation && <DigitalLabEditDialog key={digitalLabEditReservation.id} reservation={digitalLabEditReservation} actions={actions} onClose={() => setDigitalLabEditReservation(null)} />}
     </section>
   );
 }

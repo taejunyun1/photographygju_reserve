@@ -1,5 +1,6 @@
-import { defaultSettings } from "./settings.mjs";
-import { reservationIntervals, reservationTiming } from "./reservation-timing.mjs";
+import { DIGITAL_LAB_NAME, DIGITAL_LAB_SEATS } from "./digital-lab.mjs";
+import { defaultSettings, hasDigitalLabOperatingHours } from "./settings.mjs";
+import { reservationIntervals, reservationTiming, timeMinutes } from "./reservation-timing.mjs";
 import { getEquipmentHandoffBlockers } from "./reservation-views.mjs";
 
 const DAY = 86400000;
@@ -10,7 +11,8 @@ const SPACES = [
   { key: "a", name: "스튜디오 A", type: "studio" },
   { key: "b", name: "스튜디오 B", type: "studio" },
   { key: "dark", name: "암실", type: "darkroom" },
-  { key: "print", name: "출력실", type: "print" }
+  { key: "print", name: "출력실", type: "print" },
+  { key: "digital", name: DIGITAL_LAB_NAME, type: "digital_lab" }
 ];
 const iso = value => Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null;
 const dateKey = value => new Date(new Date(value).getTime() + 9 * 3600000).toISOString().slice(0, 10);
@@ -18,12 +20,6 @@ const addDays = (date, count) => new Date(Date.parse(`${date}T00:00:00Z`) + coun
 const midnight = date => Date.parse(`${date}T00:00:00+09:00`);
 const at = (date, minute) => new Date(midnight(date) + minute * 60000).toISOString();
 const overlaps = (interval, from, to) => Date.parse(interval.startAt) < to && Date.parse(interval.endAt) > from;
-const minute = time => {
-  const match = String(time || "").match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-  const h = Number(match[1]), m = Number(match[2]);
-  return h <= 24 && m < 60 && (h !== 24 || m === 0) ? h * 60 + m : null;
-};
 const roomForSubspace = key => /studio\s*a|스튜디오\s*a/i.test(key) ? "a" : /studio\s*b|스튜디오\s*b/i.test(key) ? "b" : null;
 const studioSpaces = fields => [...new Set((Array.isArray(fields?.studioSpaces) && fields.studioSpaces.length ? fields.studioSpaces : [fields?.studioSpace]).filter(value => typeof value === "string" && value))];
 // Keep restriction scope aligned with reservation-validation.studioTargetMatches.
@@ -42,27 +38,37 @@ const checkoutTimestamp = reservation => iso(reservation.actualCheckedOutAt) || 
 
 function blockedForSpace(space, date, settings) {
   const intervals = [];
-  const push = (startAt, endAt, label, subspaceKeys) => {
+  const push = (startAt, endAt, label, subspaceKeys, reasonCode) => {
     if (Date.parse(endAt) <= Date.parse(startAt) || !overlaps({ startAt, endAt }, midnight(date), midnight(date) + DAY)) return;
-    intervals.push({ startAt, endAt, label, ...(subspaceKeys?.length ? { subspaceKeys } : {}) });
+    intervals.push({ startAt, endAt, label, ...(subspaceKeys?.length ? { subspaceKeys } : {}), ...(reasonCode ? { reasonCode } : {}) });
   };
   const rules = [...(settings.blockedSchedules || []).filter(rule => rule.type === space.type), ...(space.key === "dark" ? settings.darkroomBlockedRules || [] : [])];
   for (const day of [addDays(date, -1), date]) for (const rule of rules) {
     if (!ruleApplies(rule, day)) continue;
-    const start = minute(rule.start), parsedEnd = minute(rule.end);
+    const start = timeMinutes(rule.start), parsedEnd = timeMinutes(rule.end);
     if (start === null || parsedEnd === null) continue;
+    if (space.key === "digital" && (!rule.from || !rule.to || parsedEnd <= start)) continue;
     let subspaceKeys;
     if (space.type === "studio" && rule.target) {
       subspaceKeys = space.subspaces.filter(row => targetMatchesSubspace(rule.target, row.key)).map(row => row.key);
       if (!subspaceKeys.length) continue;
     }
-    push(at(day, start), at(day, parsedEnd <= start ? parsedEnd + 1440 : parsedEnd), rule.label || "예약 제한", subspaceKeys);
+    const label = space.key === "digital" ? rule.target || "수업 시간" : rule.label || "예약 제한";
+    push(at(day, start), at(day, parsedEnd <= start ? parsedEnd + 1440 : parsedEnd), label, subspaceKeys, space.key === "digital" ? "class_blocked" : undefined);
   }
   if (space.key === "print") {
-    const start = minute(settings.printAvailableStart), end = minute(settings.printAvailableEnd);
+    const start = timeMinutes(settings.printAvailableStart), end = timeMinutes(settings.printAvailableEnd);
     if (start !== null && start > 0) push(at(date, 0), at(date, start), "운영시간 외");
     if (end !== null && end < 1440) push(at(date, end), at(date, 1440), "운영시간 외");
     if ((settings.printUploadStartDate && date < settings.printUploadStartDate) || (settings.printUploadEndDate && date > settings.printUploadEndDate)) push(at(date, 0), at(date, 1440), "출력 신청 기간 외");
+  }
+  if (space.key === "digital") {
+    if (settings.digitalLabEnabled !== true || !hasDigitalLabOperatingHours(settings)) {
+      push(at(date, 0), at(date, 1440), "예약 비활성", undefined, "disabled");
+    } else {
+      push(at(date, 0), at(date, timeMinutes(settings.digitalLabOpenTime)), "운영시간 외", undefined, "outside_hours");
+      push(at(date, timeMinutes(settings.digitalLabCloseTime)), at(date, 1440), "운영시간 외", undefined, "outside_hours");
+    }
   }
   return intervals.sort((a, b) => a.startAt.localeCompare(b.startAt));
 }
@@ -84,10 +90,16 @@ export function buildFacilityTimeline(db, { date, now, viewer }) {
       ...(admin || isMine ? { reservationId: reservation.id } : {})
     };
   };
-  let entry = 0;
-  const interval = (reservation, timing, extra = {}) => ({ entryKey: `entry-${++entry}`, startAt: timing.startAt, endAt: timing.endAt, status: reservation.status, ...identity(reservation), ...extra });
+  let entry = 0, digitalEntry = 0;
+  const interval = (reservation, timing, extra = {}) => ({
+    entryKey: reservation.type === "digital_lab" ? `digital-entry-${++digitalEntry}` : `entry-${++entry}`,
+    startAt: timing.startAt, endAt: timing.endAt, status: reservation.status, ...identity(reservation), ...extra
+  });
   const spaces = SPACES.map(definition => {
     const space = { ...definition, subspaces: definition.type === "studio" ? (settings.studioSpaces || []).filter(key => roomForSubspace(key) === definition.key).map(key => ({ key, label: key })) : [], intervals: [], blockedIntervals: [] };
+    if (definition.type === "digital_lab") {
+      space.subspaces = DIGITAL_LAB_SEATS.map(({ id, label, computerType }) => ({ key: id, label, computerType }));
+    }
     space.blockedIntervals = blockedForSpace(space, date, settings);
     return space;
   });
@@ -98,6 +110,13 @@ export function buildFacilityTimeline(db, { date, now, viewer }) {
       if (!overlaps(timing, from, to)) continue;
       for (const space of spaces) {
         if (space.type !== reservation.type) continue;
+        if (space.type === "digital_lab") {
+          const seatId = reservation.fields?.seatId;
+          if (space.subspaces.some(seat => seat.key === seatId)) {
+            space.intervals.push(interval(reservation, timing, { subspaceKeys: [seatId] }));
+          }
+          continue;
+        }
         const subspaceKeys = targets.filter(key => roomForSubspace(key) === space.key);
         if (space.type === "studio" && !subspaceKeys.length) continue;
         const currentStudioA = space.key === "a" && date === today && Date.parse(timing.startAt) <= clock.getTime() && clock.getTime() < Date.parse(timing.endAt);

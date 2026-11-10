@@ -1,5 +1,5 @@
 import React from 'react';
-import { clockLabel, overlaps, equipmentAt, equipmentCategory, spaceSummary, timeWindow, type TimeWindow } from './model';
+import { clockLabel, overlaps, equipmentAt, equipmentCategory, digitalLabSummary, spaceSummary, timeWindow, type TimeWindow } from './model';
 import type { FacilitySelectionKey, FacilityTimelineData } from './types';
 
 export function FacilityTimeline({data,window,now,active=true,onChoose}:{data:FacilityTimelineData;window:TimeWindow;now:number;active?:boolean;onChoose:(time:string,key:FacilitySelectionKey)=>void}) {
@@ -18,6 +18,11 @@ export function FacilityTimeline({data,window,now,active=true,onChoose}:{data:Fa
     <table className="gju-facility-board__timeline"><caption>하루 시간표 · 각 칸은 2시간 구간과 겹치는 예약입니다</caption><thead><tr><th scope="col">공간 / 분류</th>{times.map(time=><th scope="col" key={time}>{time.slice(0,2)}시</th>)}</tr></thead><tbody>
       {data.spaces.map(space=><tr key={space.key}><th scope="row">{space.name}</th>{times.map(time=>{
         const period=timeWindow(data.date,time);
+        if(space.key==='digital'){
+          const summary=digitalLabSummary(space,period);
+          const label=`${summary.label}${summary.restriction?` · ${summary.restriction}`:''}`;
+          return <td key={time}><button type="button" data-selected={window.start>=period.start&&window.start<period.end||undefined} data-event={summary.restriction?'blocked':undefined} aria-label={`${space.name} ${time}–${clockLabel(period.end)}, ${label}`} title={label} onClick={()=>onChoose(time,space.key)}>{summary.restriction?'제한':summary.groups.map(group=>group.count).join(' · ')}</button></td>;
+        }
         const summary=spaceSummary(space,period);
         return <td key={time}><button type="button" data-selected={window.start>=period.start&&window.start<period.end||undefined} data-event={summary.count?'reserved':summary.blocked?'blocked':undefined} aria-label={`${space.name} ${time}–${clockLabel(period.end)}, ${summary.label}${summary.count>1?`, ${summary.count}건`:''}`} title={summary.label} onClick={()=>onChoose(time,space.key)}>{summary.count?summary.label:summary.blocked?'제한':'—'}</button></td>;
       })}</tr>)}

@@ -31,7 +31,7 @@ import {
   readSurveySummary
 } from "./core/course-demand-snapshot.mjs";
 import { reservationTiming } from "./core/reservation-timing.mjs";
-import { digitalLabClassOverlaps } from "./core/digital-lab.mjs";
+import { DIGITAL_LAB_NAME, digitalLabClassOverlaps } from "./core/digital-lab.mjs";
 import {
   darkroomChemicals,
   defaultSettings,
@@ -535,7 +535,7 @@ function assertNoDigitalLabClassConflicts(db, schedules) {
 }
 
 function reservationTitle(type) {
-  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실" }[type] || type;
+  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실", digital_lab: DIGITAL_LAB_NAME }[type] || type;
 }
 
 function reservationStatusForType(type) {

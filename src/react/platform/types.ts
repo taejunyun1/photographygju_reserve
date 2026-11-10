@@ -1,4 +1,7 @@
 import type { FacilityTimelineData, FacilityTimelineResource } from "../shared/facility-board/types";
+import type { DigitalLabFields, DigitalLabSeat } from "../student/types";
+
+export type AdminDigitalLabEdit = Pick<DigitalLabFields, "reservedDate" | "seatId" | "startTime" | "endTime">;
 
 export type AdminPageMeta = {
   total?: number;
@@ -77,6 +80,7 @@ export type AdminReservationRecord = {
     title?: string;
     studioSpace?: string;
     studioSpaces?: string[];
+    seatId?: string;
     startTime?: string;
     endTime?: string;
     rentalTime?: string;
@@ -779,6 +783,8 @@ export type ReactAdminActions = {
   resetUserWarnings(userId: string): Promise<void>;
   deleteUser(userId: string, name?: string): Promise<void>;
   updateReservationStatus(reservationId: string, status: string): Promise<void>;
+  loadDigitalLabSeats(reservationId: string, fields: AdminDigitalLabEdit): Promise<readonly DigitalLabSeat[]>;
+  updateDigitalLabReservation(reservationId: string, fields: AdminDigitalLabEdit): Promise<void>;
   deleteReservation(reservationId: string, label?: string): Promise<void>;
   bulkDeleteReservations(filters: Partial<AdminViewFilterMap["reservations"]>): Promise<void>;
   deleteAllReservations(collectionTotal: number): Promise<void>;

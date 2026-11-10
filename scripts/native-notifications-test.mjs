@@ -81,6 +81,20 @@ assert.equal(planned[0].reservationId, "legacy-studio", "planner should sort by 
 assert.equal(planned.find((item) => item.reservationId === "timing-studio").body.includes("7. 3."), true, "timing should take precedence over legacy fields");
 assert(planned.every((item) => item.channelId === RESERVATION_REMINDER_CHANNEL_ID), "every planned reminder should target the configured Android channel");
 
+const labReservation = {
+  id: "lab-reminder", type: "digital_lab", status: "auto_confirmed",
+  fields: { reservedDate: "2026-07-02", seatId: "pc-04", startTime: "22:00", endTime: "24:00" }
+};
+const labPlan = planReservationNotifications({ userId: "student1", reservations: [labReservation], now });
+assert.equal(reservationStartDate(labReservation).toISOString(), "2026-07-02T13:00:00.000Z");
+assert.equal(reservationEndDate(labReservation, reservationStartDate(labReservation)).toISOString(), "2026-07-02T15:00:00.000Z");
+assert.equal(labPlan.length, 2);
+for (const reminder of labPlan) {
+  assert.match(reminder.title, /디지털사진영상실/);
+  assert.match(reminder.body, /PC 04 · 22:00–24:00/);
+  assert.equal(reminder.extra.notificationType, "pre-start");
+}
+
 const thirtyHoursAway = {
   id: "thirty-hours-away",
   type: "print",

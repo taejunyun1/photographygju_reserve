@@ -3,6 +3,7 @@ import React from "react";
 import { GjuCard, motionClass } from "../../design-system";
 import { AdminFacilityBoard } from "../components/AdminFacilityBoard";
 import type { AdminOperationsWarning, AdminReservationRecord, AdminView, AdminViewFilterMap, ReactAdminActions, LegacyState } from "../../platform/types";
+import { digitalLabSeatLabel } from "../../student/availability";
 
 type DashboardCardTone = "blue" | "amber" | "green" | "neutral" | "red";
 
@@ -133,7 +134,7 @@ function renderActionCard(card: DashboardCardConfig, actions: ReactAdminActions)
 }
 
 function reservationTypeLabel(type: string) {
-  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력" }[type] || type || "예약";
+  return { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력", digital_lab: "디지털사진영상실" }[type] || type || "예약";
 }
 
 function reservationTime(reservation: AdminReservationRecord) {
@@ -150,6 +151,10 @@ function reservationTime(reservation: AdminReservationRecord) {
     }
   }
   if (reservation.queueAction === "return") return String(fields.returnTime || "시간 미정");
+  if (reservation.type === "digital_lab") {
+    const time = fields.startTime && fields.endTime ? `${fields.startTime}–${fields.endTime}` : "시간 미정";
+    return [time, digitalLabSeatLabel(fields.seatId) || fields.seatId].filter(Boolean).join(" · ");
+  }
   return String(fields.rentalTime || fields.startTime || fields.timeSlots?.[0] || "시간 미정");
 }
 

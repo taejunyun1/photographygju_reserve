@@ -35,6 +35,25 @@ export function spaceSummary(space: FacilitySpaceTimeline | undefined,window:Tim
   const blocked=space.blockedIntervals.some(record=>overlaps(record,window));
   return {label:records.length?`${records[0].label}${records.length>1?` 외 ${records.length-1}건`:''}`:blocked?'이용 제한':'예약 없음',count:records.length,blocked};
 }
+export function digitalLabSummary(space: FacilitySpaceTimeline, window: TimeWindow) {
+  const restrictions = space.blockedIntervals.filter(record => overlaps(record, window));
+  const occupied = new Set(visibleIntervals(space, window).flatMap(record => record.subspaceKeys || []));
+  const groups = (['mac', 'pc'] as const).map(computerType => {
+    const name = computerType === 'mac' ? 'Mac' : 'PC';
+    const seats = space.subspaces.filter(seat => seat.computerType === computerType).map(seat => {
+      const status = occupied.has(seat.key) ? '예약 있음' : restrictions.length ? '이용 제한' : '예약 없음';
+      return { ...seat, status };
+    });
+    const available = seats.filter(seat => seat.status === '예약 없음').length;
+    return { name, seats, count: `${available}/${seats.length}` };
+  });
+  return {
+    groups,
+    label: groups.map(({ name, count }) => `${name} ${count}`).join(' · '),
+    restriction: [...new Set(restrictions.map(record => record.label))].join(' · '),
+    disabled: restrictions.some(record => record.reasonCode === 'disabled')
+  };
+}
 export function canOpenReservation(record:{reservationId?:string;isMine:boolean},viewer:FacilityViewer):boolean { return Boolean(record.reservationId&&(viewer==='admin'||record.isMine)); }
 export function reservationIntent(space: FacilitySpaceTimeline,selectedDate:string):FacilityReservationIntent { return {type:space.type,selectedDate}; }
 export function equipmentReservationIntent(equipment:FacilityEquipmentTimeline,selectedDate:string):FacilityReservationIntent { return {type:'equipment',selectedDate,equipmentItemIds:[equipment.equipmentId]}; }

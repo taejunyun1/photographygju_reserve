@@ -1,4 +1,4 @@
-export type FacilityRoomKey = "a" | "b" | "dark" | "print";
+export type FacilityRoomKey = "a" | "b" | "dark" | "print" | "digital";
 export type FacilitySelectionKey = FacilityRoomKey | "gear";
 export type FacilityViewer = "admin" | "student";
 
@@ -20,10 +20,10 @@ export type FacilityReservationInterval = {
 export type FacilitySpaceTimeline = {
   key: FacilityRoomKey;
   name: string;
-  type: "studio" | "darkroom" | "print";
-  subspaces: Array<{ key: string; label: string }>;
+  type: "studio" | "darkroom" | "print" | "digital_lab";
+  subspaces: Array<{ key: string; label: string; computerType?: "mac" | "pc" }>;
   intervals: FacilityReservationInterval[];
-  blockedIntervals: Array<{ startAt: string; endAt: string; label: string; subspaceKeys?: string[] }>;
+  blockedIntervals: Array<{ startAt: string; endAt: string; label: string; subspaceKeys?: string[]; reasonCode?: "disabled" | "outside_hours" | "class_blocked" }>;
 };
 
 export type FacilityEquipmentCustody = {

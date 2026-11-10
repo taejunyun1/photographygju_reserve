@@ -39,6 +39,7 @@ function makeSeats(computerType, label, count) {
 
 /** @type {ReadonlyArray<Readonly<DigitalLabSeat>>} */
 export const DIGITAL_LAB_SEATS = Object.freeze([...makeSeats("mac", "Mac", 12), ...makeSeats("pc", "PC", 4)]);
+export const DIGITAL_LAB_NAME = "디지털사진영상실";
 const SEAT_IDS = new Set(DIGITAL_LAB_SEATS.map((seat) => seat.id));
 
 function windowError(reasonCode, message) {

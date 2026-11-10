@@ -1,5 +1,5 @@
 import React from 'react';
-import { FACILITY_LAYOUT, FACILITY_ROOM_NUMBERS, FACILITY_SELECTION_ORDER } from './layout';
+import { FACILITY_LAYOUT, FACILITY_ROOM_NUMBERS, FACILITY_SELECTION_ORDER, type CorridorKey } from './layout';
 import { spaceSummary, overlaps, visibleIntervals, type TimeWindow } from './model';
 import type { FacilitySelectionKey, FacilityTimelineData } from './types';
 
@@ -9,7 +9,7 @@ function PixelFurniture({kind}:{kind:string}) {
 }
 export function FacilityFloorPlan({data,window,selection,onSelect,zoomed}:{data:FacilityTimelineData;window:TimeWindow;selection:FacilitySelectionKey|null;onSelect:(key:FacilitySelectionKey)=>void;zoomed:boolean}) {
   const refs=React.useRef(new Map<string,HTMLButtonElement>());
-  const navigate=(key:FacilitySelectionKey,event:React.KeyboardEvent<HTMLButtonElement>)=>{
+  const navigate=(key:CorridorKey,event:React.KeyboardEvent<HTMLButtonElement>)=>{
     if(!['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End'].includes(event.key)) return;
     const current=FACILITY_SELECTION_ORDER.indexOf(key);
     const next=event.key==='Home'?0:event.key==='End'?4:(current+(['ArrowRight','ArrowDown'].includes(event.key)?1:-1)+5)%5;

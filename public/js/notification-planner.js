@@ -93,6 +93,7 @@ function legacyStartDate(reservation) {
     studio: earliestSlotStart(fields.timeSlots || []),
     darkroom: earliestSlotStart(fields.timeSlots || []),
     print: timeStart(fields.startTime),
+    digital_lab: timeStart(fields.startTime),
     lecture: timeStart(fields.time)
   }[reservation.type] || "";
   return kstDate(fields.reservedDate, time || "09:00");
@@ -112,6 +113,7 @@ function legacyEndDate(reservation, startAt) {
     return latestEnd >= 0 ? new Date(kstDate(date, "00:00").getTime() + latestEnd * 60 * 1000) : startAt;
   }
   if (reservation.type === "print") return kstDate(date, timeStart(fields.endTime) || "19:00");
+  if (reservation.type === "digital_lab" && fields.endTime) return kstDate(date, fields.endTime);
   return startAt;
 }
 
@@ -129,6 +131,7 @@ function typeLabel(type) {
     studio: "스튜디오",
     darkroom: "암실",
     print: "출력실",
+    digital_lab: "디지털사진영상실",
     lecture: "특강"
   }[type] || "예약";
 }
@@ -141,6 +144,12 @@ export function reservationMeta(reservation) {
   if (reservation.type === "studio") return [fields.studioSpace || (fields.studioSpaces || []).join(", "), (fields.timeSlots || []).join(", ")].filter(Boolean).join(" · ");
   if (reservation.type === "darkroom") return [(fields.timeSlots || []).join(", "), (fields.processTypes || []).join(", ")].filter(Boolean).join(" · ");
   if (reservation.type === "print") return [fields.startTime && fields.endTime ? `${fields.startTime}-${fields.endTime}` : "", fields.printType].filter(Boolean).join(" · ");
+  if (reservation.type === "digital_lab") {
+    const seat = /^(mac|pc)-(\d{2})$/.exec(fields.seatId || "");
+    const seatLabel = seat ? `${seat[1] === "mac" ? "Mac" : "PC"} ${seat[2]}` : "";
+    const range = fields.startTime && fields.endTime ? `${fields.startTime}–${fields.endTime}` : "";
+    return [seatLabel, range].filter(Boolean).join(" · ");
+  }
   if (reservation.type === "lecture") return [fields.title, fields.time, fields.location].filter(Boolean).join(" · ");
   return "";
 }

@@ -429,3 +429,32 @@ test("final writes refresh the time after reading the body", async (t) => {
   }
   assert.equal(writes, 0);
 });
+
+test("lab Slack messages contain facility, seat and range without external delivery", async () => {
+  const db = await initialDb(password);
+  Object.assign(db.settings, enabledSettings);
+  db.sessions.push({ token: "lab-message-admin", userId: "user_admin", expiresAt: "2026-11-24T00:00:00.000Z" });
+  const draft = { ...fields, reservedDate: "2026-11-10", seatId: "pc-04", startTime: "22:00", endTime: "24:00" };
+  const request = (method, pathname, body) => handleApiRequest({
+    method, pathname, authorization: "Bearer lab-message-admin", db,
+    now: Date.parse("2026-11-10T00:00:00.000Z"),
+    readText: async () => JSON.stringify(body), saveDb: async () => {}
+  });
+  const created = await request("POST", "/api/reservations", { type: "digital_lab", fields: draft });
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  const reservation = created.body.data;
+  assert.equal(reservation.fields.reportPolicyVersion, undefined);
+  assert.equal(reservation.timing.reportDeadlineAt, undefined);
+  const edited = await request("PATCH", `/api/reservations/${reservation.id}`, { fields: { seatId: "mac-12" } });
+  assert.equal(edited.status, 200, JSON.stringify(edited.body));
+  const cancelled = await request("PATCH", `/api/admin/reservations/${reservation.id}/status`, { status: "admin_cancelled" });
+  assert.equal(cancelled.status, 200, JSON.stringify(cancelled.body));
+  assert.deepEqual(db.slackLogs.map(({ event, status }) => [event, status]), [
+    ["reservation_created", "skipped"], ["reservation_updated", "skipped"], ["reservation_status", "skipped"]
+  ]);
+  for (const [index, { message }] of db.slackLogs.entries()) {
+    assert.match(message, /^\[디지털사진영상실/);
+    assert.match(message, index === 0 ? /PC 04/ : /Mac 12/);
+    assert.match(message, /22:00–24:00/);
+  }
+});

@@ -6,7 +6,7 @@ import {
   blockedSchedules
 } from "../../platform/adminActions";
 import type { AdminBlockedSchedule, AdminBlockedScheduleConflict, LegacyState, ReactAdminActions } from "../../platform/types";
-import { digitalLabSeatLabel } from "../../student/availability";
+import { DIGITAL_LAB_SLOT_BOUNDARIES as LAB_SLOT_BOUNDARIES, digitalLabSeatLabel } from "../../student/availability";
 import {
   checkedValue,
   fieldValue,
@@ -51,7 +51,6 @@ const TYPE_LABEL: Record<string, string> = {
   digital_lab: "디지털사진영상실"
 };
 
-const LAB_SLOT_BOUNDARIES = Array.from({ length: 13 }, (_, index) => `${String(index * 2).padStart(2, "0")}:00`);
 const LAB_CLASS_TIME_PATTERN = "(?:[01][0-9]|2[0-3]):[0-5][0-9]";
 
 function blockedScheduleLabel(item: AdminBlockedSchedule) {

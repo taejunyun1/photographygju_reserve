@@ -2,6 +2,7 @@ import {
   academicSemesterOptionsFromDates,
   dateMatchesAcademicSemester
 } from "./academic-semester.mjs";
+import { DIGITAL_LAB_NAME, DIGITAL_LAB_SEATS } from "./digital-lab.mjs";
 
 function listNumber(value, fallback, { min = 1, max = 200 } = {}) {
   if (value === null || value === undefined || String(value).trim() === "") return fallback;
@@ -114,6 +115,12 @@ function stableIdCompare(left, right) {
   return String(left?.id || "").localeCompare(String(right?.id || ""), "ko", { numeric: true });
 }
 
+function digitalLabTitle(item) {
+  if (item.type !== "digital_lab") return "";
+  const seat = DIGITAL_LAB_SEATS.find(({ id }) => id === item.fields?.seatId);
+  return [DIGITAL_LAB_NAME, seat?.label].filter(Boolean).join(" ");
+}
+
 function sortList(items, params, { fields, defaultCompare, defaultDirections = {} }) {
   const accessor = fields[params.sort];
   if (!accessor) {
@@ -132,7 +139,7 @@ const RESERVATION_SORT_FIELDS = {
   status: (item) => item.status,
   type: (item) => item.type,
   name: (item) => item.user?.name,
-  title: (item) => item.fields?.title || item.fields?.studioSpace || item.equipmentItems?.[0]?.name
+  title: (item) => digitalLabTitle(item) || item.fields?.title || item.fields?.studioSpace || item.equipmentItems?.[0]?.name
 };
 
 const REPORT_SORT_FIELDS = {
@@ -198,6 +205,7 @@ export function createAdminListHelpers({ withReservationDetails, reportWithDetai
       .filter((item) => !params.q || searchableRecord({
         id: item.id,
         type: item.type,
+        ...(item.type === "digital_lab" ? { title: digitalLabTitle(item) } : {}),
         status: item.status,
         fields: item.fields,
         user: item.user,

@@ -213,10 +213,11 @@ export function reservationDateAvailability(
   return available();
 }
 
+export const DIGITAL_LAB_SLOT_BOUNDARIES = Array.from({ length: 13 }, (_, index) => `${String(index * 2).padStart(2, "0")}:00`);
+
 export function digitalLabTimeSlots(settings: StudentSettings, date: string, now = Date.now()) {
-  return Array.from({ length: 12 }, (_, index) => {
-    const startTime = `${String(index * 2).padStart(2, "0")}:00`;
-    const endTime = `${String(index * 2 + 2).padStart(2, "0")}:00`;
+  return DIGITAL_LAB_SLOT_BOUNDARIES.slice(0, -1).map((startTime, index) => {
+    const endTime = DIGITAL_LAB_SLOT_BOUNDARIES[index + 1];
     const startAt = Date.parse(`${date}T${startTime}:00+09:00`);
     return {
       startTime,

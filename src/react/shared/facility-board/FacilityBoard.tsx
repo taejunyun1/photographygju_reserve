@@ -8,7 +8,7 @@ import { FacilityFloorPlan } from './FacilityFloorPlan';
 import { FacilityTimeline } from './FacilityTimeline';
 import { EquipmentTimelineList } from './EquipmentTimelineList';
 import { FACILITY_ROOM_NUMBERS } from './layout';
-import { canOpenReservation, clockLabel, dateTimeLabel, equipmentViews, intervalLabel, isFresh, kstDate, kstTime, overlaps, reservationIntent, spaceSummary, statusLabel, timeWindow, visibleIntervals } from './model';
+import { canOpenReservation, clockLabel, dateTimeLabel, digitalLabSummary, equipmentViews, intervalLabel, isFresh, kstDate, kstTime, overlaps, reservationIntent, spaceSummary, statusLabel, timeWindow, visibleIntervals } from './model';
 import type { FacilityBoardProps, FacilitySelectionKey, FacilityReservationIntent } from './types';
 
 export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='dedicated',onLoad,onOpenReservation,onOpenEquipment,onReserve}:FacilityBoardProps) {
@@ -66,7 +66,10 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
   },[approved,date,resource.invalidated,viewer,lifecycleRefresh]);
 
   const now=()=>{const value=new Date();setClock(value.getTime());setFollowNow(true);setDate(kstDate(value));setTime(kstTime(value));};
-  const summarySpaces=data?.spaces.filter(space=>visibleIntervals(space,window).length).length;
+  const corridorSpaces=data?.spaces.filter(space=>space.key!=='digital')||[];
+  const summarySpaces=corridorSpaces.filter(space=>visibleIntervals(space,window).length).length;
+  const digital=data?.spaces.find(space=>space.key==='digital');
+  const digitalSummary=digital?digitalLabSummary(digital,window):null;
   const selectedSpace=data?.spaces.find(space=>space.key===selection);
   const selectedIntervals=selectedSpace?visibleIntervals(selectedSpace,window):[];
   const selectedBlocks=selectedSpace?.blockedIntervals.filter(record=>overlaps(record,window))||[];
@@ -82,7 +85,7 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
         </div>
         <div className="gju-facility-board__status-line" role="status">
           <span aria-label={`${time}–${clockLabel(window.end)} 예약 시간 기준`}><GjuIcon name="clock"/>{time}–{clockLabel(window.end)}</span>
-          {data&&<span aria-label={`예약 있는 공간 ${summarySpaces}/${data.spaces.length}`}><GjuIcon name="map"/>{summarySpaces}/{data.spaces.length}</span>}
+          {data&&<span aria-label={`예약 있는 공간 ${summarySpaces}/${corridorSpaces.length}`}><GjuIcon name="map"/>{summarySpaces}/{corridorSpaces.length}</span>}
           {data&&!fresh&&<GjuStatusBadge tone="amber">갱신 필요</GjuStatusBadge>}
           {busy&&data&&<span className="gju-facility-board__sr-only">갱신 중</span>}
         </div>
@@ -107,7 +110,8 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
               <FacilityFloorPlan data={data} window={window} selection={selection} onSelect={choose} zoomed={zoomed}/>
             </section>
             <div className="gju-facility-board__summary" role="group" aria-label="공간 요약">
-              {data.spaces.map(space=>{
+              {corridorSpaces.map(space=>{
+                if(space.key==='digital') return null;
                 const summary=spaceSummary(space,window),records=visibleIntervals(space,window);
                 const label=viewer==='admin'?`${records[0]?.label||''}${records.length>1?` +${records.length-1}`:''}`:records.some(record=>record.isMine)?`내 예약${records.length>1?` +${records.length-1}`:''}`:String(records.length);
                 return <button type="button" key={space.key} aria-label={`${space.name}, ${summary.label}${summary.blocked?' · 이용 제한':''}`} title={summary.label} aria-pressed={selection===space.key} onClick={()=>choose(space.key)}>
@@ -117,11 +121,23 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
               })}
               <button type="button" aria-label={`기자재실, 장비 ${gearCount}점${(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?' · 장비 예약 제한':''}`} aria-pressed={selection==='gear'} onClick={()=>choose('gear')}><strong><i className="gju-facility-board__space-index" aria-hidden="true">{FACILITY_ROOM_NUMBERS.gear}</i>기자재실</strong><span className="gju-facility-board__compact-status" aria-hidden="true"><GjuIcon name={(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?'warning':'camera'}/>{gearCount}</span></button>
             </div>
+            {digital&&digitalSummary&&<div className="gju-facility-board__summary gju-facility-board__digital-summary">
+              <button type="button" aria-pressed={selection==='digital'} onClick={()=>choose('digital')}>
+                <strong>{digital.name}</strong>
+                <span>선택 구간 가용 좌석 · {digitalSummary.label}{digitalSummary.restriction?` · ${digitalSummary.restriction}`:''}</span>
+              </button>
+            </div>}
             <section className="gju-facility-board__schedule-section" aria-label="하루 시간표"><h3>하루 시간표</h3><FacilityTimeline data={data} window={window} now={clock} active={panel==='timeline'} onChoose={(value,key)=>{setTime(value);setFollowNow(false);setSelection(key);setShowAll(false);}}/></section>
           </div>
           {selectedSpace&&<section className="gju-facility-board__detail" aria-label={`${selectedSpace.name} 예약 요약`}>
             <div className="gju-facility-board__section-heading"><h3>{selectedSpace.name} · {time}–{clockLabel(window.end)}</h3><GjuIconButton label="닫기" icon="x" onClick={()=>setSelection(null)}/></div>
-            {!selectedIntervals.length&&<p className="gju-facility-board__muted">예약 없음</p>}
+            {selectedSpace.key==='digital'&&digitalSummary&&<div className="gju-facility-board__digital-seats">
+              {digitalSummary.groups.map(group=><section key={group.name} aria-label={`${group.name} 좌석`}>
+                <h4>{group.name} {group.count}</h4>
+                <ul>{group.seats.map(seat=><li key={seat.key}><strong>{seat.label}</strong><span>{seat.status}</span></li>)}</ul>
+              </section>)}
+            </div>}
+            {selectedSpace.key!=='digital'&&!selectedIntervals.length&&<p className="gju-facility-board__muted">예약 없음</p>}
             {!!selectedIntervals.length&&<ul className={`gju-facility-board__reservation-list${showAll?' is-expanded':''}`}>{(showAll?selectedIntervals:selectedIntervals.slice(0,5)).map(record=><li key={record.entryKey}>
               <div><strong>{record.label}</strong> <GjuStatusBadge tone={record.status==='pending'||record.status==='pending_approval'?'amber':'blue'}>{statusLabel(record.status)}</GjuStatusBadge></div>
               <span>{intervalLabel(record)}{record.subspaceKeys?.length?` · ${record.subspaceKeys.map(key=>selectedSpace.subspaces.find(space=>space.key===key)?.label||key).join(' · ')}`:''}</span>
@@ -131,7 +147,7 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
             {selectedIntervals.length>5&&<GjuButton variant="ghost" icon={showAll?'chevronLeft':'chevronRight'} aria-label={showAll?'5행으로 접기':`전체 ${selectedIntervals.length}건 보기`} aria-expanded={showAll} onClick={()=>setShowAll(!showAll)}>{showAll?'5':selectedIntervals.length}</GjuButton>}
             {selectedBlocks.slice(0,5).map((record,index)=><p className="gju-facility-board__restriction" aria-label={`이용 제한 · ${record.label} · ${intervalLabel(record)}`} key={`${record.startAt}-${index}`}><GjuIcon name="warning"/>{record.label} · {intervalLabel(record)}{record.subspaceKeys?.map(key=>` · ${selectedSpace.subspaces.find(space=>space.key===key)?.label||key}`)}</p>)}
             {selectedBlocks.length>5&&<p className="gju-facility-board__muted">외 {selectedBlocks.length-5}건의 제한 · 예약 단계에서 확인</p>}
-            {viewer==='student'&&reserve&&<GjuButton icon="plus" aria-label="이 조건으로 예약" onClick={()=>void reserve(reservationIntent(selectedSpace,date))}>예약</GjuButton>}
+            {viewer==='student'&&reserve&&(selectedSpace.key!=='digital'||!digitalSummary?.disabled)&&<GjuButton icon="plus" aria-label={selectedSpace.key==='digital'?'예약 시간 선택':'이 조건으로 예약'} onClick={()=>void reserve(reservationIntent(selectedSpace,date))}>{selectedSpace.key==='digital'?'예약 시간 선택':'예약'}</GjuButton>}
           </section>}
           <div className={`gju-facility-board__equipment-area${selection==='gear'?' is-open':''}`}><EquipmentTimelineList data={data} window={window} now={clock} viewer={viewer} onOpenEquipment={onOpenEquipment} onOpenReservation={onOpenReservation} onReserve={reserve}/></div>
           {actionError&&<p role="alert" className="gju-facility-board__notice is-error">{actionError}</p>}

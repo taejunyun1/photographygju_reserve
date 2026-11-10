@@ -150,6 +150,22 @@ const todayCardSummary = await handleApiRequest({
 assert.equal(todayCardSummary.body.data.equipmentReturned, 1, "returned card must count only today's reservations");
 assert.equal(todayCardSummary.body.data.equipmentCancelled, 2, "cancelled card must count only today's reservations");
 
+db.reservations.push(...["mac-01", "mac-02", "pc-01"].map((seatId) => ({
+  id: `lab-${seatId}`, type: "digital_lab", status: "auto_confirmed", userId: "user_admin",
+  fields: { reservedDate: today, seatId, startTime: "14:00", endTime: "16:00" },
+  history: []
+})));
+const labSummary = await handleApiRequest({
+  method: "GET", pathname: "/api/admin/summary", authorization: `Bearer ${token}`,
+  readText: async () => "{}", db, saveDb: async () => {}
+});
+const { metrics } = labSummary.body.data;
+assert.deepEqual(metrics.typeCounts, { equipment: 4, studio: 1, digital_lab: 3 });
+assert(metrics.insights.congestion.items.some(item => item.type === "digital_lab" && item.count === 3 && item.label === "디지털사진영상실 14:00"));
+for (const key of ["checkoutReturnQueue", "equipmentReturned", "equipmentCancelled", "missingReports", "equipmentMissingReports"]) {
+  assert.deepEqual(labSummary.body.data[key], todayCardSummary.body.data[key], `digital lab must preserve ${key}`);
+}
+
 const tomorrowDate = new Date(`${today}T00:00:00.000Z`);
 tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
 const tomorrow = tomorrowDate.toISOString().slice(0, 10);

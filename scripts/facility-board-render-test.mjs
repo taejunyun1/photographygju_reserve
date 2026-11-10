@@ -8,6 +8,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 const compiled = path.join(process.cwd(), 'scripts/.facility-board-render-test.mjs');
+const screenshotDir = process.env.GJU_FACILITY_SCREENSHOT_DIR || 'outputs/facility-board-implementation';
 try {
   const result = await build({ stdin: { contents: `export * from '../src/react/shared/facility-board/model'; export * from '../src/react/shared/facility-board/layout'; export { FacilityBoard } from '../src/react/shared/facility-board/FacilityBoard';`, resolveDir: path.join(process.cwd(), 'scripts'), loader: 'tsx' }, bundle: true, platform: 'node', format: 'esm', write: false, external: ['react', 'react-dom', 'react-dom/server'] });
   fs.writeFileSync(compiled, result.outputFiles[0].text);
@@ -41,6 +42,30 @@ try {
   assert(markup.includes('조회 시작 시간')&&markup.includes('지금')&&markup.includes('확대'));
   assert.equal((markup.match(/data-facility-room=/g)||[]).length,5,'only five reservation destinations may be interactive on plan');
   assert(markup.includes('공간 요약')&&markup.includes('하루 시간표'),'readable alternatives must accompany the sketch');
+  const lab = {
+    key:'digital', name:'디지털사진영상실', type:'digital_lab',
+    subspaces:['mac','pc'].flatMap(computerType => Array.from({length:computerType==='mac'?12:4},(_,index)=>{
+      const number=String(index+1).padStart(2,'0');
+      return {key:`${computerType}-${number}`,label:`${computerType==='mac'?'Mac':'PC'} ${number}`,computerType};
+    })),
+    intervals:[
+      {...interval, startAt:iso('10:00'), endAt:iso('12:00'), subspaceKeys:['mac-01']},
+      {...interval, entryKey:'r3', startAt:iso('12:00'), endAt:iso('14:00'), subspaceKeys:['mac-01']}
+    ],
+    blockedIntervals:[{startAt:iso('14:01'),endAt:iso('14:02'),label:'디지털 수업'}]
+  };
+  const labMarkup = render({resource:{...props.resource,data:{...data,spaces:[...spaces,lab]}}});
+  assert(labMarkup.includes('Mac 11/12 · PC 4/4'),'timeline cells show the count of available seats');
+  assert(labMarkup.includes('Mac 0/12 · PC 0/4'),'a minute of class blocks all seats');
+  assert.equal((labMarkup.match(/data-facility-room=/g)||[]).length,5);
+  assert(/예약 있는 공간 [0-4]\/4/.test(labMarkup),'digital lab does not change the corridor count');
+  const count = (space,time) => ui.digitalLabSummary(space,ui.timeWindow(date,time)).label;
+  assert.equal(count(lab,'11:30'),'Mac 11/12 · PC 4/4','arbitrary-minute interval counts the same seat once');
+  assert.equal(count(lab,'14:02'),'Mac 12/12 · PC 4/4','ends touching the query start do not overlap');
+  assert.equal(count(lab,'12:02'),'Mac 0/12 · PC 0/4','an interval spanning 14:01 is class-blocked');
+  const closedLab = {...lab,blockedIntervals:[{startAt:iso('08:00'),endAt:iso('22:00'),label:'예약 비활성'}]};
+  assert.equal(count(closedLab,'11:30'),'Mac 0/12 · PC 0/4');
+  assert.deepEqual(ui.reservationIntent(lab,date),{type:'digital_lab',selectedDate:date},'arbitrary query times are not booking defaults');
   const unavailable = render({resource:{date,data:null,loading:true,error:'',lastSucceededAt:''}});
   assert(unavailable.includes('현황을 불러오는 중'));
   assert(!unavailable.includes('예약 없음'),'missing data must not appear as empty reservations');
@@ -93,7 +118,7 @@ try {
     await page.getByRole('button',{name:'현황 안내',exact:true}).click();
     await page.getByRole('region',{name:'현황 안내',exact:true}).getByText(/예약 없음은 즉시 이용 가능/).waitFor();
     await page.getByRole('button',{name:'현황 안내',exact:true}).click();
-    await page.screenshot({path:'outputs/facility-board-implementation/shared-board-desktop.png',fullPage:true});
+    await page.screenshot({path:path.join(screenshotDir,'shared-board-desktop.png'),fullPage:true});
     await page.getByLabel('조회 시작 시간',{exact:true}).fill('10:00');
     assert.equal(await page.locator('.gju-facility-board__equipment-list > li').count(),5,'equipment list defaults to five rows');
     await page.getByRole('button',{name:'전체 7점 보기',exact:true}).click();
@@ -117,7 +142,7 @@ try {
     assert.equal(await page.evaluate(()=>window.boardCalls.length),2,'native resume must quietly refresh just the board');
     await page.setViewportSize({width:390,height:844});
     await detail.getByRole('button',{name:'닫기',exact:true}).click();
-    await page.screenshot({path:'outputs/facility-board-implementation/shared-board-mobile.png',fullPage:true});
+    await page.screenshot({path:path.join(screenshotDir,'shared-board-mobile.png'),fullPage:true});
     console.log('mobile default height:',await page.locator('.gju-facility-board').evaluate(element=>Math.round(element.getBoundingClientRect().height)));
     const rail=page.getByRole('group',{name:'공간 요약',exact:true});
     const targets=await rail.getByRole('button').evaluateAll(elements=>elements.map(element=>({w:element.getBoundingClientRect().width,h:element.getBoundingClientRect().height,font:parseFloat(getComputedStyle(element.querySelector('strong')).fontSize)})));
@@ -225,6 +250,39 @@ try {
     await adminPage.evaluate(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new CustomEvent('gju-facility-resume'));});
     assert.equal(await adminPage.evaluate(()=>window.boardCalls.length),beforeLifecycle+2,'manually selected other dates must retain dedicated focus/resume refresh');
     await adminPage.close();
+
+    const labPage=await browser.newPage({viewport:{width:390,height:844}});
+    await labPage.setContent('<main id="root"></main>');
+    await labPage.addStyleTag({content:fs.readFileSync('src/react/design-system/react-admin.css','utf8')});
+    await labPage.clock.install({time:new Date(iso('11:30'))});
+    await labPage.addScriptTag({content:browserEntry.outputFiles[0].text});
+    await labPage.getByLabel('조회 시작 시간',{exact:true}).waitFor();
+    const studentLab={...lab,intervals:[{...lab.intervals[0],isMine:false,reservationId:undefined,label:'예약 있음'},lab.intervals[1]]};
+    await labPage.evaluate(space=>window.updateBoard({resource:{...window.boardProps.resource,data:{...window.boardProps.resource.data,spaces:[...window.boardProps.resource.data.spaces,space]}}}),studentLab);
+    const labCard=labPage.getByRole('button',{name:/^디지털사진영상실 선택 구간 가용 좌석/});
+    await labCard.getByText('선택 구간 가용 좌석 · Mac 11/12 · PC 4/4',{exact:true}).waitFor();
+    await labCard.click();
+    const labDetail=labPage.getByRole('region',{name:'디지털사진영상실 예약 요약'});
+    assert.equal(await labDetail.getByRole('region',{name:'Mac 좌석',exact:true}).getByRole('listitem').count(),12);
+    assert.equal(await labDetail.getByRole('region',{name:'PC 좌석',exact:true}).getByRole('listitem').count(),4);
+    assert.equal(await labDetail.getByRole('button',{name:'내 예약 상세',exact:true}).count(),1);
+    assert.equal(await labDetail.getByRole('button',{name:'예약 상세',exact:true}).count(),0);
+    await labDetail.getByRole('button',{name:'예약 시간 선택',exact:true}).click();
+    assert.deepEqual(await labPage.evaluate(()=>window.boardReservations),[{type:'digital_lab',selectedDate:date}]);
+    for(const width of [320,390,1280]){
+      await labPage.setViewportSize({width,height:900});
+      assert(await labPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`digital seat detail overflows at ${width}px`);
+    }
+    await labPage.setViewportSize({width:390,height:844});
+    if(process.env.GJU_FACILITY_SCREENSHOT_DIR) await labPage.screenshot({path:path.join(screenshotDir,'digital-lab-board-mobile.png'),fullPage:true});
+    const adminLab={...lab,intervals:[{...lab.intervals[0],isMine:false,reservationId:'admin-visible',label:'예약자 테스트'},lab.intervals[1]]};
+    await labPage.evaluate(space=>window.updateBoard({viewer:'admin',resource:{...window.boardProps.resource,data:{...window.boardProps.resource.data,viewer:'admin',spaces:window.boardProps.resource.data.spaces.map(item=>item.key==='digital'?space:item)}}}),adminLab);
+    await labDetail.getByRole('button',{name:'예약 상세',exact:true}).first().click();
+    assert.deepEqual(await labPage.evaluate(()=>window.boardDetails),['admin-visible']);
+    await labPage.getByRole('tab',{name:'시간표',exact:true}).click();
+    await labPage.getByRole('row',{name:/^디지털사진영상실/}).getByRole('button',{name:/14:00–16:00, Mac 0\/12 · PC 0\/4/}).click();
+    await labDetail.getByText('디지털 수업 · 14:01–14:02',{exact:true}).waitFor();
+    await labPage.close();
   } finally {await browser.close();}
   console.log('facility-board-render-test: model, privacy, geometry, states, browser actions, lifecycle, mobile targets and keyboard passed');
 

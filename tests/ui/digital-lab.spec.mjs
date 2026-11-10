@@ -317,7 +317,9 @@ test("admin resolves a lab class conflict and resubmits the retained draft", asy
   const cancellationResponse = await cancelled;
   expect(cancellationResponse.status()).toBe(200);
   expect((await cancellationResponse.json()).data.status).toBe("admin_cancelled");
-  await expect(card.getByRole("button", { name: "관리자 취소", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(card.getByText("관리자 취소", { exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "관리자 취소", exact: true })).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "좌석·시간 수정", exact: true })).toHaveCount(0);
 
   await openSettings();
   await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("digital_lab");
@@ -341,4 +343,69 @@ test("admin resolves a lab class conflict and resubmits the retained draft", asy
   await openSettings();
   await expect(form.getByRole("combobox", { name: "시설", exact: true })).toHaveValue("studio");
   await expect(form.getByLabel("시작일", { exact: true })).toHaveValue("");
+});
+
+test("admin filters and edits a lab reservation, keeping a conflicting draft", async ({ page, request }, info) => {
+  const { token: adminToken } = await api(request, "POST", "/api/auth/login", { loginId: "admin", password: "admin" });
+  await api(request, "PATCH", "/api/admin/settings", {
+    digitalLabEnabled: true, digitalLabOpenTime: "00:00", digitalLabCloseTime: "24:00"
+  }, adminToken);
+  const student = await approvedStudent(request, adminToken);
+  const other = await approvedStudent(request, adminToken);
+  const date = futureDate(info, 0);
+  const editedDate = futureDate(info, 1);
+  const booking = await api(request, "POST", "/api/reservations", {
+    type: "digital_lab", fields: { reservedDate: date, seatId: "mac-06", startTime: "06:00", endTime: "08:00", purpose, phone }
+  }, student.token);
+  await api(request, "POST", "/api/reservations", {
+    type: "digital_lab", fields: { reservedDate: editedDate, seatId: "pc-02", startTime: "16:00", endTime: "18:00", purpose, phone }
+  }, other.token);
+  await loginReactAdmin(page);
+  await page.getByRole("navigation", { name: /^관리자 (?:모바일 )?메뉴$/ })
+    .getByRole("button", { name: /^예약(?: 관리)?$/ }).filter({ visible: true }).click();
+  await page.getByRole("tab", { name: facility, exact: true }).click();
+  const card = page.locator(".admin-reservation-card, .admin-react-desktop-table tbody tr")
+    .filter({ hasText: student.email }).filter({ visible: true });
+  await expect(card).toContainText("Mac 06");
+  await expect(card.getByRole("button", { name: "완료", exact: true })).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "관리자 취소", exact: true })).toBeVisible();
+
+  await page.getByRole("textbox", { name: "예약 검색" }).fill(`${facility} Mac 06`);
+  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "전체", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "좌석·시간 수정", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "디지털사진영상실 예약 수정" });
+  const dateInput = dialog.getByLabel("사용일", { exact: true });
+  const seatInput = dialog.getByRole("combobox", { name: "좌석", exact: true });
+  const startInput = dialog.getByRole("combobox", { name: "시작 시간", exact: true });
+  const endInput = dialog.getByRole("combobox", { name: "종료 시간", exact: true });
+  await expect(seatInput).toHaveValue("mac-06");
+  await expect(dateInput).toHaveValue(date);
+  await expect(startInput).toHaveValue("06:00");
+  await expect(endInput).toHaveValue("08:00");
+  await dateInput.fill(editedDate);
+  await startInput.selectOption("16:00");
+  await endInput.selectOption("18:00");
+  await seatInput.selectOption("pc-02");
+  const edit = () => page.waitForResponse((response) => response.url().endsWith(`/api/reservations/${booking.id}`) && response.request().method() === "PATCH");
+  const conflicting = edit();
+  const save = dialog.getByRole("button", { name: "변경 저장" });
+  await save.click();
+  expect((await conflicting).status()).toBe(409);
+  await expect(dialog.getByRole("alert")).toContainText("선택한 좌석에 해당 시간의 예약이 있습니다.");
+  await expect(seatInput).toHaveValue("pc-02");
+  await expect(dateInput).toHaveValue(editedDate);
+  await expect(startInput).toHaveValue("16:00");
+  await expect(endInput).toHaveValue("18:00");
+  await seatInput.selectOption("pc-01");
+  const saved = edit();
+  await save.click();
+  const response = await saved;
+  expect(response.status()).toBe(200);
+  expect((await response.json()).data).toMatchObject({ id: booking.id, fields: { reservedDate: editedDate, seatId: "pc-01", startTime: "16:00", endTime: "18:00", purpose, phone } });
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("textbox", { name: "예약 검색" }).fill("PC 01");
+  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await expect(card).toContainText("PC 01");
 });
