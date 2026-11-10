@@ -713,6 +713,87 @@
   color: #2f6b3c;
 }
 
+.student-react-digital-lab {
+  display: grid;
+  gap: 12px;
+}
+
+.student-react-digital-lab .field {
+  min-width: 0;
+}
+
+.student-react-digital-lab fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.student-react-digital-lab legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.student-react-digital-lab p {
+  margin: 0;
+}
+
+.student-react-digital-lab__choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.student-react-digital-lab__choices--time {
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+.student-react-digital-lab__choices button {
+  display: grid;
+  place-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 1px solid var(--student-line);
+  border-radius: 6px;
+  color: var(--student-ink);
+  background: var(--student-surface);
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.student-react-digital-lab__choices small {
+  color: var(--student-muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.student-react-digital-lab__choices button:disabled {
+  background: var(--student-soft);
+  color: var(--student-muted);
+  opacity: 1;
+  cursor: default;
+}
+
+.student-react-digital-lab__choices button[aria-pressed="true"] {
+  border-color: var(--student-accent);
+  color: var(--student-accent-strong);
+  background: #e9f5f2;
+}
+
+.student-react-digital-lab__choices button[aria-pressed="true"]:disabled {
+  border-color: var(--student-danger);
+  background: #fbe9e8;
+}
+
+.student-react-digital-lab__choices button:focus-visible {
+  outline: 2px solid var(--student-accent);
+  outline-offset: 1px;
+}
+
 .student-react-field-error,
 .student-react-submit-error,
 .student-react-flow-reason {
@@ -1247,6 +1328,10 @@
     min-width: 0;
     min-height: 44px;
     padding: 0 8px;
+  }
+
+  .student-react-filter-tabs .gju-tabs__tab[id$="-tab-digital_lab"] {
+    grid-column: 1 / -1;
   }
 
   .student-react-screen-header {

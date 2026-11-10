@@ -2,7 +2,7 @@ import React from "react";
 
 import { GjuButton, GjuCard, GjuIcon, GjuIconButton, GjuStatusBadge } from "../../design-system";
 import { StudentFacilityBoard } from "../components/StudentFacilityBoard";
-import { reservationDisplayMeta, reservationStatusLabel, statusTone } from "../components/StudentPrimitives";
+import { RESERVATION_TYPE_LABELS, reservationDisplayMeta, reservationStatusLabel, statusTone } from "../components/StudentPrimitives";
 import { isReportDue } from "../reporting";
 import type { StudentActions, StudentState } from "../types";
 
@@ -11,14 +11,6 @@ const APPROVAL_LABELS: Record<string, string> = {
   approved: "승인 완료",
   rejected: "반려",
   blocked: "대여금지"
-};
-
-const RESERVATION_TYPE_LABELS: Record<string, string> = {
-  equipment: "기자재",
-  studio: "스튜디오",
-  darkroom: "암실",
-  print: "출력실",
-  lecture: "특강"
 };
 
 export function HomeScreen({ state, actions }: { state: StudentState; actions: StudentActions }) {

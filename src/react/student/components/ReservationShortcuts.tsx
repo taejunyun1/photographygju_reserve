@@ -2,14 +2,14 @@ import React, { useRef, useState } from "react";
 
 import { GjuButton, GjuCard } from "../../design-system";
 import { FavoriteEquipmentSheet } from "./FavoriteEquipmentSheet";
+import { RESERVATION_TYPE_LABELS } from "./StudentPrimitives";
 import type { StudentActions, StudentState } from "../types";
-
-const RESERVATION_TYPE_LABELS: Record<string, string> = { equipment: "기자재", studio: "스튜디오", darkroom: "암실", print: "출력실", lecture: "특강" };
 
 export function ReservationShortcuts({ state, actions }: { state: StudentState; actions: StudentActions }) {
   const [favoriteSheetOpen, setFavoriteSheetOpen] = useState(false);
   const favoriteTriggerRef = useRef<HTMLSpanElement>(null);
   const equipmentById = new Map((state.bootstrap.equipment || []).map((item) => [item.id, item]));
+  const recent = state.recentReservations.filter((item) => item.type !== "digital_lab" || state.bootstrap.settings.digitalLabEnabled);
 
   function closeFavoriteSheet() {
     setFavoriteSheetOpen(false);
@@ -56,8 +56,8 @@ export function ReservationShortcuts({ state, actions }: { state: StudentState; 
 
         <div className="student-react-quick-reservation__section student-react-quick-reservation__recent">
           <div className="student-react-quick-reservation__heading"><h3>다시 예약</h3><span>최근 3건</span></div>
-          {state.recentReservations.length ? <div className="student-react-rebooking-list">
-            {state.recentReservations.map((reservation) => (
+          {recent.length ? <div className="student-react-rebooking-list">
+            {recent.map((reservation) => (
               <button key={reservation.id} type="button" onClick={() => void actions.startRebooking(reservation.id)}>
                 <span><strong>{RESERVATION_TYPE_LABELS[reservation.type] || "예약"}</strong><small>{reservation.fields.purpose ? String(reservation.fields.purpose) : "이전 구성으로 다시 시작"}</small></span>
                 <em>다시 예약</em>

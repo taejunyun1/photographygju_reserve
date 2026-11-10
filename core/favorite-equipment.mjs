@@ -86,7 +86,7 @@ function safeReservationFields(reservation) {
 export function reservationShortcuts({ userId, reservations = [], equipment = [] } = {}) {
   const equipmentById = new Map((Array.isArray(equipment) ? equipment : []).map((item) => [String(item?.id || ""), item]));
   return (Array.isArray(reservations) ? reservations : [])
-    .filter((reservation) => reservation?.userId === userId && !TERMINAL_SHORTCUT_STATUSES.has(reservation.status) && ["equipment", "studio", "darkroom", "print"].includes(reservation.type))
+    .filter((reservation) => reservation?.userId === userId && !TERMINAL_SHORTCUT_STATUSES.has(reservation.status) && ["equipment", "studio", "darkroom", "print", "digital_lab"].includes(reservation.type))
     .slice()
     .sort((left, right) => String(right.updatedAt || right.createdAt || "").localeCompare(String(left.updatedAt || left.createdAt || "")))
     .slice(0, 3)

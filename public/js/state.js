@@ -14,14 +14,16 @@ export const state = {
     equipment: "date",
     studio: "date",
     darkroom: "date",
-    print: "date"
+    print: "date",
+    digital_lab: "date"
   },
   calendarMonth: "",
   selectedDates: {
     equipment: "",
     studio: "",
     darkroom: "",
-    print: ""
+    print: "",
+    digital_lab: ""
   },
   activeNoticeId: "",
   activeReportReservationId: "",
@@ -49,6 +51,11 @@ export const state = {
   selectedPrintTypes: [],
   selectedPrintPapers: [],
   selectedPrintSizes: [],
+  selectedDigitalLabStartTime: "",
+  selectedDigitalLabEndTime: "",
+  selectedDigitalLabSeatId: "",
+  digitalLabEditing: null,
+  digitalLabAvailability: null,
   equipmentCategoryFilter: "Body",
   equipmentSearch: "",
   lectureSearch: "",
@@ -148,6 +155,12 @@ export function setAuthenticatedUser(user) {
   if (state.user?.id !== user?.id || state.user?.role !== user?.role || state.user?.approvalStatus !== user?.approvalStatus) {
     authenticatedSessionGeneration += 1;
     state.facilityTimeline = { date: "", data: null, loading: false, error: "", lastSucceededAt: "" };
+    state.selectedDates.digital_lab = "";
+    state.selectedDigitalLabStartTime = "";
+    state.selectedDigitalLabEndTime = "";
+    state.selectedDigitalLabSeatId = "";
+    state.digitalLabEditing = null;
+    state.digitalLabAvailability = null;
   }
   if (!user?.id || state.equipmentDraftFields?.userId !== user.id) state.equipmentDraftFields = null;
   state.user = user;

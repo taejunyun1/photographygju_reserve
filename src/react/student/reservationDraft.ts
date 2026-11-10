@@ -1,5 +1,6 @@
 import {
   darkroomSlotAvailability,
+  digitalLabSelectionAvailability,
   equipmentItemAvailability,
   equipmentScheduleAvailability,
   isCameraBagEquipment,
@@ -11,6 +12,7 @@ import {
 } from "./availability";
 import type {
   DarkroomReservationDraft,
+  DigitalLabReservationDraft,
   EquipmentReservationDraft,
   PrintReservationDraft,
   ReservationDraft,
@@ -51,11 +53,14 @@ export type PrintReservationDetails = {
   phone: string;
 };
 
+export type DigitalLabReservationDetails = Pick<DigitalLabReservationDraft["fields"], "purpose" | "phone">;
+
 export type ReservationDetailsByType = {
   equipment: EquipmentReservationDetails;
   studio: StudioReservationDetails;
   darkroom: DarkroomReservationDetails;
   print: PrintReservationDetails;
+  digital_lab: DigitalLabReservationDetails;
 };
 
 export type ReservationDetails = ReservationDetailsByType[ReservationType];
@@ -231,6 +236,22 @@ function printDraft(state: StudentState, details: PrintReservationDetails): Prin
   };
 }
 
+function digitalLabDraft(state: StudentState, details: DigitalLabReservationDetails): DigitalLabReservationDraft {
+  const result = digitalLabSelectionAvailability(state, true);
+  if (!result.available) throw new Error(result.reason || "선택한 좌석을 확인하세요.");
+  return {
+    type: "digital_lab",
+    fields: {
+      reservedDate: state.selectedDates.digital_lab,
+      startTime: state.selectedDigitalLabStartTime || "",
+      endTime: state.selectedDigitalLabEndTime || "",
+      seatId: state.selectedDigitalLabSeatId || "",
+      purpose: required(details.purpose, "사용 목적을 입력하세요."),
+      phone: required(details.phone, "연락처를 입력하세요.")
+    }
+  };
+}
+
 export function buildReservationDraft(
   type: ReservationType,
   state: StudentState,
@@ -240,6 +261,7 @@ export function buildReservationDraft(
   if (type === "equipment") return equipmentDraft(state, details as EquipmentReservationDetails);
   if (type === "studio") return studioDraft(state, details as StudioReservationDetails);
   if (type === "darkroom") return darkroomDraft(state, details as DarkroomReservationDetails);
+  if (type === "digital_lab") return digitalLabDraft(state, details as DigitalLabReservationDetails);
   return printDraft(state, details as PrintReservationDetails);
 }
 

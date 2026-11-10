@@ -10,8 +10,8 @@ function baseState() {
     bootstrap: { settings: {}, notices: [], equipment: [], darkroomChemicals: [], reservations: [] },
     view: "home",
     reservationType: "",
-    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentItemIds: [],
     selectedRequestedEquipment: [],
     selectedStudioSlots: [],
@@ -149,13 +149,13 @@ assert.equal(shortcutsBridge.state.recentReservations[0].id, "shortcut-1");
 await shortcutsBridge.actions.saveFavoriteGroups([{ id: "favorites-light", name: "조명", equipmentItemIds: ["equipment-2"] }]);
 assert.equal(shortcutsBridge.state.favoriteGroups[0].name, "조명");
 assert(shortcutsBridge.calls.some(([kind, path]) => kind === "api" && path === "/api/me/favorite-equipment-groups"), "favorite groups must persist through the student API");
-shortcutsBridge.state.selectedDates = { equipment: "2099-01-06", studio: "2099-01-07", darkroom: "2099-01-08", print: "2099-01-09" };
+shortcutsBridge.state.selectedDates = { equipment: "2099-01-06", studio: "2099-01-07", darkroom: "2099-01-08", print: "2099-01-09", digital_lab: "" };
 shortcutsBridge.actions.startRebooking("shortcut-1");
 assert.equal(shortcutsBridge.state.view, "reserve");
 assert.equal(shortcutsBridge.state.reservationType, "equipment");
 assert.equal(shortcutsBridge.state.selectedEquipmentPeriod, "당일");
 assert.deepEqual(shortcutsBridge.state.selectedEquipmentItemIds, ["equipment-1"]);
-assert.deepEqual(shortcutsBridge.state.selectedDates, { equipment: "", studio: "", darkroom: "", print: "" }, "rebooking must never copy a previous reservation date");
+assert.deepEqual(shortcutsBridge.state.selectedDates, { equipment: "", studio: "", darkroom: "", print: "", digital_lab: "" }, "rebooking must never copy a previous reservation date");
 assert.equal(shortcutsBridge.state.selectedEquipmentRentalTime, "", "rebooking must never copy a previous rental time");
 assert.equal(shortcutsBridge.state.selectedEquipmentReturnTime, "", "rebooking must never copy a previous return time");
 assert.equal(shortcutsBridge.state.rebookingDetails.fields.purpose, "촬영 과제");

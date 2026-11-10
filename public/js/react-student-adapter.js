@@ -1,5 +1,6 @@
 const STUDENT_VIEWS = new Set(["home", "reserve", "mine", "reports", "lectures", "notices", "my"]);
-const RESERVATION_TYPES = new Set(["equipment", "studio", "darkroom", "print"]);
+const RESERVATION_TYPES = new Set(["equipment", "studio", "darkroom", "print", "digital_lab"]);
+const INACTIVE_DIGITAL_LAB_STATUSES = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -57,13 +58,15 @@ export function studentReactSnapshot(state, today = seoulToday()) {
       equipment: state.reservationFlowStep?.equipment || "date",
       studio: state.reservationFlowStep?.studio || "date",
       darkroom: state.reservationFlowStep?.darkroom || "date",
-      print: state.reservationFlowStep?.print || "date"
+      print: state.reservationFlowStep?.print || "date",
+      digital_lab: state.reservationFlowStep?.digital_lab || "date"
     },
     selectedDates: {
       equipment: state.selectedDates?.equipment || "",
       studio: state.selectedDates?.studio || "",
       darkroom: state.selectedDates?.darkroom || "",
-      print: state.selectedDates?.print || ""
+      print: state.selectedDates?.print || "",
+      digital_lab: state.selectedDates?.digital_lab || ""
     },
     selectedEquipmentPeriod: state.selectedEquipmentPeriod || "",
     selectedEquipmentRentalTime: state.selectedEquipmentRentalTime || "",
@@ -81,6 +84,11 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     selectedPrintTypes: asArray(state.selectedPrintTypes),
     selectedPrintPapers: asArray(state.selectedPrintPapers),
     selectedPrintSizes: asArray(state.selectedPrintSizes),
+    selectedDigitalLabStartTime: state.selectedDigitalLabStartTime || "",
+    selectedDigitalLabEndTime: state.selectedDigitalLabEndTime || "",
+    selectedDigitalLabSeatId: state.selectedDigitalLabSeatId || "",
+    digitalLabEditing: state.digitalLabEditing || null,
+    digitalLabAvailability: state.digitalLabAvailability || null,
     activeNoticeId: state.activeNoticeId || null,
     activeReportReservationId: state.activeReportReservationId || null,
     nativeNotifications: notificationSnapshot(state.nativeNotifications)
@@ -110,12 +118,47 @@ function resetReservationSelection(state, type) {
     state.selectedPrintTypes = [];
     state.selectedPrintPapers = [];
     state.selectedPrintSizes = [];
+  } else if (type === "digital_lab") {
+    state.selectedDigitalLabStartTime = "";
+    state.selectedDigitalLabEndTime = "";
+    state.selectedDigitalLabSeatId = "";
+    state.digitalLabEditing = null;
+    state.digitalLabAvailability = null;
   }
+}
+
+function digitalLabAvailabilityQuery(state) {
+  const query = new URLSearchParams({
+    date: state.selectedDates.digital_lab || "",
+    start: state.selectedDigitalLabStartTime || "",
+    end: state.selectedDigitalLabEndTime || ""
+  });
+  if (state.digitalLabEditing?.id) query.set("editingId", state.digitalLabEditing.id);
+  return query;
+}
+
+function applyDigitalLabPatch(state, patch) {
+  const previousKey = digitalLabAvailabilityQuery(state).toString();
+  if (patch.selectedDate !== undefined && patch.selectedDate !== state.selectedDates.digital_lab) {
+    state.selectedDates.digital_lab = patch.selectedDate;
+    state.selectedDigitalLabStartTime = "";
+    state.selectedDigitalLabEndTime = "";
+  }
+  if (patch.digitalLabStartTime !== undefined) state.selectedDigitalLabStartTime = patch.digitalLabStartTime;
+  if (patch.digitalLabEndTime !== undefined) state.selectedDigitalLabEndTime = patch.digitalLabEndTime;
+  const changed = previousKey !== digitalLabAvailabilityQuery(state).toString();
+  if (changed) {
+    state.selectedDigitalLabSeatId = "";
+    state.digitalLabAvailability = null;
+  }
+  if (patch.digitalLabSeatId !== undefined) state.selectedDigitalLabSeatId = patch.digitalLabSeatId;
+  return changed;
 }
 
 function applySelectionPatch(state, patch) {
   const type = patch?.type;
   if (!RESERVATION_TYPES.has(type)) return;
+  if (type === "digital_lab") return applyDigitalLabPatch(state, patch);
   if (patch.selectedDate !== undefined) state.selectedDates[type] = patch.selectedDate;
   const mappings = {
     equipmentPeriod: "selectedEquipmentPeriod",
@@ -216,6 +259,7 @@ function clearAuthenticatedState(state, clearStoredSession) {
   state.recentReservations = [];
   state.courseDemandSurveys = [];
   state.rebookingDetails = null;
+  resetReservationSelection(state, "digital_lab");
   clearReservationRecommendations(state);
   state.lectures = [];
   state.view = "home";
@@ -267,6 +311,27 @@ export function createStudentReactActions(dependencies) {
       type: draft.type,
       alternatives: asArray(result?.alternatives)
     };
+  }
+
+  async function loadDigitalLabAvailability() {
+    if (state.view !== "reserve" || state.reservationType !== "digital_lab") return;
+    const query = digitalLabAvailabilityQuery(state);
+    if (!["date", "start", "end"].every((field) => query.get(field))) return;
+    const key = query.toString();
+    const pending = { key, loading: true, error: "", data: null };
+    const token = state.token;
+    state.digitalLabAvailability = pending;
+    render();
+    let result;
+    try {
+      const data = await api(`/api/digital-lab/availability?${key}`, { loading: false });
+      result = { ...pending, loading: false, data };
+    } catch (error) {
+      result = { ...pending, loading: false, error: error.message || "좌석 가용 상태를 불러오지 못했습니다." };
+    }
+    if (state.digitalLabAvailability !== pending || state.token !== token) return;
+    state.digitalLabAvailability = result;
+    render();
   }
 
   async function refreshStudentData({ includeLectures = true } = {}) {
@@ -342,6 +407,10 @@ export function createStudentReactActions(dependencies) {
     },
     startReservation(type) {
       if (!RESERVATION_TYPES.has(type)) return;
+      if (type === "digital_lab") {
+        if (!state.bootstrap?.settings?.digitalLabEnabled) return;
+        resetReservationSelection(state, type);
+      }
       state.view = "reserve";
       state.reservationType = type;
       state.reservationFlowStep[type] = "date";
@@ -349,6 +418,23 @@ export function createStudentReactActions(dependencies) {
       clearReservationRecommendations(state);
       render();
     },
+    startDigitalLabEdit(id) {
+      if (state.user?.approvalStatus !== "approved" || !state.bootstrap?.settings?.digitalLabEnabled) return;
+      const reservation = asArray(state.myReservations).find((item) => item.id === id && item.type === "digital_lab");
+      if (!reservation || INACTIVE_DIGITAL_LAB_STATUSES.has(reservation.status)) return;
+      resetReservationSelection(state, "digital_lab");
+      state.digitalLabEditing = reservation;
+      state.view = "reserve";
+      state.reservationType = "digital_lab";
+      state.rebookingDetails = null;
+      clearReservationRecommendations(state);
+      const { reservedDate, startTime, endTime, seatId } = reservation.fields;
+      applyDigitalLabPatch(state, { selectedDate: reservedDate, digitalLabStartTime: startTime, digitalLabEndTime: endTime, digitalLabSeatId: seatId });
+      state.reservationFlowStep.digital_lab = Date.parse(`${reservedDate}T${startTime}:00+09:00`) >= Date.now() ? "select" : "date";
+      render();
+      if (state.reservationFlowStep.digital_lab === "select") return loadDigitalLabAvailability();
+    },
+    loadDigitalLabAvailability,
     async loadFacilityTimeline(date, options) {
       const pending = loadFacilityData(date, options);
       render();
@@ -365,10 +451,12 @@ export function createStudentReactActions(dependencies) {
       }
       const type = intent?.type;
       if (!RESERVATION_TYPES.has(type) || !/^\d{4}-\d{2}-\d{2}$/.test(intent?.selectedDate || "")) return;
+      if (type === "digital_lab" && !state.bootstrap?.settings?.digitalLabEnabled) return;
       const hasDraft = Boolean(state.selectedDates?.[type]) || (
         type === "equipment" ? Boolean(asArray(state.selectedEquipmentItemIds).length || asArray(state.selectedRequestedEquipment).length) :
         type === "studio" ? Boolean(state.selectedStudioSpace || asArray(state.selectedStudioSlots).length) :
-        type === "darkroom" ? Boolean(asArray(state.selectedDarkroomSlots).length) : Boolean(state.selectedPrintStartTime)
+        type === "darkroom" ? Boolean(asArray(state.selectedDarkroomSlots).length) :
+        type === "digital_lab" ? Boolean(state.selectedDigitalLabStartTime) : Boolean(state.selectedPrintStartTime)
       );
       if (hasDraft && !confirmAction("작성 중인 예약을 선택한 조건으로 새로 시작할까요?")) return;
       resetReservationSelection(state, type);
@@ -379,6 +467,7 @@ export function createStudentReactActions(dependencies) {
       applySelectionPatch(state, intent);
       clearReservationRecommendations(state);
       render();
+      if (type === "digital_lab") return loadDigitalLabAvailability();
     },
     setReservationStep(type, step) {
       if (!RESERVATION_TYPES.has(type)) return;
@@ -386,9 +475,10 @@ export function createStudentReactActions(dependencies) {
       render();
     },
     updateReservationSelection(patch) {
-      applySelectionPatch(state, patch);
+      const changed = applySelectionPatch(state, patch);
       clearReservationRecommendations(state);
       render();
+      if (patch.type === "digital_lab" && changed) return loadDigitalLabAvailability();
     },
     async loadReservationShortcuts() {
       await loadReservationShortcuts();
@@ -413,6 +503,7 @@ export function createStudentReactActions(dependencies) {
     },
     startRebooking(reservationId) {
       const reservation = asArray(state.recentReservations).find((item) => item?.id === reservationId);
+      if (reservation?.type === "digital_lab" && !state.bootstrap?.settings?.digitalLabEnabled) return;
       if (!applyReusableReservationFields(state, reservation)) return;
       render();
     },
@@ -423,11 +514,22 @@ export function createStudentReactActions(dependencies) {
     async submitReservation(draft) {
       const type = draft?.type;
       if (!RESERVATION_TYPES.has(type)) throw new Error("지원하지 않는 예약 종류입니다.");
+      const editingId = type === "digital_lab" ? state.digitalLabEditing?.id : undefined;
+      const submittedResource = state.digitalLabAvailability;
+      const submittedToken = state.token;
       let reservation;
       try {
-        reservation = await api("/api/reservations", { method: "POST", body: draft });
+        reservation = editingId
+          ? await api(`/api/reservations/${encodeURIComponent(editingId)}`, { method: "PATCH", body: { fields: draft.fields } })
+          : await api("/api/reservations", { method: "POST", body: draft });
       } catch (error) {
-        if (error?.status === 409) {
+        if (error?.status === 409 && type === "digital_lab") {
+          if (state.digitalLabAvailability === submittedResource && state.token === submittedToken
+            && state.view === "reserve" && state.reservationType === type) {
+            state.reservationFlowStep.digital_lab = "select";
+            void loadDigitalLabAvailability();
+          }
+        } else if (error?.status === 409) {
           try {
             await loadReservationRecommendations(draft);
           } catch {
@@ -437,7 +539,8 @@ export function createStudentReactActions(dependencies) {
         }
         throw error;
       }
-      await notifyNativeReservationCreated(reservation).catch(() => null);
+      if (type === "digital_lab" && state.token !== submittedToken) return reservation;
+      if (!editingId) await notifyNativeReservationCreated(reservation).catch(() => null);
       state.myReservations = [reservation, ...asArray(state.myReservations).filter((item) => item.id !== reservation.id)];
       if (Array.isArray(state.bootstrap?.reservations)) {
         state.bootstrap.reservations = [reservation, ...state.bootstrap.reservations.filter((item) => item.id !== reservation.id)];
@@ -447,7 +550,7 @@ export function createStudentReactActions(dependencies) {
       clearReservationRecommendations(state);
       state.view = "mine";
       render();
-      toast(type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");
+      toast(editingId ? "예약이 수정되었습니다." : type === "equipment" ? "기자재 예약 승인 요청이 접수되었습니다." : "예약이 확정되었습니다.");
       await refreshAfterMutation("예약은 처리됐지만");
       return reservation;
     },

@@ -7,7 +7,8 @@ import type {
   StudentEquipment,
   StudentReservation,
   StudentReservationSelectionPatch,
-  StudentSettings
+  StudentSettings,
+  StudentState
 } from "./types";
 
 const WEEKDAYS: Readonly<Record<string, number>> = {
@@ -202,7 +203,57 @@ export function reservationDateAvailability(
       return unavailable("출력 업로드 가능 기간 후입니다.");
     }
   }
+  if (type === "digital_lab") {
+    const days = settings.reservationWindowDays;
+    if (settings.digitalLabEnabled !== true) return unavailable("디지털사진영상실 예약이 비활성 상태입니다.");
+    if (typeof days === "number" && Number.isSafeInteger(days) && days >= 0 && date > addDays(today, days)) {
+      return unavailable(`오늘부터 ${days}일 후까지만 예약할 수 있습니다.`);
+    }
+  }
   return available();
+}
+
+export function digitalLabTimeSlots(settings: StudentSettings, date: string, now = Date.now()) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const startTime = `${String(index * 2).padStart(2, "0")}:00`;
+    const endTime = `${String(index * 2 + 2).padStart(2, "0")}:00`;
+    const startAt = Date.parse(`${date}T${startTime}:00+09:00`);
+    return {
+      startTime,
+      endTime,
+      available: settings.digitalLabEnabled === true
+        && Boolean(settings.digitalLabOpenTime && startTime >= settings.digitalLabOpenTime)
+        && Boolean(settings.digitalLabCloseTime && endTime <= settings.digitalLabCloseTime)
+        && startAt >= now
+    };
+  });
+}
+
+export function digitalLabSelectionAvailability(state: StudentState, requireSeat: boolean): AvailabilityResult {
+  const date = state.selectedDates.digital_lab;
+  const dateResult = reservationDateAvailability("digital_lab", date, state.bootstrap.settings);
+  if (!dateResult.available) return dateResult;
+  const startTime = state.selectedDigitalLabStartTime;
+  const endTime = state.selectedDigitalLabEndTime;
+  if (!startTime || !endTime) return unavailable("사용 시간을 선택하세요.");
+  const slots = digitalLabTimeSlots(state.bootstrap.settings, date).filter((slot) => slot.available);
+  if (startTime >= endTime || !slots.some((slot) => slot.startTime === startTime)
+    || !slots.some((slot) => slot.endTime === endTime)) return unavailable("선택한 시간은 예약할 수 없습니다.");
+  const resource = state.digitalLabAvailability;
+  if (resource?.error) return unavailable(resource.error);
+  const data = resource?.data;
+  if (resource?.loading || !data || data.date !== date || data.startTime !== startTime || data.endTime !== endTime) {
+    return unavailable("좌석 가용 상태를 확인하는 중입니다.");
+  }
+  if (!requireSeat) return available();
+  const selected = data.seats.find((seat) => seat.id === state.selectedDigitalLabSeatId);
+  if (!selected) return unavailable("사용할 좌석을 선택하세요.");
+  return selected.available ? available() : unavailable(selected.reason);
+}
+
+export function digitalLabSeatLabel(seatId = "") {
+  const seat = /^(mac|pc)-(\d{2})$/.exec(seatId);
+  return seat ? `${seat[1] === "mac" ? "Mac" : "PC"} ${seat[2]}` : "";
 }
 
 export function equipmentScheduleAvailability(
@@ -413,6 +464,7 @@ export function reservationSelectionPatchForDate(
       darkroomChemicals: {}
     };
   }
+  if (type === "digital_lab") return { type, selectedDate };
   return {
     type,
     selectedDate,

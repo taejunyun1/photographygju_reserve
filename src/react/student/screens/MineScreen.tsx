@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 
 import { GjuCard, GjuEmptyState, GjuTabs, gjuTabId } from "../../design-system";
-import { ReservationCard, ScreenHeader } from "../components/StudentPrimitives";
+import { RESERVATION_TYPE_LABELS, ReservationCard, ScreenHeader } from "../components/StudentPrimitives";
+import { digitalLabSeatLabel } from "../availability";
 import type { StudentActions, StudentState } from "../types";
 
 const FILTERS = [
@@ -10,7 +11,8 @@ const FILTERS = [
   { key: "studio", label: "스튜디오" },
   { key: "darkroom", label: "암실" },
   { key: "print", label: "출력실" },
-  { key: "lecture", label: "특강" }
+  { key: "lecture", label: "특강" },
+  { key: "digital_lab", label: RESERVATION_TYPE_LABELS.digital_lab }
 ];
 
 function dateOffset(dateKey: string, days: number) {
@@ -28,6 +30,7 @@ function reservationSearchText(item: StudentState["myReservations"][number]) {
   return [
     item.id,
     item.type,
+    item.type === "digital_lab" ? `${RESERVATION_TYPE_LABELS.digital_lab} ${digitalLabSeatLabel(item.fields.seatId)}` : "",
     item.status,
     item.fields,
     item.lecture,
@@ -52,6 +55,10 @@ export function MineScreen({ state, actions }: { state: StudentState; actions: S
   const past = reservations.filter((item) => reservationDate(item) && reservationDate(item) < cutoff);
   const tabsId = "student-mine-category";
   const panelId = "student-mine-results";
+  const showDigitalLab = filter === "digital_lab" || state.bootstrap.settings.digitalLabEnabled
+    || state.myReservations.some((item) => item.type === "digital_lab");
+  const onEdit = state.bootstrap.settings.digitalLabEnabled && state.user.approvalStatus === "approved"
+    ? actions.startDigitalLabEdit : undefined;
 
   return (
     <section className="grid student-react-mine">
@@ -65,7 +72,7 @@ export function MineScreen({ state, actions }: { state: StudentState; actions: S
           id={tabsId}
           panelId={panelId}
           ariaLabel="내 예약 카테고리"
-          items={FILTERS}
+          items={showDigitalLab ? FILTERS : FILTERS.filter((item) => item.key !== "digital_lab")}
           activeKey={filter}
           onChange={setFilter}
           className="student-react-filter-tabs"
@@ -78,6 +85,7 @@ export function MineScreen({ state, actions }: { state: StudentState; actions: S
             key={reservation.id}
             reservation={reservation}
             onCancel={actions.cancelReservation}
+            onEdit={onEdit}
             onCancelLecture={actions.cancelLecture}
             onReport={actions.openReport}
             lectureCanCancel={reservation.type === "lecture"
@@ -98,6 +106,7 @@ export function MineScreen({ state, actions }: { state: StudentState; actions: S
                   key={reservation.id}
                   reservation={reservation}
                   onCancel={actions.cancelReservation}
+                  onEdit={onEdit}
                   onCancelLecture={actions.cancelLecture}
                   onReport={actions.openReport}
                   lectureCanCancel={reservation.type === "lecture"

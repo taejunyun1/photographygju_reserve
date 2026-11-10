@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GjuButton, GjuCard, GjuIconButton, GjuStatusBadge, GjuTabs } from "../../design-system";
 import {
   darkroomSlotAvailability,
+  digitalLabSelectionAvailability,
   equipmentItemAvailability,
   equipmentScheduleAvailability,
   isCameraBagEquipment,
@@ -31,6 +32,7 @@ import type {
   StudentState
 } from "../types";
 import { EquipmentSelectionSurface } from "./EquipmentSelectionSurface";
+import { DigitalLabReservationControls } from "./DigitalLabReservationControls";
 import { EquipmentRequestEditor } from "./EquipmentRequestEditor";
 import { cleanEquipmentRequests } from "../equipmentRequests";
 
@@ -54,7 +56,8 @@ const FLOW_STEPS: Record<ReservationType, readonly ReservationStep[]> = {
   equipment: ["date", "schedule", "select", "details"],
   studio: ["date", "select", "schedule", "details"],
   darkroom: ["date", "schedule", "process", "details"],
-  print: ["date", "schedule", "options", "details"]
+  print: ["date", "schedule", "options", "details"],
+  digital_lab: ["date", "schedule", "select", "details"]
 };
 
 const EQUIPMENT_RESULT_PAGE_SIZE = 20;
@@ -95,7 +98,7 @@ function StepProgress({ type, state, actions }: ReservationControlsProps) {
           }}
           disabled={index > activeIndex}
         >
-          <span>{index + 1}</span>{STEP_LABELS[step]}
+          <span>{index + 1}</span>{type === "digital_lab" && step === "select" ? "좌석" : STEP_LABELS[step]}
         </button>
       ))}
     </div>
@@ -114,6 +117,7 @@ function DateStep({ type, state, actions }: ReservationControlsProps) {
         id={`student-reservation-date-${type}`}
         className="input"
         type="date"
+        min={type === "digital_lab" ? state.today : undefined}
         value={value}
         onChange={(event) => {
           void actions.updateReservationSelection(reservationSelectionPatchForDate(type, event.target.value));
@@ -605,6 +609,7 @@ function currentStepAvailability(type: ReservationType, step: ReservationStep, s
   if (step === "date") {
     return reservationDateAvailability(type, state.selectedDates[type], state.bootstrap.settings, state.today);
   }
+  if (type === "digital_lab") return digitalLabSelectionAvailability(state, step === "select");
   if (type === "equipment" && step === "schedule") {
     return equipmentScheduleAvailability(
       state.bootstrap,
@@ -701,8 +706,8 @@ function FlowActions({ type, step, state, actions }: ReservationControlsProps & 
   );
 }
 
-function ReservationReview({ type, state }: { type: ReservationType; state: StudentState }) {
-  const labels: Record<ReservationType, string> = {
+function ReservationReview({ type, state }: { type: Exclude<ReservationType, "digital_lab">; state: StudentState }) {
+  const labels: Record<Exclude<ReservationType, "digital_lab">, string> = {
     equipment: `${state.selectedEquipmentItemIds.length}개 기자재${state.selectedRequestedEquipment.filter((item) => item.name.trim()).length ? ` · 목록 외 요청 ${state.selectedRequestedEquipment.filter((item) => item.name.trim()).length}개` : ""}`,
     studio: `${state.selectedStudioSpace || "공간 미선택"} · ${state.selectedStudioSlots.join(", ")}`,
     darkroom: `${state.selectedDarkroomSlots.join(", ")} · ${state.selectedDarkroomProcessTypes.join(", ")}`,
@@ -897,6 +902,11 @@ function DetailsStep({ type, state, actions }: ReservationControlsProps) {
 
 function StepBody({ type, state, actions, overlayRoot }: ReservationControlsProps) {
   const step = state.reservationFlowStep[type] || "date";
+  if (type === "digital_lab") return (
+    <DigitalLabReservationControls state={state} actions={actions}>
+      {step === "date" ? <DateStep type={type} state={state} actions={actions} /> : null}
+    </DigitalLabReservationControls>
+  );
   if (step === "date") return <DateStep type={type} state={state} actions={actions} />;
   if (type === "equipment" && step === "schedule") return <EquipmentScheduleStep state={state} actions={actions} />;
   if (type === "equipment" && step === "select") return <EquipmentStep state={state} actions={actions} overlayRoot={overlayRoot} />;
@@ -926,6 +936,12 @@ export function ReservationControls({ type, state, actions, overlayRoot }: Reser
   }, [scheduleKey, type, state.bootstrap, state.selectedEquipmentItemIds, actions]);
   const step = state.reservationFlowStep[type] || "date";
   const flowRef = useRef<HTMLElement>(null);
+  const [, setDigitalLabClock] = useState(Date.now);
+  useEffect(() => {
+    if (type !== "digital_lab" || step === "date" || state.selectedDates.digital_lab !== state.today) return;
+    const timer = setInterval(() => setDigitalLabClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [type, step, state.selectedDates.digital_lab, state.today]);
   useEffect(() => {
     const heading = flowRef.current?.querySelector<HTMLElement>(".student-react-reservation-step h2");
     if (!heading) return;

@@ -92,7 +92,7 @@ export async function logout() {
   state.reservationType = "";
   state.activeNoticeId = "";
   state.activeReportReservationId = "";
-  state.selectedDates = { equipment: "", studio: "", darkroom: "", print: "" };
+  state.selectedDates = { equipment: "", studio: "", darkroom: "", print: "", digital_lab: "" };
   state.selectedEquipmentItemIds = [];
   state.selectedEquipmentPeriod = "";
   state.selectedEquipmentRentalTime = "";

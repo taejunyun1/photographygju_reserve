@@ -15,12 +15,14 @@ import type {
 } from "../types";
 import { isReportDue } from "../reporting";
 import { equipmentRequestSummary } from "../equipmentRequests";
+import { digitalLabSeatLabel } from "../availability";
 
-const TYPE_LABELS: Record<ReservationType | "lecture", string> = {
+export const RESERVATION_TYPE_LABELS: Record<ReservationType | "lecture", string> = {
   equipment: "기자재",
   studio: "스튜디오",
   darkroom: "암실",
   print: "출력실",
+  digital_lab: "디지털사진영상실",
   lecture: "특강"
 };
 
@@ -28,7 +30,8 @@ const TYPE_ICONS: Record<ReservationType, "camera" | "fileText" | "plus" | "refr
   equipment: "camera",
   studio: "plus",
   darkroom: "refresh",
-  print: "fileText"
+  print: "fileText",
+  digital_lab: "fileText"
 };
 
 const RESERVATION_STATUS_LABELS: Record<string, string> = {
@@ -76,6 +79,7 @@ export function reservationDisplayMeta(reservation: StudentReservation) {
     : fields.startTime && fields.endTime
       ? `${fields.startTime}–${fields.endTime}`
       : (fields.timeSlots || []).join(", ") || String(reservation.lecture?.time || "");
+  const seat = reservation.type === "digital_lab" ? digitalLabSeatLabel(fields.seatId) : "";
   const equipment = (reservation.equipmentItems || [])
     .map((item) => item.code || item.name)
     .filter(Boolean);
@@ -92,7 +96,7 @@ export function reservationDisplayMeta(reservation: StudentReservation) {
   ].filter(Boolean).map(String);
   return {
     date,
-    time,
+    time: [seat, time].filter(Boolean).join(" · "),
     details: details.join(" · "),
     fallback: !date && !time && !details.length ? "상세 정보 없음" : ""
   };
@@ -115,7 +119,8 @@ export function FacilityCard({ type, onSelect }: { type: ReservationType; onSele
     equipment: ["기자재", "카메라 · 렌즈 · 조명", "승인 후 예약"],
     studio: ["스튜디오", "Front · Back 공간", "자동 확정"],
     darkroom: ["암실", "현상 · 인화 작업", "시간 선택"],
-    print: ["출력실", "과제 · 작품 출력", "시간 선택"]
+    print: ["출력실", "과제 · 작품 출력", "시간 선택"],
+    digital_lab: [RESERVATION_TYPE_LABELS.digital_lab, "Mac · PC 좌석", "자동 확정"]
   };
   const [title, description, status] = labels[type];
 
@@ -124,7 +129,7 @@ export function FacilityCard({ type, onSelect }: { type: ReservationType; onSele
       <div className={`facility-visual facility-${type}`}>
         <span className="facility-code">
           <GjuIcon name={TYPE_ICONS[type]} className="facility-symbol" />
-          <b>{type.slice(0, 2).toUpperCase()}</b>
+          <b>{type === "digital_lab" ? "DL" : type.slice(0, 2).toUpperCase()}</b>
         </span>
         <span className="availability blue"><i />{status}</span>
       </div>
@@ -142,6 +147,7 @@ export function FacilityCard({ type, onSelect }: { type: ReservationType; onSele
 export function ReservationCard({
   reservation,
   onCancel,
+  onEdit,
   onCancelLecture,
   onReport,
   lectureCanCancel,
@@ -149,12 +155,13 @@ export function ReservationCard({
 }: {
   reservation: StudentReservation;
   onCancel?: (id: string) => Promise<void> | void;
+  onEdit?: (id: string) => Promise<void> | void;
   onCancelLecture?: (lectureId: string) => Promise<void> | void;
   onReport?: (id: string) => void;
   lectureCanCancel?: boolean;
   today?: string;
 }) {
-  const label = TYPE_LABELS[reservation.type];
+  const label = RESERVATION_TYPE_LABELS[reservation.type];
   const canCancel = !["cancelled", "admin_cancelled", "rejected", "returned", "completed"].includes(reservation.status || "");
   const reportDue = isReportDue(reservation, today);
   const lectureId = reservation.type === "lecture" ? reservation.lecture?.id : undefined;
@@ -209,6 +216,11 @@ export function ReservationCard({
       {displayMeta.details ? <p className="student-react-reservation-card__equipment">{displayMeta.details}</p> : null}
       {displayMeta.fallback ? <p className="muted student-react-reservation-card__fallback">{displayMeta.fallback}</p> : null}
       {cancelError ? <p className="student-react-submit-error" role="alert">{cancelError}</p> : null}
+      {reservation.type === "digital_lab" && onEdit && canCancel ? (
+        <div className="student-react-reservation-card__actions">
+          <GjuButton variant="outline" disabled={cancelling} onClick={() => void onEdit(reservation.id)}>예약 수정</GjuButton>
+        </div>
+      ) : null}
       {onReport && reportDue ? (
         <div className="student-react-reservation-card__actions">
           <GjuButton icon="fileText" variant="outline" onClick={() => onReport(reservation.id)}>보고서 작성</GjuButton>

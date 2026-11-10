@@ -78,7 +78,7 @@ export type FacilityTimelineResource = {
 };
 
 export type FacilityReservationIntent = {
-  type: "studio" | "darkroom" | "print" | "equipment";
+  type: "studio" | "darkroom" | "print" | "equipment" | "digital_lab";
   selectedDate: string;
   equipmentItemIds?: string[];
   studioSpace?: string;
@@ -86,6 +86,9 @@ export type FacilityReservationIntent = {
   darkroomSlots?: string[];
   printStartTime?: string;
   printEndTime?: string;
+  digitalLabStartTime?: string;
+  digitalLabEndTime?: string;
+  digitalLabSeatId?: string;
 };
 
 export type FacilityBoardProps = {

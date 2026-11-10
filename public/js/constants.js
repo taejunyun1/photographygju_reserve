@@ -38,6 +38,7 @@ export const typeLabel = {
   studio: "스튜디오",
   darkroom: "암실",
   print: "출력실",
+  digital_lab: "디지털사진영상실",
   lecture: "특강"
 };
 

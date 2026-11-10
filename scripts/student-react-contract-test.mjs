@@ -228,8 +228,8 @@ function makeState(overrides = {}) {
     rebookingDetails: null,
     reservationRecommendations: null,
     reservationType: undefined,
-    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentPeriod: "",
     selectedEquipmentRentalTime: "",
     selectedEquipmentReturnTime: "",
@@ -353,8 +353,8 @@ for (const date of ["2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "202
   const scheduleMarkup = renderToStaticMarkup(React.createElement(student.ReservationControls, {
     type: "equipment",
     state: makeState({
-      reservationFlowStep: { equipment: "schedule", studio: "date", darkroom: "date", print: "date" },
-      selectedDates: { equipment: date, studio: "", darkroom: "", print: "" },
+      reservationFlowStep: { equipment: "schedule", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+      selectedDates: { equipment: date, studio: "", darkroom: "", print: "", digital_lab: "" },
       selectedEquipmentPeriod: "2박3일",
       selectedEquipmentRentalTime: "12:00",
       selectedEquipmentReturnTime: "12:00"
@@ -389,8 +389,8 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
     view: "reserve",
     reservationType: "equipment",
     bootstrap: availabilityBootstrap,
-    reservationFlowStep: { equipment: "select", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "2026-07-20", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "select", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "2026-07-20", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentPeriod: "당일",
     selectedEquipmentRentalTime: "10:15",
     selectedEquipmentReturnTime: "12:00",
@@ -428,8 +428,8 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
     view: "reserve",
     reservationType: "equipment",
     bootstrap: { ...availabilityBootstrap, equipment: expandedEquipment },
-    reservationFlowStep: { equipment: "select", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "select", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentPeriod: "당일",
     selectedEquipmentRentalTime: "10:15",
     selectedEquipmentReturnTime: "12:00"
@@ -443,7 +443,7 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
     view: "reserve",
     reservationType: "print",
-    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" }
+    reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date", digital_lab: "date" }
   }),
   actions: actionRecorder().actions
 }));
@@ -454,7 +454,7 @@ const missingDrivePrintState = makeState({
   view: "reserve",
   reservationType: "print",
   bootstrap: { ...makeState().bootstrap, settings: { ...settings, googleDriveUrl: "" } },
-  reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date" }
+  reservationFlowStep: { equipment: "date", studio: "date", darkroom: "date", print: "date", digital_lab: "date" }
 });
 markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: missingDrivePrintState,
@@ -473,26 +473,26 @@ assert.equal(student.reservationSelectionPatchForDate("print", "2026-07-22").pri
 
 const validStates = {
   equipment: makeState({
-    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentPeriod: "당일",
     selectedEquipmentRentalTime: "10:15",
     selectedEquipmentReturnTime: "12:00",
     selectedEquipmentItemIds: ["body-1", "bag-1"]
   }),
   studio: makeState({
-    selectedDates: { equipment: "", studio: "2026-07-21", darkroom: "", print: "" },
+    selectedDates: { equipment: "", studio: "2026-07-21", darkroom: "", print: "", digital_lab: "" },
     selectedStudioSpace: "Studio A Front",
     selectedStudioSlots: ["10:30-12:00", "12:00-14:00"]
   }),
   darkroom: makeState({
-    selectedDates: { equipment: "", studio: "", darkroom: "2026-07-21", print: "" },
+    selectedDates: { equipment: "", studio: "", darkroom: "2026-07-21", print: "", digital_lab: "" },
     selectedDarkroomSlots: ["10:00-12:00"],
     selectedDarkroomProcessTypes: ["현상"],
     selectedDarkroomParticipantCount: "2",
     selectedDarkroomChemicals: { "chem-d76": "500ml" }
   }),
   print: makeState({
-    selectedDates: { equipment: "", studio: "", darkroom: "", print: "2026-07-21" },
+    selectedDates: { equipment: "", studio: "", darkroom: "", print: "2026-07-21", digital_lab: "" },
     selectedPrintStartTime: "12:00",
     selectedPrintEndTime: "14:00",
     selectedPrintTypes: ["과제"],
@@ -581,7 +581,7 @@ const midnightDarkroomState = makeState({
       darkroomSlots: ["00:00-02:00", "22:00-24:00"]
     }
   },
-  selectedDates: { equipment: "", studio: "", darkroom: "2026-07-21", print: "" },
+  selectedDates: { equipment: "", studio: "", darkroom: "2026-07-21", print: "", digital_lab: "" },
   selectedDarkroomSlots: ["00:00-02:00", "22:00-24:00"],
   selectedDarkroomProcessTypes: ["현상"],
   selectedDarkroomParticipantCount: "1"
@@ -791,8 +791,8 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
     view: "reserve",
     reservationType: "equipment",
-    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentItemIds: ["body-1"],
     rebookingDetails: {
       type: "equipment",
@@ -809,8 +809,8 @@ markup = renderToStaticMarkup(React.createElement(student.StudentApp, {
   state: makeState({
     view: "reserve",
     reservationType: "equipment",
-    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date" },
-    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "" },
+    reservationFlowStep: { equipment: "details", studio: "date", darkroom: "date", print: "date", digital_lab: "date" },
+    selectedDates: { equipment: "2026-07-21", studio: "", darkroom: "", print: "", digital_lab: "" },
     selectedEquipmentItemIds: ["body-1"],
     reservationRecommendations: {
       type: "equipment",

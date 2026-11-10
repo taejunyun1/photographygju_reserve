@@ -323,13 +323,15 @@ test("Student React reservation filters control a labelled panel", async ({ page
   await expect(tablist.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
 });
 
-test("Student React Mine filters show all six tabs without horizontal clipping", async ({ page }) => {
+test("Student React Mine filters show the existing categories without horizontal clipping", async ({ page }) => {
   const viewport = page.viewportSize();
   test.skip(!viewport || viewport.width > 430, "phone filter contract");
   await loginReactStudent(page);
   await page.locator(".student-react-bottom-nav").getByRole("button", { name: "내 예약" }).click();
   const tabs = page.getByRole("tablist", { name: "내 예약 카테고리" });
-  await expect(tabs.getByRole("tab")).toHaveCount(6);
+  for (const label of ["전체", "기자재", "스튜디오", "암실", "출력실", "특강"]) {
+    await expect(tabs.getByRole("tab", { name: label, exact: true })).toBeVisible();
+  }
   const metrics = await tabs.evaluate((element) => {
     const parent = element.getBoundingClientRect();
     return {

@@ -2,7 +2,7 @@ import type { FacilityReservationIntent, FacilityTimelineResource } from "../sha
 
 export type StudentNavKey = "home" | "reserve" | "mine" | "reports" | "lectures" | "notices" | "my";
 
-export type ReservationType = "equipment" | "studio" | "darkroom" | "print";
+export type ReservationType = "equipment" | "studio" | "darkroom" | "print" | "digital_lab";
 
 export type ReservationStep = "date" | "schedule" | "select" | "process" | "options" | "details";
 
@@ -112,6 +112,7 @@ export type StudentReservationFields = {
   standRequest?: string;
   startTime?: string;
   endTime?: string;
+  seatId?: string;
   printType?: string;
   printTypes?: readonly string[];
   paper?: string;
@@ -282,6 +283,10 @@ export type StudentSettings = {
   printPapers?: readonly string[];
   printSizes?: readonly string[];
   printBankAccount?: string;
+  reservationWindowDays?: number;
+  digitalLabEnabled?: boolean;
+  digitalLabOpenTime?: string;
+  digitalLabCloseTime?: string;
   blockedSchedules?: readonly StudentBlockedSchedule[];
   googleDriveUrl?: string;
   studioReportDeadlineHours?: number;
@@ -367,11 +372,54 @@ export type PrintReservationDraft = {
   };
 };
 
+export type DigitalLabFields = {
+  reservedDate: string;
+  seatId: string;
+  startTime: string;
+  endTime: string;
+  purpose: string;
+  phone: string;
+};
+
+export type DigitalLabSeat = {
+  id: string;
+  label: string;
+  computerType: "mac" | "pc";
+};
+
+export type DigitalLabSeatAvailability = DigitalLabSeat & {
+  available: boolean;
+  reasonCode: "disabled" | "invalid_input" | "past" | "outside_hours" | "class_blocked" | "seat_reserved" | "user_overlap" | null;
+  reason: string;
+  isMine: boolean;
+};
+
+export type DigitalLabAvailability = {
+  date: string;
+  startTime: string;
+  endTime: string;
+  generatedAt: string;
+  seats: readonly DigitalLabSeatAvailability[];
+};
+
+export type DigitalLabAvailabilityResource = {
+  key: string;
+  loading: boolean;
+  error: string;
+  data: DigitalLabAvailability | null;
+};
+
+export type DigitalLabReservationDraft = {
+  type: "digital_lab";
+  fields: DigitalLabFields;
+};
+
 export type ReservationDraft =
   | EquipmentReservationDraft
   | StudioReservationDraft
   | DarkroomReservationDraft
-  | PrintReservationDraft;
+  | PrintReservationDraft
+  | DigitalLabReservationDraft;
 
 export type StudentReservationSelectionPatch = {
   type: ReservationType;
@@ -392,6 +440,9 @@ export type StudentReservationSelectionPatch = {
   printTypes?: readonly string[];
   printPapers?: readonly string[];
   printSizes?: readonly string[];
+  digitalLabStartTime?: string;
+  digitalLabEndTime?: string;
+  digitalLabSeatId?: string;
 };
 
 export type StudentReportPayload = {
@@ -473,6 +524,11 @@ export type StudentState = {
   readonly selectedPrintTypes: readonly string[];
   readonly selectedPrintPapers: readonly string[];
   readonly selectedPrintSizes: readonly string[];
+  readonly selectedDigitalLabStartTime?: string;
+  readonly selectedDigitalLabEndTime?: string;
+  readonly selectedDigitalLabSeatId?: string;
+  readonly digitalLabEditing?: StudentReservation | null;
+  readonly digitalLabAvailability?: DigitalLabAvailabilityResource | null;
   readonly activeNoticeId?: string | null;
   readonly activeReportReservationId?: string | null;
   readonly nativeNotifications?: StudentNativeNotifications;
@@ -483,6 +539,8 @@ export type StudentActions = {
   startFacilityReservation?(intent: FacilityReservationIntent): Promise<void> | void;
   setView(view: StudentNavKey): Promise<void> | void;
   startReservation(type: ReservationType): Promise<void> | void;
+  startDigitalLabEdit(id: string): Promise<void> | void;
+  loadDigitalLabAvailability(): Promise<void> | void;
   setReservationStep(type: ReservationType, step: ReservationStep): Promise<void> | void;
   updateReservationSelection(patch: StudentReservationSelectionPatch): Promise<void> | void;
   loadReservationShortcuts(): Promise<void> | void;
