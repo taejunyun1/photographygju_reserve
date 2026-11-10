@@ -1,0 +1,205 @@
+{
+  "deployedSourceCommit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+  "webCacheVersion": "20261110-digital-lab-r1",
+  "pagesDeployment": {
+    "Id": "874df914-3542-4391-94a2-76975defc0df",
+    "Environment": "Production",
+    "Branch": "main",
+    "Source": "30d6886",
+    "Deployment": "https://874df914.gju-reserve.pages.dev",
+    "Status": "4 minutes ago",
+    "Build": "https://dash.cloudflare.com/a58fbe3a0082c49f571d69d08c1227ab/pages/view/gju-reserve/874df914-3542-4391-94a2-76975defc0df"
+  },
+  "workerDeployments": [
+    {
+      "id": "ba7b3ee8-986d-48be-894d-6749df90a090",
+      "createdOn": "2026-11-10T13:45:11.202135Z",
+      "source": "wrangler",
+      "versions": [
+        {
+          "version_id": "f9bf5d11-8db6-4c13-b6d8-90fa74205214",
+          "percentage": 100
+        }
+      ]
+    },
+    {
+      "id": "9f137fa5-73da-4bdc-a1a2-189b650000f7",
+      "createdOn": "2026-11-10T13:48:25.120152Z",
+      "source": "wrangler",
+      "versions": [
+        {
+          "version_id": "85b69980-d740-42ba-bfde-0660798d3103",
+          "percentage": 100
+        }
+      ]
+    }
+  ],
+  "workerFinalRuntimeAndBindings": {
+    "id": "85b69980-d740-42ba-bfde-0660798d3103",
+    "createdOn": "2026-11-10T13:48:24.585471Z",
+    "runtime": {
+      "migration_tag": "v1",
+      "assets": {
+        "not_found_handling": "single-page-application",
+        "serve_directly": false,
+        "raw_run_worker_first": true,
+        "base_path": "/"
+      },
+      "compatibility_date": "2026-06-12",
+      "compatibility_flags": [
+        "nodejs_compat"
+      ],
+      "usage_model": "standard"
+    },
+    "bindings": [
+      {
+        "name": "ASSETS",
+        "type": "assets"
+      },
+      {
+        "name": "DIGITAL_LAB_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-11-10T13:48:00.000Z"
+      },
+      {
+        "name": "EQUIPMENT_OVERDUE_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-10-12T04:17:07.000Z"
+      },
+      {
+        "name": "GJU_RESERVE_DB",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "INTERNAL_CRON_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "INTERNAL_RESET_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "SLACK_WEBHOOK_URL",
+        "type": "secret_text"
+      }
+    ]
+  },
+  "beforeActivation": {
+    "capturedAt": "2026-11-10T13:46:54.505Z",
+    "phase": "disabled",
+    "expectedCommit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+    "targets": [
+      {
+        "origin": "https://photographygju-reserve.taejunyun.workers.dev",
+        "version": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z"
+        },
+        "release": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z",
+          "assetCount": 42
+        },
+        "settings": {
+          "digitalLabEnabled": false,
+          "digitalLabOpenTime": "",
+          "digitalLabCloseTime": ""
+        },
+        "preservedExistingSettingCount": 42,
+        "availabilityUnauthenticatedStatus": 401
+      },
+      {
+        "origin": "https://gjureserve.co.kr",
+        "version": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z"
+        },
+        "release": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "pages",
+          "generatedAt": "2026-11-10T13:46:09.762Z",
+          "assetCount": 42
+        },
+        "settings": {
+          "digitalLabEnabled": false,
+          "digitalLabOpenTime": "",
+          "digitalLabCloseTime": ""
+        },
+        "preservedExistingSettingCount": 42,
+        "availabilityUnauthenticatedStatus": 401
+      }
+    ]
+  },
+  "afterActivation": {
+    "capturedAt": "2026-11-10T13:49:14.039Z",
+    "phase": "enabled",
+    "expectedCommit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+    "targets": [
+      {
+        "origin": "https://photographygju-reserve.taejunyun.workers.dev",
+        "version": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z"
+        },
+        "release": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z",
+          "assetCount": 42
+        },
+        "settings": {
+          "digitalLabEnabled": true,
+          "digitalLabOpenTime": "00:00",
+          "digitalLabCloseTime": "24:00"
+        },
+        "preservedExistingSettingCount": 42,
+        "availabilityUnauthenticatedStatus": 401
+      },
+      {
+        "origin": "https://gjureserve.co.kr",
+        "version": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "worker",
+          "generatedAt": "2026-11-10T13:45:00.910Z"
+        },
+        "release": {
+          "commit": "30d688634b479d8e8496cfabb9242755e95b1e41",
+          "target": "pages",
+          "generatedAt": "2026-11-10T13:46:09.762Z",
+          "assetCount": 42
+        },
+        "settings": {
+          "digitalLabEnabled": true,
+          "digitalLabOpenTime": "00:00",
+          "digitalLabCloseTime": "24:00"
+        },
+        "preservedExistingSettingCount": 42,
+        "availabilityUnauthenticatedStatus": 401
+      }
+    ]
+  },
+  "assetVerification": {
+    "pages": {
+      "matchedAssetSha256Count": 42,
+      "command": "GJU_PRODUCTION_URL=https://gjureserve.co.kr node scripts/check-production-deploy.mjs --manifest",
+      "exitCode": 0
+    },
+    "worker": {
+      "matchedAssetSha256Count": 42,
+      "command": "node scripts/check-production-deploy.mjs --manifest",
+      "exitCode": 0
+    }
+  },
+  "browser": {
+    "url": "https://gjureserve.co.kr/",
+    "observed": "Production login page rendered; no authenticated session available"
+  },
+  "productionTestBookingsCreated": false,
+  "authenticatedProductionSeatListVerified": false,
+  "githubPushPerformed": false,
+  "nativePackageBuiltOrPublished": false
+}
