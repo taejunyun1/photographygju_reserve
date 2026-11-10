@@ -1,4 +1,4 @@
-export const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print"]);
+export const SETTING_FACILITY_TYPES = new Set(["studio", "darkroom", "equipment", "print", "digital_lab"]);
 export const DEFAULT_STUDIO_REPORT_DEADLINE_HOURS = 48;
 export const MIN_STUDIO_REPORT_DEADLINE_HOURS = 1;
 export const MAX_STUDIO_REPORT_DEADLINE_HOURS = 720;
@@ -9,6 +9,14 @@ export function parseStudioReportDeadlineHours(value) {
   const hours = Number(value);
   if (!Number.isFinite(hours) || hours < MIN_STUDIO_REPORT_DEADLINE_HOURS || hours > MAX_STUDIO_REPORT_DEADLINE_HOURS) return null;
   return hours;
+}
+
+export function isDigitalLabSlotBoundary(value, { allowEndOfDay = false } = {}) {
+  return typeof value === "string" && (/^(?:[01][02468]|2[02]):00$/.test(value) || (allowEndOfDay && value === "24:00"));
+}
+
+export function hasDigitalLabOperatingHours({ digitalLabOpenTime: start, digitalLabCloseTime: end }) {
+  return isDigitalLabSlotBoundary(start) && isDigitalLabSlotBoundary(end, { allowEndOfDay: true }) && start < end;
 }
 
 export const defaultSettings = {
@@ -61,6 +69,9 @@ export const defaultSettings = {
     { day: "monday", label: "월요일", start: "14:00", end: "18:00" },
     { day: "tuesday", label: "화요일", start: "14:00", end: "18:00" }
   ],
+  digitalLabEnabled: false,
+  digitalLabOpenTime: "",
+  digitalLabCloseTime: "",
   printAvailableStart: "10:00",
   printAvailableEnd: "19:00",
   printTimeUnitMinutes: 60,
@@ -97,12 +108,15 @@ export function createSettingsHelpers({ assertPlainObject, assertDateKey, assert
     const day = String(rule.day || "").trim();
     if (!SETTING_FACILITY_TYPES.has(type)) throw Object.assign(new Error("지원하지 않는 차단 시설입니다."), { status: 400 });
     const weekdays = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-    if (!(day in weekdays)) throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
+    if (!Object.hasOwn(weekdays, day)) throw Object.assign(new Error("차단 요일이 올바르지 않습니다."), { status: 400 });
     assertDateKey(rule.from, "차단 시작일");
     assertDateKey(rule.to, "차단 종료일");
     if (String(rule.from) > String(rule.to)) throw Object.assign(new Error("차단 종료일은 시작일 이후여야 합니다."), { status: 400 });
     assertTimeValue(rule.start, "차단 시작 시간");
-    assertTimeValue(rule.end, "차단 종료 시간");
+    if (type !== "digital_lab" || rule.end !== "24:00") assertTimeValue(rule.end, "차단 종료 시간");
+    if (type === "digital_lab" && String(rule.start) >= String(rule.end)) {
+      throw Object.assign(new Error("디지털사진영상실 수업 종료 시간은 같은 날의 시작 시간 이후여야 합니다."), { status: 400 });
+    }
     return {
       id: String(rule.id || id("block")).trim().slice(0, 80),
       type,
@@ -164,6 +178,22 @@ export function createSettingsHelpers({ assertPlainObject, assertDateKey, assert
       assertTimeValue(body.printAvailableEnd, "출력실 종료 시간");
       patch.printAvailableEnd = String(body.printAvailableEnd);
     }
+    if (body.digitalLabEnabled !== undefined) {
+      if (typeof body.digitalLabEnabled !== "boolean") throw Object.assign(new Error("디지털사진영상실 사용 여부는 참/거짓이어야 합니다."), { status: 400 });
+      patch.digitalLabEnabled = body.digitalLabEnabled;
+    }
+    if (body.digitalLabOpenTime !== undefined) {
+      if (body.digitalLabOpenTime !== "" && !isDigitalLabSlotBoundary(body.digitalLabOpenTime)) {
+        throw Object.assign(new Error("디지털사진영상실 운영 시작 시간은 00:00부터 22:00 사이의 짝수 시 정각이어야 합니다."), { status: 400 });
+      }
+      patch.digitalLabOpenTime = body.digitalLabOpenTime;
+    }
+    if (body.digitalLabCloseTime !== undefined) {
+      if (body.digitalLabCloseTime !== "" && !isDigitalLabSlotBoundary(body.digitalLabCloseTime, { allowEndOfDay: true })) {
+        throw Object.assign(new Error("디지털사진영상실 운영 종료 시간은 24:00까지의 짝수 시 정각이어야 합니다."), { status: 400 });
+      }
+      patch.digitalLabCloseTime = body.digitalLabCloseTime;
+    }
     if (body.equipmentCategories !== undefined) {
       if (!Array.isArray(body.equipmentCategories)) throw Object.assign(new Error("기자재 카테고리는 배열이어야 합니다."), { status: 400 });
       patch.equipmentCategories = sanitizeStringList(body.equipmentCategories, 80, 60);
@@ -177,6 +207,11 @@ export function createSettingsHelpers({ assertPlainObject, assertDateKey, assert
     }
     if (body.vacationMode !== undefined) patch.vacationMode = body.vacationMode === true;
     const next = { ...current, ...patch };
+    if (["digitalLabEnabled", "digitalLabOpenTime", "digitalLabCloseTime"].some((key) => Object.hasOwn(patch, key))) {
+      if ((next.digitalLabEnabled || (next.digitalLabOpenTime && next.digitalLabCloseTime)) && !hasDigitalLabOperatingHours(next)) {
+        throw Object.assign(new Error("디지털사진영상실 운영 시작과 종료를 짝수 시 정각으로 입력하고 종료 시간을 시작 시간보다 늦게 설정하세요."), { status: 400 });
+      }
+    }
     if (next.printUploadStartDate && next.printUploadEndDate && next.printUploadStartDate > next.printUploadEndDate) throw Object.assign(new Error("출력 업로드 종료일은 시작일 이후여야 합니다."), { status: 400 });
     return { ...next, updatedAt: nowIso() };
   }

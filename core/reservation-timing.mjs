@@ -1,6 +1,7 @@
 import { equipmentScheduledWindow } from "../public/js/equipment-schedule.mjs";
 import {
   DEFAULT_STUDIO_REPORT_DEADLINE_HOURS,
+  isDigitalLabSlotBoundary,
   parseStudioReportDeadlineHours
 } from "./settings.mjs";
 
@@ -17,7 +18,7 @@ function validDateParts(value) {
   return { year, month, day };
 }
 
-function timeMinutes(value) {
+export function timeMinutes(value) {
   const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return null;
   const hour = Number(match[1]);
@@ -121,6 +122,14 @@ function studioReportDeadlineHours(value) {
 }
 
 function timingForFields(type, fields = {}, settings = {}) {
+  if (type === "digital_lab") {
+    if (typeof fields?.reservedDate !== "string" || !isDigitalLabSlotBoundary(fields.startTime)
+      || !isDigitalLabSlotBoundary(fields.endTime, { allowEndOfDay: true }) || fields.startTime >= fields.endTime) return null;
+    const startAt = kstDateAtMinutes(fields.reservedDate, timeMinutes(fields.startTime));
+    const endAt = kstDateAtMinutes(fields.reservedDate, timeMinutes(fields.endTime));
+    return startAt && endAt ? { startAt: startAt.toISOString(), endAt: endAt.toISOString() } : null;
+  }
+
   const date = fields.reservedDate || "";
   if (!validDateParts(date)) return null;
 
