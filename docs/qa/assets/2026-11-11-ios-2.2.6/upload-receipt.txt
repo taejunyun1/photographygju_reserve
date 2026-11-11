@@ -1,0 +1,3 @@
+2026-11-11 13:25:14.699 xcodebuild[79592:1520179] Progress 100%: Uploaded package is processing.
+2026-11-11 13:25:14.704 xcodebuild[79592:1520179] Progress 100%: Upload succeeded.
+** EXPORT SUCCEEDED **

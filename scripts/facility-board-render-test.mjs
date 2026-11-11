@@ -272,7 +272,11 @@ try {
     await labRoom.waitFor({state:'visible'});
     assert.match(await labRoom.getAttribute('aria-label'),/디지털사진영상실, Mac 11\/12 · PC 4\/4/);
     // Compare the room walls; hit targets sit inside each room's two-pixel border.
-    const labBox=await labRoom.locator('..').boundingBox(),studioBBox=await labPage.locator('[data-facility-room="b"]').locator('..').boundingBox();
+    // Measure both rooms in one frame so the shared panel entrance animation cannot move between reads.
+    const [labBox,studioBBox]=await labPage.evaluate(()=>['digital','b'].map(key=>{
+      const {x,y,width}=document.querySelector(`[data-facility-room="${key}"]`).parentElement.getBoundingClientRect();
+      return {x,y,width};
+    }));
     assert(Math.abs(labBox.x+labBox.width-studioBBox.x)<=1,'digital room must touch the left side of Studio B');
     assert.equal(labBox.y,studioBBox.y);
     await labRoom.focus();

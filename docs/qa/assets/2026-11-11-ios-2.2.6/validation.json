@@ -1,0 +1,44 @@
+{
+  "version": "2.2.6",
+  "build": "48",
+  "bundleId": "kr.ac.gju.photomedia.reserve",
+  "source": "d4dc8c6c846c631e83178e0684eeb2bb414d5acb",
+  "assetHashesVerified": 43,
+  "target": "native",
+  "sdk": "iphoneos27.2",
+  "xcode": "2720",
+  "codeSignatureVerified": true,
+  "releaseCheck": {
+    "exitCode": 0,
+    "uiPassed": 206,
+    "uiSkippedByProject": 53,
+    "uiFailed": 0
+  },
+  "simulator": {
+    "device": "iPhone 17 Pro",
+    "runtime": "iOS 26.5",
+    "buildSucceeded": true,
+    "installed": true,
+    "launchPID": 77955,
+    "processStillRunning": true,
+    "visualInspection": false
+  },
+  "publicReleaseVerified": false,
+  "appStoreConnect": {
+    "appId": "6784429269",
+    "version": "2.2.6",
+    "build": "48",
+    "buildId": "f955451a-db9e-4795-ade7-c38588696adc",
+    "uploadSucceeded": true,
+    "uploadCompletedAt": "2026-11-11T13:25:14+09:00",
+    "processingStatus": "COMPLETE",
+    "submissionStatus": "WAITING_FOR_REVIEW",
+    "releaseOption": "AFTER_APPROVAL",
+    "phasedRelease": false,
+    "exportCompliance": "No proprietary or independently implemented standard encryption; OS-provided HTTPS only",
+    "testFlightState": "READY_TO_SUBMIT",
+    "submissionId": "f002a612-4a43-41db-b7c5-de47227cf5fa",
+    "submissionObservedAt": "2026-11-11T13:31:43+09:00",
+    "submissionEvidence": "app-store-submission.jpg"
+  }
+}

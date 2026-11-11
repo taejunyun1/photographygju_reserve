@@ -28,7 +28,8 @@ for (const role of ["admin", "student"]) {
         })
       }));
       expect(measurements.fits).toBeTruthy();
-      expect(measurements.buttons).toHaveLength(5);
+      expect(measurements.buttons).toHaveLength(6);
+      await expect(summary.getByRole("button", { name: /디지털사진영상실/ })).toBeVisible();
       expect(measurements.buttons.every((button) => button.left >= 0 && button.right <= width && button.width >= 44 && button.height >= 44), JSON.stringify({ width, measurements })).toBeTruthy();
       await expect(board.getByRole("button", { name: "새로고침", exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
