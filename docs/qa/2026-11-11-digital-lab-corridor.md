@@ -36,6 +36,18 @@
 
 ## 배포
 
-배포 전 확인: 2026-11-11 12:54:15 KST, 현재 소스 `93cb2d78cea469080a1f60f1cbcc934b826bc5b1`, 공개 설정45개, 디지털실 활성·00:00–24:00. Worker의 기존 변수를 보존하고 Pages 대표 도메인까지 배포한 뒤 공개 자산 해시·API 버전·기존 설정을 비교한다.
+**2026-11-11 웹 배포 및 운영 검증 완료.** 배포 소스는 `b9ea312fcdf3f34df30a636e59edb15e92913a01`이다. 이후 QA 전용 커밋은 배포 소스와 구분한다.
 
-운영 로그인 세션이 없어 인증된 운영 메인 화면 조작은 별도 미실행이다. 실제 예약 흐름은 격리 API/브라우저로, 운영은 공개 자산·API·설정으로 구분해 확인한다. 운영 시험 예약·계정 생성, 외부 메시지 전송, 네이티브 빌드, GitHub push는 수행하지 않는다. 기존 `outputs/`와 `.codex-audit/`는 유지한다.
+| 항목 | 확인 결과 |
+|---|---|
+| Worker | 버전 `201a607d-c750-44da-abf5-da75c16965fc`, 배포 `9063387b-1c60-4ea1-bf31-0fb1980b8178`, 12:58:11 KST, 트래픽100% |
+| Pages | Production `0199577d-dc18-4ef5-b2c5-c5a7566831fe`, [배포 주소](https://0199577d.gju-reserve.pages.dev), 소스b9ea312 |
+| 대표 도메인 | [gjureserve.co.kr](https://gjureserve.co.kr/), 공개 검증12:59:19 KST부터 |
+| 공개 파일·API | Worker·Pages 각각42개 SHA-256 일치; manifest와API 커밋 모두b9ea312 |
+| React 캐시 | 두 주소의 HTML에 JS/CSS 네 개 모두 `release=20261111-lab-corridor-r1`, 해당 URL 파일 해시도manifest와 일치 |
+| 운영 설정 | 배포 직전12:54:15 KST의 공개 설정45개와 전체 deep equality 일치. 디지털실 활성·00:00–24:00 유지 |
+| Worker 구성 | 기존 runtime과7개 바인딩 전체 일치. 두 활성화 변수, 시크릿3개의 이름/종류,DO·ASSETS,compatibility·migration 유지. 두 cron 배포 확인 |
+
+Worker는 `npm run deploy -- --keep-vars`, Pages는 `npm run pages:deploy -- --branch main --commit-dirty=true`로 배포했다. 양쪽 `check-production-deploy.mjs --manifest`가 종료0으로 통과했다. 시크릿 값은 읽거나 출력하지 않았다. [운영 검증 JSON](assets/2026-11-11-digital-lab-corridor/production-verification.json)에 실제 ID·파일 해시·설정 보존 결과를 남겼다.
+
+운영 로그인 세션이 없어 인증된 운영 메인 화면 조작은 미실행이다. 실제 예약 흐름은 격리 API/브라우저로, 운영은 공개 자산·API·설정으로 구분해 확인했다. 운영 시험 예약·계정 생성, 외부 메시지 전송, 네이티브 빌드, GitHub push는 수행하지 않았다. 기존 배포 검사의 비인증 삭제 요청은401 인증 차단만 확인했다. 기존 `outputs/`와 `.codex-audit/`는 유지했다.
