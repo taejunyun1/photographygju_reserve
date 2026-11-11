@@ -1,0 +1,149 @@
+{
+  "capturedAt": "2026-11-11T03:25:37.764Z",
+  "expectedCommit": "93cb2d78cea469080a1f60f1cbcc934b826bc5b1",
+  "reactRelease": "20261111-lab-home-r1",
+  "targets": [
+    {
+      "origin": "https://photographygju-reserve.taejunyun.workers.dev",
+      "commit": "93cb2d78cea469080a1f60f1cbcc934b826bc5b1",
+      "manifestTarget": "worker",
+      "generatedAt": "2026-11-11T03:23:27.839Z",
+      "manifestAssetCount": 42,
+      "unchangedSettingCount": 45,
+      "digitalLabEnabled": true,
+      "digitalLabOpenTime": "00:00",
+      "digitalLabCloseTime": "24:00",
+      "reactAssets": [
+        {
+          "path": "/css/react-admin.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "6079ea43479a7a9da9fb3d9e6da0ddcad5f0440c3e9d805dc5c3e3db86fc828d"
+        },
+        {
+          "path": "/css/react-student.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "3f099aeadafbb5bae7e5db926921a5ea33b039651ab8fb0e2c25030741e021a2"
+        },
+        {
+          "path": "/js/react-admin.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "527f5f97f79b7a303d368158cfce92bf52fc3616d1ccd3de0e353e50cf6b91c4"
+        },
+        {
+          "path": "/js/react-student.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "c55ca0ef51c7dab81d4878a74ad0e9aae8023146f8c3e5fce88bf09138323edf"
+        }
+      ]
+    },
+    {
+      "origin": "https://gjureserve.co.kr",
+      "commit": "93cb2d78cea469080a1f60f1cbcc934b826bc5b1",
+      "manifestTarget": "pages",
+      "generatedAt": "2026-11-11T03:24:35.883Z",
+      "manifestAssetCount": 42,
+      "unchangedSettingCount": 45,
+      "digitalLabEnabled": true,
+      "digitalLabOpenTime": "00:00",
+      "digitalLabCloseTime": "24:00",
+      "reactAssets": [
+        {
+          "path": "/css/react-admin.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "6079ea43479a7a9da9fb3d9e6da0ddcad5f0440c3e9d805dc5c3e3db86fc828d"
+        },
+        {
+          "path": "/css/react-student.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "5789dcbf451b62e63baec4dca7cf66e9b130ee538ce80a7219e3561ac159697e"
+        },
+        {
+          "path": "/js/react-admin.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "50a4ad83e1a1d694b5d1d97f68c283be725b5648119be2cb953cdc9cc9b03876"
+        },
+        {
+          "path": "/js/react-student.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-home-r1",
+          "sha256": "269dedec230743c945597607be96977188520d6369d7749181baca70c974d16c"
+        }
+      ]
+    }
+  ],
+  "deployments": {
+    "pages": {
+      "Id": "6417d07d-1ed4-4e38-9d47-079ffe17c2c9",
+      "Environment": "Production",
+      "Branch": "main",
+      "Source": "93cb2d7",
+      "Deployment": "https://6417d07d.gju-reserve.pages.dev",
+      "Status": "56 seconds ago",
+      "Build": "https://dash.cloudflare.com/a58fbe3a0082c49f571d69d08c1227ab/pages/view/gju-reserve/6417d07d-1ed4-4e38-9d47-079ffe17c2c9"
+    },
+    "worker": {
+      "id": "1922a50b-c2fc-4308-abc6-ec8ee98dc438",
+      "createdAt": "2026-11-11T03:23:43.413705Z",
+      "versions": [
+        {
+          "version_id": "bf324a9d-8770-4ca1-8bcc-e30292f52a9d",
+          "percentage": 100
+        }
+      ]
+    }
+  },
+  "workerRuntimeAndBindings": {
+    "versionId": "bf324a9d-8770-4ca1-8bcc-e30292f52a9d",
+    "createdAt": "2026-11-11T03:23:42.67395Z",
+    "runtime": {
+      "migration_tag": "v1",
+      "assets": {
+        "not_found_handling": "single-page-application",
+        "serve_directly": false,
+        "raw_run_worker_first": true,
+        "base_path": "/"
+      },
+      "compatibility_date": "2026-06-12",
+      "compatibility_flags": [
+        "nodejs_compat"
+      ],
+      "usage_model": "standard"
+    },
+    "bindings": [
+      {
+        "name": "ASSETS",
+        "type": "assets"
+      },
+      {
+        "name": "DIGITAL_LAB_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-11-10T13:48:00.000Z"
+      },
+      {
+        "name": "EQUIPMENT_OVERDUE_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-10-12T04:17:07.000Z"
+      },
+      {
+        "name": "GJU_RESERVE_DB",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "INTERNAL_CRON_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "INTERNAL_RESET_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "SLACK_WEBHOOK_URL",
+        "type": "secret_text"
+      }
+    ]
+  },
+  "manifestHashChecks": {
+    "pages": {
+      "assetCount": 42,
+      "exitCode": 0
+    },
+    "worker": {
+      "assetCount": 42,
+      "exitCode": 0
+    }
+  },
+  "productionTestRecordsCreated": false,
+  "authenticatedProductionUiVerified": false,
+  "githubPushPerformed": false
+}

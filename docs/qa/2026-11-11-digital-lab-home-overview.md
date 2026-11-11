@@ -38,4 +38,20 @@
 
 ## 배포
 
-운영 배포 대기. 배포 전 공개 설정45개와 기존 소스30d6886을 읽어 보존 비교 기준으로 확보했다. 운영 활성화는 true,00:00–24:00이다. 배포 후 자산 해시·API 버전·설정 비교 결과를 아래에 추가한다. 운영 시험 예약·계정 생성, GitHub push, 네이티브 빌드는 수행하지 않는다.
+**2026-11-11 웹 배포 완료.** 배포 소스는 `93cb2d78cea469080a1f60f1cbcc934b826bc5b1`이고 이후 QA 전용 커밋은 배포 소스와 구분한다.
+
+| 항목 | 확인 결과 |
+|---|---|
+| Worker | 버전 `bf324a9d-8770-4ca1-8bcc-e30292f52a9d`, 배포 `1922a50b-c2fc-4308-abc6-ec8ee98dc438`, 12:23:43 KST, 트래픽100% |
+| Pages | Production `6417d07d-1ed4-4e38-9d47-079ffe17c2c9`, [배포 주소](https://6417d07d.gju-reserve.pages.dev), 소스93cb2d7 |
+| 대표 도메인 | [gjureserve.co.kr](https://gjureserve.co.kr/), 새 화면 자산 확인12:25:37 KST부터 |
+| 공개 자산 | Worker·Pages 각각42개 SHA-256 일치; manifest와API 커밋 모두93cb2d7 |
+| React 캐시 | HTML의JS/CSS 4개 URL 모두 `release=20261111-lab-home-r1`; 그URL로 받은 각 파일 해시도manifest와 일치 |
+| 기존 운영 설정 | 배포 직전45개 공개 설정 전체와동일; 디지털실 활성true·00:00–24:00 유지 |
+| 기존 배포 구성 | 두 활성화 변수, 시크릿3개의이름/바인딩,DO·ASSETS,compatibility2026-06-12/nodejs_compat,migrationv1,cron두개유지 |
+
+Worker를 `npm run deploy -- --keep-vars`로 배포한 뒤 Pages를 `npm run pages:deploy -- --branch main --commit-dirty=true`로 게시했다. 소스의 main브랜치에 push하지 않았다. 양쪽 `check-production-deploy.mjs --manifest`가 종료0으로 통과했고 새 CSS·JS에메인좌석판 코드가 포함됐는지도 확인했다. 설정 비교는 배포 직전 스냅샷 전체에 대한 deep equality다.
+
+운영 로그인 세션이 없어 인증된 운영 메인 화면 조작은 미실행이다. 실제 예약과 화면 흐름은 위 격리 API/브라우저로, 운영은 공개자산·API·설정으로 구분해 검증했다. 운영 시험 예약·계정, 외부 알림 전송, 네이티브 빌드·GitHub push는 수행하지 않았다. 기존 배포점검의 비인증 삭제 요청은401 인증 차단만 확인했다. 시크릿값은 읽거나 출력하지 않았다.
+
+[운영 검증 JSON](assets/2026-11-11-digital-lab-home/production-verification.json)에 실제 ID·해시·설정 보존 결과를 보관한다. 기존 `outputs/`, `.codex-audit/`는 그대로 두었다.
