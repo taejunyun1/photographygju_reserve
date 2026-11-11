@@ -86,6 +86,56 @@ async function openMine(page) {
     .getByRole("button", { name: "내 예약", exact: true }).filter({ visible: true }).click();
 }
 
+test("home shows every lab seat immediately and starts booking without copying arbitrary query times", async ({ page, request }, info) => {
+  const { adminToken } = await setup(page, request);
+  const date = futureDate(info, 0);
+  const competitor = await approvedStudent(request, adminToken);
+  await api(request, "POST", "/api/reservations", {
+    type: "digital_lab",
+    fields: { reservedDate: date, seatId: "mac-03", startTime: "18:00", endTime: "20:00", purpose, phone }
+  }, competitor.token);
+  const board = page.locator(".student-react-home .gju-facility-board");
+  await board.getByLabel("현황 조회 날짜", { exact: true }).fill(date);
+  await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
+  const overview = board.getByRole("region", { name: "디지털사진영상실 좌석 현황", exact: true });
+  await expect(overview).toBeVisible();
+  await expect(overview.getByRole("region", { name: "Mac 좌석", exact: true }).getByRole("listitem")).toHaveCount(12);
+  await expect(overview.getByRole("region", { name: "PC 좌석", exact: true }).getByRole("listitem")).toHaveCount(4);
+  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 있음");
+  await expect(overview).toContainText("Mac 11/12 · PC 4/4");
+  await expect(board.getByRole("region", { name: "디지털사진영상실 예약 요약", exact: true })).toHaveCount(0);
+  await board.getByLabel("조회 시작 시간", { exact: true }).fill("20:00");
+  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 없음");
+  await expect(overview).toContainText("Mac 12/12 · PC 4/4");
+  await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
+  for (const width of [320, info.project.use.viewport.width]) {
+    await page.setViewportSize({ width, height: info.project.use.viewport.height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    const tiles = await overview.getByRole("listitem").evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, fits: element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight };
+    }));
+    for (const [index, tile] of tiles.entries()) {
+      expect(tile.fits).toBe(true);
+      expect(tile.left).toBeGreaterThanOrEqual(0);
+      expect(tile.right).toBeLessThanOrEqual(width);
+      for (const other of tiles.slice(index + 1)) expect(tile.right <= other.left || other.right <= tile.left || tile.bottom <= other.top || other.bottom <= tile.top).toBe(true);
+    }
+  }
+  await expect(page.locator(".toast")).toBeHidden();
+  await overview.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-home-${info.project.name}.png` : info.outputPath("digital-lab-home.png"), fullPage: true });
+  await overview.getByRole("button", { name: "좌석 예약", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "예약 신청", exact: true })).toBeVisible();
+  await expect(page.getByLabel("사용일", { exact: true })).toHaveValue(date);
+  const selection = await page.evaluate(async () => {
+    const { state } = await import("/js/state.js?v=20261110-digital-lab-r1");
+    return { type: state.reservationType, start: state.selectedDigitalLabStartTime, end: state.selectedDigitalLabEndTime, seat: state.selectedDigitalLabSeatId };
+  });
+  expect(selection).toEqual({ type: "digital_lab", start: "", end: "", seat: "" });
+});
+
 test("student books one of 12 Mac and four PC seats, edits the same booking and cancels it", async ({ page, request }, info) => {
   const { student } = await setup(page, request);
   const date = futureDate(info, 0);

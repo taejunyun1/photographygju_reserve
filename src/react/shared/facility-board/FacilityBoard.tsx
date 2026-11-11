@@ -121,23 +121,31 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
               })}
               <button type="button" aria-label={`기자재실, 장비 ${gearCount}점${(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?' · 장비 예약 제한':''}`} aria-pressed={selection==='gear'} onClick={()=>choose('gear')}><strong><i className="gju-facility-board__space-index" aria-hidden="true">{FACILITY_ROOM_NUMBERS.gear}</i>기자재실</strong><span className="gju-facility-board__compact-status" aria-hidden="true"><GjuIcon name={(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?'warning':'camera'}/>{gearCount}</span></button>
             </div>
-            {digital&&digitalSummary&&<div className="gju-facility-board__summary gju-facility-board__digital-summary">
-              <button type="button" aria-pressed={selection==='digital'} onClick={()=>choose('digital')}>
-                <strong>{digital.name}</strong>
-                <span>선택 구간 가용 좌석 · {digitalSummary.label}{digitalSummary.restriction?` · ${digitalSummary.restriction}`:''}</span>
-              </button>
-            </div>}
+            {digital&&digitalSummary&&<section className="gju-facility-board__digital-overview" aria-label={`${digital.name} 좌석 현황`}>
+              <div className="gju-facility-board__section-heading">
+                <h3>{digital.name}</h3>
+                <span className="gju-facility-board__muted">{time}–{clockLabel(window.end)} 기준</span>
+              </div>
+              <p className="gju-facility-board__muted">선택 구간 가용 좌석 · {digitalSummary.label}</p>
+              <div className="gju-facility-board__digital-seats">
+                {digitalSummary.groups.map(group=><section key={group.name} aria-label={`${group.name} 좌석`} data-computer-type={group.name}>
+                  <h4>{group.name} {group.seats.length}석</h4>
+                  <ul>{group.seats.map(seat=><li key={seat.key} data-state={seat.status==='예약 있음'?'reserved':seat.status==='이용 제한'?'restricted':'empty'}>
+                    <strong>{seat.label}</strong><span>{seat.status}</span>
+                  </li>)}</ul>
+                </section>)}
+              </div>
+              {digitalSummary.restriction&&<p className="gju-facility-board__restriction"><GjuIcon name="warning"/>{digitalSummary.restriction}</p>}
+              <div className="gju-facility-board__digital-actions">
+                <GjuButton variant="outline" icon="fileText" aria-label={`${digital.name} 예약 내역`} aria-expanded={selection==='digital'} onClick={()=>choose('digital')}>예약 내역</GjuButton>
+                {viewer==='student'&&reserve&&<GjuButton icon="plus" disabled={digitalSummary.disabled} onClick={()=>void reserve(reservationIntent(digital,date))}>좌석 예약</GjuButton>}
+              </div>
+            </section>}
             <section className="gju-facility-board__schedule-section" aria-label="하루 시간표"><h3>하루 시간표</h3><FacilityTimeline data={data} window={window} now={clock} active={panel==='timeline'} onChoose={(value,key)=>{setTime(value);setFollowNow(false);setSelection(key);setShowAll(false);}}/></section>
           </div>
           {selectedSpace&&<section className="gju-facility-board__detail" aria-label={`${selectedSpace.name} 예약 요약`}>
             <div className="gju-facility-board__section-heading"><h3>{selectedSpace.name} · {time}–{clockLabel(window.end)}</h3><GjuIconButton label="닫기" icon="x" onClick={()=>setSelection(null)}/></div>
-            {selectedSpace.key==='digital'&&digitalSummary&&<div className="gju-facility-board__digital-seats">
-              {digitalSummary.groups.map(group=><section key={group.name} aria-label={`${group.name} 좌석`}>
-                <h4>{group.name} {group.count}</h4>
-                <ul>{group.seats.map(seat=><li key={seat.key}><strong>{seat.label}</strong><span>{seat.status}</span></li>)}</ul>
-              </section>)}
-            </div>}
-            {selectedSpace.key!=='digital'&&!selectedIntervals.length&&<p className="gju-facility-board__muted">예약 없음</p>}
+            {!selectedIntervals.length&&<p className="gju-facility-board__muted">예약 없음</p>}
             {!!selectedIntervals.length&&<ul className={`gju-facility-board__reservation-list${showAll?' is-expanded':''}`}>{(showAll?selectedIntervals:selectedIntervals.slice(0,5)).map(record=><li key={record.entryKey}>
               <div><strong>{record.label}</strong> <GjuStatusBadge tone={record.status==='pending'||record.status==='pending_approval'?'amber':'blue'}>{statusLabel(record.status)}</GjuStatusBadge></div>
               <span>{intervalLabel(record)}{record.subspaceKeys?.length?` · ${record.subspaceKeys.map(key=>selectedSpace.subspaces.find(space=>space.key===key)?.label||key).join(' · ')}`:''}</span>

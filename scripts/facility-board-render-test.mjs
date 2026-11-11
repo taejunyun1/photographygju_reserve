@@ -259,12 +259,13 @@ try {
     await labPage.getByLabel('조회 시작 시간',{exact:true}).waitFor();
     const studentLab={...lab,intervals:[{...lab.intervals[0],isMine:false,reservationId:undefined,label:'예약 있음'},lab.intervals[1]]};
     await labPage.evaluate(space=>window.updateBoard({resource:{...window.boardProps.resource,data:{...window.boardProps.resource.data,spaces:[...window.boardProps.resource.data.spaces,space]}}}),studentLab);
-    const labCard=labPage.getByRole('button',{name:/^디지털사진영상실 선택 구간 가용 좌석/});
-    await labCard.getByText('선택 구간 가용 좌석 · Mac 11/12 · PC 4/4',{exact:true}).waitFor();
-    await labCard.click();
+    const labOverview=labPage.getByRole('region',{name:'디지털사진영상실 좌석 현황',exact:true});
+    await labOverview.getByText('선택 구간 가용 좌석 · Mac 11/12 · PC 4/4',{exact:true}).waitFor();
+    assert.equal(await labOverview.getByRole('region',{name:'Mac 좌석',exact:true}).getByRole('listitem').count(),12);
+    assert.equal(await labOverview.getByRole('region',{name:'PC 좌석',exact:true}).getByRole('listitem').count(),4);
+    await labOverview.getByRole('button',{name:'디지털사진영상실 예약 내역',exact:true}).click();
     const labDetail=labPage.getByRole('region',{name:'디지털사진영상실 예약 요약'});
-    assert.equal(await labDetail.getByRole('region',{name:'Mac 좌석',exact:true}).getByRole('listitem').count(),12);
-    assert.equal(await labDetail.getByRole('region',{name:'PC 좌석',exact:true}).getByRole('listitem').count(),4);
+    assert.equal(await labDetail.getByRole('region',{name:'Mac 좌석',exact:true}).count(),0,'main seat grid must not be duplicated in reservation details');
     assert.equal(await labDetail.getByRole('button',{name:'내 예약 상세',exact:true}).count(),1);
     assert.equal(await labDetail.getByRole('button',{name:'예약 상세',exact:true}).count(),0);
     await labDetail.getByRole('button',{name:'예약 시간 선택',exact:true}).click();
@@ -282,6 +283,11 @@ try {
     await labPage.getByRole('tab',{name:'시간표',exact:true}).click();
     await labPage.getByRole('row',{name:/^디지털사진영상실/}).getByRole('button',{name:/14:00–16:00, Mac 0\/12 · PC 0\/4/}).click();
     await labDetail.getByText('디지털 수업 · 14:01–14:02',{exact:true}).waitFor();
+    assert.equal(await labOverview.getByRole('listitem').filter({hasText:'이용 제한'}).count(),16,'the visible main grid must reflect the selected class window');
+    assert.equal(await labOverview.getByRole('button',{name:'좌석 예약',exact:true}).count(),0,'the administrator overview must not offer student booking');
+    await labPage.evaluate(()=>window.updateBoard({viewer:'student',resource:{...window.boardProps.resource,data:{...window.boardProps.resource.data,viewer:'student',spaces:window.boardProps.resource.data.spaces.map(space=>space.key==='digital'?{...space,blockedIntervals:[{startAt:space.blockedIntervals[0].startAt,endAt:space.blockedIntervals[0].endAt,label:'예약 비활성',reasonCode:'disabled'}]}:space)}}}));
+    await labOverview.getByText('예약 비활성',{exact:true}).waitFor();
+    assert(await labOverview.getByRole('button',{name:'좌석 예약',exact:true}).isDisabled(),'disabled digital lab cannot start a booking from the main overview');
     await labPage.close();
   } finally {await browser.close();}
   console.log('facility-board-render-test: model, privacy, geometry, states, browser actions, lifecycle, mobile targets and keyboard passed');
