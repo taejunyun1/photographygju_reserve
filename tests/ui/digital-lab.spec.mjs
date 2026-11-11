@@ -86,7 +86,7 @@ async function openMine(page) {
     .getByRole("button", { name: "내 예약", exact: true }).filter({ visible: true }).click();
 }
 
-test("home shows every lab seat immediately and starts booking without copying arbitrary query times", async ({ page, request }, info) => {
+test("home hides lab seats until room selection and keeps booking entry date-only", async ({ page, request }, info) => {
   const { adminToken } = await setup(page, request);
   const date = futureDate(info, 0);
   const competitor = await approvedStudent(request, adminToken);
@@ -98,16 +98,8 @@ test("home shows every lab seat immediately and starts booking without copying a
   await board.getByLabel("현황 조회 날짜", { exact: true }).fill(date);
   await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
   const overview = board.getByRole("region", { name: "디지털사진영상실 좌석 현황", exact: true });
-  await expect(overview).toBeVisible();
-  await expect(overview.getByRole("region", { name: "Mac 좌석", exact: true }).getByRole("listitem")).toHaveCount(12);
-  await expect(overview.getByRole("region", { name: "PC 좌석", exact: true }).getByRole("listitem")).toHaveCount(4);
-  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 있음");
-  await expect(overview).toContainText("Mac 11/12 · PC 4/4");
+  await expect(overview).toHaveCount(0);
   await expect(board.getByRole("region", { name: "디지털사진영상실 예약 요약", exact: true })).toHaveCount(0);
-  await board.getByLabel("조회 시작 시간", { exact: true }).fill("20:00");
-  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 없음");
-  await expect(overview).toContainText("Mac 12/12 · PC 4/4");
-  await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
   const narrow = page.viewportSize().width <= 620;
   if (narrow) await board.getByRole("button", { name: "확대", exact: true }).click();
   const corridorRoom = board.locator('[data-facility-room="digital"]');
@@ -115,17 +107,33 @@ test("home shows every lab seat immediately and starts booking without copying a
   await corridorRoom.click();
   const detail = board.getByRole("region", { name: "디지털사진영상실 예약 요약", exact: true });
   await expect(detail).toBeVisible();
+  await expect(detail.getByRole("region", { name: "디지털사진영상실 좌석 현황", exact: true })).toBeVisible();
+  await expect(overview.getByRole("region", { name: "Mac 좌석", exact: true }).getByRole("listitem")).toHaveCount(12);
+  await expect(overview.getByRole("region", { name: "PC 좌석", exact: true }).getByRole("listitem")).toHaveCount(4);
+  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 있음");
+  await expect(overview).toContainText("Mac 11/12 · PC 4/4");
+  await board.getByLabel("조회 시작 시간", { exact: true }).fill("20:00");
+  await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 없음");
+  await expect(overview).toContainText("Mac 12/12 · PC 4/4");
+  await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
   await expect(corridorRoom).toHaveAttribute("aria-pressed", "true");
   const summary = board.getByRole("group", { name: "공간 요약", exact: true });
   await expect(summary.getByRole("button")).toHaveCount(6);
   await expect(summary.getByRole("button", { name: /디지털사진영상실/ })).toHaveAttribute("aria-pressed", "true");
   await detail.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(overview).toHaveCount(0);
   if (narrow) await board.getByRole("button", { name: "전체 보기", exact: true }).click();
   await expect(page.locator(".toast")).toBeHidden();
-  await board.locator(".gju-facility-board__plan-section").screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-corridor-${info.project.name}.png` : info.outputPath("digital-lab-corridor.png") });
+  await board.screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-default-${info.project.name}.png` : info.outputPath("digital-lab-default.png") });
   await summary.getByRole("button", { name: /디지털사진영상실/ }).click();
   await expect(detail).toBeVisible();
-  await detail.getByRole("button", { name: "닫기", exact: true }).click();
+  await summary.getByRole("button", { name: /디지털사진영상실/ }).click();
+  await expect(overview).toHaveCount(0);
+  await summary.getByRole("button", { name: /디지털사진영상실/ }).click();
+  await summary.getByRole("button", { name: /^스튜디오 A,/ }).click();
+  await expect(overview).toHaveCount(0);
+  await summary.getByRole("button", { name: /디지털사진영상실/ }).click();
+  await expect(overview.getByRole("listitem")).toHaveCount(16);
   for (const width of [320, 621, 1000, info.project.use.viewport.width]) {
     await page.setViewportSize({ width, height: info.project.use.viewport.height });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
@@ -152,9 +160,8 @@ test("home shows every lab seat immediately and starts booking without copying a
     }
   }
   await expect(page.locator(".toast")).toBeHidden();
-  await overview.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-home-${info.project.name}.png` : info.outputPath("digital-lab-home.png"), fullPage: true });
-  await overview.getByRole("button", { name: "좌석 예약", exact: true }).focus();
+  await detail.screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-selected-${info.project.name}.png` : info.outputPath("digital-lab-selected.png") });
+  await detail.getByRole("button", { name: "예약 시간 선택", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "예약 신청", exact: true })).toBeVisible();
   await expect(page.getByLabel("사용일", { exact: true })).toHaveValue(date);

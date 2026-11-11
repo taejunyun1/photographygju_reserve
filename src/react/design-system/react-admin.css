@@ -2711,8 +2711,6 @@
 .gju-facility-board__summary span,
 .gju-facility-board__summary small { color: var(--gju-color-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gju-facility-board__summary .gju-facility-board__compact-status { display: inline-flex; align-items: center; gap: 5px; min-height: 18px; }
-.gju-facility-board__digital-overview { grid-column: 1 / -1; order: 13; min-width: 0; padding: 12px; border: 1px solid var(--gju-color-border); border-radius: 6px; background: var(--gju-color-surface); }
-.gju-facility-board__digital-overview h3 { margin: 0; font-size: 15px; }
 .gju-facility-board__digital-seats { display: grid; grid-template-columns: minmax(0,3fr) minmax(0,1fr); gap: 16px; margin-top: 12px; }
 .gju-facility-board__digital-seats > section { min-width: 0; }
 .gju-facility-board__digital-seats h4 { margin: 0 0 6px; font-size: 13px; }
@@ -2724,16 +2722,10 @@
 .gju-facility-board__digital-seats li[data-state="reserved"] { background: var(--facility-active); border-color: var(--facility-wall); }
 .gju-facility-board__digital-seats li[data-state="reserved"] span { color: var(--gju-color-primary); }
 .gju-facility-board__digital-seats li[data-state="restricted"] { background: var(--gju-color-surface-muted); border-style: dashed; }
-.gju-facility-board__digital-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.gju-facility-board__digital-actions .gju-button { min-height: 44px; }
 @media (max-width: 900px) {
   .gju-facility-board__digital-seats { grid-template-columns: minmax(0,1fr); gap: 12px; }
   .gju-facility-board__digital-seats ul,
   .gju-facility-board__digital-seats [data-computer-type="PC"] ul { grid-template-columns: repeat(4,minmax(0,1fr)); }
-}
-@media (max-width: 620px) {
-  .gju-facility-board__digital-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .gju-facility-board__digital-actions .gju-button { min-width: 0; padding-inline: 8px; font-size: 12px; }
 }
 @media (max-width: 360px) {
   .gju-facility-board__digital-seats ul { grid-template-columns: repeat(3,minmax(0,1fr)); }
