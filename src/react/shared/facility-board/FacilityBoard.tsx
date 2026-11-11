@@ -66,10 +66,11 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
   },[approved,date,resource.invalidated,viewer,lifecycleRefresh]);
 
   const now=()=>{const value=new Date();setClock(value.getTime());setFollowNow(true);setDate(kstDate(value));setTime(kstTime(value));};
-  const corridorSpaces=data?.spaces.filter(space=>space.key!=='digital')||[];
+  const corridorSpaces=data?.spaces||[];
   const summarySpaces=corridorSpaces.filter(space=>visibleIntervals(space,window).length).length;
   const digital=data?.spaces.find(space=>space.key==='digital');
   const digitalSummary=digital?digitalLabSummary(digital,window):null;
+  const digitalAvailable=digitalSummary?.groups.reduce((count,group)=>count+group.seats.filter(seat=>seat.status==='예약 없음').length,0)||0;
   const selectedSpace=data?.spaces.find(space=>space.key===selection);
   const selectedIntervals=selectedSpace?visibleIntervals(selectedSpace,window):[];
   const selectedBlocks=selectedSpace?.blockedIntervals.filter(record=>overlaps(record,window))||[];
@@ -109,7 +110,7 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
               <div className="gju-facility-board__section-heading"><h3>복도 평면도</h3></div>
               <FacilityFloorPlan data={data} window={window} selection={selection} onSelect={choose} zoomed={zoomed}/>
             </section>
-            <div className="gju-facility-board__summary" role="group" aria-label="공간 요약">
+            <div className={`gju-facility-board__summary${digital?' gju-facility-board__summary--six':''}`} role="group" aria-label="공간 요약">
               {corridorSpaces.map(space=>{
                 if(space.key==='digital') return null;
                 const summary=spaceSummary(space,window),records=visibleIntervals(space,window);
@@ -120,6 +121,10 @@ export function FacilityBoard({viewer,resource,approved=true,lifecycleRefresh='d
                 </button>;
               })}
               <button type="button" aria-label={`기자재실, 장비 ${gearCount}점${(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?' · 장비 예약 제한':''}`} aria-pressed={selection==='gear'} onClick={()=>choose('gear')}><strong><i className="gju-facility-board__space-index" aria-hidden="true">{FACILITY_ROOM_NUMBERS.gear}</i>기자재실</strong><span className="gju-facility-board__compact-status" aria-hidden="true"><GjuIcon name={(data.equipmentBlockedIntervals||[]).some(record=>overlaps(record,window))?'warning':'camera'}/>{gearCount}</span></button>
+              {digital&&digitalSummary&&<button type="button" aria-label={`${digital.name}, ${digitalSummary.label}${digitalSummary.restriction?' · 이용 제한':''}`} aria-pressed={selection==='digital'} onClick={()=>choose('digital')}>
+                <strong><i className="gju-facility-board__space-index" aria-hidden="true">{FACILITY_ROOM_NUMBERS.digital}</i>{digital.name}</strong>
+                <span className="gju-facility-board__compact-status" aria-hidden="true"><GjuIcon name={digitalSummary.restriction?'warning':'grid'}/>{digitalAvailable}/16</span>
+              </button>}
             </div>
             {digital&&digitalSummary&&<section className="gju-facility-board__digital-overview" aria-label={`${digital.name} 좌석 현황`}>
               <div className="gju-facility-board__section-heading">

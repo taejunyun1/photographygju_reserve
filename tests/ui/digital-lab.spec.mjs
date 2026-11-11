@@ -108,9 +108,38 @@ test("home shows every lab seat immediately and starts booking without copying a
   await expect(overview.getByRole("listitem").filter({ hasText: "Mac 03" })).toContainText("예약 없음");
   await expect(overview).toContainText("Mac 12/12 · PC 4/4");
   await board.getByLabel("조회 시작 시간", { exact: true }).fill("18:30");
-  for (const width of [320, info.project.use.viewport.width]) {
+  const narrow = page.viewportSize().width <= 620;
+  if (narrow) await board.getByRole("button", { name: "확대", exact: true }).click();
+  const corridorRoom = board.locator('[data-facility-room="digital"]');
+  await expect(corridorRoom).toHaveAccessibleName(/디지털사진영상실, Mac 11\/12 · PC 4\/4/);
+  await corridorRoom.click();
+  const detail = board.getByRole("region", { name: "디지털사진영상실 예약 요약", exact: true });
+  await expect(detail).toBeVisible();
+  await expect(corridorRoom).toHaveAttribute("aria-pressed", "true");
+  const summary = board.getByRole("group", { name: "공간 요약", exact: true });
+  await expect(summary.getByRole("button")).toHaveCount(6);
+  await expect(summary.getByRole("button", { name: /디지털사진영상실/ })).toHaveAttribute("aria-pressed", "true");
+  await detail.getByRole("button", { name: "닫기", exact: true }).click();
+  if (narrow) await board.getByRole("button", { name: "전체 보기", exact: true }).click();
+  await expect(page.locator(".toast")).toBeHidden();
+  await board.locator(".gju-facility-board__plan-section").screenshot({ path: process.env.GJU_FACILITY_SCREENSHOT_DIR ? `${process.env.GJU_FACILITY_SCREENSHOT_DIR}/digital-lab-corridor-${info.project.name}.png` : info.outputPath("digital-lab-corridor.png") });
+  await summary.getByRole("button", { name: /디지털사진영상실/ }).click();
+  await expect(detail).toBeVisible();
+  await detail.getByRole("button", { name: "닫기", exact: true }).click();
+  for (const width of [320, 621, 1000, info.project.use.viewport.width]) {
     await page.setViewportSize({ width, height: info.project.use.viewport.height });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    expect(await summary.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    if (width > 620) {
+      const titleFits = await corridorRoom.evaluate(button => {
+        const room = button.parentElement;
+        const copy = room.querySelector(".gju-facility-board__room-copy").getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(room.querySelector(".gju-facility-board__room-name"));
+        return [...range.getClientRects()].every(rect => rect.left >= copy.left - 1 && rect.right <= copy.right + 1 && rect.bottom <= room.getBoundingClientRect().bottom);
+      });
+      expect(titleFits, `full digital lab name must fit inside its room at ${width}px`).toBe(true);
+    }
     const tiles = await overview.getByRole("listitem").evaluateAll(elements => elements.map(element => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, fits: element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight };
