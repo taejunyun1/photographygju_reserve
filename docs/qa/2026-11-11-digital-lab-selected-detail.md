@@ -27,6 +27,17 @@
 
 ## 배포
 
-배포 전 공개 설정45개를2026-11-11 13:05:20 KST에 기록했다. 기존 Worker 변수를 보존하여 Worker·Pages에 게시하고 대표 도메인의 파일 해시·API·설정 보존을 확인한다.
+**2026-11-11 웹 배포 완료.** 배포 소스는 `c9632c14d127e24c60d3238004ada1269ad2561d`이며 이후 QA 전용 커밋은 구분한다.
 
-운영 로그인 세션이 없어 인증된 운영 메인 조작은 미실행이다. 운영은 공개 배포 파일과API로, 인증된 화면 흐름은 격리 API/브라우저로 검증한다. 운영 시험 예약·계정 생성, 외부 메시지, 네이티브 빌드, GitHub push는 하지 않는다.
+| 항목 | 확인 결과 |
+|---|---|
+| Worker | 버전 `44e6f1bc-c337-44ca-9c4a-ee81577cddfa`, 배포 `aaba8054-dcf8-48d3-836a-653a1494e743`,13:06:21 KST,트래픽100% |
+| Pages | Production `62ff68d8-f7eb-4991-8f3a-0980b24674d3`, [배포 주소](https://62ff68d8.gju-reserve.pages.dev),소스c9632c1 |
+| 대표 도메인 | [gjureserve.co.kr](https://gjureserve.co.kr/),42개 공개 파일 SHA-256 및API/manifest 커밋 일치,배포 검사 종료0 |
+| Worker 공개 검증 | 동일하게42개 파일 SHA-256 및API/manifest 커밋 일치,배포 검사 종료0 |
+| React 캐시 | 두 주소의JS/CSS 네 개 URL 모두 `release=20261111-lab-detail-r1`;각 파일 해시 일치 및 기존 상시 좌석판 코드 제거 확인 |
+| 운영 보존 | 배포 직전13:05:20 KST의 공개 설정45개와전체 deep equality 일치. 디지털실 활성·00:00–24:00,Worker runtime과7개 바인딩 유지 |
+
+Worker는 `npm run deploy -- --keep-vars`, Pages는 `npm run pages:deploy -- --branch main --commit-dirty=true`로 게시했다. 시크릿 값은 읽거나 출력하지 않았다. [운영 검증 JSON](assets/2026-11-11-digital-lab-selected-detail/production-verification.json)에 배포 ID·React 파일 해시·운영 설정 보존을 기록했다.
+
+운영 로그인 세션이 없어 인증된 운영 메인 조작은 미실행이다. 운영은 공개 배포 파일과API로, 인증된 화면 흐름은 격리 API/브라우저로 검증했다. 운영 시험 예약·계정 생성, 외부 메시지, 네이티브 빌드, GitHub push는 하지 않았다. 기존 배포 검사의 비인증 삭제 요청은401 인증 차단만 확인했다.

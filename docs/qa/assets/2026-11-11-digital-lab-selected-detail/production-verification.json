@@ -1,0 +1,136 @@
+{
+  "capturedAt": "2026-11-11T04:07:32.383Z",
+  "expectedCommit": "c9632c14d127e24c60d3238004ada1269ad2561d",
+  "reactRelease": "20261111-lab-detail-r1",
+  "targets": [
+    {
+      "origin": "https://photographygju-reserve.taejunyun.workers.dev",
+      "commit": "c9632c14d127e24c60d3238004ada1269ad2561d",
+      "manifestTarget": "worker",
+      "generatedAt": "2026-11-11T04:06:14.506Z",
+      "manifestAssetCount": 42,
+      "unchangedSettingCount": 45,
+      "digitalLabEnabled": true,
+      "digitalLabOpenTime": "00:00",
+      "digitalLabCloseTime": "24:00",
+      "reactAssets": [
+        {
+          "path": "/css/react-admin.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "ee5271e77d4fbf10ad29a4d67d613daba305bbedbcb2f9f4bd11b1529d604857"
+        },
+        {
+          "path": "/css/react-student.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "3f099aeadafbb5bae7e5db926921a5ea33b039651ab8fb0e2c25030741e021a2"
+        },
+        {
+          "path": "/js/react-admin.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "0ff4ec750f431c31fcb26b253743b401c4a35115cabbae55d26a2aa3a62cdac4"
+        },
+        {
+          "path": "/js/react-student.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "adc6fda1c5d4b03c77e2eda3dfb36c7267e260339f1bc2e0f50861dbd58dfe34"
+        }
+      ]
+    },
+    {
+      "origin": "https://gjureserve.co.kr",
+      "commit": "c9632c14d127e24c60d3238004ada1269ad2561d",
+      "manifestTarget": "pages",
+      "generatedAt": "2026-11-11T04:06:41.253Z",
+      "manifestAssetCount": 42,
+      "unchangedSettingCount": 45,
+      "digitalLabEnabled": true,
+      "digitalLabOpenTime": "00:00",
+      "digitalLabCloseTime": "24:00",
+      "reactAssets": [
+        {
+          "path": "/css/react-admin.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "ee5271e77d4fbf10ad29a4d67d613daba305bbedbcb2f9f4bd11b1529d604857"
+        },
+        {
+          "path": "/css/react-student.generated.css?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "5789dcbf451b62e63baec4dca7cf66e9b130ee538ce80a7219e3561ac159697e"
+        },
+        {
+          "path": "/js/react-admin.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "298fb08cf848a36bec620c60c8cd3dac5775f75bc10a6bd6bb43b81f00bbaf8d"
+        },
+        {
+          "path": "/js/react-student.generated.js?v=20261110-digital-lab-r1&release=20261111-lab-detail-r1",
+          "sha256": "14f02a6b84c0d6dc107d115ce9b61d30cdffd836f83fe91e15492fcb6ca503d4"
+        }
+      ]
+    }
+  ],
+  "worker": {
+    "versionId": "44e6f1bc-c337-44ca-9c4a-ee81577cddfa",
+    "deploymentId": "aaba8054-dcf8-48d3-836a-653a1494e743",
+    "deployedAt": "2026-11-11T04:06:21.037632Z",
+    "trafficPercentage": 100,
+    "runtime": {
+      "migration_tag": "v1",
+      "assets": {
+        "not_found_handling": "single-page-application",
+        "serve_directly": false,
+        "raw_run_worker_first": true,
+        "base_path": "/"
+      },
+      "compatibility_date": "2026-06-12",
+      "compatibility_flags": [
+        "nodejs_compat"
+      ],
+      "usage_model": "standard"
+    },
+    "bindings": [
+      {
+        "name": "ASSETS",
+        "type": "assets"
+      },
+      {
+        "name": "DIGITAL_LAB_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-11-10T13:48:00.000Z"
+      },
+      {
+        "name": "EQUIPMENT_OVERDUE_ACTIVATION_AT",
+        "type": "plain_text",
+        "text": "2026-10-12T04:17:07.000Z"
+      },
+      {
+        "name": "GJU_RESERVE_DB",
+        "type": "durable_object_namespace"
+      },
+      {
+        "name": "INTERNAL_CRON_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "INTERNAL_RESET_SECRET",
+        "type": "secret_text"
+      },
+      {
+        "name": "SLACK_WEBHOOK_URL",
+        "type": "secret_text"
+      }
+    ]
+  },
+  "pages": {
+    "deploymentId": "62ff68d8-f7eb-4991-8f3a-0980b24674d3",
+    "environment": "Production",
+    "source": "c9632c1",
+    "url": "https://62ff68d8.gju-reserve.pages.dev"
+  },
+  "validation": {
+    "authenticatedProductionUI": false,
+    "isolatedHomeCasesPassed": 4,
+    "sharedBoardPassed": true,
+    "settingsUnchanged": true,
+    "runtimeAndBindingsUnchanged": true,
+    "defaultPanelCodeRemoved": true,
+    "publicAssetsSha256VerifiedPerTarget": 42,
+    "productionDeployChecks": [
+      "worker",
+      "pages"
+    ]
+  }
+}
