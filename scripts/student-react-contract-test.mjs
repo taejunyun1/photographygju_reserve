@@ -646,6 +646,23 @@ assert(markup.includes("실제 사용 시간"), "eligible report must open witho
 assert(!markup.includes("보고서 작성을 시작할 수 없습니다."), "reports must not block composition when Drive is missing");
 assert.equal(Boolean(button("작성")?.disabled), false, "report compose actions must stay enabled while Drive is missing");
 
+// Only this account's unread notices appear as a compact, actionable announcement.
+const noticeBootstrap = { ...makeState().bootstrap, noticeReaderId: "user-1", readNoticeIds: [] };
+markup = renderToStaticMarkup(React.createElement(student.StudentApp, { state: makeState({ bootstrap: noticeBootstrap }), actions: actionRecorder().actions }));
+assert(markup.includes('class="student-react-notice-announcement"'));
+assert(markup.includes('aria-label="새 공지: 공지"'));
+for (const override of [
+  { bootstrap: { ...noticeBootstrap, readNoticeIds: ["notice-1"] } },
+  { bootstrap: { ...noticeBootstrap, noticeReaderId: "another-account" } },
+  { activeNoticeId: "notice-1" },
+  { transientMessageActive: true },
+  { view: "reserve" },
+  { view: "reports" }
+]) {
+  markup = renderToStaticMarkup(React.createElement(student.StudentApp, { state: makeState({ bootstrap: noticeBootstrap, ...override }), actions: actionRecorder().actions }));
+  assert(!markup.includes('class="student-react-notice-announcement"'), "read notices, other accounts and active tasks must not show an announcement");
+}
+
 // Notice detail is controlled by activeNoticeId and closes through openNotice(null).
 student.resetCaptures();
 recorded = actionRecorder();

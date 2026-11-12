@@ -1,7 +1,7 @@
 import { state } from "../state.js?v=20261110-digital-lab-r1";
 import { api } from "../api.js?v=20261110-digital-lab-r1";
 import { loadBootstrap, loadLectures, loadMyReservations } from "../data.js?v=20261110-digital-lab-r1";
-import { logout, openReport } from "../actions.js?v=20261110-digital-lab-r1";
+import { logout, openReport, openNotice } from "../actions.js?v=20261110-digital-lab-r1";
 import {
   disableNativeReservationNotifications,
   enableNativeReservationNotifications,
@@ -28,8 +28,7 @@ export function setupStudentFlowClickHandlers() {
         return;
       }
       if (target.dataset.noticeOpen) {
-        state.activeNoticeId = target.dataset.noticeOpen;
-        render();
+        await openNotice(target.dataset.noticeOpen);
         return;
       }
       if (target.dataset.noticeClose !== undefined) {

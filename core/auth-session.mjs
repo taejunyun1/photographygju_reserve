@@ -85,7 +85,7 @@ export function createAuthSessionHelpers({ id, nowIso }) {
 
   function publicUser(user, db = null) {
     if (!user) return null;
-    const { passwordHash, ...rest } = user;
+    const { passwordHash, noticeReadIds, ...rest } = user;
     return {
       ...rest,
       warningCount: db ? effectiveWarningCount(db, user.id) : Math.max(0, Number(user.warningCount || 0)),

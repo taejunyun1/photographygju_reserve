@@ -1,3 +1,5 @@
+import { createNoticeReader } from "./notice-announcements.js?v=20261110-digital-lab-r1";
+
 const STUDENT_VIEWS = new Set(["home", "reserve", "mine", "reports", "lectures", "notices", "my"]);
 const RESERVATION_TYPES = new Set(["equipment", "studio", "darkroom", "print", "digital_lab"]);
 const INACTIVE_DIGITAL_LAB_STATUSES = new Set(["cancelled", "admin_cancelled", "rejected", "returned", "completed"]);
@@ -38,10 +40,13 @@ export function studentReactSnapshot(state, today = seoulToday()) {
     view: STUDENT_VIEWS.has(state.view) ? state.view : "home",
     today,
     user: state.user || { name: "학생" },
+    transientMessageActive: Boolean(state.toast),
     facilityTimeline: state.facilityTimeline || { date: today, data: null, loading: false, error: "", lastSucceededAt: "" },
     bootstrap: {
       settings: bootstrap.settings || {},
       notices: asArray(bootstrap.notices),
+      noticeReaderId: bootstrap.noticeReaderId || null,
+      readNoticeIds: asArray(bootstrap.readNoticeIds),
       equipment: asArray(bootstrap.equipment),
       darkroomChemicals: asArray(bootstrap.darkroomChemicals),
       reservations: asArray(bootstrap.reservations)
@@ -618,10 +623,7 @@ export function createStudentReactActions(dependencies) {
       toast("특강 신청을 취소했습니다.");
       await refreshAfterMutation("특강 취소는 처리됐지만");
     },
-    openNotice(id) {
-      state.activeNoticeId = id || "";
-      render();
-    },
+    openNotice: createNoticeReader(dependencies),
     async updateProfile(profile) {
       const result = await api("/api/me", { method: "PATCH", body: profile });
       state.user = result?.user || result || state.user;

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 
 import { GjuAppShell, GjuIcon, GjuIconButton } from "../design-system";
 import type { StudentActions, StudentNavKey, StudentState } from "./types";
+import { NoticeAnnouncement } from "./components/NoticeAnnouncement";
 
 type StudentShellProps = {
   state: StudentState;
@@ -111,6 +112,7 @@ export function StudentShell({ state, actions, children }: StudentShellProps) {
       <div ref={contentRef} className="student-react-view">
         {children}
       </div>
+      <NoticeAnnouncement state={state} actions={actions} />
     </GjuAppShell>
   );
 }

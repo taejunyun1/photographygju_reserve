@@ -1,3 +1,24 @@
+.student-react-notice-announcement {
+  position: fixed;
+  z-index: 90;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid var(--student-line);
+  border-radius: 12px;
+  background: var(--student-surface);
+  box-shadow: 0 8px 28px #20375b26;
+}
+.student-react-notice-announcement button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 12px 14px; border: 0; border-radius: inherit; background: transparent; color: var(--student-ink); text-align: left; font: inherit; cursor: pointer; }
+.student-react-notice-announcement button:focus-visible { outline: 3px solid var(--gju-color-primary); outline-offset: 3px; }
+.student-react-notice-announcement svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--gju-color-primary); }
+.student-react-notice-announcement__copy { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.student-react-notice-announcement small { font-size: 11px; color: var(--student-muted); }
+.student-react-notice-announcement strong { font-size: 14px; font-weight: 650; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+@media (max-width: 900px) {
+  .student-react-notice-announcement { right: max(16px, env(safe-area-inset-right)); bottom: calc(90px + env(safe-area-inset-bottom)); }
+}
+
 .student-react-shell {
   --student-ink: #17191c;
   --student-muted: #5c6470;

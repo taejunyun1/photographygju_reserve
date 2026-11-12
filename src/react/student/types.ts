@@ -296,6 +296,8 @@ export type StudentSettings = {
 };
 
 export type StudentBootstrap = {
+  noticeReaderId?: string | null;
+  readNoticeIds?: readonly string[];
   settings: StudentSettings;
   notices: readonly StudentNotice[];
   equipment?: readonly StudentEquipment[];
@@ -493,6 +495,7 @@ export type StudentNativeNotifications = {
 };
 
 export type StudentState = {
+  readonly transientMessageActive?: boolean;
   readonly facilityTimeline?: FacilityTimelineResource;
   readonly view: StudentNavKey;
   readonly today?: string;

@@ -1,5 +1,6 @@
 import { state, setAuthenticatedUser, getAuthenticatedSessionGeneration } from "./state.js?v=20261110-digital-lab-r1";
 import { api } from "./api.js?v=20261110-digital-lab-r1";
+import { mergeNoticeReads } from "./notice-announcements.js?v=20261110-digital-lab-r1";
 import { syncNativeReservationNotifications, syncWatchReservationSnapshot } from "./native-notifications.js?v=20261110-digital-lab-r1";
 
 const ADMIN_VIEW_CACHE_TTL_MS = 15_000;
@@ -122,7 +123,14 @@ export async function loadFacilityTimeline(date, { force = false } = {}) {
 }
 
 export async function loadBootstrap() {
-  state.bootstrap = await api("/api/bootstrap");
+  const token = state.token;
+  const session = getAuthenticatedSessionGeneration();
+  const data = await api("/api/bootstrap");
+  if (state.token !== token || getAuthenticatedSessionGeneration() !== session) return;
+  if (data.noticeReaderId && data.noticeReaderId === state.user?.id) {
+    data.readNoticeIds = mergeNoticeReads(state.bootstrap, data.noticeReaderId, data.readNoticeIds);
+  }
+  state.bootstrap = data;
 }
 
 export async function loadMe() {

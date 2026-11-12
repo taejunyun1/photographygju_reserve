@@ -1,4 +1,6 @@
 import { $app, state } from "./state.js?v=20261110-digital-lab-r1";
+import { api } from "./api.js?v=20261110-digital-lab-r1";
+import { createStudentNoticeRefresher } from "./notice-announcements.js?v=20261110-digital-lab-r1";
 import { loadAdminData, loadAdminView, loadBootstrap, loadLectures, loadMe, loadMyReservations } from "./data.js?v=20261110-digital-lab-r1";
 import { configureAdminRefreshLifecycle, requestAdminRefresh } from "./admin-refresh-lifecycle.js?v=20261110-digital-lab-r1";
 import { setupEventHandlers } from "./events.js?v=20261110-digital-lab-r1";
@@ -46,6 +48,14 @@ const adminRefreshLifecycle = configureAdminRefreshLifecycle({
 function requestBackgroundAdminRefresh() {
   adminRefreshLifecycle.request().catch(() => {});
 }
+
+const refreshStudentNotices = createStudentNoticeRefresher({ state, api, render });
+function requestBackgroundStudentNotices() {
+  if (document.visibilityState !== "hidden") void refreshStudentNotices();
+}
+window.addEventListener("focus", requestBackgroundStudentNotices);
+document.addEventListener("visibilitychange", requestBackgroundStudentNotices);
+window.setInterval(requestBackgroundStudentNotices, 60_000);
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") requestBackgroundAdminRefresh();

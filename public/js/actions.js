@@ -1,4 +1,5 @@
 import { state, setAuthenticatedUser } from "./state.js?v=20261110-digital-lab-r1";
+import { createNoticeReader } from "./notice-announcements.js?v=20261110-digital-lab-r1";
 import { api } from "./api.js?v=20261110-digital-lab-r1";
 import { loadAdminData, loadBootstrap, loadLectures, loadMyReservations, invalidateFacilityTimelineCache } from "./data.js?v=20261110-digital-lab-r1";
 import { clearNativeNotificationAccount, handleNativeNotificationResume, notifyNativeReservationCreated } from "./native-notifications.js?v=20261110-digital-lab-r1";
@@ -77,6 +78,10 @@ async function clearNativeAccountSafely(userId) {
   } catch (error) {
     return ` 기기 알림 정리는 다음 앱 실행 때 다시 시도합니다 (${error.message || "취소 실패"}).`;
   }
+}
+
+export function openNotice(id) {
+  return createNoticeReader({ state, api, render, toast })(id);
 }
 
 export async function logout() {

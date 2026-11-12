@@ -15,6 +15,7 @@ import { createNotificationHelpers } from "./core/notifications.mjs";
 import { buildOperationsInsights } from "./core/operations-insights.mjs";
 import { buildFacilityTimeline } from "./core/facility-timeline.mjs";
 import { favoriteGroupsForUser, reservationShortcuts, validateFavoriteGroups } from "./core/favorite-equipment.mjs";
+import { readNoticeIdsForUser } from "./core/notice-reads.mjs";
 import { findReservationRecommendations } from "./core/reservation-recommendations.mjs";
 import {
   buildOfferingRecommendation,
@@ -1142,6 +1143,8 @@ export async function handleApiRequest(ctx) {
           darkroomChemicals: db.darkroomChemicals,
           equipment: db.equipment.filter((item) => item.active),
           notices: db.notices.map(noticeWithActive).filter((notice) => notice.active),
+          noticeReaderId: user?.role === "student" ? user.id : null,
+          readNoticeIds: readNoticeIdsForUser(user, db.notices),
           reservations: user
             ? db.reservations
               .filter(isOperationalReservation)
@@ -1171,6 +1174,25 @@ export async function handleApiRequest(ctx) {
           startTime: searchParams.get("start") ?? "",
           endTime: searchParams.get("end") ?? ""
         }, { viewerId: user.id, editing, now: requestNow }));
+      }
+
+      const noticeReadMatch = pathname.match(/^\/api\/me\/notices\/([^/]+)\/read$/);
+      if (routeKey(method, pathname) === "GET /api/me/notices" || (method === "POST" && noticeReadMatch)) {
+        const user = requireUser(authorization, db);
+        if (user.role !== "student") throw Object.assign(new Error("학생 계정에서 확인할 수 있습니다."), { status: 403 });
+        const readNoticeIds = readNoticeIdsForUser(user, db.notices);
+        if (noticeReadMatch) {
+          const noticeId = noticeReadMatch[1];
+          const notice = db.notices.map(noticeWithActive).find((item) => item.id === noticeId && item.active);
+          if (!notice) throw Object.assign(new Error("공지를 찾을 수 없습니다."), { status: 404 });
+          if (!readNoticeIds.includes(noticeId)) {
+            readNoticeIds.push(noticeId);
+            user.noticeReadIds = readNoticeIds;
+            await saveDb();
+          }
+          return ok({ noticeId, readerId: user.id, readNoticeIds });
+        }
+        return ok({ readerId: user.id, notices: db.notices.map(noticeWithActive).filter((notice) => notice.active), readNoticeIds });
       }
 
       if (routeKey(method, pathname) === "GET /api/me") {
